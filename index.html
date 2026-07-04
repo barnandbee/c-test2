@@ -26,11 +26,19 @@
       <span id="health-label">100</span>
     </div>
 
+    <div id="timer-panel" class="hud-card">
+      <span class="hud-icon clock-icon" aria-hidden="true"></span>
+      <span id="timer-value">3:00</span>
+    </div>
+
     <div id="points-panel" class="hud-card">
       <span class="hud-icon cone-icon" aria-hidden="true"></span>
       <span id="points-value">0</span>
     </div>
   </div>
+
+  <!-- Floating time-bonus announcement -->
+  <div id="time-toast">+10 SECONDS</div>
 
   <div id="hint">
     <span><b>WASD</b> move</span>
@@ -55,11 +63,30 @@
   <!-- Game over -->
   <div id="game-over">
     <div id="game-over-card">
-      <h1>The Forest Claims You</h1>
-      <p class="subtitle">The twilight grows quiet&hellip;</p>
+      <h1 id="game-over-title">The Forest Claims You</h1>
+      <p class="subtitle" id="game-over-subtitle">The twilight grows quiet&hellip;</p>
       <div class="score-row">
         <span class="score-label">Final score</span>
         <span id="final-score">0</span>
+      </div>
+      <div class="score-row secondary">
+        <span class="score-label">Best</span>
+        <span id="high-score">0</span>
+        <span id="new-high-badge" class="hidden">NEW!</span>
+      </div>
+      <div id="character-select" class="hidden">
+        <p id="unlock-note" class="hidden">&#9733; Badgerette unlocked!</p>
+        <p class="select-label">Choose your hero</p>
+        <div class="char-row">
+          <button class="char-card selected" data-char="badger" type="button">
+            <span class="char-icon badger-icon" aria-hidden="true"></span>
+            <span class="char-name">Badger</span>
+          </button>
+          <button class="char-card" data-char="badgerette" type="button">
+            <span class="char-icon badgerette-icon" aria-hidden="true"></span>
+            <span class="char-name">Badgerette</span>
+          </button>
+        </div>
       </div>
       <button id="restart-btn" type="button">Rise Again</button>
     </div>

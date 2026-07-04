@@ -1,6 +1,7 @@
 /**
  * Game.js — Orchestration: renderer, scene graph, game loop, gameplay rules
- * (health / points / damage / game over) and full lifecycle management.
+ * (health / points / 3-minute clock / damage / game over), persistence
+ * (local high score, character unlock) and full lifecycle management.
  */
 
 import * as THREE from 'three';
@@ -10,7 +11,7 @@ import { CameraRig } from './CameraRig.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
 import { ParticleFX } from './Particles.js';
-import { PineCone, GoldenEgg, ToxicFrog, disposeEntityAssets } from './Entities.js';
+import { PineCone, GoldenEgg, ToxicFrog, ClockTower, disposeEntityAssets } from './Entities.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
 
@@ -19,6 +20,31 @@ const GOLDEN_EGG_COUNT = 6;
 const FROG_COUNT = 8;
 const DAMAGE_PER_HIT = 10;
 const INVULN_TIME = 1.1;
+const GAME_DURATION = 180;          // three twilight minutes
+const TOWER_TIME_BONUS = 10;        // seconds granted per visit
+const UNLOCK_SCORE = 30;            // badgerette unlocks above this
+
+const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
+const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
+const STORAGE_CHARACTER = 'mystic-badger.character';
+
+/** localStorage can throw (private browsing, disabled storage) — shrug it off. */
+function readStorage(key, fallback = null) {
+  try {
+    const v = window.localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (err) {
+    return fallback;
+  }
+}
+
+function writeStorage(key, value) {
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch (err) {
+    /* persistence is a nicety, never a crash */
+  }
+}
 
 export class Game {
   constructor(container) {
@@ -44,15 +70,23 @@ export class Game {
     this.ui = new UI();
     this.particles = new ParticleFX(this.scene);
 
+    // --- persistence ---------------------------------------------------------
+    this.highScore = parseInt(readStorage(STORAGE_HIGH_SCORE, '0'), 10) || 0;
+    this.badgeretteUnlocked = readStorage(STORAGE_UNLOCKED) === '1';
+    const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
+    this.characterName =
+      this.badgeretteUnlocked && storedCharacter === 'badgerette' ? 'badgerette' : 'badger';
+
     const spawn = new THREE.Vector3(0, this.world.getHeight(0, 0), 0);
-    this.player = new Player(this.world, spawn);
+    this.player = new Player(this.world, spawn, this.characterName);
     this.scene.add(this.player.root);
 
     this.cameraRig = new CameraRig(this.camera, this.world);
     this.cameraRig.snapTo(this.player.position);
 
-    // Dust puff on hard landings.
-    this.player.onLand = (impactSpeed, position) => {
+    // Dust puff on hard landings (kept as a bound handler so a character
+    // swap can re-wire the fresh Player instance).
+    this._onPlayerLand = (impactSpeed, position) => {
       this.particles.spawnBurst(position, 0x9b8a72, {
         count: Math.round(clamp(impactSpeed, 6, 20)),
         speed: 2.2,
@@ -62,18 +96,22 @@ export class Game {
         life: 0.55
       });
     };
+    this.player.onLand = this._onPlayerLand;
 
     // --- gameplay state ------------------------------------------------------
     this.health = 100;
     this.points = 0;
+    this.timeLeft = GAME_DURATION;
     this.invulnTimer = 0;
     this.isGameOver = false;
     this.collectibles = [];
     this.frogs = [];
+    this.clockTower = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
-    this.ui.pointsValue.textContent = '0';
+    this.ui.setPointsSilent(0);
+    this.ui.setTimer(this.timeLeft);
     this.ui.bindRestart(() => this.restart());
 
     // --- loop ---------------------------------------------------------------------
@@ -101,6 +139,9 @@ export class Game {
       const p = this.world.randomGroundPoint(14, 85);
       this.frogs.push(new ToxicFrog(this.scene, this.world, p));
     }
+    // The clock tower starts a stroll away — visible, but a detour.
+    const towerSpot = this.world.randomGroundPoint(26, 60, 0.8);
+    this.clockTower = new ClockTower(this.scene, this.world, towerSpot);
   }
 
   clearEntities() {
@@ -108,6 +149,10 @@ export class Game {
     for (const f of this.frogs) f.dispose();
     this.collectibles.length = 0;
     this.frogs.length = 0;
+    if (this.clockTower) {
+      this.clockTower.dispose();
+      this.clockTower = null;
+    }
   }
 
   /* ================================================================ */
@@ -172,30 +217,105 @@ export class Game {
       });
 
       if (this.health <= 0) {
-        this.gameOver();
+        this.gameOver('health');
       }
       break;
     }
   }
 
-  gameOver() {
+  /** The temporal bargain: touch the tower, gain seconds, lose the tower. */
+  handleClockTower() {
+    const tower = this.clockTower;
+    if (!tower || !tower.tryEnter(this.player.position)) return;
+
+    this.timeLeft += TOWER_TIME_BONUS;
+    this.ui.setTimer(this.timeLeft);
+    this.ui.showTimeToast(`+${TOWER_TIME_BONUS} SECONDS`);
+
+    // A cool blue "time magic" burst, distinct from the golden pickups.
+    const burstAt = this._playerCenter.set(tower.position.x, tower.position.y + 1.6, tower.position.z);
+    this.particles.spawnBurst(burstAt, 0x9ecbff, {
+      count: 44,
+      speed: 5.0,
+      size: 48,
+      upBias: 0.8,
+      life: 0.9
+    });
+
+    // Vanish to somewhere genuinely elsewhere — retry until it's far away.
+    let destination = null;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      destination = this.world.randomGroundPoint(25, 95, 0.78);
+      const dx = destination.x - this.player.position.x;
+      const dz = destination.z - this.player.position.z;
+      if (dx * dx + dz * dz > 45 * 45) break;
+    }
+    tower.teleport(destination);
+    this.particles.spawnBurst(
+      this._playerCenter.set(destination.x, destination.y + 1.6, destination.z),
+      0x9ecbff,
+      { count: 30, speed: 4.0, size: 44, upBias: 0.8, life: 0.8 }
+    );
+  }
+
+  gameOver(reason) {
     this.isGameOver = true;
     if (document.pointerLockElement) document.exitPointerLock();
-    this.ui.showGameOver(this.points);
+
+    // Persist the high score and the character unlock.
+    const isNewHigh = this.points > this.highScore;
+    if (isNewHigh) {
+      this.highScore = this.points;
+      writeStorage(STORAGE_HIGH_SCORE, this.highScore);
+    }
+    const newlyUnlocked = !this.badgeretteUnlocked && this.points > UNLOCK_SCORE;
+    if (newlyUnlocked) {
+      this.badgeretteUnlocked = true;
+      writeStorage(STORAGE_UNLOCKED, '1');
+    }
+
+    this.ui.showGameOver({
+      score: this.points,
+      highScore: this.highScore,
+      isNewHigh,
+      reason,
+      showCharacterSelect: this.badgeretteUnlocked,
+      newlyUnlocked,
+      currentCharacter: this.characterName
+    });
   }
 
   restart() {
+    // Apply the character chosen on the game-over screen (if any).
+    const chosen = this.ui.getSelectedCharacter() || this.characterName;
+    if (chosen !== this.characterName && this.badgeretteUnlocked) {
+      this.setCharacter(chosen);
+    }
+
     this.clearEntities();
     this.spawnEntities();
     this.player.reset();
     this.cameraRig.snapTo(this.player.position);
     this.health = 100;
     this.points = 0;
+    this.timeLeft = GAME_DURATION;
     this.invulnTimer = 0;
     this.isGameOver = false;
     this.ui.setHealth(this.health);
-    this.ui.pointsValue.textContent = '0';
+    this.ui.setPointsSilent(0);
+    this.ui.setTimer(this.timeLeft);
     this.ui.hideGameOver();
+  }
+
+  /** Swap heroes: rebuild the Player wholesale and re-wire its events. */
+  setCharacter(name) {
+    this.characterName = name;
+    writeStorage(STORAGE_CHARACTER, name);
+    const spawn = this.player.spawnPoint;
+    this.player.dispose();
+    this.player = new Player(this.world, spawn, name);
+    this.player.onLand = this._onPlayerLand;
+    this.scene.add(this.player.root);
   }
 
   /* ================================================================ */
@@ -213,10 +333,19 @@ export class Game {
     const time = SharedUniforms.uTime.value;
 
     if (!this.isGameOver) {
+      // The countdown IS the game: run dry and the twilight takes you.
+      this.timeLeft -= dt;
+      this.ui.setTimer(this.timeLeft);
+      if (this.timeLeft <= 0) {
+        this.timeLeft = 0;
+        this.gameOver('time');
+      }
+
       this.invulnTimer = Math.max(0, this.invulnTimer - dt);
       this.player.update(dt, this.input, this.cameraRig.yaw);
       this.handlePickups();
       this.handleHazards();
+      this.handleClockTower();
       this.cameraRig.update(dt, this.player, this.input);
     } else {
       this.cameraRig.update(dt, this.player, null);
@@ -224,6 +353,10 @@ export class Game {
 
     for (const item of this.collectibles) item.update(dt, time);
     for (const frog of this.frogs) frog.update(dt, time);
+    if (this.clockTower) {
+      this.clockTower.update(dt);
+      this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));
+    }
     this.particles.update();
     this.world.update(dt, this.player.position);
 

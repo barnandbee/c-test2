@@ -208,6 +208,7 @@ export function createToonMaterial(opts = {}) {
     vertexColors: Boolean(opts.vertexColors),
     map: opts.map || null,
     emissive: opts.emissive !== undefined ? opts.emissive : 0x000000,
+    emissiveMap: opts.emissiveMap || null,
     emissiveIntensity: opts.emissiveIntensity !== undefined ? opts.emissiveIntensity : 1,
     fog: true
   });

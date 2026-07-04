@@ -284,14 +284,27 @@ export class World {
   /* ================================================================ */
 
   _makeTrunkGeometry() {
-    const geo = new THREE.CylinderGeometry(0.24, 0.55, 5.4, 9, 6);
+    const geo = new THREE.CylinderGeometry(0.22, 0.5, 5.4, 12, 8);
     geo.translate(0, 2.7, 0);
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
+      let x = pos.getX(i);
       const y = pos.getY(i);
-      const z = pos.getZ(i);
+      let z = pos.getZ(i);
       const t = y / 5.4;
+
+      // Buttressed root flare: lobes swell out near the ground line, so
+      // trunks read as grown-in rather than planted dowels.
+      const r = Math.hypot(x, z);
+      if (r > 1e-5 && y < 0.9) {
+        const angle = Math.atan2(z, x);
+        const f = (0.9 - y) / 0.9;
+        const lobes = 0.55 + 0.4 * Math.sin(angle * 3 + 1.7) + 0.25 * Math.sin(angle * 5 - 0.6);
+        const flare = 1 + f * f * lobes;
+        x *= flare;
+        z *= flare;
+      }
+
       // Gentle organic lean plus bark lumpiness.
       const bend = Math.sin(t * 2.4) * 0.28 * t;
       const lump = this.detailNoise.noise(x * 3 + y * 1.4, z * 3 - y * 0.9) * 0.06;
@@ -302,15 +315,33 @@ export class World {
     return geo;
   }
 
+  /** Short tapered limb, pivot at its base, poking out into the canopy. */
+  _makeBranchGeometry() {
+    const geo = new THREE.CylinderGeometry(0.05, 0.13, 1.7, 7, 3);
+    geo.translate(0, 0.85, 0);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const t = y / 1.7;
+      // Slight upward sweep so limbs curve toward the light.
+      pos.setZ(i, pos.getZ(i) + Math.sin(t * 1.8) * 0.16 * t);
+    }
+    geo.computeVertexNormals();
+    return geo;
+  }
+
   _makeCanopyGeometry() {
-    const geo = new THREE.IcosahedronGeometry(1.2, 1);
+    const geo = new THREE.IcosahedronGeometry(1.2, 2);
     const pos = geo.attributes.position;
     const sway = new Float32Array(pos.count);
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const y = pos.getY(i);
       const z = pos.getZ(i);
-      const bump = 1 + this.detailNoise.noise(x * 1.6 + 5, z * 1.6 - y * 1.1) * 0.22;
+      // Two octaves of displacement: broad lobes + fine leaf-cluster chop.
+      const lobes = this.detailNoise.noise(x * 1.6 + 5, z * 1.6 - y * 1.1) * 0.24;
+      const chop = this.detailNoise.noise(x * 4.2 - 13, z * 4.2 + y * 3.1) * 0.09;
+      const bump = 1 + lobes + chop;
       pos.setXYZ(i, x * bump, y * bump * 0.92, z * bump);
       // Outer leaves sway most; the core barely moves.
       sway[i] = 0.35 + 0.65 * clamp((Math.hypot(x, y, z) - 0.6) / 0.7, 0, 1);
@@ -345,6 +376,7 @@ export class World {
     }
 
     const trunkGeo = this._makeTrunkGeometry();
+    const branchGeo = this._makeBranchGeometry();
     const canopyGeo = this._makeCanopyGeometry();
     const trunkMat = createToonMaterial({
       color: 0x5c4534,
@@ -356,15 +388,18 @@ export class World {
       rim: { color: 0xb9a4ff, strength: 0.45, threshold: 0.62 },
       sway: { strength: 0.14, speed: 1.5 }
     });
-    this._disposables.push(trunkGeo, canopyGeo, trunkMat, canopyMat);
+    this._disposables.push(trunkGeo, branchGeo, canopyGeo, trunkMat, canopyMat);
 
     const canopyPalette = [0x35714f, 0x2e6b5e, 0x477f43, 0x54925f, 0x3c7a6a, 0x62975a];
-    const blobsPerTree = 4;
+    const blobsPerTree = 5;
+    const branchesPerTree = 3;
 
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, placements.length);
+    const branches = new THREE.InstancedMesh(branchGeo, trunkMat, placements.length * branchesPerTree);
     const canopies = new THREE.InstancedMesh(canopyGeo, canopyMat, placements.length * blobsPerTree);
     trunks.castShadow = true;
     trunks.receiveShadow = true;
+    branches.castShadow = true;
     canopies.castShadow = true;
 
     const matrix = new THREE.Matrix4();
@@ -375,6 +410,7 @@ export class World {
     const color = new THREE.Color();
 
     let canopyIndex = 0;
+    let branchIndex = 0;
     placements.forEach((p, i) => {
       const s = p.scale;
       euler.set(this.rng.range(-0.06, 0.06), this.rng.range(0, Math.PI * 2), this.rng.range(-0.06, 0.06));
@@ -385,16 +421,35 @@ export class World {
       matrix.compose(vec, quat, scl);
       trunks.setMatrixAt(i, matrix);
 
+      // Limbs fan out of the upper trunk into the canopy mass.
+      for (let b = 0; b < branchesPerTree; b++) {
+        const azimuth = this.rng.range(0, Math.PI * 2);
+        const tilt = this.rng.range(0.9, 1.35); // radians from vertical
+        const heightFrac = this.rng.range(0.55, 0.8);
+        euler.set(tilt, azimuth, 0, 'YXZ');
+        quat.setFromEuler(euler);
+        vec.set(
+          p.x + Math.sin(azimuth) * 0.3 * s,
+          p.h - 0.2 + trunkHeight * heightFrac,
+          p.z + Math.cos(azimuth) * 0.3 * s
+        );
+        const bs = s * this.rng.range(0.7, 1.1);
+        scl.set(bs, bs, bs);
+        matrix.compose(vec, quat, scl);
+        branches.setMatrixAt(branchIndex, matrix);
+        branchIndex++;
+      }
+
       for (let b = 0; b < blobsPerTree; b++) {
-        const spread = 1.25 * s;
+        const spread = 1.35 * s;
         vec.set(
           p.x + this.rng.range(-spread, spread),
-          p.h - 0.2 + trunkHeight * this.rng.range(0.86, 1.02),
+          p.h - 0.2 + trunkHeight * this.rng.range(0.84, 1.04),
           p.z + this.rng.range(-spread, spread)
         );
         euler.set(this.rng.range(0, Math.PI), this.rng.range(0, Math.PI), 0);
         quat.setFromEuler(euler);
-        const bs = s * this.rng.range(1.0, 1.9);
+        const bs = s * this.rng.range(0.95, 1.8);
         scl.set(bs, bs * this.rng.range(0.85, 1.0), bs);
         matrix.compose(vec, quat, scl);
         canopies.setMatrixAt(canopyIndex, matrix);
@@ -404,16 +459,19 @@ export class World {
         canopyIndex++;
       }
 
-      this.colliders.push({ x: p.x, z: p.z, radius: 0.7 * s, top: p.h + 3.2 });
+      this.colliders.push({ x: p.x, z: p.z, radius: 0.75 * s, top: p.h + 3.2 });
     });
 
     trunks.instanceMatrix.needsUpdate = true;
+    branches.instanceMatrix.needsUpdate = true;
     canopies.instanceMatrix.needsUpdate = true;
     if (canopies.instanceColor) canopies.instanceColor.needsUpdate = true;
 
     this.scene.add(trunks);
+    this.scene.add(branches);
     this.scene.add(canopies);
     this.trunks = trunks;
+    this.branches = branches;
     this.canopies = canopies;
   }
 
@@ -548,7 +606,7 @@ export class World {
   /* ================================================================ */
 
   dispose() {
-    for (const obj of [this.terrain, this.trunks, this.canopies, this.rocks, this.grass, this.sky]) {
+    for (const obj of [this.terrain, this.trunks, this.branches, this.canopies, this.rocks, this.grass, this.sky]) {
       if (obj && obj.parent) obj.parent.remove(obj);
       if (obj && obj.isInstancedMesh) obj.dispose();
     }

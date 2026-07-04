@@ -151,8 +151,16 @@ export class ParticleFX {
 /*  Persistent point-cloud builders (aura / poison)                    */
 /* ------------------------------------------------------------------ */
 
-/** Rotating golden particle ring for the eggs. */
-export function createAuraPoints(count = 34) {
+/**
+ * Rotating golden particle ring — sized for eggs by default, but the
+ * geometry ranges are configurable so the clock tower can wear a big one.
+ */
+export function createAuraPoints(count = 34, opts = {}) {
+  const radiusBase = opts.radiusBase !== undefined ? opts.radiusBase : 0.5;
+  const radiusVar = opts.radiusVar !== undefined ? opts.radiusVar : 0.4;
+  const heightBase = opts.heightBase !== undefined ? opts.heightBase : 0.1;
+  const heightVar = opts.heightVar !== undefined ? opts.heightVar : 0.7;
+
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
   const angle = new Float32Array(count);
@@ -162,9 +170,9 @@ export function createAuraPoints(count = 34) {
   const phase = new Float32Array(count);
   for (let i = 0; i < count; i++) {
     angle[i] = Math.random() * Math.PI * 2;
-    radius[i] = 0.5 + Math.random() * 0.4;
+    radius[i] = radiusBase + Math.random() * radiusVar;
     speed[i] = (0.8 + Math.random() * 1.4) * (Math.random() < 0.5 ? 1 : -1);
-    height[i] = 0.1 + Math.random() * 0.7;
+    height[i] = heightBase + Math.random() * heightVar;
     phase[i] = Math.random() * Math.PI * 2;
   }
   geometry.setAttribute('aAngle', new THREE.BufferAttribute(angle, 1));

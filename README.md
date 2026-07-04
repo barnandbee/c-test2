@@ -29,12 +29,22 @@ import map — no npm install, no bundler.
 
 ## Gameplay
 
+- **The clock** — you have **3 minutes**. When it runs dry, the run ends.
+  Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
 - **Golden eggs (+10)** — rare gold-PBR collectibles ringed by an orbiting
   particle aura; they live out toward the wild edges of the map.
-- **Toxic frogs** — hopping hazards wrapped in a translucent poison cloud.
-  Entering the cloud costs 10 health, flashes the screen and knocks the
-  badger back. Health starts at 100; at 0 the twilight claims you.
+- **Toxic frogs** — hopping hazards wrapped in a translucent poison cloud,
+  croaking through an inflating throat sac. Entering the cloud costs 10
+  health, flashes the screen and knocks the badger back. Health starts at
+  100; at 0 the twilight claims you.
+- **The clock tower** — a glowing landmark whose minute hand literally
+  shows your time remaining. Touch it for **+10 seconds** — but it
+  teleports across the map afterward, so every visit is a detour that
+  trades points for time.
+- **Badgerette** — finish a run with a score **over 30** to unlock a
+  second hero: flowing ginger hair, golden tiara, same dig-happy claws.
+  Pick your hero on the game-over screen; the choice persists.
 
 ## Architecture
 

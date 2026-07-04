@@ -1,23 +1,27 @@
 /**
- * Player.js — The badger hero.
+ * Player.js — The badger hero (and her royal alter ego, the Badgerette).
  *
  * Two responsibilities, deliberately kept in one module because they share
  * state (pose follows physics):
  *
- *  1. BADGER MESH — a compound, organically-proportioned body built from
+ *  1. HERO MESH — a compound, organically-proportioned body built from
  *     smooth-normal primitives, cel-shaded with the three-tone toon material
  *     and rim light from Shaders.js. The black-and-white face masking is
  *     painted per-vertex into a `color` attribute (no textures needed).
+ *     Detail pass: two-segment legs with claws, shoulder/haunch musculature,
+ *     a neck ruff, brow and cheek tufts, and a fluffy displaced tail.
+ *     The 'badgerette' variant adds flowing ginger hair (tube-swept locks
+ *     that trail and sway with movement) and a jeweled golden tiara.
  *
  *  2. KINEMATIC CHARACTER CONTROLLER — gravity, acceleration/deceleration,
- *     ground friction, air momentum conservation, coyote time, jump
- *     buffering, variable jump height, slope sliding, ground snapping (no
- *     jitter walking downhill) and cylinder-collider push-out.
+ *     momentum conservation, friction, coyote time, jump buffering,
+ *     variable jump height, slope sliding, ground snapping (no jitter on
+ *     slopes) and cylinder-collider push-out.
  */
 
 import * as THREE from 'three';
 import { createToonMaterial } from './Shaders.js';
-import { clamp, lerp, damp, dampAngle, moveToward } from './utils/MathUtils.js';
+import { clamp, damp, dampAngle, moveToward } from './utils/MathUtils.js';
 
 /* ------------------------------------------------------------------ */
 /*  Tuning                                                             */
@@ -78,10 +82,12 @@ export class Player {
   /**
    * @param {import('./World.js').World} world  height field + colliders
    * @param {THREE.Vector3} spawnPoint          feet position at spawn
+   * @param {'badger'|'badgerette'} character   which hero to build
    */
-  constructor(world, spawnPoint) {
+  constructor(world, spawnPoint, character = 'badger') {
     this.world = world;
     this.spawnPoint = spawnPoint.clone();
+    this.character = character;
 
     // --- physics state -------------------------------------------------
     this.position = spawnPoint.clone(); // FEET position
@@ -96,6 +102,7 @@ export class Player {
     this.walkCycle = 0;
     this.squash = 0;       // 0..1 landing squash amount, springs back to 0
     this.airTilt = 0;
+    this.hairGroup = null; // present only on the badgerette
 
     // --- events (wired by Game) ------------------------------------------
     this.onLand = null; // (impactSpeed: number, position: Vector3) => void
@@ -117,7 +124,7 @@ export class Player {
 
   buildBadger() {
     const root = new THREE.Group();
-    root.name = 'badger';
+    root.name = this.character;
 
     const track = (resource) => {
       this._disposables.push(resource);
@@ -131,6 +138,7 @@ export class Player {
     const creamMat = track(createToonMaterial({ color: 0xf2ecdd, rim }));
     const noseMat = track(createToonMaterial({ color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const clawMat = track(createToonMaterial({ color: 0xd9d2bf }));
 
     // Everything above the legs hangs off bodyGroup so bob/squash/tilt are
     // applied in one place.
@@ -140,22 +148,33 @@ export class Player {
     root.add(body);
     this.bodyGroup = body;
 
-    // --- torso: silver-grey back fading to a near-black belly -----------
-    const torsoGeo = track(new THREE.SphereGeometry(0.62, 30, 22));
+    // --- torso: silver saddle, pale flank band, near-black belly ---------
+    const torsoGeo = track(new THREE.SphereGeometry(0.62, 36, 26));
     paintVertexColors(torsoGeo, (n, p, c) => {
-      const belly = 1 - THREE.MathUtils.smoothstep(n.y, -0.65, 0.05);
       const mottle = (furNoise(p.x * 4, p.y * 4, p.z * 4) - 0.5) * 0.07;
-      const top = new THREE.Color(0x8a90a0).offsetHSL(0, 0, mottle);
-      const bottom = new THREE.Color(0x2e2f38);
-      c.copy(top).lerp(bottom, belly);
+      const saddle = new THREE.Color(0x8a90a0).offsetHSL(0, 0, mottle);
+      const flank = new THREE.Color(0xb9bcc4);
+      const belly = new THREE.Color(0x2e2f38);
+
+      c.copy(saddle);
+      // Slightly darker dorsal streak along the spine.
+      const dorsal = THREE.MathUtils.smoothstep(n.y, 0.45, 0.8) * (1 - THREE.MathUtils.smoothstep(Math.abs(n.x), 0.2, 0.45));
+      c.offsetHSL(0, 0, -dorsal * 0.06);
+      // Pale band along the low flanks (classic badger grizzle).
+      const flankBand =
+        THREE.MathUtils.smoothstep(n.y, -0.35, -0.05) *
+        (1 - THREE.MathUtils.smoothstep(n.y, 0.1, 0.4));
+      c.lerp(flank, flankBand * 0.55);
+      // Dark belly swallowing the underside.
+      c.lerp(belly, 1 - THREE.MathUtils.smoothstep(n.y, -0.7, -0.15));
     });
     const torso = new THREE.Mesh(torsoGeo, furMat);
     torso.scale.set(1.0, 0.8, 1.32);
     torso.castShadow = true;
     body.add(torso);
 
-    // --- haunches: rounded hips so the silhouette reads "burly" ---------
-    const haunchGeo = track(new THREE.SphereGeometry(0.3, 20, 16));
+    // --- musculature: haunches at the rear, shoulders up front -----------
+    const haunchGeo = track(new THREE.SphereGeometry(0.3, 22, 16));
     paintVertexColors(haunchGeo, (n, p, c) => {
       c.set(0x788091).offsetHSL(0, 0, (furNoise(p.x * 5, p.y * 5, p.z * 5) - 0.5) * 0.06);
     });
@@ -165,7 +184,26 @@ export class Player {
       haunch.scale.set(0.85, 0.9, 1.0);
       haunch.castShadow = true;
       body.add(haunch);
+
+      const shoulder = new THREE.Mesh(haunchGeo, furMat);
+      shoulder.position.set(side * 0.25, -0.12, 0.38);
+      shoulder.scale.set(0.7, 0.75, 0.8);
+      shoulder.castShadow = true;
+      body.add(shoulder);
     }
+
+    // --- neck ruff: a fluffy collar where head meets torso ----------------
+    const ruffGeo = track(new THREE.SphereGeometry(0.42, 24, 16));
+    paintVertexColors(ruffGeo, (n, p, c) => {
+      const shag = (furNoise(p.x * 9, p.y * 9, p.z * 9) - 0.5) * 0.1;
+      c.set(0x9aa0ac).offsetHSL(0, 0, shag);
+      c.lerp(new THREE.Color(0x3a3b44), 1 - THREE.MathUtils.smoothstep(n.y, -0.7, -0.1));
+    });
+    const ruff = new THREE.Mesh(ruffGeo, furMat);
+    ruff.position.set(0, 0.16, 0.5);
+    ruff.scale.set(1.05, 0.8, 0.6);
+    ruff.castShadow = true;
+    body.add(ruff);
 
     // --- head with vertex-painted badger mask ---------------------------
     const headGroup = new THREE.Group();
@@ -174,7 +212,7 @@ export class Player {
     body.add(headGroup);
     this.headGroup = headGroup;
 
-    const headGeo = track(new THREE.SphereGeometry(0.42, 36, 26));
+    const headGeo = track(new THREE.SphereGeometry(0.42, 40, 30));
     paintVertexColors(headGeo, (n, p, c) => {
       const cream = new THREE.Color(0xf4efe2);
       const black = new THREE.Color(0x17171b);
@@ -199,8 +237,8 @@ export class Player {
     head.castShadow = true;
     headGroup.add(head);
 
-    // --- snout + nose ----------------------------------------------------
-    const snoutGeo = track(new THREE.ConeGeometry(0.18, 0.42, 18, 1, false));
+    // --- snout, nose, chin tuft ------------------------------------------
+    const snoutGeo = track(new THREE.ConeGeometry(0.18, 0.42, 20, 1, false));
     const snout = new THREE.Mesh(snoutGeo, creamMat);
     snout.rotation.x = Math.PI / 2;
     snout.position.set(0, -0.08, 0.42);
@@ -212,10 +250,29 @@ export class Player {
     nose.position.set(0, -0.075, 0.62);
     headGroup.add(nose);
 
-    // --- eyes sit inside the black stripes -------------------------------
+    const chinGeo = track(new THREE.SphereGeometry(0.09, 12, 8));
+    const chin = new THREE.Mesh(chinGeo, darkMat);
+    chin.position.set(0, -0.24, 0.36);
+    chin.scale.set(1.1, 0.7, 1.2);
+    headGroup.add(chin);
+
+    // --- brows, cheeks, eyes with glints ----------------------------------
+    const browGeo = track(new THREE.SphereGeometry(0.075, 12, 8));
+    const cheekGeo = track(new THREE.SphereGeometry(0.12, 14, 10));
     const eyeGeo = track(new THREE.SphereGeometry(0.06, 12, 10));
     const glintGeo = track(new THREE.SphereGeometry(0.018, 8, 6));
     for (const side of [-1, 1]) {
+      const brow = new THREE.Mesh(browGeo, creamMat);
+      brow.position.set(side * 0.155, 0.17, 0.32);
+      brow.scale.set(1.15, 0.55, 0.9);
+      headGroup.add(brow);
+
+      const cheek = new THREE.Mesh(cheekGeo, creamMat);
+      cheek.position.set(side * 0.24, -0.13, 0.26);
+      cheek.scale.set(0.95, 0.8, 1.0);
+      cheek.castShadow = true;
+      headGroup.add(cheek);
+
       const eye = new THREE.Mesh(eyeGeo, noseMat);
       eye.position.set(side * 0.15, 0.06, 0.36);
       headGroup.add(eye);
@@ -239,22 +296,31 @@ export class Player {
       headGroup.add(inner);
     }
 
-    // --- tail --------------------------------------------------------------
-    const tailGeo = track(new THREE.SphereGeometry(0.17, 14, 10));
+    // --- fluffy tail: displaced icosahedron, grey fading to a pale tip -----
+    const tailGeo = track(new THREE.IcosahedronGeometry(0.18, 1));
+    {
+      const pos = tailGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const fluff = 1 + (furNoise(pos.getX(i) * 14, pos.getY(i) * 14, pos.getZ(i) * 14) - 0.5) * 0.45;
+        pos.setXYZ(i, pos.getX(i) * fluff, pos.getY(i) * fluff, pos.getZ(i) * fluff);
+      }
+      tailGeo.computeVertexNormals();
+    }
     paintVertexColors(tailGeo, (n, p, c) => {
-      // Grey base fading to a pale tip (tip points away from the body, -z).
       c.set(0x82868d).lerp(new THREE.Color(0xe9e4d6), THREE.MathUtils.smoothstep(-n.z, 0.1, 0.9));
     });
     const tail = new THREE.Mesh(tailGeo, furMat);
     tail.position.set(0, 0.02, -0.92);
-    tail.scale.set(0.85, 0.85, 1.5);
+    tail.scale.set(0.9, 0.9, 1.6);
     tail.castShadow = true;
     body.add(tail);
     this.tail = tail;
 
-    // --- legs: pivot groups at the hips/shoulders for swing animation ------
-    const legGeo = track(new THREE.CylinderGeometry(0.1, 0.12, 0.4, 12));
-    const pawGeo = track(new THREE.SphereGeometry(0.13, 12, 10));
+    // --- legs: hip pivots swinging a thigh + shin + clawed paw -------------
+    const thighGeo = track(new THREE.CylinderGeometry(0.105, 0.125, 0.28, 12));
+    const shinGeo = track(new THREE.CylinderGeometry(0.075, 0.095, 0.24, 10));
+    const pawGeo = track(new THREE.SphereGeometry(0.13, 14, 10));
+    const clawGeo = track(new THREE.ConeGeometry(0.022, 0.07, 6));
     this.legs = [];
     const legSlots = [
       { x: -0.3, z: 0.42, phase: 0 },
@@ -265,20 +331,143 @@ export class Player {
     for (const slot of legSlots) {
       const pivot = new THREE.Group();
       pivot.position.set(slot.x, -0.3, slot.z);
-      const upper = new THREE.Mesh(legGeo, darkMat);
-      upper.position.y = -0.16;
-      upper.castShadow = true;
-      pivot.add(upper);
+
+      const thigh = new THREE.Mesh(thighGeo, darkMat);
+      thigh.position.y = -0.12;
+      thigh.castShadow = true;
+      pivot.add(thigh);
+
+      const shin = new THREE.Mesh(shinGeo, darkMat);
+      shin.position.set(0, -0.3, 0.02);
+      shin.rotation.x = 0.12;
+      shin.castShadow = true;
+      pivot.add(shin);
+
       const paw = new THREE.Mesh(pawGeo, darkMat);
-      paw.position.set(0, -0.36, 0.03);
-      paw.scale.set(1, 0.7, 1.2);
+      paw.position.set(0, -0.42, 0.05);
+      paw.scale.set(1, 0.62, 1.25);
       paw.castShadow = true;
       pivot.add(paw);
+
+      // Three digging claws splayed at the front of each paw.
+      for (const cx of [-0.05, 0, 0.05]) {
+        const claw = new THREE.Mesh(clawGeo, clawMat);
+        claw.position.set(cx, -0.47, 0.19);
+        claw.rotation.x = Math.PI / 2 - 0.25;
+        claw.rotation.z = -cx * 3;
+        pivot.add(claw);
+      }
+
       body.add(pivot);
       this.legs.push({ pivot, phase: slot.phase });
     }
 
+    // --- the Badgerette: flowing ginger hair + jeweled tiara ---------------
+    if (this.character === 'badgerette') {
+      this._buildBadgeretteExtras(headGroup, track);
+    }
+
     return root;
+  }
+
+  /** Long swept-tube ginger locks and a golden tiara with a pink gem. */
+  _buildBadgeretteExtras(headGroup, track) {
+    const hairMat = track(createToonMaterial({
+      color: 0xc96a22,
+      rim: { color: 0xffb36e, strength: 0.45, threshold: 0.6 }
+    }));
+    const hairDarkMat = track(createToonMaterial({
+      color: 0xa8521a,
+      rim: { color: 0xff9e4d, strength: 0.35, threshold: 0.64 }
+    }));
+    const tiaraMat = track(createToonMaterial({
+      color: 0xf5c542,
+      emissive: 0x4a3300,
+      emissiveIntensity: 1.0,
+      rim: { color: 0xfff3c0, strength: 0.8, threshold: 0.45 }
+    }));
+    const gemMat = track(createToonMaterial({
+      color: 0xff6fb0,
+      emissive: 0xff2f8f,
+      emissiveIntensity: 0.7
+    }));
+
+    // Hair hangs from a crown pivot so the whole mane sways/trails as one.
+    const hairGroup = new THREE.Group();
+    hairGroup.position.set(0, 0.24, -0.08);
+    headGroup.add(hairGroup);
+    this.hairGroup = hairGroup;
+
+    const strandSpecs = [];
+    const BACK_STRANDS = 5;
+    for (let i = 0; i < BACK_STRANDS; i++) {
+      const t = (i - (BACK_STRANDS - 1) / 2) / ((BACK_STRANDS - 1) / 2); // -1..1
+      strandSpecs.push({
+        points: [
+          new THREE.Vector3(t * 0.1, 0.14, 0.06),
+          new THREE.Vector3(t * 0.2, 0.02, -0.3),
+          new THREE.Vector3(t * 0.3, -0.34, -0.5 + Math.abs(t) * 0.06),
+          new THREE.Vector3(t * 0.26 + Math.sin(i * 2.3) * 0.06, -0.78, -0.58)
+        ],
+        radius: 0.058 - Math.abs(t) * 0.012,
+        dark: i % 2 === 1
+      });
+    }
+    // Two shorter locks framing the face.
+    for (const side of [-1, 1]) {
+      strandSpecs.push({
+        points: [
+          new THREE.Vector3(side * 0.2, 0.12, 0.16),
+          new THREE.Vector3(side * 0.34, -0.06, 0.2),
+          new THREE.Vector3(side * 0.38, -0.32, 0.12),
+          new THREE.Vector3(side * 0.34, -0.5, 0.02)
+        ],
+        radius: 0.042,
+        dark: false
+      });
+    }
+
+    for (const spec of strandSpecs) {
+      const curve = new THREE.CatmullRomCurve3(spec.points);
+      const tubeGeo = track(new THREE.TubeGeometry(curve, 16, spec.radius, 6, false));
+      const strand = new THREE.Mesh(tubeGeo, spec.dark ? hairDarkMat : hairMat);
+      strand.castShadow = true;
+      hairGroup.add(strand);
+      // Rounded tip so locks end softly instead of with an open tube.
+      const tipGeo = track(new THREE.SphereGeometry(spec.radius * 1.05, 8, 6));
+      const tip = new THREE.Mesh(tipGeo, spec.dark ? hairDarkMat : hairMat);
+      tip.position.copy(spec.points[spec.points.length - 1]);
+      hairGroup.add(tip);
+    }
+
+    // Tiara: golden arc across the crown, three spires, one pink gem.
+    const tiaraGroup = new THREE.Group();
+    tiaraGroup.position.set(0, 0.32, 0.12);
+    tiaraGroup.rotation.x = 0.32;
+    headGroup.add(tiaraGroup);
+
+    const bandGeo = track(new THREE.TorusGeometry(0.17, 0.022, 8, 24, Math.PI));
+    const band = new THREE.Mesh(bandGeo, tiaraMat);
+    band.rotation.x = -Math.PI / 2 + 0.25;
+    tiaraGroup.add(band);
+
+    const spikeGeo = track(new THREE.ConeGeometry(0.02, 0.085, 8));
+    const spikeSlots = [
+      { x: -0.1, y: 0.045, s: 0.75 },
+      { x: 0, y: 0.075, s: 1.0 },
+      { x: 0.1, y: 0.045, s: 0.75 }
+    ];
+    for (const slot of spikeSlots) {
+      const spike = new THREE.Mesh(spikeGeo, tiaraMat);
+      spike.position.set(slot.x, slot.y, 0.05);
+      spike.scale.setScalar(slot.s);
+      tiaraGroup.add(spike);
+    }
+
+    const gemGeo = track(new THREE.SphereGeometry(0.028, 10, 8));
+    const gem = new THREE.Mesh(gemGeo, gemMat);
+    gem.position.set(0, 0.05, 0.085);
+    tiaraGroup.add(gem);
   }
 
   /* ================================================================ */
@@ -373,7 +562,7 @@ export class Player {
     pos.y += vel.y * dt;
     pos.z += vel.z * dt;
 
-    // ---- obstacle push-out (cylinder colliders: trunks, rocks) -------------
+    // ---- obstacle push-out (cylinder colliders: trunks, rocks, tower) -------
     this.resolveColliders();
 
     // ---- world bounds --------------------------------------------------------
@@ -536,6 +725,13 @@ export class Player {
     } else {
       this.headGroup.rotation.x = damp(this.headGroup.rotation.x, -0.08, 10, dt);
       this.headGroup.rotation.y = damp(this.headGroup.rotation.y, 0, 10, dt);
+    }
+
+    // Badgerette's mane: gentle idle sway, streams back at speed, lifts in air.
+    if (this.hairGroup) {
+      const lift = speedT * 0.35 + (this.grounded ? 0 : 0.25);
+      this.hairGroup.rotation.x = damp(this.hairGroup.rotation.x, lift, 6, dt) + Math.sin(t * 2.1) * 0.045;
+      this.hairGroup.rotation.z = Math.sin(t * 1.4) * 0.06 + Math.sin(this.walkCycle) * 0.05 * speedT;
     }
   }
 
