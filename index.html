@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Badger of the Mystic Forest</title>
   <link rel="stylesheet" href="styles.css" />
   <script type="importmap">
@@ -37,6 +37,16 @@
     <span><b>Space</b> jump</span>
     <span><b>Mouse</b> camera</span>
     <span><b>Scroll</b> zoom</span>
+  </div>
+
+  <!-- Touch controls (shown on touch-capable devices only) -->
+  <div id="touch-controls">
+    <div id="touch-move-zone"></div>
+    <div id="touch-look-zone"></div>
+    <div id="touch-joystick-base">
+      <div id="touch-joystick-knob"></div>
+    </div>
+    <button id="touch-jump-btn" type="button" aria-label="Jump">JUMP</button>
   </div>
 
   <!-- Damage feedback vignette -->

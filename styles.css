@@ -29,6 +29,8 @@ body {
   color: var(--hud-text);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 #app,
@@ -36,6 +38,7 @@ body {
   position: fixed;
   inset: 0;
   display: block;
+  touch-action: none;
 }
 
 /* ------------------------------------------------------------------ */
@@ -168,9 +171,105 @@ body {
   opacity: 0;
 }
 
+#hint.touch-hint {
+  display: none;
+}
+
 #hint b {
   color: var(--accent-warm);
   font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Touch controls (virtual joystick + jump button)                    */
+/* ------------------------------------------------------------------ */
+
+#touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: none;
+}
+
+#touch-controls.visible {
+  display: block;
+}
+
+#touch-move-zone,
+#touch-look-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  touch-action: none;
+}
+
+#touch-move-zone {
+  left: 0;
+}
+
+#touch-look-zone {
+  right: 0;
+}
+
+#touch-joystick-base {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  margin-left: -60px;
+  margin-top: -60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+#touch-joystick-base.active {
+  opacity: 1;
+}
+
+#touch-joystick-knob {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  will-change: transform;
+}
+
+#touch-jump-btn {
+  position: absolute;
+  right: 30px;
+  bottom: 44px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 178, 110, 0.5);
+  background: rgba(255, 178, 110, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--hud-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  touch-action: none;
+}
+
+#touch-jump-btn:active {
+  background: rgba(255, 178, 110, 0.4);
+  transform: scale(0.94);
+}
+
+@media (min-width: 900px) and (pointer: fine) {
+  #touch-controls {
+    display: none !important;
+  }
 }
 
 /* ------------------------------------------------------------------ */
