@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badger of the Mystic Forest</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- HUD overlay -->
+  <div id="hud">
+    <div id="health-panel" class="hud-card">
+      <span class="hud-icon heart-icon" aria-hidden="true"></span>
+      <div id="health-bar">
+        <div id="health-fill" style="width: 100%"></div>
+      </div>
+      <span id="health-label">100</span>
+    </div>
+
+    <div id="points-panel" class="hud-card">
+      <span class="hud-icon cone-icon" aria-hidden="true"></span>
+      <span id="points-value">0</span>
+    </div>
+  </div>
+
+  <div id="hint">
+    <span><b>WASD</b> move</span>
+    <span><b>Space</b> jump</span>
+    <span><b>Mouse</b> camera</span>
+    <span><b>Scroll</b> zoom</span>
+  </div>
+
+  <!-- Damage feedback vignette -->
+  <div id="damage-flash"></div>
+
+  <!-- Game over -->
+  <div id="game-over">
+    <div id="game-over-card">
+      <h1>The Forest Claims You</h1>
+      <p class="subtitle">The twilight grows quiet&hellip;</p>
+      <div class="score-row">
+        <span class="score-label">Final score</span>
+        <span id="final-score">0</span>
+      </div>
+      <button id="restart-btn" type="button">Rise Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
