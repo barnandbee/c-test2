@@ -579,6 +579,39 @@ body {
   border-bottom: 10px solid var(--accent-gold);
 }
 
+/* Mr Finn Boffington: blue block, purple waistcoat, horns. */
+.boffington-icon {
+  position: relative;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 34% 30%, #101014 0, #101014 2.5px, #ffffff 2.5px, #ffffff 6px, transparent 6.5px),
+    radial-gradient(circle at 66% 30%, #101014 0, #101014 2.5px, #ffffff 2.5px, #ffffff 6px, transparent 6.5px),
+    radial-gradient(ellipse 8px 4px at 50% 52%, #4a1a2c 0, #4a1a2c 3.5px, transparent 4px),
+    linear-gradient(180deg, #3aa0e8 0%, #3aa0e8 62%, #7a3fa8 62%, #7a3fa8 100%);
+}
+
+.boffington-icon::before,
+.boffington-icon::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 0;
+  height: 0;
+  border-bottom: 12px solid #23232a;
+}
+
+.boffington-icon::before {
+  left: 2px;
+  border-left: 7px solid transparent;
+  transform: rotate(-24deg);
+}
+
+.boffington-icon::after {
+  right: 2px;
+  border-right: 7px solid transparent;
+  transform: rotate(24deg);
+}
+
 /* ...and Hughes: a little red foil packet with googly eyes and a smile. */
 .hughes-icon {
   border-radius: 7px;

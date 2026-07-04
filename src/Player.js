@@ -82,7 +82,7 @@ export class Player {
   /**
    * @param {import('./World.js').World} world  height field + colliders
    * @param {THREE.Vector3} spawnPoint          feet position at spawn
-   * @param {'badger'|'badgerette'|'hughes'} character which hero to build
+   * @param {'badger'|'badgerette'|'hughes'|'boffington'} character hero to build
    */
   constructor(world, spawnPoint, character = 'badger') {
     this.world = world;
@@ -118,7 +118,9 @@ export class Player {
     this._scratch2 = new THREE.Vector3();
 
     this._disposables = [];
-    this.root = this.character === 'hughes' ? this.buildCrispPacket() : this.buildBadger();
+    if (this.character === 'hughes') this.root = this.buildCrispPacket();
+    else if (this.character === 'boffington') this.root = this.buildBoffington();
+    else this.root = this.buildBadger();
     this.root.position.copy(this.position);
   }
 
@@ -633,6 +635,185 @@ export class Player {
     return root;
   }
 
+  /**
+   * Mr Finn Boffington — a dapper blue block-fellow with curved dark
+   * horns, a purple waistcoat over a bow tie, a beaming smile and slim
+   * blue limbs. Painted per-vertex: waistcoat, V-opening, the lot.
+   */
+  buildBoffington() {
+    const root = new THREE.Group();
+    root.name = 'boffington';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const bodyMat = track(createToonMaterial({
+      vertexColors: true,
+      rim: { color: 0xbfe4ff, strength: 0.35, threshold: 0.62 }
+    }));
+    const limbMat = track(createToonMaterial({
+      color: 0x2f7fc0,
+      rim: { color: 0x9dd0ff, strength: 0.3, threshold: 0.64 }
+    }));
+    const handMat = track(createToonMaterial({ color: 0x5ab0e8 }));
+    const hornMat = track(createToonMaterial({
+      color: 0x23232a,
+      rim: { color: 0x8899cc, strength: 0.4, threshold: 0.6 }
+    }));
+    const shoeMat = track(createToonMaterial({ color: 0x2a2030 }));
+    const tieMat = track(createToonMaterial({ color: 0x17171b }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x4a1a2c }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the block: painted, then corner-rounded ---------------------------
+    const blockGeo = track(new THREE.BoxGeometry(0.62, 0.95, 0.36, 8, 12, 5));
+    {
+      const pos = blockGeo.attributes.position;
+      const nor = blockGeo.attributes.normal;
+      const colors = new Float32Array(pos.count * 3);
+      const c = new THREE.Color();
+      const blue = new THREE.Color(0x3aa0e8);
+      const vest = new THREE.Color(0x7a3fa8);
+      const vestDark = new THREE.Color(0x5f2f86);
+
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const py = pos.getY(i) / 0.475; // -1..1
+        const front = nor.getZ(i) > 0.5;
+        const tint = (furNoise(x * 8, py * 8, pos.getZ(i) * 8) - 0.5) * 0.05;
+
+        c.copy(blue).offsetHSL(0, 0, tint);
+        if (py < 0.18) {
+          // Waistcoat wraps the lower body, darker at the hem.
+          c.copy(vest).lerp(vestDark, THREE.MathUtils.smoothstep(-py, 0.4, 1.0)).offsetHSL(0, 0, tint);
+          // V-opening on the chest shows blue beneath, narrowing downward.
+          if (front) {
+            const vHalfWidth = 0.16 * THREE.MathUtils.smoothstep(py, -0.5, 0.18);
+            if (Math.abs(x) < vHalfWidth) c.copy(blue).offsetHSL(0, 0, tint);
+          }
+        }
+        colors[i * 3 + 0] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      blockGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      // Soften the corners: pull each vertex toward its ellipsoid shadow.
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const u = Math.hypot(x / 0.31, y / 0.475, z / 0.18);
+        if (u > 1) {
+          const t = 0.3;
+          pos.setXYZ(i, x * (1 - t + t / u), y * (1 - t + t / u), z * (1 - t + t / u));
+        }
+      }
+      blockGeo.computeVertexNormals();
+    }
+    const block = new THREE.Mesh(blockGeo, bodyMat);
+    block.position.y = 0.42;
+    block.castShadow = true;
+    body.add(block);
+
+    // --- horns: torus arcs curving up and outward ---------------------------
+    const hornGeo = track(new THREE.TorusGeometry(0.13, 0.038, 8, 12, 1.8));
+    for (const side of [-1, 1]) {
+      const horn = new THREE.Mesh(hornGeo, hornMat);
+      horn.position.set(side * 0.27, 0.86, 0);
+      horn.rotation.y = side * 0.35;
+      horn.rotation.z = side * -0.35;
+      horn.castShadow = true;
+      body.add(horn);
+    }
+
+    // --- face: bright eyes with glints, a big warm smile --------------------
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.09, 14, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.042, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.014, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.14, 0.76, 0.16);
+      white.scale.set(1, 1.15, 0.5);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.135, 0.755, 0.2);
+      body.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.12, 0.775, 0.225);
+      body.add(glint);
+    }
+
+    const mouthGeo = track(new THREE.TorusGeometry(0.095, 0.018, 6, 14, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.6, 0.18);
+    mouth.rotation.z = Math.PI;
+    body.add(mouth);
+
+    // --- bow tie at the top of the waistcoat's V -----------------------------
+    const tieWingGeo = track(new THREE.ConeGeometry(0.045, 0.09, 4));
+    for (const side of [-1, 1]) {
+      const wing = new THREE.Mesh(tieWingGeo, tieMat);
+      wing.position.set(side * 0.055, 0.47, 0.185);
+      wing.rotation.z = side * (Math.PI / 2);
+      body.add(wing);
+    }
+    const knotGeo = track(new THREE.SphereGeometry(0.028, 8, 6));
+    const knot = new THREE.Mesh(knotGeo, tieMat);
+    knot.position.set(0, 0.47, 0.19);
+    body.add(knot);
+
+    // --- limbs: same stick rig as Hughes, in blue ----------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.4, 8));
+    armGeo.translate(0, -0.2, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.052, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, 0.5, 0);
+      pivot.rotation.z = -side * 0.45;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, handMat);
+      hand.position.set(0, -0.42, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    const legGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.5, 8));
+    legGeo.translate(0, -0.25, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.075, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, -0.05, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.52, 0.04);
+      shoe.scale.set(1.15, 0.55, 1.9);
+      shoe.castShadow = true;
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -746,8 +927,14 @@ export class Player {
     }
 
     // ---- ground resolution ---------------------------------------------------
-    const groundH = this.world.getHeight(pos.x, pos.z);
-    this.world.getNormal(pos.x, pos.z, this.groundNormal);
+    // Terrain, or a stair/platform top when one is underfoot and in reach.
+    const terrainH = this.world.getHeight(pos.x, pos.z);
+    const groundH = this.world.getGroundHeight(pos.x, pos.z, pos.y, terrainH);
+    if (groundH > terrainH + 1e-3) {
+      this.groundNormal.set(0, 1, 0); // platforms are dead level
+    } else {
+      this.world.getNormal(pos.x, pos.z, this.groundNormal);
+    }
     const wasGrounded = this.grounded;
 
     if (pos.y <= groundH) {

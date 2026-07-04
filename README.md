@@ -50,6 +50,18 @@ import map — no npm install, no bundler.
   the third hero: an anthropomorphic foil crisp packet with stick arms
   and legs, jaunty red shoes and googly eyes that rattle when he runs,
   jumps or lands. His arms flail skyward mid-jump, as they should.
+- **Mr Finn Boffington** — bank **60 bonus seconds in a single run**
+  (six clock-tower visits) to unlock the fourth hero: a dapper blue
+  block-fellow with curved horns, a purple waistcoat and a bow tie.
+- **The Magna Carta (+25)** — very rare parchment wreathed in silver
+  sparkles. One crowns the Escher stairs; one hides in the far wilds.
+- **Magnus Carter** — a small elf tearing around the forest in a golf
+  cart. Getting run over costs **20 health and 20 points**. Listen for
+  the headlights.
+- **The Escher stairs** — a floating stone folly of switchback flights
+  (with a mirrored flight hanging impossibly underneath) on the east
+  side of the map. Hop all the way up for the summit Magna Carta, then
+  leap off the top like you mean it.
 
 ## Architecture
 

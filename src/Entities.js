@@ -141,13 +141,31 @@ function getAssets() {
   const frogWartGeo = new THREE.SphereGeometry(0.035, 8, 6);
   const frogNostrilGeo = new THREE.SphereGeometry(0.018, 6, 5);
 
+  // --- Magna Carta: rolled parchment with a wax seal -----------------------
+  const scrollGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.52, 14);
+  scrollGeo.rotateZ(Math.PI / 2);
+  const scrollEndGeo = new THREE.CylinderGeometry(0.125, 0.125, 0.13, 14);
+  scrollEndGeo.rotateZ(Math.PI / 2);
+  const parchmentMat = createToonMaterial({
+    color: 0xead9a8,
+    rim: { color: 0xe8f0ff, strength: 0.5, threshold: 0.55 }
+  });
+  const parchmentDarkMat = createToonMaterial({ color: 0xcbb886 });
+  const sealMat = createToonMaterial({
+    color: 0xb03030,
+    emissive: 0x300808,
+    emissiveIntensity: 1.0
+  });
+  const sealGeo = new THREE.SphereGeometry(0.055, 10, 8);
+
   assets = {
     pineConeGeo, pineConeMat,
     eggGeo, eggMat,
     frogBodyGeo, frogMat, frogSkinMat, frogSacMat, frogWartMat,
     frogEyeGeo, frogEyeMat, frogPupilGeo, frogPupilMat, frogLidGeo,
     frogHaunchGeo, frogShinGeo, frogFootGeo, frogArmGeo, frogHandGeo,
-    frogSacGeo, frogWartGeo, frogNostrilGeo
+    frogSacGeo, frogWartGeo, frogNostrilGeo,
+    scrollGeo, scrollEndGeo, parchmentMat, parchmentDarkMat, sealMat, sealGeo
   };
   return assets;
 }
@@ -257,6 +275,57 @@ export class GoldenEgg extends Collectible {
 
   dispose() {
     // The aura's geometry/material are per-egg — free them explicitly.
+    this.aura.geometry.dispose();
+    this.aura.material.dispose();
+    super.dispose();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Magna Carta (+25)                                                  */
+/* ------------------------------------------------------------------ */
+
+export class MagnaCarta extends Collectible {
+  constructor(scene, position) {
+    super(scene, position, 25, 1.0);
+    const a = getAssets();
+
+    const roll = new THREE.Mesh(a.scrollGeo, a.parchmentMat);
+    roll.castShadow = true;
+    this.group.add(roll);
+    for (const side of [-1, 1]) {
+      const end = new THREE.Mesh(a.scrollEndGeo, a.parchmentDarkMat);
+      end.position.x = side * 0.22;
+      this.group.add(end);
+    }
+    const seal = new THREE.Mesh(a.sealGeo, a.sealMat);
+    seal.position.set(0, -0.06, 0.09);
+    seal.scale.set(1, 1, 0.6);
+    this.group.add(seal);
+
+    // Silver sparkles instead of the eggs' gold.
+    this.aura = createAuraPoints(30, { radiusBase: 0.45, radiusVar: 0.35, heightBase: -0.1, heightVar: 0.55 });
+    this.aura.material.uniforms.uColor.value.set(0xe4edff);
+    this.aura.material.uniforms.uSize.value = 26;
+    this.group.add(this.aura);
+
+    this.baseY = position.y + 0.95;
+    this.group.position.y = this.baseY;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0xdfe8f5;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    this.group.rotation.y += dt * 0.7;
+    this.group.rotation.z = Math.sin(time * 1.4 + this.phase) * 0.12;
+    this.group.position.y = this.baseY + Math.sin(time * 1.7 + this.phase) * 0.13;
+  }
+
+  dispose() {
     this.aura.geometry.dispose();
     this.aura.material.dispose();
     super.dispose();
@@ -657,6 +726,238 @@ export class ClockTower {
     if (cci !== -1) this.world.cameraColliders.splice(cci, 1);
     this.aura.geometry.dispose();
     this.aura.material.dispose();
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Magnus Carter — the menace in the golf cart                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A small elf tearing around the forest in a golf cart, entirely without
+ * a licence. He wanders between random waypoints, swerves (roughly)
+ * around trees and rocks, and running the player over is Game's problem
+ * to adjudicate — this class just drives.
+ */
+export class MagnusCarter {
+  constructor(scene, world, position) {
+    this.scene = scene;
+    this.world = world;
+    this.position = position.clone();
+    this.heading = Math.random() * Math.PI * 2;
+    this.hazardRadius = 1.7;
+    this.speed = 6.4;
+    this.target = null;
+    this._n = new THREE.Vector3();
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const bodyMat = track(createToonMaterial({
+      color: 0xf2f0e8,
+      rim: { color: 0xcfe0ff, strength: 0.35, threshold: 0.6 }
+    }));
+    const trimMat = track(createToonMaterial({ color: 0x2a4d38 }));
+    const wheelMat = track(createToonMaterial({ color: 0x1c1c20 }));
+    const hubMat = track(createToonMaterial({ color: 0xb8b8c0 }));
+    const elfSkinMat = track(createToonMaterial({ color: 0xf0c090 }));
+    const elfSuitMat = track(createToonMaterial({ color: 0x3f8f3f }));
+    const elfHatMat = track(createToonMaterial({ color: 0xc03038 }));
+    const lightMat = track(createToonMaterial({
+      color: 0xfff2b0,
+      emissive: 0xffdf80,
+      emissiveIntensity: 1.6
+    }));
+
+    const group = new THREE.Group();
+    group.position.copy(position);
+    this.group = group;
+
+    // --- the cart -----------------------------------------------------------
+    const chassisGeo = track(new THREE.BoxGeometry(1.15, 0.32, 1.85));
+    const chassis = new THREE.Mesh(chassisGeo, bodyMat);
+    chassis.position.y = 0.48;
+    chassis.castShadow = true;
+    group.add(chassis);
+
+    const dashGeo = track(new THREE.BoxGeometry(1.05, 0.4, 0.3));
+    const dash = new THREE.Mesh(dashGeo, bodyMat);
+    dash.position.set(0, 0.82, 0.62);
+    dash.castShadow = true;
+    group.add(dash);
+
+    const seatGeo = track(new THREE.BoxGeometry(0.95, 0.3, 0.45));
+    const seat = new THREE.Mesh(seatGeo, trimMat);
+    seat.position.set(0, 0.75, -0.45);
+    group.add(seat);
+
+    const roofGeo = track(new THREE.BoxGeometry(1.1, 0.09, 1.55));
+    const roof = new THREE.Mesh(roofGeo, bodyMat);
+    roof.position.set(0, 1.62, -0.05);
+    roof.castShadow = true;
+    group.add(roof);
+
+    const pillarGeo = track(new THREE.CylinderGeometry(0.035, 0.035, 0.85, 6));
+    for (const px of [-0.5, 0.5]) {
+      for (const pz of [0.6, -0.72]) {
+        const pillar = new THREE.Mesh(pillarGeo, hubMat);
+        pillar.position.set(px, 1.18, pz);
+        group.add(pillar);
+      }
+    }
+
+    // Headlights so you can see doom approaching through the twilight.
+    const lampGeo = track(new THREE.SphereGeometry(0.07, 8, 6));
+    for (const side of [-1, 1]) {
+      const lamp = new THREE.Mesh(lampGeo, lightMat);
+      lamp.position.set(side * 0.4, 0.62, 0.95);
+      group.add(lamp);
+    }
+    this.headlight = new THREE.PointLight(0xffe6a0, 4, 9, 2);
+    this.headlight.position.set(0, 0.8, 1.6);
+    group.add(this.headlight);
+
+    // --- wheels (spun in update) ---------------------------------------------
+    const wheelGeo = track(new THREE.CylinderGeometry(0.24, 0.24, 0.14, 12));
+    wheelGeo.rotateZ(Math.PI / 2);
+    this.wheels = [];
+    for (const wx of [-0.55, 0.55]) {
+      for (const wz of [0.62, -0.62]) {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.position.set(wx, 0.24, wz);
+        wheel.castShadow = true;
+        group.add(wheel);
+        this.wheels.push(wheel);
+      }
+    }
+
+    // --- Magnus himself --------------------------------------------------------
+    const elf = new THREE.Group();
+    elf.position.set(0, 0.9, -0.28);
+    group.add(elf);
+    this.elf = elf;
+
+    const elfBodyGeo = track(new THREE.ConeGeometry(0.19, 0.42, 10));
+    const elfBody = new THREE.Mesh(elfBodyGeo, elfSuitMat);
+    elfBody.position.y = 0.21;
+    elfBody.castShadow = true;
+    elf.add(elfBody);
+
+    const elfHeadGeo = track(new THREE.SphereGeometry(0.14, 12, 10));
+    const elfHead = new THREE.Mesh(elfHeadGeo, elfSkinMat);
+    elfHead.position.y = 0.52;
+    elfHead.castShadow = true;
+    elf.add(elfHead);
+
+    const elfEarGeo = track(new THREE.ConeGeometry(0.035, 0.12, 6));
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(elfEarGeo, elfSkinMat);
+      ear.position.set(side * 0.15, 0.55, 0);
+      ear.rotation.z = side * (Math.PI / 2 + 0.3);
+      elf.add(ear);
+    }
+
+    const elfHatGeo = track(new THREE.ConeGeometry(0.11, 0.28, 10));
+    const hat = new THREE.Mesh(elfHatGeo, elfHatMat);
+    hat.position.set(0, 0.72, -0.02);
+    hat.rotation.x = -0.25;
+    elf.add(hat);
+
+    const elfArmGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.3, 6));
+    for (const side of [-1, 1]) {
+      const arm = new THREE.Mesh(elfArmGeo, elfSuitMat);
+      arm.position.set(side * 0.14, 0.32, 0.14);
+      arm.rotation.x = -1.1;
+      arm.rotation.z = side * -0.25;
+      elf.add(arm);
+    }
+
+    const wheelRimGeo = track(new THREE.TorusGeometry(0.09, 0.018, 6, 12));
+    const steering = new THREE.Mesh(wheelRimGeo, wheelMat);
+    steering.position.set(0, 0.95, 0.42);
+    steering.rotation.x = -0.9;
+    group.add(steering);
+
+    scene.add(group);
+    this.pickTarget();
+  }
+
+  pickTarget() {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const p = this.world.randomGroundPoint(12, 88);
+      // Stay clear of the Escher stairs — even Magnus respects geometry.
+      if (this.world.stairCenter) {
+        const dx = p.x - this.world.stairCenter.x;
+        const dz = p.z - this.world.stairCenter.z;
+        if (dx * dx + dz * dz < 20 * 20) continue;
+      }
+      this.target = p;
+      return;
+    }
+    this.target = new THREE.Vector3(0, 0, 0);
+  }
+
+  update(dt, time) {
+    const dx = this.target.x - this.position.x;
+    const dz = this.target.z - this.position.z;
+    if (dx * dx + dz * dz < 16) this.pickTarget();
+
+    let desired = Math.atan2(dx, dz);
+
+    // Crude look-ahead: if a trunk or rock sits in the lane, swerve.
+    const fx = Math.sin(this.heading);
+    const fz = Math.cos(this.heading);
+    for (const c of this.world.colliders) {
+      const ox = c.x - this.position.x;
+      const oz = c.z - this.position.z;
+      const distSq = ox * ox + oz * oz;
+      if (distSq > 42) continue;
+      const ahead = ox * fx + oz * fz;
+      if (ahead < 0.5) continue;
+      const side = ox * fz - oz * fx;
+      if (Math.abs(side) < c.radius + 1.5) {
+        desired = this.heading + (side > 0 ? -1.0 : 1.0);
+        break;
+      }
+    }
+
+    this.heading = dampAngle(this.heading, desired, 1.9, dt);
+    this.position.x += Math.sin(this.heading) * this.speed * dt;
+    this.position.z += Math.cos(this.heading) * this.speed * dt;
+
+    // Never drive off the edge of the world; that would be irresponsible.
+    const r = Math.hypot(this.position.x, this.position.z);
+    const maxR = this.world.playableRadius - 5;
+    if (r > maxR) {
+      const s = maxR / r;
+      this.position.x *= s;
+      this.position.z *= s;
+      this.pickTarget();
+    }
+
+    this.position.y = this.world.getHeight(this.position.x, this.position.z);
+    this.group.position.copy(this.position);
+
+    // Face travel, lean with the terrain (small-angle approximation).
+    const n = this.world.getNormal(this.position.x, this.position.z, this._n);
+    this.group.rotation.y = this.heading;
+    this.group.rotation.x = clamp(n.x * Math.sin(this.heading) + n.z * Math.cos(this.heading), -0.35, 0.35);
+    this.group.rotation.z = clamp(-(n.x * Math.cos(this.heading) - n.z * Math.sin(this.heading)), -0.35, 0.35);
+
+    // Wheels roll, elf jiggles with reckless glee.
+    const wheelSpin = (this.speed / 0.24) * dt;
+    for (const wheel of this.wheels) wheel.rotation.x += wheelSpin;
+    this.elf.rotation.z = Math.sin(time * 7.3) * 0.07;
+    this.elf.position.y = 0.9 + Math.abs(Math.sin(time * 9.1)) * 0.03;
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
     for (const r of this._disposables) r.dispose();
     this._disposables.length = 0;
   }

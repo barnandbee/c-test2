@@ -33,6 +33,7 @@ export class World {
     this.playableRadius = PLAYABLE_RADIUS;
     this.colliders = [];        // { x, z, radius, top } cylinders for the player
     this.cameraColliders = [];  // { x, y, z, radius } spheres for the spring arm
+    this.platforms = [];        // { minX, maxX, minZ, maxZ, top } standable AABB tops
     this._disposables = [];
 
     this.noise = new SimplexNoise2D(seed);
@@ -56,6 +57,7 @@ export class World {
     this._buildForest();
     this._buildRocks();
     this._buildGrass();
+    this._buildEscherStairs();
   }
 
   /* ================================================================ */
@@ -84,6 +86,23 @@ export class World {
     let h = lerp(this._spawnRawHeight, this._rawHeight(x, z), smoothstep(5, 17, r));
     // Enclosing ridge that walls off the edge of the map.
     h += smoothstep(PLAYABLE_RADIUS - 6, TERRAIN_SIZE * 0.5, r) * 22;
+    return h;
+  }
+
+  /**
+   * Walkable surface height: the terrain, or any platform top whose
+   * footprint contains (x,z) — but only when `refY` is within step-up
+   * reach of it, so walking (or jumping) beneath a platform never
+   * teleports the player onto it from far below.
+   */
+  getGroundHeight(x, z, refY, terrainH) {
+    let h = terrainH !== undefined ? terrainH : this.getHeight(x, z);
+    for (let i = 0; i < this.platforms.length; i++) {
+      const p = this.platforms[i];
+      if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ) continue;
+      if (p.top <= h) continue;
+      if (refY >= p.top - 0.5) h = p.top;
+    }
     return h;
   }
 
@@ -602,14 +621,152 @@ export class World {
   }
 
   /* ================================================================ */
+  /*  The Escher stairs                                               */
+  /* ================================================================ */
+
+  /**
+   * A floating stone folly on the east side of the map: three switchback
+   * flights of hovering steps climbing to a lofty platform, with mirrored
+   * flights hanging impossibly upside-down beneath — pure M.C. Escher.
+   * Every step registers a standable platform, so the badger can hop all
+   * the way up and leap off the top.
+   */
+  _buildEscherStairs() {
+    const anchorAngle = 0.35;
+    const anchorR = 72;
+    const bx = Math.cos(anchorAngle) * anchorR;
+    const bz = Math.sin(anchorAngle) * anchorR;
+    const h0 = this.getHeight(bx, bz) + 0.5;
+    this._stairMeshes = [];
+
+    const STEP_RISE = 0.4;
+    const STEP_PITCH = 1.05; // spacing along the direction of travel
+    const PER_FLIGHT = 8;
+
+    const stoneMat = createToonMaterial({
+      color: 0xb4aec6,
+      rim: { color: 0xd9c9ff, strength: 0.5, threshold: 0.58 }
+    });
+    const stepGeo = new THREE.BoxGeometry(STEP_PITCH, 0.38, 1.7);
+    const landingGeo = new THREE.BoxGeometry(2.6, 0.42, 3.9);
+    const topGeo = new THREE.BoxGeometry(3.2, 0.46, 3.2);
+    const columnGeo = new THREE.CylinderGeometry(0.42, 0.55, 1, 10);
+    this._disposables.push(stoneMat, stepGeo, landingGeo, topGeo, columnGeo);
+
+    const registerPlatform = (cx, cz, halfX, halfZ, top) => {
+      this.platforms.push({
+        minX: cx - halfX,
+        maxX: cx + halfX,
+        minZ: cz - halfZ,
+        maxZ: cz + halfZ,
+        top
+      });
+    };
+
+    // Three switchback flights: out along +x, back along -x, out again.
+    const flightRows = [0, 2.2, 4.4]; // local z of each flight
+    const flightDirs = [1, -1, 1];
+    const flightStartX = [0, PER_FLIGHT * STEP_PITCH, 0];
+
+    const stepTransforms = [];
+    let level = 0;
+    for (let f = 0; f < 3; f++) {
+      for (let i = 0; i < PER_FLIGHT; i++) {
+        level += STEP_RISE;
+        const lx = flightStartX[f] + flightDirs[f] * (i + 0.5) * STEP_PITCH;
+        const lz = flightRows[f];
+        const top = h0 + level;
+        stepTransforms.push({ x: bx + lx, y: top - 0.19, z: bz + lz, inverted: false });
+        registerPlatform(bx + lx, bz + lz, STEP_PITCH / 2, 0.85, top);
+      }
+      level += STEP_RISE; // the landing sits one rise above the flight
+      const endX = flightStartX[f] + flightDirs[f] * (PER_FLIGHT * STEP_PITCH + 1.0);
+      const landZ = flightRows[f] + (f < 2 ? 1.1 : 0);
+      const top = h0 + level;
+      if (f < 2) {
+        // Corner landing bridging this flight to the next row back.
+        const landing = new THREE.Mesh(landingGeo, stoneMat);
+        landing.position.set(bx + endX, top - 0.21, bz + landZ);
+        landing.castShadow = true;
+        landing.receiveShadow = true;
+        this.scene.add(landing);
+        this._stairMeshes.push(landing);
+        registerPlatform(bx + endX, bz + landZ, 1.3, 1.95, top);
+        this._addStairColumn(columnGeo, stoneMat, bx + endX, bz + landZ, top - 0.4);
+      } else {
+        // Summit platform: the reward perch, with the long leap back down.
+        const summit = new THREE.Mesh(topGeo, stoneMat);
+        summit.position.set(bx + endX, top - 0.23, bz + landZ);
+        summit.castShadow = true;
+        summit.receiveShadow = true;
+        this.scene.add(summit);
+        this._stairMeshes.push(summit);
+        registerPlatform(bx + endX, bz + landZ, 1.6, 1.6, top);
+        this._addStairColumn(columnGeo, stoneMat, bx + endX, bz + landZ, top - 0.46);
+        this.stairTopPoint = new THREE.Vector3(bx + endX, top, bz + landZ);
+      }
+    }
+
+    // The impossible garnish: a mirrored flight hanging upside-down under
+    // the middle row, ascending nowhere.
+    for (let i = 0; i < PER_FLIGHT; i++) {
+      const lx = PER_FLIGHT * STEP_PITCH - (i + 0.5) * STEP_PITCH;
+      stepTransforms.push({
+        x: bx + lx,
+        y: h0 + (PER_FLIGHT + i) * STEP_RISE - 2.4,
+        z: bz + 2.2,
+        inverted: true
+      });
+    }
+
+    const stairs = new THREE.InstancedMesh(stepGeo, stoneMat, stepTransforms.length);
+    stairs.castShadow = true;
+    stairs.receiveShadow = true;
+    const matrix = new THREE.Matrix4();
+    const quat = new THREE.Quaternion();
+    const flipped = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI);
+    const vec = new THREE.Vector3();
+    const one = new THREE.Vector3(1, 1, 1);
+    stepTransforms.forEach((s, i) => {
+      vec.set(s.x, s.y, s.z);
+      matrix.compose(vec, s.inverted ? flipped : quat.identity(), one);
+      stairs.setMatrixAt(i, matrix);
+    });
+    stairs.instanceMatrix.needsUpdate = true;
+    this.scene.add(stairs);
+    this.stairs = stairs;
+
+    // Keep the roaming hazards clear of the folly.
+    this.stairCenter = new THREE.Vector3(bx + 4.5, h0, bz + 2.2);
+  }
+
+  /** A stone pillar from the terrain up to a platform's underside. */
+  _addStairColumn(columnGeo, stoneMat, x, z, topY) {
+    const groundY = this.getHeight(x, z);
+    const height = Math.max(topY - groundY, 1);
+    const column = new THREE.Mesh(columnGeo, stoneMat);
+    column.scale.y = height;
+    column.position.set(x, groundY + height / 2, z);
+    column.castShadow = true;
+    this.scene.add(column);
+    this._stairMeshes.push(column);
+    this.colliders.push({ x, z, radius: 0.6, top: topY });
+  }
+
+  /* ================================================================ */
   /*  Lifecycle                                                       */
   /* ================================================================ */
 
   dispose() {
-    for (const obj of [this.terrain, this.trunks, this.branches, this.canopies, this.rocks, this.grass, this.sky]) {
+    for (const obj of [this.terrain, this.trunks, this.branches, this.canopies, this.rocks, this.grass, this.sky, this.stairs]) {
       if (obj && obj.parent) obj.parent.remove(obj);
       if (obj && obj.isInstancedMesh) obj.dispose();
     }
+    if (this._stairMeshes) {
+      for (const mesh of this._stairMeshes) this.scene.remove(mesh);
+      this._stairMeshes.length = 0;
+    }
+    this.platforms.length = 0;
     this.scene.remove(this.hemiLight);
     this.scene.remove(this.sun);
     this.scene.remove(this.sun.target);

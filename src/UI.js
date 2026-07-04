@@ -117,7 +117,7 @@ export class UI {
 
     // The roster appears once anything beyond the badger is unlocked;
     // each locked hero's card stays hidden until earned.
-    const anyUnlocked = opts.unlocked.badgerette || opts.unlocked.hughes;
+    const anyUnlocked = Object.values(opts.unlocked).some(Boolean);
     this.characterSelect.classList.toggle('hidden', !anyUnlocked);
 
     const newly = opts.newlyUnlockedNames || [];

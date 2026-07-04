@@ -11,7 +11,15 @@ import { CameraRig } from './CameraRig.js';
 import { Input } from './Input.js';
 import { UI } from './UI.js';
 import { ParticleFX } from './Particles.js';
-import { PineCone, GoldenEgg, ToxicFrog, ClockTower, disposeEntityAssets } from './Entities.js';
+import {
+  PineCone,
+  GoldenEgg,
+  MagnaCarta,
+  ToxicFrog,
+  ClockTower,
+  MagnusCarter,
+  disposeEntityAssets
+} from './Entities.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
 
@@ -19,14 +27,18 @@ const PINE_CONE_COUNT = 26;
 const GOLDEN_EGG_COUNT = 6;
 const FROG_COUNT = 8;
 const DAMAGE_PER_HIT = 10;
+const CART_HEALTH_DAMAGE = 20;
+const CART_POINTS_DAMAGE = 20;
 const INVULN_TIME = 1.1;
 const GAME_DURATION = 180;          // three twilight minutes
 const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
+const BOFFINGTON_TOWER_VISITS = 6;  // +60 banked seconds in one run
 
 const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
 const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
 const STORAGE_HUGHES = 'mystic-badger.hughesUnlocked';
+const STORAGE_BOFFINGTON = 'mystic-badger.boffingtonUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
@@ -75,6 +87,7 @@ export class Game {
     this.highScore = parseInt(readStorage(STORAGE_HIGH_SCORE, '0'), 10) || 0;
     this.badgeretteUnlocked = readStorage(STORAGE_UNLOCKED) === '1';
     this.hughesUnlocked = readStorage(STORAGE_HUGHES) === '1';
+    this.boffingtonUnlocked = readStorage(STORAGE_BOFFINGTON) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -105,9 +118,12 @@ export class Game {
     this.timeLeft = GAME_DURATION;
     this.invulnTimer = 0;
     this.isGameOver = false;
+    this.towerVisits = 0;
+    this.runUnlockNames = [];
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
+    this.cart = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
@@ -140,9 +156,19 @@ export class Game {
       const p = this.world.randomGroundPoint(14, 85);
       this.frogs.push(new ToxicFrog(this.scene, this.world, p));
     }
+    // Magna Cartas are rare: one crowns the Escher stairs (earn the climb),
+    // one hides out in the far wilds.
+    if (this.world.stairTopPoint) {
+      this.collectibles.push(new MagnaCarta(this.scene, this.world.stairTopPoint.clone()));
+    }
+    this.collectibles.push(new MagnaCarta(this.scene, this.world.randomGroundPoint(45, 95)));
+
     // The clock tower starts a stroll away — visible, but a detour.
     const towerSpot = this.world.randomGroundPoint(26, 60, 0.8);
     this.clockTower = new ClockTower(this.scene, this.world, towerSpot);
+
+    // And somewhere out there, an elf guns a golf cart.
+    this.cart = new MagnusCarter(this.scene, this.world, this.world.randomGroundPoint(30, 70));
   }
 
   clearEntities() {
@@ -153,6 +179,10 @@ export class Game {
     if (this.clockTower) {
       this.clockTower.dispose();
       this.clockTower = null;
+    }
+    if (this.cart) {
+      this.cart.dispose();
+      this.cart = null;
     }
   }
 
@@ -222,6 +252,31 @@ export class Game {
       }
       break;
     }
+
+    // Magnus Carter's golf cart: worse than any frog — and it costs points.
+    if (this.isGameOver || this.invulnTimer > 0 || !this.cart) return;
+    const cart = this.cart;
+    const cdx = center.x - cart.position.x;
+    const cdz = center.z - cart.position.z;
+    const cdy = center.y - cart.position.y;
+    const creach = cart.hazardRadius + 0.4;
+    if (cdx * cdx + cdz * cdz < creach * creach && Math.abs(cdy) < 2.4) {
+      this.health -= CART_HEALTH_DAMAGE;
+      this.points = Math.max(0, this.points - CART_POINTS_DAMAGE);
+      this.invulnTimer = INVULN_TIME;
+      this.ui.setHealth(this.health);
+      this.ui.setPoints(this.points);
+      this.ui.flashDamage();
+      this.player.applyKnockback(cart.position.x, cart.position.z, 13);
+      this.particles.spawnBurst(center, 0xffe6a0, {
+        count: 30,
+        speed: 4.5,
+        size: 42,
+        upBias: 0.6,
+        life: 0.7
+      });
+      if (this.health <= 0) this.gameOver('health');
+    }
   }
 
   /** The temporal bargain: touch the tower, gain seconds, lose the tower. */
@@ -230,8 +285,18 @@ export class Game {
     if (!tower || !tower.tryEnter(this.player.position)) return;
 
     this.timeLeft += TOWER_TIME_BONUS;
+    this.towerVisits += 1;
     this.ui.setTimer(this.timeLeft);
-    this.ui.showTimeToast(`+${TOWER_TIME_BONUS} SECONDS`);
+
+    // Banking a full extra minute in one run impresses Mr Boffington.
+    if (this.towerVisits >= BOFFINGTON_TOWER_VISITS && !this.boffingtonUnlocked) {
+      this.boffingtonUnlocked = true;
+      writeStorage(STORAGE_BOFFINGTON, '1');
+      this.runUnlockNames.push('Mr Finn Boffington');
+      this.ui.showTimeToast('★ MR FINN BOFFINGTON UNLOCKED!');
+    } else {
+      this.ui.showTimeToast(`+${TOWER_TIME_BONUS} SECONDS`);
+    }
 
     // A cool blue "time magic" burst, distinct from the golden pickups.
     const burstAt = this._playerCenter.set(tower.position.x, tower.position.y + 1.6, tower.position.z);
@@ -262,6 +327,7 @@ export class Game {
   isCharacterAllowed(name) {
     if (name === 'badgerette') return this.badgeretteUnlocked;
     if (name === 'hughes') return this.hughesUnlocked;
+    if (name === 'boffington') return this.boffingtonUnlocked;
     return name === 'badger';
   }
 
@@ -276,7 +342,9 @@ export class Game {
       writeStorage(STORAGE_HIGH_SCORE, this.highScore);
     }
 
-    const newlyUnlockedNames = [];
+    // Boffington may already be in runUnlockNames (earned mid-run at the
+    // sixth tower); the other two are judged here at the bell.
+    const newlyUnlockedNames = [...this.runUnlockNames];
     if (!this.badgeretteUnlocked && this.points > UNLOCK_SCORE) {
       this.badgeretteUnlocked = true;
       writeStorage(STORAGE_UNLOCKED, '1');
@@ -294,7 +362,11 @@ export class Game {
       highScore: this.highScore,
       isNewHigh,
       reason,
-      unlocked: { badgerette: this.badgeretteUnlocked, hughes: this.hughesUnlocked },
+      unlocked: {
+        badgerette: this.badgeretteUnlocked,
+        hughes: this.hughesUnlocked,
+        boffington: this.boffingtonUnlocked
+      },
       newlyUnlockedNames,
       currentCharacter: this.characterName
     });
@@ -316,6 +388,8 @@ export class Game {
     this.timeLeft = GAME_DURATION;
     this.invulnTimer = 0;
     this.isGameOver = false;
+    this.towerVisits = 0;
+    this.runUnlockNames = [];
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
@@ -368,6 +442,7 @@ export class Game {
 
     for (const item of this.collectibles) item.update(dt, time);
     for (const frog of this.frogs) frog.update(dt, time);
+    if (this.cart) this.cart.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));
