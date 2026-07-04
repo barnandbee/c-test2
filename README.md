@@ -45,6 +45,11 @@ import map — no npm install, no bundler.
 - **Badgerette** — finish a run with a score **over 30** to unlock a
   second hero: flowing ginger hair, golden tiara, same dig-happy claws.
   Pick your hero on the game-over screen; the choice persists.
+- **'Crisp Packet' Hughes** — survive the **full three minutes without
+  taking a single hit** (health still 100 when the bell tolls) to unlock
+  the third hero: an anthropomorphic foil crisp packet with stick arms
+  and legs, jaunty red shoes and googly eyes that rattle when he runs,
+  jumps or lands. His arms flail skyward mid-jump, as they should.
 
 ## Architecture
 

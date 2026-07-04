@@ -26,6 +26,7 @@ const UNLOCK_SCORE = 30;            // badgerette unlocks above this
 
 const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
 const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
+const STORAGE_HUGHES = 'mystic-badger.hughesUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
@@ -73,9 +74,9 @@ export class Game {
     // --- persistence ---------------------------------------------------------
     this.highScore = parseInt(readStorage(STORAGE_HIGH_SCORE, '0'), 10) || 0;
     this.badgeretteUnlocked = readStorage(STORAGE_UNLOCKED) === '1';
+    this.hughesUnlocked = readStorage(STORAGE_HUGHES) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
-    this.characterName =
-      this.badgeretteUnlocked && storedCharacter === 'badgerette' ? 'badgerette' : 'badger';
+    this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
     const spawn = new THREE.Vector3(0, this.world.getHeight(0, 0), 0);
     this.player = new Player(this.world, spawn, this.characterName);
@@ -258,20 +259,34 @@ export class Game {
     );
   }
 
+  isCharacterAllowed(name) {
+    if (name === 'badgerette') return this.badgeretteUnlocked;
+    if (name === 'hughes') return this.hughesUnlocked;
+    return name === 'badger';
+  }
+
   gameOver(reason) {
     this.isGameOver = true;
     if (document.pointerLockElement) document.exitPointerLock();
 
-    // Persist the high score and the character unlock.
+    // Persist the high score and any character unlocks.
     const isNewHigh = this.points > this.highScore;
     if (isNewHigh) {
       this.highScore = this.points;
       writeStorage(STORAGE_HIGH_SCORE, this.highScore);
     }
-    const newlyUnlocked = !this.badgeretteUnlocked && this.points > UNLOCK_SCORE;
-    if (newlyUnlocked) {
+
+    const newlyUnlockedNames = [];
+    if (!this.badgeretteUnlocked && this.points > UNLOCK_SCORE) {
       this.badgeretteUnlocked = true;
       writeStorage(STORAGE_UNLOCKED, '1');
+      newlyUnlockedNames.push('Badgerette');
+    }
+    // Hughes: go the full three minutes without taking a single hit.
+    if (!this.hughesUnlocked && reason === 'time' && this.health >= 100) {
+      this.hughesUnlocked = true;
+      writeStorage(STORAGE_HUGHES, '1');
+      newlyUnlockedNames.push('‘Crisp Packet’ Hughes');
     }
 
     this.ui.showGameOver({
@@ -279,8 +294,8 @@ export class Game {
       highScore: this.highScore,
       isNewHigh,
       reason,
-      showCharacterSelect: this.badgeretteUnlocked,
-      newlyUnlocked,
+      unlocked: { badgerette: this.badgeretteUnlocked, hughes: this.hughesUnlocked },
+      newlyUnlockedNames,
       currentCharacter: this.characterName
     });
   }
@@ -288,7 +303,7 @@ export class Game {
   restart() {
     // Apply the character chosen on the game-over screen (if any).
     const chosen = this.ui.getSelectedCharacter() || this.characterName;
-    if (chosen !== this.characterName && this.badgeretteUnlocked) {
+    if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
     }
 

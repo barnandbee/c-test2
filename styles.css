@@ -508,6 +508,7 @@ body {
 .char-row {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 14px;
 }
 
@@ -516,9 +517,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  padding: 14px 22px;
-  min-width: 108px;
+  padding: 14px 16px;
+  min-width: 104px;
+  max-width: 128px;
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
@@ -574,6 +577,21 @@ body {
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
   border-bottom: 10px solid var(--accent-gold);
+}
+
+/* ...and Hughes: a little red foil packet with googly eyes and a smile. */
+.hughes-icon {
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 34% 36%, #101014 0, #101014 3px, #ffffff 3px, #ffffff 7px, transparent 7.5px),
+    radial-gradient(circle at 66% 36%, #101014 0, #101014 3px, #ffffff 3px, #ffffff 7px, transparent 7.5px),
+    radial-gradient(ellipse 9px 5px at 50% 68%, #3a1410 0, #3a1410 4px, transparent 4.5px),
+    linear-gradient(
+      180deg,
+      #c4c6ce 0%, #c4c6ce 12%,
+      #d8362a 12%, #d8362a 88%,
+      #c4c6ce 88%, #c4c6ce 100%
+    );
 }
 
 .score-label {

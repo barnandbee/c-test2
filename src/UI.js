@@ -99,7 +99,8 @@ export class UI {
 
   /**
    * opts: { score, highScore, isNewHigh, reason: 'time'|'health',
-   *         showCharacterSelect, newlyUnlocked, currentCharacter }
+   *         unlocked: { badgerette, hughes }, newlyUnlockedNames: string[],
+   *         currentCharacter }
    */
   showGameOver(opts) {
     if (opts.reason === 'time') {
@@ -114,12 +115,24 @@ export class UI {
     this.highScoreValue.textContent = String(opts.highScore);
     this.newHighBadge.classList.toggle('hidden', !opts.isNewHigh);
 
-    this.characterSelect.classList.toggle('hidden', !opts.showCharacterSelect);
-    this.unlockNote.classList.toggle('hidden', !opts.newlyUnlocked);
-    if (opts.showCharacterSelect) {
+    // The roster appears once anything beyond the badger is unlocked;
+    // each locked hero's card stays hidden until earned.
+    const anyUnlocked = opts.unlocked.badgerette || opts.unlocked.hughes;
+    this.characterSelect.classList.toggle('hidden', !anyUnlocked);
+
+    const newly = opts.newlyUnlockedNames || [];
+    this.unlockNote.classList.toggle('hidden', newly.length === 0);
+    if (newly.length > 0) {
+      this.unlockNote.textContent = `★ ${newly.join(' & ')} unlocked!`;
+    }
+
+    if (anyUnlocked) {
       this._selectedCharacter = opts.currentCharacter;
       for (const card of this.charCards) {
-        card.classList.toggle('selected', card.dataset.char === opts.currentCharacter);
+        const char = card.dataset.char;
+        const available = char === 'badger' || Boolean(opts.unlocked[char]);
+        card.classList.toggle('hidden', !available);
+        card.classList.toggle('selected', char === opts.currentCharacter);
       }
     }
 

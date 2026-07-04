@@ -82,7 +82,7 @@ export class Player {
   /**
    * @param {import('./World.js').World} world  height field + colliders
    * @param {THREE.Vector3} spawnPoint          feet position at spawn
-   * @param {'badger'|'badgerette'} character   which hero to build
+   * @param {'badger'|'badgerette'|'hughes'} character which hero to build
    */
   constructor(world, spawnPoint, character = 'badger') {
     this.world = world;
@@ -102,7 +102,11 @@ export class Player {
     this.walkCycle = 0;
     this.squash = 0;       // 0..1 landing squash amount, springs back to 0
     this.airTilt = 0;
-    this.hairGroup = null; // present only on the badgerette
+    this.hairGroup = null;   // present only on the badgerette
+    this.arms = null;        // present only on Hughes (stick arms)
+    this.googlyEyes = null;  // present only on Hughes (rattling pupils)
+    this.tail = null;
+    this.headGroup = null;
 
     // --- events (wired by Game) ------------------------------------------
     this.onLand = null; // (impactSpeed: number, position: Vector3) => void
@@ -114,7 +118,7 @@ export class Player {
     this._scratch2 = new THREE.Vector3();
 
     this._disposables = [];
-    this.root = this.buildBadger();
+    this.root = this.character === 'hughes' ? this.buildCrispPacket() : this.buildBadger();
     this.root.position.copy(this.position);
   }
 
@@ -470,6 +474,165 @@ export class Player {
     tiaraGroup.add(gem);
   }
 
+  /**
+   * 'Crisp Packet' Hughes — an anthropomorphic foil crisp packet.
+   * Crimped seams top and bottom, a puffed crinkly middle, a vertex-painted
+   * label oval, stick arms and legs, a torus-arc smile and googly eyes
+   * whose pupils rattle around when he moves or lands.
+   */
+  buildCrispPacket() {
+    const root = new THREE.Group();
+    root.name = 'hughes';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Foil catches the twilight: strong rim + a whisper of emissive sheen.
+    const foilMat = track(createToonMaterial({
+      vertexColors: true,
+      emissive: 0x1a0d08,
+      emissiveIntensity: 1.0,
+      rim: { color: 0xfff0d8, strength: 0.5, threshold: 0.55 }
+    }));
+    const stickMat = track(createToonMaterial({
+      color: 0x2a2a30,
+      rim: { color: 0x9db4e8, strength: 0.25, threshold: 0.68 }
+    }));
+    const shoeMat = track(createToonMaterial({ color: 0xd8362a }));
+    const eyeWhiteMat = track(createToonMaterial({
+      color: 0xffffff,
+      rim: { color: 0xffffff, strength: 0.3, threshold: 0.6 }
+    }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const mouthMat = track(createToonMaterial({ color: 0x3a1410 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the packet: box, painted, then crimped + puffed + crinkled --------
+    const packetGeo = track(new THREE.BoxGeometry(0.72, 1.0, 0.26, 10, 14, 4));
+    {
+      const pos = packetGeo.attributes.position;
+      const nor = packetGeo.attributes.normal;
+      const colors = new Float32Array(pos.count * 3);
+      const c = new THREE.Color();
+      const red = new THREE.Color(0xd8362a);
+      const cream = new THREE.Color(0xf5e9c8);
+      const gold = new THREE.Color(0xe8a020);
+      const silver = new THREE.Color(0xc4c6ce);
+
+      // Paint first, using the pristine box coordinates.
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const crinkleTint = (furNoise(x * 11, y * 11, pos.getZ(i) * 11) - 0.5) * 0.09;
+
+        if (Math.abs(y) > 0.42) {
+          // Crimped foil seams.
+          c.copy(silver).offsetHSL(0, 0, crinkleTint);
+        } else {
+          c.copy(red).offsetHSL(0, 0, crinkleTint);
+          // Front label: cream oval with a gold ring, brand mysteriously absent.
+          if (nor.getZ(i) > 0.7) {
+            const ellipse = Math.hypot(x / 0.26, (y + 0.04) / 0.3);
+            if (ellipse < 0.82) c.copy(cream).offsetHSL(0, 0, crinkleTint * 0.5);
+            else if (ellipse < 1.0) c.copy(gold).offsetHSL(0, 0, crinkleTint * 0.5);
+          }
+        }
+        colors[i * 3 + 0] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      packetGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      // Then shape: pinch the seams flat, puff the middle, crinkle the foil.
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const crimp = THREE.MathUtils.smoothstep(Math.abs(y), 0.34, 0.48);
+        const puff = (1 - crimp) * (1 + 0.2 * Math.cos(y * Math.PI));
+        const crinkle = 1 + (furNoise(x * 9 + 3, y * 9, z * 9) - 0.5) * 0.12;
+        pos.setX(i, x * (1 + 0.12 * crimp) * (0.9 + 0.1 * puff) * crinkle);
+        pos.setZ(i, z * (1 - 0.85 * crimp) * puff * crinkle);
+      }
+      packetGeo.computeVertexNormals();
+    }
+    const packet = new THREE.Mesh(packetGeo, foilMat);
+    packet.position.y = 0.42;
+    packet.castShadow = true;
+    body.add(packet);
+    this.packet = packet;
+
+    // --- googly eyes: flattened white domes, free-rattling pupils ----------
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.105, 14, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.048, 10, 8));
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.16, 0.72, 0.16);
+      white.scale.set(1, 1, 0.45);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.16, 0.72, 0.21);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.16, baseY: 0.72, seed: side * 1.7 });
+    }
+
+    // --- smile: a downturned torus arc reads as a happy little mouth -------
+    const mouthGeo = track(new THREE.TorusGeometry(0.09, 0.016, 6, 14, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.52, 0.17);
+    mouth.rotation.z = Math.PI; // arc opens upward = smile
+    body.add(mouth);
+
+    // --- stick arms: shoulder pivots, splayed, tiny mitten hands -----------
+    const armGeo = track(new THREE.CylinderGeometry(0.024, 0.024, 0.42, 8));
+    armGeo.translate(0, -0.21, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.4, 0.55, 0);
+      pivot.rotation.z = -side * 0.5; // splay out from the packet sides
+      const arm = new THREE.Mesh(armGeo, stickMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, stickMat);
+      hand.position.set(0, -0.44, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.5 });
+    }
+
+    // --- stick legs: two of them, with jaunty red shoes ---------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.5, 8));
+    legGeo.translate(0, -0.25, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, -0.05, 0);
+      const leg = new THREE.Mesh(legGeo, stickMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.52, 0.04);
+      shoe.scale.set(1.15, 0.55, 1.9);
+      shoe.castShadow = true;
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -717,14 +880,18 @@ export class Player {
 
     // Idle life: tail sway and a sniffing nose-bob when standing still.
     const t = performance.now() / 1000;
-    this.tail.rotation.y = Math.sin(t * 2.1) * 0.35;
-    this.tail.rotation.x = Math.sin(t * 1.7) * 0.2;
-    if (!hasInput && this.grounded) {
-      this.headGroup.rotation.x = -0.08 + Math.sin(t * 2.6) * 0.05;
-      this.headGroup.rotation.y = Math.sin(t * 0.9) * 0.22;
-    } else {
-      this.headGroup.rotation.x = damp(this.headGroup.rotation.x, -0.08, 10, dt);
-      this.headGroup.rotation.y = damp(this.headGroup.rotation.y, 0, 10, dt);
+    if (this.tail) {
+      this.tail.rotation.y = Math.sin(t * 2.1) * 0.35;
+      this.tail.rotation.x = Math.sin(t * 1.7) * 0.2;
+    }
+    if (this.headGroup) {
+      if (!hasInput && this.grounded) {
+        this.headGroup.rotation.x = -0.08 + Math.sin(t * 2.6) * 0.05;
+        this.headGroup.rotation.y = Math.sin(t * 0.9) * 0.22;
+      } else {
+        this.headGroup.rotation.x = damp(this.headGroup.rotation.x, -0.08, 10, dt);
+        this.headGroup.rotation.y = damp(this.headGroup.rotation.y, 0, 10, dt);
+      }
     }
 
     // Badgerette's mane: gentle idle sway, streams back at speed, lifts in air.
@@ -732,6 +899,30 @@ export class Player {
       const lift = speedT * 0.35 + (this.grounded ? 0 : 0.25);
       this.hairGroup.rotation.x = damp(this.hairGroup.rotation.x, lift, 6, dt) + Math.sin(t * 2.1) * 0.045;
       this.hairGroup.rotation.z = Math.sin(t * 1.4) * 0.06 + Math.sin(this.walkCycle) * 0.05 * speedT;
+    }
+
+    // Hughes: arms pump while trotting, flail skyward in the air.
+    if (this.arms) {
+      for (const arm of this.arms) {
+        let target;
+        if (this.grounded) {
+          target = Math.sin(this.walkCycle + arm.phase) * 0.65 * speedT;
+        } else {
+          target = -2.4; // arms up — wheeee
+        }
+        arm.pivot.rotation.x = damp(arm.pivot.rotation.x, target, 14, dt);
+      }
+    }
+
+    // Googly eyes: pupils rattle with motion and landings, droop at rest.
+    if (this.googlyEyes) {
+      const rattle = speedT + Math.abs(this.squash) * 2.5 + (this.grounded ? 0 : 0.5);
+      for (const eye of this.googlyEyes) {
+        eye.pupil.position.x =
+          eye.baseX + Math.sin(t * 9.2 + eye.seed) * 0.032 * Math.min(rattle, 1.4);
+        eye.pupil.position.y =
+          eye.baseY - 0.02 + Math.cos(t * 8.1 + eye.seed * 2.3) * 0.03 * Math.min(rattle, 1.4);
+      }
     }
   }
 
