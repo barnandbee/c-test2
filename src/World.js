@@ -114,6 +114,14 @@ export class World {
     return h;
   }
 
+  /** True only inside the lake's carved footprint — water rules (drowning,
+   *  hover-float, camera clamp) must never fire in ordinary low valleys. */
+  isNearLake(x, z) {
+    const dx = x - this.lakeCenterX;
+    const dz = z - this.lakeCenterZ;
+    return dx * dx + dz * dz < this.lakeRadius * this.lakeRadius;
+  }
+
   /**
    * Walkable surface height: the terrain, or any platform top whose
    * footprint contains (x,z) — but only when `refY` is within step-up
@@ -155,7 +163,7 @@ export class World {
       x = Math.cos(angle) * r;
       z = Math.sin(angle) * r;
       if (this.getNormal(x, z, this._n).y < maxSlopeNormalY) continue;
-      if (this.getHeight(x, z) < this.waterLevel + 0.25) continue; // stay dry
+      if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.25) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -309,8 +317,14 @@ export class World {
       c.lerp(rock, rockAmount);
       c.lerp(rockHi, rockAmount * smoothstep(8, 16, h) * 0.6);
 
-      // Lake bed: sandy shore banding into a dark teal depth.
-      const sandBlend = 1 - smoothstep(this.waterLevel - 0.7, this.waterLevel + 0.6, h);
+      // Lake bed: sandy shore banding into a dark teal depth (lake only —
+      // ordinary low valleys elsewhere keep their grass).
+      const lakeDx = x - this.lakeCenterX;
+      const lakeDz = z - this.lakeCenterZ;
+      const inLakeZone = lakeDx * lakeDx + lakeDz * lakeDz < (this.lakeRadius * 1.08) ** 2;
+      const sandBlend = inLakeZone
+        ? 1 - smoothstep(this.waterLevel - 0.7, this.waterLevel + 0.6, h)
+        : 0;
       if (sandBlend > 0) {
         c.lerp(new THREE.Color(0x9a8a5e), sandBlend * 0.85);
         const deepBlend = 1 - smoothstep(this.waterLevel - 4.5, this.waterLevel - 1.2, h);
@@ -485,7 +499,7 @@ export class World {
       const x = Math.cos(angle) * r;
       const z = Math.sin(angle) * r;
       if (this.getNormal(x, z, normal).y < 0.74) continue;
-      if (this.getHeight(x, z) < this.waterLevel + 0.3) continue;
+      if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.3) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -642,7 +656,7 @@ export class World {
         const r = this.rng.range(12, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.7 && this.getHeight(x, z) > this.waterLevel + 0.2) break;
+        if (this.getNormal(x, z, normal).y > 0.7 && !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2)) break;
       }
       const h = this.getHeight(x, z);
       const s = this.rng.range(0.5, 2.4);
@@ -705,7 +719,7 @@ export class World {
         const r = this.rng.range(3, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.82 && this.getHeight(x, z) > this.waterLevel + 0.15) break;
+        if (this.getNormal(x, z, normal).y > 0.82 && !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15)) break;
       }
       const h = this.getHeight(x, z);
       euler.set(this.rng.range(-0.25, 0.25), this.rng.range(0, Math.PI * 2), this.rng.range(-0.25, 0.25));

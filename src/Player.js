@@ -125,7 +125,8 @@ export class Player {
     this._disposables = [];
     if (this.character === 'hughes') this.root = this.buildCrispPacket();
     else if (this.character === 'boffington') this.root = this.buildBoffington();
-    else this.root = this.buildBadger();
+    else if (this.character === 'edith') this.root = this.buildEdith();
+    else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
 
@@ -376,6 +377,230 @@ export class Player {
     // --- the Badgerette: flowing ginger hair + jeweled tiara ---------------
     if (this.character === 'badgerette') {
       this._buildBadgeretteExtras(headGroup, track);
+    }
+    // --- William the Conqueror: golden crown + royal cape ------------------
+    if (this.character === 'william') {
+      this._buildWilliamExtras(headGroup, body, track);
+    }
+
+    return root;
+  }
+
+  /** Norman regalia: a jeweled crown and a red cape that streams behind
+   *  (it borrows the hairGroup sway rig, so it billows when running). */
+  _buildWilliamExtras(headGroup, body, track) {
+    const goldMat = track(createToonMaterial({
+      color: 0xf5c542,
+      emissive: 0x4a3300,
+      emissiveIntensity: 1.0,
+      rim: { color: 0xfff3c0, strength: 0.8, threshold: 0.45 }
+    }));
+    const gemMat = track(createToonMaterial({
+      color: 0xc03040,
+      emissive: 0x800818,
+      emissiveIntensity: 0.9
+    }));
+    const capeMat = track(createToonMaterial({
+      color: 0xa02030,
+      rim: { color: 0xff9a8a, strength: 0.35, threshold: 0.62 }
+    }));
+    capeMat.side = THREE.DoubleSide;
+
+    // Crown: a golden band with four points and a ruby, worn at a
+    // conquering tilt between the ears.
+    const crown = new THREE.Group();
+    crown.position.set(0, 0.34, 0.06);
+    crown.rotation.x = 0.22;
+    crown.rotation.z = -0.08;
+    headGroup.add(crown);
+
+    const bandGeo = track(new THREE.CylinderGeometry(0.155, 0.17, 0.11, 12, 1, true));
+    const band = new THREE.Mesh(bandGeo, goldMat);
+    crown.add(band);
+    const pointGeo = track(new THREE.ConeGeometry(0.035, 0.1, 6));
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const point = new THREE.Mesh(pointGeo, goldMat);
+      point.position.set(Math.cos(a) * 0.14, 0.1, Math.sin(a) * 0.14);
+      crown.add(point);
+    }
+    const gemGeo = track(new THREE.SphereGeometry(0.032, 8, 6));
+    const gem = new THREE.Mesh(gemGeo, gemMat);
+    gem.position.set(0, 0.0, 0.165);
+    crown.add(gem);
+
+    // Cape: a gently curved sheet hanging from the shoulders. Assigning
+    // it to hairGroup reuses the mane animation — idle sway, lift at speed.
+    const capeGroup = new THREE.Group();
+    capeGroup.position.set(0, 0.34, 0.28);
+    body.add(capeGroup);
+    this.hairGroup = capeGroup;
+
+    const capeGeo = track(new THREE.PlaneGeometry(0.72, 1.05, 6, 8));
+    {
+      const pos = capeGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i); // 0.525 top .. -0.525 bottom
+        const drop = (0.525 - y) / 1.05; // 0 at shoulders, 1 at hem
+        // Drape back over the rump and flare slightly at the hem.
+        pos.setZ(i, -drop * drop * 0.85);
+        pos.setX(i, x * (1 + drop * 0.35));
+      }
+      capeGeo.computeVertexNormals();
+    }
+    const cape = new THREE.Mesh(capeGeo, capeMat);
+    cape.position.set(0, -0.45, -0.1);
+    cape.rotation.x = 0.35;
+    cape.castShadow = true;
+    capeGroup.add(cape);
+
+    // Gold clasps at the shoulders.
+    const claspGeo = track(new THREE.SphereGeometry(0.045, 8, 6));
+    for (const side of [-1, 1]) {
+      const clasp = new THREE.Mesh(claspGeo, goldMat);
+      clasp.position.set(side * 0.3, 0.02, 0.05);
+      capeGroup.add(clasp);
+    }
+  }
+
+  /**
+   * Edith McCombe — a kitchen sink on bird legs. White basin, chrome
+   * gooseneck faucet, hot & cold taps, googly eyes, and scaly reverse-
+   * kneed legs ending in three-toed feet.
+   */
+  buildEdith() {
+    const root = new THREE.Group();
+    root.name = 'edith';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const porcelainMat = track(createToonMaterial({
+      color: 0xf2f4f6,
+      rim: { color: 0xdfe8ff, strength: 0.4, threshold: 0.6 }
+    }));
+    const basinInnerMat = track(createToonMaterial({ color: 0xc4cad2 }));
+    const chromeMat = track(createToonMaterial({
+      color: 0xb8c0cc,
+      emissive: 0x202830,
+      emissiveIntensity: 1.0,
+      rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 }
+    }));
+    const hotMat = track(createToonMaterial({ color: 0xc03038 }));
+    const coldMat = track(createToonMaterial({ color: 0x3070c0 }));
+    const legMat = track(createToonMaterial({
+      color: 0xd8a020,
+      rim: { color: 0xffd980, strength: 0.3, threshold: 0.66 }
+    }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const mouthMat = track(createToonMaterial({ color: 0x4a2430 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the basin -----------------------------------------------------------
+    const basinGeo = track(new THREE.BoxGeometry(0.74, 0.44, 0.56, 4, 3, 4));
+    const basin = new THREE.Mesh(basinGeo, porcelainMat);
+    basin.position.y = 0.3;
+    basin.castShadow = true;
+    body.add(basin);
+
+    const innerGeo = track(new THREE.BoxGeometry(0.6, 0.05, 0.42));
+    const inner = new THREE.Mesh(innerGeo, basinInnerMat);
+    inner.position.y = 0.53;
+    body.add(inner);
+
+    // Backsplash panel carrying the taps.
+    const splashGeo = track(new THREE.BoxGeometry(0.74, 0.26, 0.07));
+    const splash = new THREE.Mesh(splashGeo, porcelainMat);
+    splash.position.set(0, 0.63, -0.25);
+    splash.castShadow = true;
+    body.add(splash);
+
+    // --- gooseneck faucet ------------------------------------------------------
+    const stemGeo = track(new THREE.CylinderGeometry(0.04, 0.045, 0.34, 8));
+    const stem = new THREE.Mesh(stemGeo, chromeMat);
+    stem.position.set(0, 0.9, -0.24);
+    stem.castShadow = true;
+    body.add(stem);
+    const neckGeo = track(new THREE.TorusGeometry(0.13, 0.035, 8, 12, Math.PI));
+    const neck = new THREE.Mesh(neckGeo, chromeMat);
+    neck.position.set(0, 1.07, -0.11);
+    neck.rotation.y = Math.PI / 2;
+    neck.rotation.z = Math.PI / 2;
+    body.add(neck);
+    const spoutGeo = track(new THREE.CylinderGeometry(0.028, 0.035, 0.12, 8));
+    const spout = new THREE.Mesh(spoutGeo, chromeMat);
+    spout.position.set(0, 1.0, 0.02);
+    body.add(spout);
+
+    // Hot & cold tap handles.
+    const tapGeo = track(new THREE.SphereGeometry(0.055, 10, 8));
+    const hot = new THREE.Mesh(tapGeo, hotMat);
+    hot.position.set(-0.22, 0.78, -0.24);
+    body.add(hot);
+    const cold = new THREE.Mesh(tapGeo, coldMat);
+    cold.position.set(0.22, 0.78, -0.24);
+    body.add(cold);
+
+    // --- face on the basin front, with rattling googly pupils -----------------
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.085, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.04, 10, 8));
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.16, 0.38, 0.27);
+      white.scale.set(1, 1.1, 0.45);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.16, 0.38, 0.31);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.16, baseY: 0.38, seed: side * 2.3 });
+    }
+    const mouthGeo = track(new THREE.TorusGeometry(0.075, 0.014, 6, 12, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.2, 0.285);
+    mouth.rotation.z = Math.PI;
+    body.add(mouth);
+
+    // --- bird legs: reverse knee, three toes forward, one back ----------------
+    const thighGeo = track(new THREE.CylinderGeometry(0.032, 0.028, 0.26, 7));
+    thighGeo.translate(0, -0.13, 0);
+    const shinGeo = track(new THREE.CylinderGeometry(0.024, 0.026, 0.26, 7));
+    const toeGeo = track(new THREE.ConeGeometry(0.02, 0.13, 5));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.18, 0.05, 0);
+      const thigh = new THREE.Mesh(thighGeo, legMat);
+      thigh.rotation.x = 0.35; // knee juts backward, bird-style
+      thigh.castShadow = true;
+      pivot.add(thigh);
+      const shin = new THREE.Mesh(shinGeo, legMat);
+      shin.position.set(0, -0.38, -0.05);
+      shin.rotation.x = -0.28;
+      shin.castShadow = true;
+      pivot.add(shin);
+      for (const toe of [-0.5, 0, 0.5]) {
+        const t = new THREE.Mesh(toeGeo, legMat);
+        t.position.set(Math.sin(toe) * 0.05, -0.51, 0.06);
+        t.rotation.x = Math.PI / 2 - 0.15;
+        t.rotation.z = -toe * 0.8;
+        pivot.add(t);
+      }
+      const backToe = new THREE.Mesh(toeGeo, legMat);
+      backToe.position.set(0, -0.51, -0.09);
+      backToe.rotation.x = -(Math.PI / 2 - 0.2);
+      pivot.add(backToe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
     }
 
     return root;
@@ -973,20 +1198,18 @@ export class Player {
     if (pos.y < -40) this.respawn();
 
     // ---- water: badgers (and crisp packets) cannot swim -----------------------
+    // Only actual lake water counts — low valleys elsewhere are just valleys.
     const wl = this.world.waterLevel;
-    if (wl !== undefined) {
-      if (pos.y < wl - 0.4) {
-        // Too deep — bounce back to the last dry footing with a splash.
-        pos.copy(this._lastDryPos);
-        vel.x *= -0.35;
-        vel.z *= -0.35;
-        vel.y = 4.5;
-        this.grounded = false;
-        if (this.onSplash) this.onSplash();
-      } else if (this.grounded && groundH > wl + 0.05) {
-        this._lastDryPos.copy(pos);
-      }
-    } else if (this.grounded) {
+    const inLake = wl !== undefined && this.world.isNearLake(pos.x, pos.z);
+    if (inLake && pos.y < wl - 0.4) {
+      // Too deep — bounce back to the last dry footing with a splash.
+      pos.copy(this._lastDryPos);
+      vel.x *= -0.35;
+      vel.z *= -0.35;
+      vel.y = 4.5;
+      this.grounded = false;
+      if (this.onSplash) this.onSplash();
+    } else if (this.grounded && (!inLake || groundH > wl + 0.05)) {
       this._lastDryPos.copy(pos);
     }
 
@@ -996,12 +1219,14 @@ export class Player {
   }
 
   /**
-   * Hovercraft physics: drifty, jump-free, and it doesn't care whether
-   * the surface below is turf or lake — it hovers over both.
+   * Vehicle physics. Hovercraft: drifty, jump-free, skims turf and lake
+   * alike. Balloon: floatier still, and the jump button is the burner —
+   * hold to rise, release to sink gently.
    */
   updateVehicle(dt, input, cameraYaw) {
     const pos = this.position;
     const vel = this.velocity;
+    const isBalloon = this.vehicle.kind === 'balloon';
 
     const ax = input.axisX;
     const ay = input.axisY;
@@ -1013,12 +1238,17 @@ export class Player {
     const hasInput = wish.lengthSq() > 1e-6;
     if (hasInput) wish.normalize();
 
-    const MAX_SPEED = 11;
-    const rate = hasInput ? 14 : 3.5; // heavy throttle, feeble brakes
+    const MAX_SPEED = isBalloon ? 7 : 11;
+    const rate = isBalloon ? (hasInput ? 6 : 1.3) : hasInput ? 14 : 3.5;
     vel.x = moveToward(vel.x, wish.x * MAX_SPEED, rate * dt);
     vel.z = moveToward(vel.z, wish.z * MAX_SPEED, rate * dt);
-    vel.y = 0;
-    input.consumeJump(); // no jumping a hovercraft; swallow the press
+    if (isBalloon) {
+      vel.y = moveToward(vel.y, input.jumpHeld ? 3.6 : -2.0, 4.5 * dt);
+      pos.y += vel.y * dt;
+    } else {
+      vel.y = 0;
+    }
+    input.consumeJump(); // the press is burner/nothing, never a jump
 
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
@@ -1032,20 +1262,39 @@ export class Player {
       pos.z *= s;
     }
 
-    // Skim: hover height rides whichever is higher, ground or water.
+    // Floor is turf or lake water, whichever is higher (lake only).
     const terrainH = this.world.getHeight(pos.x, pos.z);
-    const wl = this.world.waterLevel !== undefined ? this.world.waterLevel : -Infinity;
-    const targetY = Math.max(terrainH, wl) + 0.55;
-    pos.y = damp(pos.y, targetY, 7, dt);
+    const overLake = this.world.waterLevel !== undefined && this.world.isNearLake(pos.x, pos.z);
+    const wetFloor = overLake ? this.world.waterLevel : -Infinity;
+    const surface = Math.max(terrainH, wetFloor);
+
+    if (isBalloon) {
+      const floorY = surface + 1.1; // basket clearance
+      if (pos.y < floorY) {
+        pos.y = floorY;
+        if (vel.y < 0) vel.y = 0;
+      }
+      const ceilingY = Math.max(terrainH + 40, 28);
+      if (pos.y > ceilingY) {
+        pos.y = ceilingY;
+        if (vel.y > 0) vel.y = 0;
+      }
+    } else {
+      pos.y = damp(pos.y, surface + 0.55, 7, dt);
+      vel.y = 0;
+    }
     this.grounded = true;
 
-    if (terrainH > wl + 0.05) {
+    if (!overLake || terrainH > this.world.waterLevel + 0.05) {
       this._lastDryPos.set(pos.x, terrainH, pos.z);
     }
 
     this.root.position.copy(pos);
     this.animate(dt, hasInput);
-    this.vehicle.syncWithRider(pos, this.facingYaw, Math.hypot(vel.x, vel.z) / MAX_SPEED, dt);
+    const throttle = isBalloon
+      ? (input.jumpHeld ? 1 : 0)
+      : Math.hypot(vel.x, vel.z) / MAX_SPEED;
+    this.vehicle.syncWithRider(pos, this.facingYaw, throttle, dt);
   }
 
   resolveColliders() {

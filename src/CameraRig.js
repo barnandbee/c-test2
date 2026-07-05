@@ -102,7 +102,11 @@ export class CameraRig {
       this._samplePoint.copy(this.focus).addScaledVector(this._offset, d);
 
       let ground = this.world.getHeight(this._samplePoint.x, this._samplePoint.z);
-      if (this.world.waterLevel !== undefined && ground < this.world.waterLevel) {
+      if (
+        this.world.waterLevel !== undefined &&
+        ground < this.world.waterLevel &&
+        this.world.isNearLake(this._samplePoint.x, this._samplePoint.z)
+      ) {
         ground = this.world.waterLevel; // the camera stays out of the lake
       }
       let blocked = this._samplePoint.y < ground + TERRAIN_CLEARANCE;
@@ -134,7 +138,11 @@ export class CameraRig {
 
     // Final guard: never let the camera itself dip under terrain or water.
     let camGround = this.world.getHeight(this.desiredPosition.x, this.desiredPosition.z);
-    if (this.world.waterLevel !== undefined && camGround < this.world.waterLevel) {
+    if (
+      this.world.waterLevel !== undefined &&
+      camGround < this.world.waterLevel &&
+      this.world.isNearLake(this.desiredPosition.x, this.desiredPosition.z)
+    ) {
       camGround = this.world.waterLevel;
     }
     if (this.desiredPosition.y < camGround + TERRAIN_CLEARANCE) {

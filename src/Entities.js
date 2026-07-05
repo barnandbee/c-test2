@@ -1121,6 +1121,7 @@ export class Hovercraft {
   constructor(scene, world, position) {
     this.scene = scene;
     this.world = world;
+    this.kind = 'hovercraft';
     this.position = position.clone();
     this.rider = null;
     this._disposables = [];
@@ -1203,7 +1204,7 @@ export class Hovercraft {
     if (this.rider) return;
     const floor = Math.max(
       this.world.getHeight(this.position.x, this.position.z),
-      this.world.waterLevel
+      this.world.isNearLake(this.position.x, this.position.z) ? this.world.waterLevel : -Infinity
     );
     this.group.position.set(
       this.position.x,
@@ -1223,6 +1224,159 @@ export class Hovercraft {
 
   parkAt(position) {
     this.position.copy(position);
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Hot air balloon                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A striped hot air balloon that drifts in once a run's score reaches
+ * the magic number. The jump button is the burner: hold to rise. The
+ * envelope is a vertex-striped teardrop; the flame flares with throttle.
+ */
+export class HotAirBalloon {
+  constructor(scene, world, position) {
+    this.scene = scene;
+    this.world = world;
+    this.kind = 'balloon';
+    this.position = position.clone();
+    this.rider = null;
+    this._parkedY = null;
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const envelopeMat = track(createToonMaterial({
+      vertexColors: true,
+      rim: { color: 0xffd9b0, strength: 0.4, threshold: 0.6 }
+    }));
+    const basketMat = track(createToonMaterial({
+      color: 0x8a6a42,
+      rim: { color: 0xd8b88a, strength: 0.3, threshold: 0.65 }
+    }));
+    const ropeMat = track(createToonMaterial({ color: 0x4a3a26 }));
+    const flameMat = track(createToonMaterial({
+      color: 0xffb640,
+      emissive: 0xff8c20,
+      emissiveIntensity: 2.2
+    }));
+
+    const group = new THREE.Group();
+    this.group = group;
+
+    // --- envelope: gored stripes, teardrop-pinched toward the neck ---------
+    const envGeo = track(new THREE.SphereGeometry(1.6, 24, 18));
+    {
+      const pos = envGeo.attributes.position;
+      const colors = new Float32Array(pos.count * 3);
+      const c = new THREE.Color();
+      const gore = [new THREE.Color(0xd84a3a), new THREE.Color(0xf2e6c8), new THREE.Color(0x7a3fa8)];
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const sector = Math.floor(((Math.atan2(z, x) / (Math.PI * 2)) + 0.5) * 12);
+        c.copy(gore[sector % 3 === 2 ? 2 : sector % 2]);
+        colors[i * 3 + 0] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+        if (y < 0) {
+          const pinch = 1 + (y / 1.6) * 0.5;
+          pos.setX(i, x * pinch);
+          pos.setZ(i, z * pinch);
+        }
+      }
+      envGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      envGeo.computeVertexNormals();
+    }
+    const envelope = new THREE.Mesh(envGeo, envelopeMat);
+    envelope.position.y = 3.4;
+    envelope.scale.set(1, 1.12, 1);
+    envelope.castShadow = true;
+    group.add(envelope);
+
+    // --- basket the rider stands in ----------------------------------------
+    const basketGeo = track(new THREE.CylinderGeometry(0.62, 0.55, 0.55, 10));
+    const basket = new THREE.Mesh(basketGeo, basketMat);
+    basket.position.y = 0.28;
+    basket.castShadow = true;
+    group.add(basket);
+    const rimGeo = track(new THREE.TorusGeometry(0.62, 0.05, 6, 14));
+    rimGeo.rotateX(Math.PI / 2);
+    const rim = new THREE.Mesh(rimGeo, ropeMat);
+    rim.position.y = 0.56;
+    group.add(rim);
+
+    // --- burner flame (throttle-reactive) -----------------------------------
+    const flameGeo = track(new THREE.ConeGeometry(0.12, 0.42, 8));
+    this.flame = new THREE.Mesh(flameGeo, flameMat);
+    this.flame.position.y = 1.35;
+    this.flame.scale.setScalar(0.6);
+    group.add(this.flame);
+
+    // --- ropes from basket rim up to the envelope skirt ----------------------
+    const ropeGeo = track(new THREE.CylinderGeometry(0.018, 0.018, 1, 5));
+    const up = new THREE.Vector3(0, 1, 0);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const from = new THREE.Vector3(Math.cos(a) * 0.55, 0.56, Math.sin(a) * 0.55);
+      const to = new THREE.Vector3(Math.cos(a) * 0.85, 2.3, Math.sin(a) * 0.85);
+      const dir = to.clone().sub(from);
+      const rope = new THREE.Mesh(ropeGeo, ropeMat);
+      rope.scale.y = dir.length();
+      rope.position.copy(from).addScaledVector(dir, 0.5);
+      rope.quaternion.setFromUnitVectors(up, dir.normalize());
+      group.add(rope);
+    }
+
+    group.position.copy(position);
+    scene.add(group);
+    this._throttle = 0;
+  }
+
+  /** Parked: settle to a gentle rest height and bob. */
+  update(dt, time) {
+    if (this.rider) return;
+    const floor = Math.max(
+      this.world.getHeight(this.position.x, this.position.z),
+      this.world.isNearLake(this.position.x, this.position.z) ? this.world.waterLevel : -Infinity
+    );
+    const restY = floor + 0.12;
+    if (this._parkedY === null) this._parkedY = this.position.y;
+    this._parkedY = damp(this._parkedY, restY, 1.6, dt);
+    this.group.position.set(
+      this.position.x,
+      this._parkedY + Math.sin(time * 1.1) * 0.06,
+      this.position.z
+    );
+    this.flame.scale.setScalar(0.5 + 0.15 * Math.sin(time * 7.3));
+  }
+
+  /** Ridden: rider's feet are the basket floor; flame follows the burner. */
+  syncWithRider(riderPosition, yaw, burner, dt) {
+    this.position.copy(riderPosition);
+    this._parkedY = null;
+    this.group.position.set(riderPosition.x, riderPosition.y - 0.06, riderPosition.z);
+    this.group.rotation.y = yaw;
+    this._throttle = damp(this._throttle, burner, 8, dt);
+    const flicker = 1 + Math.sin(performance.now() / 40) * 0.15;
+    this.flame.scale.setScalar((0.45 + this._throttle * 1.0) * flicker);
+  }
+
+  parkAt(position) {
+    this.position.copy(position);
+    this._parkedY = position.y;
   }
 
   dispose() {

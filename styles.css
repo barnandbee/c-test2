@@ -612,6 +612,47 @@ body {
   transform: rotate(24deg);
 }
 
+/* William the Conqueror: badger stripes beneath a golden crown. */
+.william-icon {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    #efe9da 0%, #efe9da 22%,
+    #23232a 22%, #23232a 38%,
+    #efe9da 38%, #efe9da 62%,
+    #23232a 62%, #23232a 78%,
+    #efe9da 78%, #efe9da 100%
+  );
+}
+
+.william-icon::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 13px;
+  background: var(--accent-gold);
+  clip-path: polygon(0% 100%, 0% 10%, 25% 65%, 50% 0%, 75% 65%, 100% 10%, 100% 100%);
+}
+
+/* Edith McCombe: a white sink (faucet up top) on two bird legs. */
+.edith-icon {
+  border-radius: 8px;
+  border-color: transparent;
+  background-image:
+    radial-gradient(circle, #101014 0 2.5px, #ffffff 2.5px 6px, transparent 6.5px),
+    radial-gradient(circle, #101014 0 2.5px, #ffffff 2.5px 6px, transparent 6.5px),
+    linear-gradient(#b8c0cc, #b8c0cc),
+    linear-gradient(#d8a020, #d8a020),
+    linear-gradient(#d8a020, #d8a020),
+    linear-gradient(180deg, #f2f4f6, #dde2e8);
+  background-size: 14px 14px, 14px 14px, 10px 9px, 5px 12px, 5px 12px, 100% 70%;
+  background-position: 22% 42%, 64% 42%, 50% 2%, 30% 100%, 66% 100%, 50% 32%;
+  background-repeat: no-repeat;
+}
+
 /* ...and Hughes: a little red foil packet with googly eyes and a smile. */
 .hughes-icon {
   border-radius: 7px;

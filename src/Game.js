@@ -20,6 +20,7 @@ import {
   MagnusCarter,
   Submarine,
   Hovercraft,
+  HotAirBalloon,
   disposeEntityAssets
 } from './Entities.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
@@ -38,11 +39,15 @@ const UNLOCK_SCORE = 30;            // badgerette unlocks above this
 const BOFFINGTON_TOWER_VISITS = 6;  // +60 banked seconds in one run
 const RED_OCTOBER_POINTS = 63.14159;
 const BOARDING_RANGE = 2.8;
+const BALLOON_SCORE = 100;          // the balloon drifts in at this score
+const MAGNA_CARTA_VALUE = 25;
 
 const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
 const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
 const STORAGE_HUGHES = 'mystic-badger.hughesUnlocked';
 const STORAGE_BOFFINGTON = 'mystic-badger.boffingtonUnlocked';
+const STORAGE_WILLIAM = 'mystic-badger.williamUnlocked';
+const STORAGE_EDITH = 'mystic-badger.edithUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
@@ -92,6 +97,8 @@ export class Game {
     this.badgeretteUnlocked = readStorage(STORAGE_UNLOCKED) === '1';
     this.hughesUnlocked = readStorage(STORAGE_HUGHES) === '1';
     this.boffingtonUnlocked = readStorage(STORAGE_BOFFINGTON) === '1';
+    this.williamUnlocked = readStorage(STORAGE_WILLIAM) === '1';
+    this.edithUnlocked = readStorage(STORAGE_EDITH) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -144,12 +151,14 @@ export class Game {
     this.towerVisits = 0;
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
+    this.flewBalloon = false;
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
     this.cart = null;
     this.submarine = null;
     this.hovercraft = null;
+    this.balloon = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
@@ -224,6 +233,10 @@ export class Game {
       this.hovercraft.dispose();
       this.hovercraft = null;
     }
+    if (this.balloon) {
+      this.balloon.dispose();
+      this.balloon = null;
+    }
   }
 
   /* ================================================================ */
@@ -245,6 +258,17 @@ export class Game {
       item.startCollect();
       this.points += item.value;
       this.ui.setPoints(this.points);
+
+      // The Magna Carta announces itself — and crowns a king, once.
+      if (item.value === MAGNA_CARTA_VALUE) {
+        this.ui.showTimeToast('YOU GOT THE MAGNA CARTA, BABY!');
+        if (!this.williamUnlocked) {
+          this.williamUnlocked = true;
+          writeStorage(STORAGE_WILLIAM, '1');
+          this.runUnlockNames.push('William the Conqueror');
+        }
+      }
+
       const isEgg = item.value >= 10;
       this.particles.spawnBurst(item.group.position, item.burstColor, {
         count: isEgg ? 42 : 22,
@@ -368,6 +392,8 @@ export class Game {
     if (name === 'badgerette') return this.badgeretteUnlocked;
     if (name === 'hughes') return this.hughesUnlocked;
     if (name === 'boffington') return this.boffingtonUnlocked;
+    if (name === 'william') return this.williamUnlocked;
+    if (name === 'edith') return this.edithUnlocked;
     return name === 'badger';
   }
 
@@ -377,24 +403,63 @@ export class Game {
 
     if (this.player.vehicle) {
       // Only allow dismounting where there's something to stand on —
-      // otherwise the craft would be stranded mid-lake forever.
-      const terrainH = this.world.getHeight(this.player.position.x, this.player.position.z);
-      if (terrainH > this.world.waterLevel - 0.1) {
+      // otherwise the vehicle would be stranded mid-lake forever. (Only
+      // real lake water counts; dry valleys are fine to hop out into.)
+      const px = this.player.position.x;
+      const pz = this.player.position.z;
+      const overDeepWater =
+        this.world.isNearLake(px, pz) &&
+        this.world.getHeight(px, pz) <= this.world.waterLevel - 0.1;
+      if (!overDeepWater) {
+        const vehicle = this.player.vehicle;
         this.player.vehicle = null;
-        this.hovercraft.rider = null;
-        this.hovercraft.parkAt(this.player.position);
+        vehicle.rider = null;
+        vehicle.parkAt(this.player.position);
         this.ui.showTimeToast('HOPPED OUT');
       }
       return;
     }
 
-    const dx = this.player.position.x - this.hovercraft.position.x;
-    const dz = this.player.position.z - this.hovercraft.position.z;
-    if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
-      this.player.vehicle = this.hovercraft;
-      this.hovercraft.rider = this.player;
-      this.ui.showTimeToast('HOVERCRAFT! DOUBLE-TAP TO HOP OUT');
+    // Board whichever vehicle is in reach.
+    for (const vehicle of [this.hovercraft, this.balloon]) {
+      if (!vehicle) continue;
+      const dx = this.player.position.x - vehicle.position.x;
+      const dz = this.player.position.z - vehicle.position.z;
+      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+        this.player.vehicle = vehicle;
+        vehicle.rider = this.player;
+        this.ui.showTimeToast(
+          vehicle.kind === 'balloon'
+            ? 'BALLOON! HOLD JUMP TO RISE'
+            : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
+        );
+        break;
+      }
     }
+  }
+
+  /** At 100 points, a balloon drifts in — landing within sight if possible. */
+  maybeSpawnBalloon() {
+    if (this.balloon || this.points < BALLOON_SCORE) return;
+    let spot = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const a = Math.random() * Math.PI * 2;
+      const x = this.player.position.x + Math.cos(a) * 18;
+      const z = this.player.position.z + Math.sin(a) * 18;
+      if (Math.hypot(x, z) > this.world.playableRadius - 6) continue;
+      if (this.world.isNearLake(x, z)) continue;
+      if (this.world.getNormal(x, z, this._scratchNormal || (this._scratchNormal = new THREE.Vector3())).y < 0.8) continue;
+      spot = new THREE.Vector3(x, this.world.getHeight(x, z), z);
+      break;
+    }
+    if (!spot) spot = this.world.randomGroundPoint(15, 50);
+    this.balloon = new HotAirBalloon(this.scene, this.world, spot);
+    this.ui.showTimeToast('A HOT AIR BALLOON DRIFTS IN!');
+    this.particles.spawnBurst(
+      this._playerCenter.set(spot.x, spot.y + 2.5, spot.z),
+      0xf2e6c8,
+      { count: 32, speed: 4.0, size: 44, upBias: 0.6, life: 0.8 }
+    );
   }
 
   /** Reaching the surfaced Red October pays out π-adjacent riches. */
@@ -441,6 +506,12 @@ export class Game {
       writeStorage(STORAGE_HUGHES, '1');
       newlyUnlockedNames.push('‘Crisp Packet’ Hughes');
     }
+    // Edith: took the balloon up during this run.
+    if (!this.edithUnlocked && this.flewBalloon) {
+      this.edithUnlocked = true;
+      writeStorage(STORAGE_EDITH, '1');
+      newlyUnlockedNames.push('Edith McCombe');
+    }
 
     this.ui.showGameOver({
       score: this.points,
@@ -450,7 +521,9 @@ export class Game {
       unlocked: {
         badgerette: this.badgeretteUnlocked,
         hughes: this.hughesUnlocked,
-        boffington: this.boffingtonUnlocked
+        boffington: this.boffingtonUnlocked,
+        william: this.williamUnlocked,
+        edith: this.edithUnlocked
       },
       newlyUnlockedNames,
       currentCharacter: this.characterName
@@ -476,6 +549,7 @@ export class Game {
     this.towerVisits = 0;
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
+    this.flewBalloon = false;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
@@ -523,6 +597,19 @@ export class Game {
       this.handleHazards();
       this.handleClockTower();
       this.handleRedOctober();
+      this.maybeSpawnBalloon();
+
+      // "Getting in and flying" means genuinely leaving the ground.
+      if (
+        !this.flewBalloon &&
+        this.balloon &&
+        this.player.vehicle === this.balloon &&
+        this.player.position.y -
+          this.world.getHeight(this.player.position.x, this.player.position.z) > 3
+      ) {
+        this.flewBalloon = true;
+      }
+
       this.cameraRig.update(dt, this.player, this.input);
     } else {
       this.cameraRig.update(dt, this.player, null);
@@ -547,6 +634,7 @@ export class Game {
       }
     }
     if (this.hovercraft) this.hovercraft.update(dt, time);
+    if (this.balloon) this.balloon.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));

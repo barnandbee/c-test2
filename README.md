@@ -72,6 +72,14 @@ import map — no npm install, no bundler.
   to hop in; it skims over land and water alike (it's the only way to
   reach Red October). Double-tap again over solid ground to hop out —
   it won't let you strand it mid-lake.
+- **The hot air balloon** — drifts in the moment your score reaches
+  **100**. Board it like the hovercraft; the **jump button is the
+  burner** (hold to rise, release to sink). Take it up during a run and
+  the bell unlocks **Edith McCombe** — a kitchen sink on bird legs,
+  with googly eyes, a gooseneck faucet and hot & cold taps.
+- **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
+  grabbing one also unlocks **William the Conqueror**: the badger in a
+  golden crown with a royal red cape that streams behind him at speed.
 
 ## Architecture
 
