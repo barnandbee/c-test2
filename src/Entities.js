@@ -208,6 +208,33 @@ function getAssets() {
   const cherryStemGeo = new THREE.TorusGeometry(0.12, 0.022, 6, 10, Math.PI * 0.85);
   const cherryStemMat = createToonMaterial({ color: 0x5a4426 });
 
+  // --- star: a proper five-pointed extrusion --------------------------------
+  const starShape = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? 0.58 : 0.24;
+    const x = Math.cos(angle) * r;
+    const y = -Math.sin(angle) * r;
+    if (i === 0) starShape.moveTo(x, y);
+    else starShape.lineTo(x, y);
+  }
+  starShape.closePath();
+  const starGeo = new THREE.ExtrudeGeometry(starShape, {
+    depth: 0.14,
+    bevelEnabled: true,
+    bevelThickness: 0.03,
+    bevelSize: 0.03,
+    bevelSegments: 1
+  });
+  starGeo.translate(0, 0, -0.07);
+  const starMat = createToonMaterial({
+    color: 0xffd44f,
+    emissive: 0xffb020,
+    emissiveIntensity: 0.8,
+    rim: { color: 0xfffbe8, strength: 0.7, threshold: 0.45 },
+    pulse: { speed: 2.8, phase: 0 }
+  });
+
   assets = {
     pineConeGeo, pineConeMat,
     eggGeo, eggMat,
@@ -217,7 +244,8 @@ function getAssets() {
     frogSacGeo, frogWartGeo, frogNostrilGeo,
     scrollGeo, scrollEndGeo, parchmentMat, parchmentDarkMat, sealMat, sealGeo,
     cloudBlobGeo, cloudPinkMat, cloudWhiteMat,
-    cherryGeo, cherryMat, cherryStemGeo, cherryStemMat
+    cherryGeo, cherryMat, cherryStemGeo, cherryStemMat,
+    starGeo, starMat
   };
   return assets;
 }
@@ -327,6 +355,49 @@ export class GoldenEgg extends Collectible {
 
   dispose() {
     // The aura's geometry/material are per-egg — free them explicitly.
+    this.aura.geometry.dispose();
+    this.aura.material.dispose();
+    super.dispose();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Star (+20) — space only                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A golden five-pointed star hanging in the void far above the forest.
+ * Rocket territory: nothing else in the game flies this high.
+ */
+export class Star extends Collectible {
+  constructor(scene, position) {
+    super(scene, position, 20, 1.5);
+    const a = getAssets();
+
+    this.mesh = new THREE.Mesh(a.starGeo, a.starMat);
+    this.group.add(this.mesh);
+
+    this.aura = createAuraPoints(20, { radiusBase: 0.85, radiusVar: 0.3, heightBase: -0.3, heightVar: 0.6 });
+    this.aura.material.uniforms.uColor.value.set(0xfff6d8);
+    this.aura.material.uniforms.uSize.value = 24;
+    this.group.add(this.aura);
+
+    this.baseY = position.y;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0xffe9a0;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    this.group.rotation.y += dt * 0.9;
+    this.mesh.rotation.z = Math.sin(time * 1.1 + this.phase) * 0.2;
+    this.group.position.y = this.baseY + Math.sin(time * 1.3 + this.phase) * 0.5;
+  }
+
+  dispose() {
     this.aura.geometry.dispose();
     this.aura.material.dispose();
     super.dispose();
@@ -1526,6 +1597,246 @@ export class HotAirBalloon {
   parkAt(position) {
     this.position.copy(position);
     this._parkedY = position.y;
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Launchpad                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A circular launchpad buried beside the cherry blossom tree. Double-tap
+ * the tree and it grinds up out of the turf, ring lights pulsing —
+ * then it waits for a rocket worth landing.
+ */
+export class Launchpad {
+  constructor(scene, world) {
+    this.scene = scene;
+    this.world = world;
+    this.state = 'hidden'; // hidden -> rising -> ready
+    this._disposables = [];
+    this._platform = null;
+
+    // Park the pad a stroll from the blossom tree, toward open ground.
+    const tree = world.blossomTree;
+    const away = Math.hypot(tree.x, tree.z) || 1;
+    this.position = new THREE.Vector3(
+      tree.x - (tree.x / away) * 6.5,
+      0,
+      tree.z - (tree.z / away) * 6.5
+    );
+    this.position.y = world.getHeight(this.position.x, this.position.z);
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const concreteMat = track(createToonMaterial({
+      color: 0x8a8a94,
+      rim: { color: 0xb9a4ff, strength: 0.35, threshold: 0.62 }
+    }));
+    const trimMat = track(createToonMaterial({ color: 0x5a5a66 }));
+    const lightMat = track(createToonMaterial({
+      color: 0x8ae0ff,
+      emissive: 0x40c8ff,
+      emissiveIntensity: 1.6,
+      pulse: { speed: 4.0, phase: 0 }
+    }));
+
+    const group = new THREE.Group();
+    this.group = group;
+
+    const padGeo = track(new THREE.CylinderGeometry(2.9, 3.2, 0.55, 20));
+    const pad = new THREE.Mesh(padGeo, concreteMat);
+    pad.position.y = 0.28;
+    pad.castShadow = true;
+    pad.receiveShadow = true;
+    group.add(pad);
+
+    const ringGeo = track(new THREE.TorusGeometry(2.35, 0.09, 8, 28));
+    ringGeo.rotateX(Math.PI / 2);
+    const ring = new THREE.Mesh(ringGeo, trimMat);
+    ring.position.y = 0.57;
+    group.add(ring);
+
+    const lightGeo = track(new THREE.SphereGeometry(0.11, 8, 6));
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const light = new THREE.Mesh(lightGeo, lightMat);
+      light.position.set(Math.cos(a) * 2.6, 0.6, Math.sin(a) * 2.6);
+      group.add(light);
+    }
+
+    // Buried and invisible until revealed.
+    group.position.set(this.position.x, this.position.y - 3.4, this.position.z);
+    group.visible = false;
+    scene.add(group);
+  }
+
+  get padTop() {
+    return this.position.y + 0.55;
+  }
+
+  reveal() {
+    if (this.state !== 'hidden') return false;
+    this.state = 'rising';
+    this.group.visible = true;
+    return true;
+  }
+
+  isReady() {
+    return this.state === 'ready';
+  }
+
+  update(dt) {
+    if (this.state !== 'rising') return;
+    const restY = this.position.y - 0.02;
+    this.group.position.y = damp(this.group.position.y, restY, 2.2, dt);
+    if (restY - this.group.position.y < 0.05) {
+      this.group.position.y = restY;
+      this.state = 'ready';
+      // Now it's solid: the player can walk up onto the pad.
+      this._platform = {
+        minX: this.position.x - 2.6,
+        maxX: this.position.x + 2.6,
+        minZ: this.position.z - 2.6,
+        maxZ: this.position.z + 2.6,
+        top: this.padTop
+      };
+      this.world.platforms.push(this._platform);
+    }
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    if (this._platform) {
+      const i = this.world.platforms.indexOf(this._platform);
+      if (i !== -1) this.world.platforms.splice(i, 1);
+    }
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Rocket                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A cheerful red-and-white rocket that lands on the pad only while the
+ * score sits in its finicky window. The rider straddles the nose,
+ * Strangelove-style; the jump button is the main engine.
+ */
+export class Rocket {
+  constructor(scene, world, position) {
+    this.scene = scene;
+    this.world = world;
+    this.kind = 'rocket';
+    this.position = position.clone();
+    this.rider = null;
+    this._throttle = 0;
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const hullMat = track(createToonMaterial({
+      color: 0xf2f0ea,
+      rim: { color: 0xcfe0ff, strength: 0.45, threshold: 0.58 }
+    }));
+    const redMat = track(createToonMaterial({
+      color: 0xd8362a,
+      rim: { color: 0xff9a8a, strength: 0.4, threshold: 0.6 }
+    }));
+    const portMat = track(createToonMaterial({
+      color: 0x8ac8e8,
+      emissive: 0x2a6a90,
+      emissiveIntensity: 1.0
+    }));
+    const bellMat = track(createToonMaterial({ color: 0x3a3a44 }));
+    const flameMat = track(createToonMaterial({
+      color: 0xffb640,
+      emissive: 0xff7a10,
+      emissiveIntensity: 2.4
+    }));
+
+    const group = new THREE.Group();
+    this.group = group;
+
+    const bodyGeo = track(new THREE.CylinderGeometry(0.55, 0.62, 2.4, 14));
+    const body = new THREE.Mesh(bodyGeo, hullMat);
+    body.position.y = 1.5;
+    body.castShadow = true;
+    group.add(body);
+
+    const noseGeo = track(new THREE.ConeGeometry(0.55, 1.0, 14));
+    const nose = new THREE.Mesh(noseGeo, redMat);
+    nose.position.y = 3.2;
+    nose.castShadow = true;
+    group.add(nose);
+
+    const portGeo = track(new THREE.SphereGeometry(0.16, 10, 8));
+    const port = new THREE.Mesh(portGeo, portMat);
+    port.position.set(0, 2.05, 0.52);
+    port.scale.set(1, 1, 0.4);
+    group.add(port);
+
+    const finGeo = track(new THREE.BoxGeometry(0.1, 0.9, 0.55));
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      const fin = new THREE.Mesh(finGeo, redMat);
+      fin.position.set(Math.cos(a) * 0.62, 0.55, Math.sin(a) * 0.62);
+      fin.rotation.y = -a + Math.PI / 2;
+      fin.castShadow = true;
+      group.add(fin);
+    }
+
+    const bellGeo = track(new THREE.ConeGeometry(0.42, 0.5, 12, 1, true));
+    const bell = new THREE.Mesh(bellGeo, bellMat);
+    bell.position.y = 0.12;
+    bell.rotation.x = Math.PI;
+    group.add(bell);
+
+    const flameGeo = track(new THREE.ConeGeometry(0.3, 1.1, 10));
+    this.flame = new THREE.Mesh(flameGeo, flameMat);
+    this.flame.position.y = -0.6;
+    this.flame.rotation.x = Math.PI;
+    this.flame.scale.setScalar(0.25);
+    group.add(this.flame);
+
+    group.position.copy(position);
+    scene.add(group);
+  }
+
+  /** Parked on the pad: idle wobble and a pilot-light flame. */
+  update(dt, time) {
+    if (this.rider) return;
+    this.group.position.copy(this.position);
+    this.group.rotation.y += dt * 0.2;
+    this.flame.scale.setScalar(0.2 + 0.06 * Math.sin(time * 9.1));
+  }
+
+  /** Ridden: the rider straddles the nose; flame roars with the engine. */
+  syncWithRider(riderPosition, yaw, throttle, dt) {
+    this.position.copy(riderPosition);
+    this.group.position.set(riderPosition.x, riderPosition.y - 3.3, riderPosition.z);
+    this.group.rotation.y = yaw;
+    this._throttle = damp(this._throttle, throttle, 8, dt);
+    const flicker = 1 + Math.sin(performance.now() / 32) * 0.2;
+    this.flame.scale.setScalar((0.3 + this._throttle * 1.3) * flicker);
+  }
+
+  parkAt(position) {
+    this.position.copy(position);
   }
 
   dispose() {

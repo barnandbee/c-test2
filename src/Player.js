@@ -128,6 +128,7 @@ export class Player {
     else if (this.character === 'boffington') this.root = this.buildBoffington();
     else if (this.character === 'edith') this.root = this.buildEdith();
     else if (this.character === 'rhombus') this.root = this.buildRhombus();
+    else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -1147,6 +1148,163 @@ export class Player {
     return root;
   }
 
+  /**
+   * Alien Ginsberg — a small green poet from beyond, complete with beret,
+   * round spectacles perched on enormous void-black eyes, a wise little
+   * beard, glowing antennae, and a notebook that never leaves his hand.
+   */
+  buildGinsberg() {
+    const root = new THREE.Group();
+    root.name = 'ginsberg';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const skinMat = track(createToonMaterial({
+      color: 0x8fd8a0,
+      rim: { color: 0xd0ffe0, strength: 0.4, threshold: 0.6 }
+    }));
+    const limbMat = track(createToonMaterial({ color: 0x5aa070 }));
+    const eyeMat = track(createToonMaterial({
+      color: 0x0a0a12,
+      rim: { color: 0x9db4e8, strength: 0.6, threshold: 0.42 }
+    }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.7 }));
+    const beretMat = track(createToonMaterial({ color: 0x2a2a38 }));
+    const frameMat = track(createToonMaterial({ color: 0x3a3a44 }));
+    const beardMat = track(createToonMaterial({ color: 0x4a4a52 }));
+    const bulbMat = track(createToonMaterial({
+      color: 0xb0ffd0,
+      emissive: 0x50e890,
+      emissiveIntensity: 1.4,
+      pulse: { speed: 2.4, phase: 0 }
+    }));
+    const bookMat = track(createToonMaterial({ color: 0xe8ddc0 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- slight torso, enormous head -----------------------------------------
+    const torsoGeo = track(new THREE.SphereGeometry(0.26, 20, 16));
+    const torso = new THREE.Mesh(torsoGeo, skinMat);
+    torso.position.y = 0.25;
+    torso.scale.set(0.95, 1.2, 0.8);
+    torso.castShadow = true;
+    body.add(torso);
+
+    const headGeo = track(new THREE.SphereGeometry(0.34, 26, 20));
+    const head = new THREE.Mesh(headGeo, skinMat);
+    head.position.y = 0.85;
+    head.scale.set(1.05, 1.15, 0.95);
+    head.castShadow = true;
+    body.add(head);
+
+    // --- void-black almond eyes with glints, spectacles perched on top -------
+    const eyeGeo = track(new THREE.SphereGeometry(0.12, 14, 12));
+    const glintGeo = track(new THREE.SphereGeometry(0.025, 8, 6));
+    const frameGeo = track(new THREE.TorusGeometry(0.085, 0.012, 6, 14));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(side * 0.14, 0.88, 0.24);
+      eye.scale.set(1.05, 1.6, 0.5);
+      eye.rotation.z = side * -0.25;
+      body.add(eye);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.11, 0.95, 0.31);
+      body.add(glint);
+      const frame = new THREE.Mesh(frameGeo, frameMat);
+      frame.position.set(side * 0.13, 0.86, 0.3);
+      body.add(frame);
+    }
+    const bridgeGeo = track(new THREE.CylinderGeometry(0.01, 0.01, 0.09, 5));
+    const bridge = new THREE.Mesh(bridgeGeo, frameMat);
+    bridge.position.set(0, 0.86, 0.31);
+    bridge.rotation.z = Math.PI / 2;
+    body.add(bridge);
+
+    // --- the poet's beard ------------------------------------------------------
+    const beardGeo = track(new THREE.SphereGeometry(0.11, 12, 10));
+    const beard = new THREE.Mesh(beardGeo, beardMat);
+    beard.position.set(0, 0.62, 0.22);
+    beard.scale.set(1.1, 1.3, 0.7);
+    body.add(beard);
+
+    // --- beret at maximum tilt, antennae poking through -----------------------
+    const beretGeo = track(new THREE.CylinderGeometry(0.24, 0.28, 0.08, 14));
+    const beret = new THREE.Mesh(beretGeo, beretMat);
+    beret.position.set(-0.08, 1.2, -0.02);
+    beret.rotation.z = 0.28;
+    beret.castShadow = true;
+    body.add(beret);
+    const nubGeo = track(new THREE.SphereGeometry(0.03, 6, 5));
+    const nub = new THREE.Mesh(nubGeo, beretMat);
+    nub.position.set(-0.1, 1.26, -0.02);
+    body.add(nub);
+
+    const antennaGeo = track(new THREE.CylinderGeometry(0.014, 0.018, 0.26, 6));
+    const bulbGeo = track(new THREE.SphereGeometry(0.045, 8, 6));
+    for (const side of [-1, 1]) {
+      const antenna = new THREE.Mesh(antennaGeo, limbMat);
+      antenna.position.set(side * 0.16, 1.32, 0);
+      antenna.rotation.z = side * -0.35;
+      body.add(antenna);
+      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+      bulb.position.set(side * 0.21, 1.45, 0);
+      body.add(bulb);
+    }
+
+    // --- stick limbs; the left hand clutches the notebook ---------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.36, 8));
+    armGeo.translate(0, -0.18, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.22, 0.42, 0);
+      pivot.rotation.z = -side * 0.35;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, skinMat);
+      hand.position.set(0, -0.38, 0);
+      pivot.add(hand);
+      if (side === -1) {
+        const bookGeo = track(new THREE.BoxGeometry(0.13, 0.17, 0.035));
+        const book = new THREE.Mesh(bookGeo, bookMat);
+        book.position.set(0, -0.4, 0.06);
+        book.rotation.x = -0.3;
+        pivot.add(book);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    const legGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.48, 8));
+    legGeo.translate(0, -0.24, 0);
+    const footGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.12, -0.03, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const foot = new THREE.Mesh(footGeo, limbMat);
+      foot.position.set(0, -0.5, 0.04);
+      foot.scale.set(1.1, 0.55, 1.7);
+      pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -1329,7 +1487,10 @@ export class Player {
   updateVehicle(dt, input, cameraYaw) {
     const pos = this.position;
     const vel = this.velocity;
-    const isBalloon = this.vehicle.kind === 'balloon';
+    const kind = this.vehicle.kind;
+    const isBalloon = kind === 'balloon';
+    const isRocket = kind === 'rocket';
+    const flies = isBalloon || isRocket;
 
     const ax = input.axisX;
     const ay = input.axisY;
@@ -1341,17 +1502,25 @@ export class Player {
     const hasInput = wish.lengthSq() > 1e-6;
     if (hasInput) wish.normalize();
 
-    const MAX_SPEED = isBalloon ? 7 : 11;
-    const rate = isBalloon ? (hasInput ? 6 : 1.3) : hasInput ? 14 : 3.5;
+    const MAX_SPEED = isRocket ? 14 : isBalloon ? 7 : 11;
+    const rate = isRocket
+      ? (hasInput ? 11 : 2.5)
+      : isBalloon
+        ? (hasInput ? 6 : 1.3)
+        : hasInput ? 14 : 3.5;
     vel.x = moveToward(vel.x, wish.x * MAX_SPEED, rate * dt);
     vel.z = moveToward(vel.z, wish.z * MAX_SPEED, rate * dt);
-    if (isBalloon) {
-      vel.y = moveToward(vel.y, input.jumpHeld ? 3.6 : -2.0, 4.5 * dt);
+    if (flies) {
+      // Burner or main engine: hold jump to climb, release to sink.
+      const upTarget = isRocket ? 13 : 3.6;
+      const downTarget = isRocket ? -5.5 : -2.0;
+      const vRate = isRocket ? 15 : 4.5;
+      vel.y = moveToward(vel.y, input.jumpHeld ? upTarget : downTarget, vRate * dt);
       pos.y += vel.y * dt;
     } else {
       vel.y = 0;
     }
-    input.consumeJump(); // the press is burner/nothing, never a jump
+    input.consumeJump(); // the press is engine/nothing, never a jump
 
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
@@ -1371,13 +1540,14 @@ export class Player {
     const wetFloor = overLake ? this.world.waterLevel : -Infinity;
     const surface = Math.max(terrainH, wetFloor);
 
-    if (isBalloon) {
-      const floorY = surface + 1.1; // basket clearance
+    if (flies) {
+      const floorY = surface + (isRocket ? 3.4 : 1.1); // hull/basket clearance
       if (pos.y < floorY) {
         pos.y = floorY;
         if (vel.y < 0) vel.y = 0;
       }
-      const ceilingY = Math.max(terrainH + 40, 28);
+      // Balloons stay in the weather; rockets reach the stars.
+      const ceilingY = isRocket ? 130 : Math.max(terrainH + 40, 28);
       if (pos.y > ceilingY) {
         pos.y = ceilingY;
         if (vel.y > 0) vel.y = 0;
@@ -1394,7 +1564,7 @@ export class Player {
 
     this.root.position.copy(pos);
     this.animate(dt, hasInput);
-    const throttle = isBalloon
+    const throttle = flies
       ? (input.jumpHeld ? 1 : 0)
       : Math.hypot(vel.x, vel.z) / MAX_SPEED;
     this.vehicle.syncWithRider(pos, this.facingYaw, throttle, dt);

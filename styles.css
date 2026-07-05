@@ -918,6 +918,27 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Alien Ginsberg: green head, void-black almond eyes, tilted beret. */
+.ginsberg-icon {
+  position: relative;
+  background:
+    radial-gradient(ellipse 5px 8px at 35% 52%, #0a0a12 0, #0a0a12 60%, transparent 65%),
+    radial-gradient(ellipse 5px 8px at 65% 52%, #0a0a12 0, #0a0a12 60%, transparent 65%),
+    radial-gradient(circle at 50% 45%, #8fd8a0 0%, #6db584 100%);
+}
+
+.ginsberg-icon::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 4px;
+  width: 26px;
+  height: 11px;
+  background: #2a2a38;
+  border-radius: 50% 50% 40% 40%;
+  transform: rotate(-14deg);
+}
+
 /* ...and Hughes: a little red foil packet with googly eyes and a smile. */
 .hughes-icon {
   border-radius: 7px;

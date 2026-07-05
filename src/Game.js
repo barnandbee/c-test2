@@ -23,6 +23,9 @@ import {
   Submarine,
   Hovercraft,
   HotAirBalloon,
+  Star,
+  Launchpad,
+  Rocket,
   disposeEntityAssets
 } from './Entities.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
@@ -45,6 +48,11 @@ const RED_OCTOBER_POINTS = 63.14159;
 const BOARDING_RANGE = 2.8;
 const BALLOON_SCORE = 100;          // the balloon drifts in at this score
 const MAGNA_CARTA_VALUE = 25;
+const STAR_COUNT = 9;
+const STAR_VALUE = 20;
+const ROCKET_MIN_SCORE = 88;        // rocket present only while
+const ROCKET_MAX_SCORE = 112;       //   88 < score < 112
+const GINSBERG_STARS = 5;
 
 const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
 const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
@@ -53,6 +61,7 @@ const STORAGE_BOFFINGTON = 'mystic-badger.boffingtonUnlocked';
 const STORAGE_WILLIAM = 'mystic-badger.williamUnlocked';
 const STORAGE_EDITH = 'mystic-badger.edithUnlocked';
 const STORAGE_RHOMBUS = 'mystic-badger.rhombusUnlocked';
+const STORAGE_GINSBERG = 'mystic-badger.ginsbergUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
@@ -105,6 +114,7 @@ export class Game {
     this.williamUnlocked = readStorage(STORAGE_WILLIAM) === '1';
     this.edithUnlocked = readStorage(STORAGE_EDITH) === '1';
     this.rhombusUnlocked = readStorage(STORAGE_RHOMBUS) === '1';
+    this.ginsbergUnlocked = readStorage(STORAGE_GINSBERG) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -158,6 +168,7 @@ export class Game {
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
+    this.starsCollected = 0;
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
@@ -165,6 +176,8 @@ export class Game {
     this.submarine = null;
     this.hovercraft = null;
     this.balloon = null;
+    this.launchpad = null;
+    this.rocket = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
@@ -245,6 +258,15 @@ export class Game {
     // to meet her, parked at some random spot on dry land.
     this.submarine = new Submarine(this.scene, this.world);
     this.hovercraft = new Hovercraft(this.scene, this.world, this.world.randomGroundPoint(18, 60));
+
+    // Space: golden stars far above everything, and a launchpad buried
+    // beside the cherry blossom tree, waiting to be discovered.
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const p = this.world.randomGroundPoint(15, 85);
+      p.y = 80 + Math.random() * 30;
+      this.collectibles.push(new Star(this.scene, p));
+    }
+    this.launchpad = new Launchpad(this.scene, this.world);
   }
 
   clearEntities() {
@@ -272,6 +294,14 @@ export class Game {
     if (this.balloon) {
       this.balloon.dispose();
       this.balloon = null;
+    }
+    if (this.launchpad) {
+      this.launchpad.dispose();
+      this.launchpad = null;
+    }
+    if (this.rocket) {
+      this.rocket.dispose();
+      this.rocket = null;
     }
   }
 
@@ -302,6 +332,17 @@ export class Game {
           this.williamUnlocked = true;
           writeStorage(STORAGE_WILLIAM, '1');
           this.runUnlockNames.push('William the Conqueror');
+        }
+      }
+
+      // Stars: five in one run summons the poet.
+      if (item.value === STAR_VALUE) {
+        this.starsCollected += 1;
+        if (this.starsCollected >= GINSBERG_STARS && !this.ginsbergUnlocked) {
+          this.ginsbergUnlocked = true;
+          writeStorage(STORAGE_GINSBERG, '1');
+          this.runUnlockNames.push('Alien Ginsberg');
+          this.ui.showTimeToast('★ ALIEN GINSBERG UNLOCKED!');
         }
       }
 
@@ -431,6 +472,7 @@ export class Game {
     if (name === 'william') return this.williamUnlocked;
     if (name === 'edith') return this.edithUnlocked;
     if (name === 'rhombus') return this.rhombusUnlocked;
+    if (name === 'ginsberg') return this.ginsbergUnlocked;
     return name === 'badger';
   }
 
@@ -441,7 +483,8 @@ export class Game {
       boffington: this.boffingtonUnlocked,
       william: this.williamUnlocked,
       edith: this.edithUnlocked,
-      rhombus: this.rhombusUnlocked
+      rhombus: this.rhombusUnlocked,
+      ginsberg: this.ginsbergUnlocked
     };
   }
 
@@ -481,20 +524,82 @@ export class Game {
     }
 
     // Board whichever vehicle is in reach.
-    for (const vehicle of [this.hovercraft, this.balloon]) {
+    for (const vehicle of [this.hovercraft, this.balloon, this.rocket]) {
       if (!vehicle) continue;
       const dx = this.player.position.x - vehicle.position.x;
       const dz = this.player.position.z - vehicle.position.z;
       if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
         this.player.vehicle = vehicle;
         vehicle.rider = this.player;
-        this.ui.showTimeToast(
-          vehicle.kind === 'balloon'
-            ? 'BALLOON! HOLD JUMP TO RISE'
-            : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
-        );
-        break;
+        if (vehicle.kind === 'rocket') {
+          // Ignition: a proper kick off the pad.
+          this.player.velocity.y = 16;
+          this.ui.showTimeToast('TO THE STARS! HOLD JUMP TO THRUST');
+          this.particles.spawnBurst(
+            this._playerCenter.copy(this.player.position),
+            0xffb640,
+            { count: 44, speed: 5.5, size: 50, upBias: 0.2, life: 0.9 }
+          );
+        } else {
+          this.ui.showTimeToast(
+            vehicle.kind === 'balloon'
+              ? 'BALLOON! HOLD JUMP TO RISE'
+              : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
+          );
+        }
+        return;
       }
+    }
+
+    // No vehicle in reach — perhaps the cherry blossom tree's secret?
+    const tree = this.world.blossomTree;
+    if (tree && this.launchpad && this.launchpad.state === 'hidden') {
+      const dx = this.player.position.x - tree.x;
+      const dz = this.player.position.z - tree.z;
+      if (dx * dx + dz * dz < 4.5 * 4.5) {
+        this.launchpad.reveal();
+        this.ui.showTimeToast('A LAUNCHPAD EMERGES!');
+        this.particles.spawnBurst(
+          this._playerCenter.set(this.launchpad.position.x, this.launchpad.position.y + 1, this.launchpad.position.z),
+          0x9b8a72,
+          { count: 40, speed: 4.5, size: 46, upBias: 0.7, life: 0.9 }
+        );
+      }
+    }
+  }
+
+  /**
+   * The rocket is fickle: it lands on the (revealed) pad only while the
+   * score sits strictly between 88 and 112, and departs the moment the
+   * score wanders out — unless someone is riding it.
+   */
+  manageRocket() {
+    if (!this.launchpad || !this.launchpad.isReady()) return;
+    const inWindow = this.points > ROCKET_MIN_SCORE && this.points < ROCKET_MAX_SCORE;
+
+    if (inWindow && !this.rocket) {
+      const spot = new THREE.Vector3(
+        this.launchpad.position.x,
+        this.launchpad.padTop,
+        this.launchpad.position.z
+      );
+      this.rocket = new Rocket(this.scene, this.world, spot);
+      this.ui.showTimeToast('A ROCKET HAS LANDED!');
+      this.particles.spawnBurst(
+        this._playerCenter.set(spot.x, spot.y + 2, spot.z),
+        0xd8ecf2,
+        { count: 36, speed: 4.5, size: 46, upBias: 0.5, life: 0.8 }
+      );
+    } else if (!inWindow && this.rocket && this.player.vehicle !== this.rocket) {
+      // Departs without you.
+      this.particles.spawnBurst(
+        this._playerCenter.set(this.rocket.position.x, this.rocket.position.y + 2.5, this.rocket.position.z),
+        0xffb640,
+        { count: 40, speed: 6, size: 48, upBias: 1.0, life: 0.9 }
+      );
+      this.rocket.dispose();
+      this.rocket = null;
+      this.ui.showTimeToast('THE ROCKET DEPARTS…');
     }
   }
 
@@ -611,6 +716,7 @@ export class Game {
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
+    this.starsCollected = 0;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
@@ -663,6 +769,7 @@ export class Game {
       this.handleClockTower();
       this.handleRedOctober();
       this.maybeSpawnBalloon();
+      this.manageRocket();
 
       // "Getting in and flying" means genuinely leaving the ground.
       if (
@@ -700,6 +807,8 @@ export class Game {
     }
     if (this.hovercraft) this.hovercraft.update(dt, time);
     if (this.balloon) this.balloon.update(dt, time);
+    if (this.launchpad) this.launchpad.update(dt);
+    if (this.rocket) this.rocket.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));

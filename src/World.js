@@ -74,6 +74,7 @@ export class World {
     this._buildTerrain();
     this._buildLake();
     this._buildForest();
+    this._buildBlossomTree();
     this._buildRocks();
     this._buildGrass();
     this._buildEscherStairs();
@@ -617,6 +618,64 @@ export class World {
   }
 
   /* ================================================================ */
+  /*  The cherry blossom tree                                         */
+  /* ================================================================ */
+
+  /**
+   * One grand cherry blossom tree — a pink-crowned landmark. Double-tap
+   * beside it and the ground gives up its secret (Game handles that; the
+   * world just grows the tree and remembers where it stands).
+   */
+  _buildBlossomTree() {
+    const spot = this.randomGroundPoint(30, 55, 0.8);
+    this.blossomTree = spot.clone();
+
+    const scale = 1.5;
+    const trunkGeo = this._makeTrunkGeometry();
+    const canopyGeo = this._makeCanopyGeometry();
+    const barkMat = createToonMaterial({
+      color: 0x6e4a4a,
+      rim: { color: 0xd9a4c9, strength: 0.35, threshold: 0.65 }
+    });
+    const petalMats = [0xf5a8c8, 0xf8c6da, 0xe88ab8].map((color) =>
+      createToonMaterial({
+        color,
+        rim: { color: 0xfff0f8, strength: 0.5, threshold: 0.55 },
+        sway: { strength: 0.16, speed: 1.3 }
+      })
+    );
+    this._disposables.push(trunkGeo, canopyGeo, barkMat, ...petalMats);
+
+    const tree = new THREE.Group();
+    tree.position.set(spot.x, spot.y - 0.2, spot.z);
+    this.blossomMeshes = tree;
+
+    const trunk = new THREE.Mesh(trunkGeo, barkMat);
+    trunk.scale.set(scale, scale, scale);
+    trunk.castShadow = true;
+    tree.add(trunk);
+
+    const trunkHeight = 5.4 * scale;
+    for (let b = 0; b < 7; b++) {
+      const blob = new THREE.Mesh(canopyGeo, petalMats[b % petalMats.length]);
+      const spread = 1.7 * scale;
+      blob.position.set(
+        this.rng.range(-spread, spread),
+        trunkHeight * this.rng.range(0.82, 1.05),
+        this.rng.range(-spread, spread)
+      );
+      const bs = scale * this.rng.range(1.0, 1.7);
+      blob.scale.set(bs, bs * 0.9, bs);
+      blob.rotation.y = this.rng.range(0, Math.PI);
+      blob.castShadow = true;
+      tree.add(blob);
+    }
+
+    this.scene.add(tree);
+    this.colliders.push({ x: spot.x, z: spot.z, radius: 1.1, top: spot.y + 4.5 });
+  }
+
+  /* ================================================================ */
   /*  Rocks                                                           */
   /* ================================================================ */
 
@@ -885,6 +944,7 @@ export class World {
       if (obj && obj.isInstancedMesh) obj.dispose();
     }
     if (this.lakeSign) this.scene.remove(this.lakeSign);
+    if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
     if (this._stairMeshes) {
       for (const mesh of this._stairMeshes) this.scene.remove(mesh);
       this._stairMeshes.length = 0;

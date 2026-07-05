@@ -85,6 +85,16 @@ import map — no npm install, no bundler.
   orbiting green electrons, perched on the crowns of ten random trees
   (7–12m up). Balloon work, mostly — though a bold leap from the Escher
   stairs or a cliff onto a neighboring canopy can pick off the low ones.
+- **The space program** — one grand **cherry blossom tree** stands
+  somewhere in the forest. Double-tap beside it and a hidden
+  **launchpad** grinds up out of the turf. A **rocket** lands on the pad
+  only while your score sits **strictly between 88 and 112** — and it
+  departs without you the moment your score leaves the window. Board it
+  (jump = main engine) and blast far above the clouds, where nine golden
+  **stars (+20)** hang in the void at 80–110m. Collect **five stars in
+  one run** to unlock **Alien Ginsberg**: a small green poet with a
+  beret, round spectacles, glowing antennae and a notebook he refuses
+  to put down.
 - **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
   grabbing one also unlocks **William the Conqueror**: the badger in a
   golden crown with a royal red cape that streams behind him at speed.
