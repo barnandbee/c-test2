@@ -62,7 +62,10 @@ const STORAGE_WILLIAM = 'mystic-badger.williamUnlocked';
 const STORAGE_EDITH = 'mystic-badger.edithUnlocked';
 const STORAGE_RHOMBUS = 'mystic-badger.rhombusUnlocked';
 const STORAGE_GINSBERG = 'mystic-badger.ginsbergUnlocked';
+const STORAGE_MAGNUS = 'mystic-badger.magnusUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+const MAGNUS_HITS_REQUIRED = 4;
+const MAGNUS_MIN_SCORE = 50;
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
 function readStorage(key, fallback = null) {
@@ -115,6 +118,7 @@ export class Game {
     this.edithUnlocked = readStorage(STORAGE_EDITH) === '1';
     this.rhombusUnlocked = readStorage(STORAGE_RHOMBUS) === '1';
     this.ginsbergUnlocked = readStorage(STORAGE_GINSBERG) === '1';
+    this.magnusUnlocked = readStorage(STORAGE_MAGNUS) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -169,6 +173,7 @@ export class Game {
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
     this.starsCollected = 0;
+    this.cartHits = 0;
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
@@ -402,6 +407,7 @@ export class Game {
     const cdy = center.y - cart.position.y;
     const creach = cart.hazardRadius + 0.4;
     if (cdx * cdx + cdz * cdz < creach * creach && Math.abs(cdy) < 2.4) {
+      this.cartHits += 1;
       this.health -= CART_HEALTH_DAMAGE;
       this.points = Math.max(0, this.points - CART_POINTS_DAMAGE);
       this.invulnTimer = INVULN_TIME;
@@ -473,6 +479,7 @@ export class Game {
     if (name === 'edith') return this.edithUnlocked;
     if (name === 'rhombus') return this.rhombusUnlocked;
     if (name === 'ginsberg') return this.ginsbergUnlocked;
+    if (name === 'magnus') return this.magnusUnlocked;
     return name === 'badger';
   }
 
@@ -484,7 +491,8 @@ export class Game {
       william: this.williamUnlocked,
       edith: this.edithUnlocked,
       rhombus: this.rhombusUnlocked,
-      ginsberg: this.ginsbergUnlocked
+      ginsberg: this.ginsbergUnlocked,
+      magnus: this.magnusUnlocked
     };
   }
 
@@ -684,6 +692,18 @@ export class Game {
       writeStorage(STORAGE_RHOMBUS, '1');
       newlyUnlockedNames.push('Rhombus the Hat');
     }
+    // Magnus Carter: take four cart hits, survive the full three minutes
+    // anyway, and still finish with 50+. He respects that kind of grit.
+    if (
+      !this.magnusUnlocked &&
+      reason === 'time' &&
+      this.cartHits >= MAGNUS_HITS_REQUIRED &&
+      this.points >= MAGNUS_MIN_SCORE
+    ) {
+      this.magnusUnlocked = true;
+      writeStorage(STORAGE_MAGNUS, '1');
+      newlyUnlockedNames.push('Magnus Carter');
+    }
 
     this.ui.showGameOver({
       score: this.points,
@@ -717,6 +737,7 @@ export class Game {
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
     this.starsCollected = 0;
+    this.cartHits = 0;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);

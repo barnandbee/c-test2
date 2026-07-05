@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import { SimplexNoise2D, SeededRandom } from './utils/Noise.js';
 import { smoothstep, lerp, clamp } from './utils/MathUtils.js';
 import { createToonMaterial, createSkyMaterial, createWaterMaterial, SharedUniforms } from './Shaders.js';
+import { createAuraPoints } from './Particles.js';
 
 const TERRAIN_SIZE = 260;
 const TERRAIN_SEGMENTS = 200;
@@ -630,18 +631,24 @@ export class World {
     const spot = this.randomGroundPoint(30, 55, 0.8);
     this.blossomTree = spot.clone();
 
-    const scale = 1.5;
+    // Twice the stature of a common tree, and impossible to mistake: the
+    // canopy is luminous pink (self-lit, so shade and fog can't mute it),
+    // wrapped in a slowly orbiting halo of petal sparkles, with its own
+    // soft rose light spilling onto the grass below.
+    const scale = 2.0;
     const trunkGeo = this._makeTrunkGeometry();
     const canopyGeo = this._makeCanopyGeometry();
     const barkMat = createToonMaterial({
       color: 0x6e4a4a,
-      rim: { color: 0xd9a4c9, strength: 0.35, threshold: 0.65 }
+      rim: { color: 0xff9ecb, strength: 0.45, threshold: 0.6 }
     });
-    const petalMats = [0xf5a8c8, 0xf8c6da, 0xe88ab8].map((color) =>
+    const petalMats = [0xff8fc2, 0xffc2dd, 0xf573b0].map((color) =>
       createToonMaterial({
         color,
-        rim: { color: 0xfff0f8, strength: 0.5, threshold: 0.55 },
-        sway: { strength: 0.16, speed: 1.3 }
+        emissive: color,
+        emissiveIntensity: 0.28,
+        rim: { color: 0xfff0f8, strength: 0.6, threshold: 0.5 },
+        sway: { strength: 0.18, speed: 1.3 }
       })
     );
     this._disposables.push(trunkGeo, canopyGeo, barkMat, ...petalMats);
@@ -656,7 +663,7 @@ export class World {
     tree.add(trunk);
 
     const trunkHeight = 5.4 * scale;
-    for (let b = 0; b < 7; b++) {
+    for (let b = 0; b < 8; b++) {
       const blob = new THREE.Mesh(canopyGeo, petalMats[b % petalMats.length]);
       const spread = 1.7 * scale;
       blob.position.set(
@@ -664,15 +671,31 @@ export class World {
         trunkHeight * this.rng.range(0.82, 1.05),
         this.rng.range(-spread, spread)
       );
-      const bs = scale * this.rng.range(1.0, 1.7);
+      const bs = scale * this.rng.range(1.0, 1.6);
       blob.scale.set(bs, bs * 0.9, bs);
       blob.rotation.y = this.rng.range(0, Math.PI);
       blob.castShadow = true;
       tree.add(blob);
     }
 
+    // Orbiting petal-sparkle halo around the crown.
+    this.blossomAura = createAuraPoints(60, {
+      radiusBase: 3.6 * scale * 0.5,
+      radiusVar: 2.0,
+      heightBase: trunkHeight * 0.78,
+      heightVar: trunkHeight * 0.4
+    });
+    this.blossomAura.material.uniforms.uColor.value.set(0xffb8d9);
+    this.blossomAura.material.uniforms.uSize.value = 34;
+    tree.add(this.blossomAura);
+
+    // A rose glow pooling beneath the tree at twilight.
+    const blossomLight = new THREE.PointLight(0xff9ecb, 5, 26, 1.8);
+    blossomLight.position.y = trunkHeight * 0.9;
+    tree.add(blossomLight);
+
     this.scene.add(tree);
-    this.colliders.push({ x: spot.x, z: spot.z, radius: 1.1, top: spot.y + 4.5 });
+    this.colliders.push({ x: spot.x, z: spot.z, radius: 1.4, top: spot.y + 6 });
   }
 
   /* ================================================================ */
@@ -945,6 +968,10 @@ export class World {
     }
     if (this.lakeSign) this.scene.remove(this.lakeSign);
     if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
+    if (this.blossomAura) {
+      this.blossomAura.geometry.dispose();
+      this.blossomAura.material.dispose();
+    }
     if (this._stairMeshes) {
       for (const mesh of this._stairMeshes) this.scene.remove(mesh);
       this._stairMeshes.length = 0;

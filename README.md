@@ -57,7 +57,9 @@ import map — no npm install, no bundler.
   sparkles. One crowns the Escher stairs; one hides in the far wilds.
 - **Magnus Carter** — a small elf tearing around the forest in a golf
   cart. Getting run over costs **20 health and 20 points**. Listen for
-  the headlights.
+  the headlights. Take **four hits**, survive the **full three minutes
+  anyway**, and still finish with **50+ points**, and Magnus himself
+  joins the roster — green tunic, red cap, zero remorse.
 - **The Escher stairs** — a floating stone folly of switchback flights
   (with a mirrored flight hanging impossibly underneath) on the east
   side of the map. Hop all the way up for the summit Magna Carta, then
@@ -86,7 +88,9 @@ import map — no npm install, no bundler.
   (7–12m up). Balloon work, mostly — though a bold leap from the Escher
   stairs or a cliff onto a neighboring canopy can pick off the low ones.
 - **The space program** — one grand **cherry blossom tree** stands
-  somewhere in the forest. Double-tap beside it and a hidden
+  somewhere in the forest — twice the height of its neighbors, with a
+  luminous pink canopy, an orbiting halo of petal sparkles and its own
+  rose glow, so it reads from across the map. Double-tap beside it and a hidden
   **launchpad** grinds up out of the turf. A **rocket** lands on the pad
   only while your score sits **strictly between 88 and 112** — and it
   departs without you the moment your score leaves the window. Board it

@@ -939,6 +939,40 @@ body {
   transform: rotate(-14deg);
 }
 
+/* Magnus Carter: green tunic, pointy ears implied, infamous red cap. */
+.magnus-icon {
+  background: none;
+  border-color: transparent;
+  position: relative;
+}
+
+.magnus-icon::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 24px solid #3f8f3f;
+}
+
+.magnus-icon::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 26px;
+  background:
+    radial-gradient(circle at 50% 72%, #f0c090 0 8px, transparent 8.5px),
+    linear-gradient(180deg, transparent 0 2px, #c03038 2px 12px, #f2f0e8 12px 15px, transparent 15px);
+  background-repeat: no-repeat;
+}
+
 /* ...and Hughes: a little red foil packet with googly eyes and a smile. */
 .hughes-icon {
   border-radius: 7px;

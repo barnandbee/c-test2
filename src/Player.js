@@ -129,6 +129,7 @@ export class Player {
     else if (this.character === 'edith') this.root = this.buildEdith();
     else if (this.character === 'rhombus') this.root = this.buildRhombus();
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
+    else if (this.character === 'magnus') this.root = this.buildMagnus();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -1298,6 +1299,162 @@ export class Player {
       foot.position.set(0, -0.5, 0.04);
       foot.scale.set(1.1, 0.55, 1.7);
       pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Magnus Carter — the elf himself, finally out from behind the wheel.
+   * Green tunic with a belt and buckle, pointed ears, a red cap with a
+   * white pom, and the smug grin of a man with zero driving convictions.
+   */
+  buildMagnus() {
+    const root = new THREE.Group();
+    root.name = 'magnus';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const skinMat = track(createToonMaterial({
+      color: 0xf0c090,
+      rim: { color: 0xffe0c0, strength: 0.35, threshold: 0.62 }
+    }));
+    const suitMat = track(createToonMaterial({
+      color: 0x3f8f3f,
+      rim: { color: 0xa0e8a0, strength: 0.4, threshold: 0.6 }
+    }));
+    const suitDarkMat = track(createToonMaterial({ color: 0x2f6f2f }));
+    const hatMat = track(createToonMaterial({
+      color: 0xc03038,
+      rim: { color: 0xff9a8a, strength: 0.4, threshold: 0.58 }
+    }));
+    const pomMat = track(createToonMaterial({ color: 0xf2f0e8 }));
+    const beltMat = track(createToonMaterial({ color: 0x2a2018 }));
+    const buckleMat = track(createToonMaterial({
+      color: 0xf5c542,
+      emissive: 0x4a3300,
+      emissiveIntensity: 1.0
+    }));
+    const eyeMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x6a2a20 }));
+    const shoeMat = track(createToonMaterial({ color: 0x4a3018 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- tunic with belt and buckle -----------------------------------------
+    const tunicGeo = track(new THREE.ConeGeometry(0.3, 0.74, 12));
+    const tunic = new THREE.Mesh(tunicGeo, suitMat);
+    tunic.position.y = 0.37;
+    tunic.castShadow = true;
+    body.add(tunic);
+
+    const beltGeo = track(new THREE.CylinderGeometry(0.235, 0.255, 0.07, 12));
+    const belt = new THREE.Mesh(beltGeo, beltMat);
+    belt.position.y = 0.28;
+    body.add(belt);
+    const buckleGeo = track(new THREE.BoxGeometry(0.07, 0.06, 0.02));
+    const buckle = new THREE.Mesh(buckleGeo, buckleMat);
+    buckle.position.set(0, 0.28, 0.24);
+    body.add(buckle);
+
+    // --- head, ears, face ------------------------------------------------------
+    const headGeo = track(new THREE.SphereGeometry(0.21, 20, 16));
+    const head = new THREE.Mesh(headGeo, skinMat);
+    head.position.y = 0.88;
+    head.castShadow = true;
+    body.add(head);
+
+    const noseGeo = track(new THREE.SphereGeometry(0.035, 8, 6));
+    const nose = new THREE.Mesh(noseGeo, skinMat);
+    nose.position.set(0, 0.86, 0.2);
+    body.add(nose);
+
+    const eyeGeo = track(new THREE.SphereGeometry(0.032, 8, 6));
+    const glintGeo = track(new THREE.SphereGeometry(0.011, 6, 5));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(side * 0.075, 0.91, 0.18);
+      body.add(eye);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.065, 0.925, 0.2);
+      body.add(glint);
+    }
+
+    // The grin of the untouchable.
+    const mouthGeo = track(new THREE.TorusGeometry(0.05, 0.011, 6, 10, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.81, 0.185);
+    mouth.rotation.z = Math.PI;
+    body.add(mouth);
+
+    const earGeo = track(new THREE.ConeGeometry(0.035, 0.14, 6));
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(earGeo, skinMat);
+      ear.position.set(side * 0.22, 0.92, 0);
+      ear.rotation.z = side * -(Math.PI / 2 + 0.35);
+      body.add(ear);
+    }
+
+    // --- the famous red cap ------------------------------------------------------
+    const bandGeo = track(new THREE.CylinderGeometry(0.215, 0.22, 0.06, 12));
+    const band = new THREE.Mesh(bandGeo, pomMat);
+    band.position.y = 1.02;
+    body.add(band);
+    const capGeo = track(new THREE.ConeGeometry(0.2, 0.4, 12));
+    const cap = new THREE.Mesh(capGeo, hatMat);
+    cap.position.set(-0.03, 1.2, 0);
+    cap.rotation.z = 0.22;
+    cap.castShadow = true;
+    body.add(cap);
+    const pomGeo = track(new THREE.SphereGeometry(0.05, 8, 6));
+    const pom = new THREE.Mesh(pomGeo, pomMat);
+    pom.position.set(-0.12, 1.38, 0);
+    body.add(pom);
+
+    // --- limbs -------------------------------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.36, 8));
+    armGeo.translate(0, -0.18, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.24, 0.55, 0);
+      pivot.rotation.z = -side * 0.4;
+      const arm = new THREE.Mesh(armGeo, suitDarkMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, skinMat);
+      hand.position.set(0, -0.38, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    const legGeo = track(new THREE.CylinderGeometry(0.035, 0.035, 0.46, 8));
+    legGeo.translate(0, -0.23, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.11, -0.05, 0);
+      const leg = new THREE.Mesh(legGeo, suitDarkMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.48, 0.05);
+      shoe.scale.set(1.1, 0.55, 1.8);
+      shoe.castShadow = true;
+      pivot.add(shoe);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
     }
