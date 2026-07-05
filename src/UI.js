@@ -30,6 +30,11 @@ export class UI {
     this.unlockNote = document.getElementById('unlock-note');
     this.restartBtn = document.getElementById('restart-btn');
     this.hint = document.getElementById('hint');
+    this.menu = document.getElementById('menu');
+    this.menuRoster = document.getElementById('menu-roster');
+    this.menuBestRow = document.getElementById('menu-best-row');
+    this.menuBestValue = document.getElementById('menu-best');
+    this.startBtn = document.getElementById('start-btn');
 
     this._flashTimeout = 0;
     this._popTimeout = 0;
@@ -121,28 +126,53 @@ export class UI {
     this.highScoreValue.textContent = formatScore(opts.highScore);
     this.newHighBadge.classList.toggle('hidden', !opts.isNewHigh);
 
-    // The roster appears once anything beyond the badger is unlocked;
-    // each locked hero's card stays hidden until earned.
-    const anyUnlocked = Object.values(opts.unlocked).some(Boolean);
-    this.characterSelect.classList.toggle('hidden', !anyUnlocked);
-
     const newly = opts.newlyUnlockedNames || [];
     this.unlockNote.classList.toggle('hidden', newly.length === 0);
     if (newly.length > 0) {
       this.unlockNote.textContent = `★ ${newly.join(' & ')} unlocked!`;
     }
 
-    if (anyUnlocked) {
-      this._selectedCharacter = opts.currentCharacter;
-      for (const card of this.charCards) {
-        const char = card.dataset.char;
-        const available = char === 'badger' || Boolean(opts.unlocked[char]);
-        card.classList.toggle('hidden', !available);
-        card.classList.toggle('selected', char === opts.currentCharacter);
-      }
-    }
-
+    this.setRoster(opts.unlocked, opts.currentCharacter);
     this.gameOver.classList.add('visible');
+  }
+
+  /**
+   * Sync every character card on the page (menu + game-over) with the
+   * unlock state: rosters appear once anything beyond the badger is
+   * earned, and locked heroes' cards stay hidden.
+   */
+  setRoster(unlocked, currentCharacter) {
+    const anyUnlocked = Object.values(unlocked).some(Boolean);
+    this.characterSelect.classList.toggle('hidden', !anyUnlocked);
+    if (this.menuRoster) this.menuRoster.classList.toggle('hidden', !anyUnlocked);
+
+    this._selectedCharacter = currentCharacter;
+    for (const card of this.charCards) {
+      const char = card.dataset.char;
+      const available = char === 'badger' || Boolean(unlocked[char]);
+      card.classList.toggle('hidden', !available);
+      card.classList.toggle('selected', char === currentCharacter);
+    }
+  }
+
+  /* ---------------- welcome menu ---------------- */
+
+  showMenu() {
+    if (this.menu) this.menu.classList.remove('dismissed');
+  }
+
+  hideMenu() {
+    if (this.menu) this.menu.classList.add('dismissed');
+  }
+
+  setMenuBest(score) {
+    if (!this.menuBestRow) return;
+    this.menuBestRow.classList.toggle('hidden', !score);
+    if (score) this.menuBestValue.textContent = formatScore(score);
+  }
+
+  bindStart(callback) {
+    if (this.startBtn) this.startBtn.addEventListener('click', callback);
   }
 
   hideGameOver() {

@@ -42,6 +42,236 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Welcome menu                                                       */
+/* ------------------------------------------------------------------ */
+
+#menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    rgba(22, 12, 44, 0.42) 0%,
+    rgba(14, 8, 30, 0.78) 62%,
+    rgba(8, 4, 18, 0.94) 100%
+  );
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.9s ease, visibility 0.9s;
+  overflow: hidden;
+}
+
+#menu.dismissed {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#menu-content {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  padding: 24px;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+#menu-content > * {
+  animation: menu-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#menu-content > *:nth-child(2) { animation-delay: 0.12s; }
+#menu-content > *:nth-child(3) { animation-delay: 0.24s; }
+#menu-content > *:nth-child(4) { animation-delay: 0.34s; }
+#menu-content > *:nth-child(5) { animation-delay: 0.42s; }
+#menu-content > *:nth-child(6) { animation-delay: 0.5s; }
+#menu-content > *:nth-child(7) { animation-delay: 0.6s; }
+
+@keyframes menu-rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  color: rgba(243, 239, 255, 0.55);
+  margin-bottom: 12px;
+}
+
+#menu-title .title-line {
+  display: block;
+  font-size: clamp(36px, 7vw, 72px);
+  letter-spacing: 0.04em;
+  background: linear-gradient(
+    100deg,
+    #ffb26e 0%, #ffd44f 24%, #fff3c0 38%, #ffd44f 52%, #ff9a5b 74%, #e86a8a 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 6px 26px rgba(255, 178, 110, 0.35));
+  animation: title-shine 5s ease-in-out infinite;
+}
+
+@keyframes title-shine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+#menu-title .title-of {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 3vw, 30px);
+  color: rgba(243, 239, 255, 0.7);
+  margin: 8px 0;
+  letter-spacing: 0.12em;
+}
+
+.menu-tag {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(243, 239, 255, 0.72);
+  margin-bottom: 14px;
+}
+
+#menu-best-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 20px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 212, 79, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 212, 79, 0.08);
+}
+
+.menu-best-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(243, 239, 255, 0.6);
+}
+
+#menu-best {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+#menu-roster {
+  margin-bottom: 18px;
+}
+
+/* Compact cards on the menu so seven heroes + the CTA fit on one screen. */
+#menu-roster .char-card {
+  padding: 9px 10px;
+  min-width: 86px;
+  max-width: 104px;
+  font-size: 11px;
+  gap: 6px;
+}
+
+#menu-roster .char-icon {
+  width: 34px;
+  height: 34px;
+}
+
+#menu-title {
+  font-weight: 900;
+  line-height: 0.98;
+  margin-bottom: 12px;
+}
+
+#start-btn {
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 15px 52px;
+  color: #1c1233;
+  background: linear-gradient(90deg, var(--accent-warm), var(--accent-gold));
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  animation: start-pulse 2.4s ease-in-out infinite;
+}
+
+#start-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+}
+
+#start-btn:active {
+  transform: scale(0.97);
+}
+
+@keyframes start-pulse {
+  0%, 100% { box-shadow: 0 8px 30px rgba(255, 178, 110, 0.35), 0 0 0 0 rgba(255, 212, 79, 0.35); }
+  50% { box-shadow: 0 8px 44px rgba(255, 178, 110, 0.6), 0 0 0 14px rgba(255, 212, 79, 0); }
+}
+
+.menu-controls {
+  margin-top: 16px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: rgba(243, 239, 255, 0.5);
+}
+
+.menu-controls b {
+  color: var(--accent-warm);
+}
+
+/* Drifting embers behind the title. */
+.menu-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.menu-embers i {
+  position: absolute;
+  bottom: -12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 12px 3px rgba(255, 212, 79, 0.55);
+  opacity: 0;
+  animation: ember-float 9s linear infinite;
+}
+
+.menu-embers i:nth-child(1)  { left: 8%;  animation-delay: 0s;    transform: scale(0.7); }
+.menu-embers i:nth-child(2)  { left: 18%; animation-delay: 2.2s;  transform: scale(1.1); }
+.menu-embers i:nth-child(3)  { left: 29%; animation-delay: 4.8s;  transform: scale(0.5); }
+.menu-embers i:nth-child(4)  { left: 38%; animation-delay: 1.4s;  transform: scale(0.9); background: var(--accent-warm); }
+.menu-embers i:nth-child(5)  { left: 49%; animation-delay: 6.4s;  transform: scale(0.6); }
+.menu-embers i:nth-child(6)  { left: 58%; animation-delay: 3.1s;  transform: scale(1.2); background: #e86a8a; }
+.menu-embers i:nth-child(7)  { left: 68%; animation-delay: 5.6s;  transform: scale(0.8); }
+.menu-embers i:nth-child(8)  { left: 78%; animation-delay: 0.9s;  transform: scale(0.55); background: var(--accent-warm); }
+.menu-embers i:nth-child(9)  { left: 87%; animation-delay: 7.3s;  transform: scale(1.0); }
+.menu-embers i:nth-child(10) { left: 94%; animation-delay: 3.9s;  transform: scale(0.65); background: #e86a8a; }
+
+@keyframes ember-float {
+  0% { opacity: 0; transform: translateY(0); }
+  8% { opacity: 0.9; }
+  60% { opacity: 0.55; }
+  100% { opacity: 0; transform: translateY(-105vh) translateX(4vw); }
+}
+
+/* ------------------------------------------------------------------ */
 /*  HUD                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -650,6 +880,41 @@ body {
     linear-gradient(180deg, #f2f4f6, #dde2e8);
   background-size: 14px 14px, 14px 14px, 10px 9px, 5px 12px, 5px 12px, 100% 70%;
   background-position: 22% 42%, 64% 42%, 50% 2%, 30% 100%, 66% 100%, 50% 32%;
+  background-repeat: no-repeat;
+}
+
+/* Rhombus the Hat: a pink diamond in a top hat. Two-dimensional icon
+   for a two-dimensional gentleman. */
+.rhombus-icon {
+  background: none;
+  border-color: transparent;
+  position: relative;
+}
+
+.rhombus-icon::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  background: linear-gradient(135deg, #f06aad, #c23a80);
+  transform: rotate(45deg);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(232, 80, 154, 0.5);
+}
+
+.rhombus-icon::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-6deg);
+  width: 20px;
+  height: 12px;
+  background-image:
+    linear-gradient(#1a1a1e, #1a1a1e),
+    linear-gradient(#c03038, #c03038),
+    linear-gradient(#1a1a1e, #1a1a1e);
+  background-size: 12px 9px, 12px 3px, 20px 3px;
+  background-position: 50% 0, 50% 6px, 50% 100%;
   background-repeat: no-repeat;
 }
 

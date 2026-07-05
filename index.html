@@ -16,6 +16,65 @@
 <body>
   <div id="app"></div>
 
+  <!-- Welcome menu -->
+  <div id="menu">
+    <div class="menu-embers" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div id="menu-content">
+      <p class="menu-kicker">A three-minute twilight platformer</p>
+      <h1 id="menu-title">
+        <span class="title-line">BADGER</span>
+        <em class="title-of">of the</em>
+        <span class="title-line">MYSTIC FOREST</span>
+      </h1>
+      <p class="menu-tag">Hoard pine cones. Dodge toxic frogs. Bargain with a clock tower.<br />
+        Beware the elf in the golf cart. Absolutely no swimming.</p>
+      <div id="menu-best-row" class="hidden">
+        <span class="menu-best-label">Best</span>
+        <span id="menu-best">0</span>
+      </div>
+      <div id="menu-roster" class="hidden">
+        <p class="select-label">Choose your hero</p>
+        <div class="char-row">
+          <button class="char-card selected" data-char="badger" type="button">
+            <span class="char-icon badger-icon" aria-hidden="true"></span>
+            <span class="char-name">Badger</span>
+          </button>
+          <button class="char-card" data-char="badgerette" type="button">
+            <span class="char-icon badgerette-icon" aria-hidden="true"></span>
+            <span class="char-name">Badgerette</span>
+          </button>
+          <button class="char-card" data-char="hughes" type="button">
+            <span class="char-icon hughes-icon" aria-hidden="true"></span>
+            <span class="char-name">&lsquo;Crisp Packet&rsquo; Hughes</span>
+          </button>
+          <button class="char-card" data-char="boffington" type="button">
+            <span class="char-icon boffington-icon" aria-hidden="true"></span>
+            <span class="char-name">Mr Finn Boffington</span>
+          </button>
+          <button class="char-card" data-char="william" type="button">
+            <span class="char-icon william-icon" aria-hidden="true"></span>
+            <span class="char-name">William the Conqueror</span>
+          </button>
+          <button class="char-card" data-char="edith" type="button">
+            <span class="char-icon edith-icon" aria-hidden="true"></span>
+            <span class="char-name">Edith McCombe</span>
+          </button>
+          <button class="char-card" data-char="rhombus" type="button">
+            <span class="char-icon rhombus-icon" aria-hidden="true"></span>
+            <span class="char-name">Rhombus the Hat</span>
+          </button>
+        </div>
+      </div>
+      <button id="start-btn" type="button">Enter the Forest</button>
+      <p class="menu-controls">
+        <b>WASD</b> move &nbsp;&middot;&nbsp; <b>Space</b> jump &nbsp;&middot;&nbsp;
+        <b>Mouse</b> camera &nbsp;&middot;&nbsp; <b>2&times;click</b> ride
+      </p>
+    </div>
+  </div>
+
   <!-- HUD overlay -->
   <div id="hud">
     <div id="health-panel" class="hud-card">
@@ -102,6 +161,10 @@
           <button class="char-card" data-char="edith" type="button">
             <span class="char-icon edith-icon" aria-hidden="true"></span>
             <span class="char-name">Edith McCombe</span>
+          </button>
+          <button class="char-card" data-char="rhombus" type="button">
+            <span class="char-icon rhombus-icon" aria-hidden="true"></span>
+            <span class="char-name">Rhombus the Hat</span>
           </button>
         </div>
       </div>

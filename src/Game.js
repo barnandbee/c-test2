@@ -48,6 +48,7 @@ const STORAGE_HUGHES = 'mystic-badger.hughesUnlocked';
 const STORAGE_BOFFINGTON = 'mystic-badger.boffingtonUnlocked';
 const STORAGE_WILLIAM = 'mystic-badger.williamUnlocked';
 const STORAGE_EDITH = 'mystic-badger.edithUnlocked';
+const STORAGE_RHOMBUS = 'mystic-badger.rhombusUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
@@ -99,6 +100,7 @@ export class Game {
     this.boffingtonUnlocked = readStorage(STORAGE_BOFFINGTON) === '1';
     this.williamUnlocked = readStorage(STORAGE_WILLIAM) === '1';
     this.edithUnlocked = readStorage(STORAGE_EDITH) === '1';
+    this.rhombusUnlocked = readStorage(STORAGE_RHOMBUS) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -165,6 +167,15 @@ export class Game {
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
     this.ui.bindRestart(() => this.restart());
+
+    // --- welcome menu -------------------------------------------------------
+    // The run doesn't begin until ENTER THE FOREST; meanwhile the camera
+    // drifts cinematically around the hero.
+    this.inMenu = true;
+    this.ui.setRoster(this.getUnlockedMap(), this.characterName);
+    this.ui.setMenuBest(this.highScore);
+    this.ui.showMenu();
+    this.ui.bindStart(() => this.beginRun());
 
     // --- loop ---------------------------------------------------------------------
     this.clock = new THREE.Clock();
@@ -394,7 +405,31 @@ export class Game {
     if (name === 'boffington') return this.boffingtonUnlocked;
     if (name === 'william') return this.williamUnlocked;
     if (name === 'edith') return this.edithUnlocked;
+    if (name === 'rhombus') return this.rhombusUnlocked;
     return name === 'badger';
+  }
+
+  getUnlockedMap() {
+    return {
+      badgerette: this.badgeretteUnlocked,
+      hughes: this.hughesUnlocked,
+      boffington: this.boffingtonUnlocked,
+      william: this.williamUnlocked,
+      edith: this.edithUnlocked,
+      rhombus: this.rhombusUnlocked
+    };
+  }
+
+  /** Leave the welcome menu and start the clock. */
+  beginRun() {
+    if (!this.inMenu) return;
+    const chosen = this.ui.getSelectedCharacter() || this.characterName;
+    if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
+      this.setCharacter(chosen);
+    }
+    this.inMenu = false;
+    this.clock.getDelta(); // flush menu time so the countdown starts clean
+    this.ui.hideMenu();
   }
 
   /** Double-tap/click: board the hovercraft when close, or hop out. */
@@ -512,19 +547,25 @@ export class Game {
       writeStorage(STORAGE_EDITH, '1');
       newlyUnlockedNames.push('Edith McCombe');
     }
+    // Rhombus the Hat: a final score exactly divisible by 360 (and not
+    // zero — bankruptcy impresses nobody, not even a rhombus).
+    if (
+      !this.rhombusUnlocked &&
+      this.points > 0 &&
+      Number.isInteger(this.points) &&
+      this.points % 360 === 0
+    ) {
+      this.rhombusUnlocked = true;
+      writeStorage(STORAGE_RHOMBUS, '1');
+      newlyUnlockedNames.push('Rhombus the Hat');
+    }
 
     this.ui.showGameOver({
       score: this.points,
       highScore: this.highScore,
       isNewHigh,
       reason,
-      unlocked: {
-        badgerette: this.badgeretteUnlocked,
-        hughes: this.hughesUnlocked,
-        boffington: this.boffingtonUnlocked,
-        william: this.williamUnlocked,
-        edith: this.edithUnlocked
-      },
+      unlocked: this.getUnlockedMap(),
       newlyUnlockedNames,
       currentCharacter: this.characterName
     });
@@ -581,7 +622,11 @@ export class Game {
     updateSharedTime(dt);
     const time = SharedUniforms.uTime.value;
 
-    if (!this.isGameOver) {
+    if (this.inMenu) {
+      // Welcome menu: the forest breathes, the camera drifts, no clock.
+      this.player.animate(dt, false);
+      this.cameraRig.update(dt, this.player, null);
+    } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
       this.timeLeft -= dt;
       this.ui.setTimer(this.timeLeft);

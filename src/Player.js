@@ -102,9 +102,10 @@ export class Player {
     this.walkCycle = 0;
     this.squash = 0;       // 0..1 landing squash amount, springs back to 0
     this.airTilt = 0;
-    this.hairGroup = null;   // present only on the badgerette
-    this.arms = null;        // present only on Hughes (stick arms)
-    this.googlyEyes = null;  // present only on Hughes (rattling pupils)
+    this.hairGroup = null;   // badgerette's mane / william's cape
+    this.arms = null;        // stick-limbed heroes only
+    this.googlyEyes = null;  // rattling pupils (Hughes, Edith)
+    this.rockMesh = null;    // Rhombus: the body that waddle-rocks
     this.tail = null;
     this.headGroup = null;
 
@@ -126,6 +127,7 @@ export class Player {
     if (this.character === 'hughes') this.root = this.buildCrispPacket();
     else if (this.character === 'boffington') this.root = this.buildBoffington();
     else if (this.character === 'edith') this.root = this.buildEdith();
+    else if (this.character === 'rhombus') this.root = this.buildRhombus();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -1044,6 +1046,107 @@ export class Player {
     return root;
   }
 
+  /**
+   * Rhombus the Hat — a resolutely two-dimensional rhombus wearing an
+   * excellent top hat. No limbs; he waddle-rocks along on his bottom
+   * vertex and is nearly invisible side-on, which he considers a feature.
+   */
+  buildRhombus() {
+    const root = new THREE.Group();
+    root.name = 'rhombus';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const bodyMat = track(createToonMaterial({
+      color: 0xe8509a,
+      rim: { color: 0xffb6dd, strength: 0.6, threshold: 0.5 }
+    }));
+    const hatMat = track(createToonMaterial({
+      color: 0x1a1a1e,
+      rim: { color: 0x9db4e8, strength: 0.4, threshold: 0.6 }
+    }));
+    const bandMat = track(createToonMaterial({ color: 0xc03038 }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x5a1030 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the rhombus: an extruded diamond, paper-thin ----------------------
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.6);
+    shape.lineTo(0.38, 0);
+    shape.lineTo(0, -0.6);
+    shape.lineTo(-0.38, 0);
+    shape.closePath();
+    const rhombGeo = track(new THREE.ExtrudeGeometry(shape, {
+      depth: 0.07,
+      bevelEnabled: true,
+      bevelThickness: 0.015,
+      bevelSize: 0.015,
+      bevelSegments: 1
+    }));
+    rhombGeo.translate(0, 0, -0.035);
+    const rhomb = new THREE.Mesh(rhombGeo, bodyMat);
+    rhomb.position.y = 0.02; // bottom vertex kisses the turf
+    rhomb.castShadow = true;
+    body.add(rhomb);
+    this.rockMesh = rhomb;
+
+    // Face lives on the rhombus so it rocks along with him.
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.07, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.032, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.012, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.1, 0.16, 0.05);
+      white.scale.set(1, 1.2, 0.5);
+      rhomb.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.1, 0.15, 0.085);
+      rhomb.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.085, 0.175, 0.1);
+      rhomb.add(glint);
+    }
+    const mouthGeo = track(new THREE.TorusGeometry(0.06, 0.013, 6, 12, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, -0.02, 0.06);
+    mouth.rotation.z = Math.PI;
+    rhomb.add(mouth);
+
+    // --- THE hat: a proper top hat at a rakish tilt --------------------------
+    const hat = new THREE.Group();
+    hat.position.set(0.02, 0.62, 0);
+    hat.rotation.z = -0.14;
+    rhomb.add(hat); // on the top vertex, rocking with the body
+
+    const brimGeo = track(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 16));
+    const brim = new THREE.Mesh(brimGeo, hatMat);
+    brim.castShadow = true;
+    hat.add(brim);
+    const crownGeo = track(new THREE.CylinderGeometry(0.1, 0.11, 0.2, 14));
+    const crown = new THREE.Mesh(crownGeo, hatMat);
+    crown.position.y = 0.11;
+    crown.castShadow = true;
+    hat.add(crown);
+    const hatBandGeo = track(new THREE.CylinderGeometry(0.112, 0.115, 0.05, 14));
+    const hatBand = new THREE.Mesh(hatBandGeo, bandMat);
+    hatBand.position.y = 0.04;
+    hat.add(hatBand);
+
+    this.legs = []; // limbs are for the three-dimensional
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -1433,6 +1536,20 @@ export class Player {
           target = -2.4; // arms up — wheeee
         }
         arm.pivot.rotation.x = damp(arm.pivot.rotation.x, target, 14, dt);
+      }
+    }
+
+    // Rhombus: waddle-rock while trotting, pinwheel gently in the air.
+    if (this.rockMesh) {
+      if (this.grounded || riding) {
+        this.rockMesh.rotation.z = damp(
+          this.rockMesh.rotation.z,
+          Math.sin(this.walkCycle) * 0.17 * speedT,
+          16,
+          dt
+        );
+      } else {
+        this.rockMesh.rotation.z += dt * 3.2; // aerial flourish
       }
     }
 
