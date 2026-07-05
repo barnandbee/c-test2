@@ -14,6 +14,7 @@ import { ParticleFX } from './Particles.js';
 import {
   PineCone,
   GoldenEgg,
+  MarshmallowCloud,
   MagnaCarta,
   ToxicFrog,
   ClockTower,
@@ -28,6 +29,7 @@ import { clamp } from './utils/MathUtils.js';
 
 const PINE_CONE_COUNT = 26;
 const GOLDEN_EGG_COUNT = 6;
+const MARSHMALLOW_COUNT = 12;
 const FROG_COUNT = 8;
 const DAMAGE_PER_HIT = 10;
 const CART_HEALTH_DAMAGE = 20;
@@ -202,6 +204,19 @@ export class Game {
       const p = this.world.randomGroundPoint(14, 85);
       this.frogs.push(new ToxicFrog(this.scene, this.world, p));
     }
+    // Marshmallow clouds drift far above the canopy — balloon country.
+    // They keep clear of the Escher stairs so the summit can't poach them.
+    for (let i = 0; i < MARSHMALLOW_COUNT; i++) {
+      let p = null;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        p = this.world.randomGroundPoint(15, 95);
+        const s = this.world.stairCenter;
+        if (!s || Math.hypot(p.x - s.x, p.z - s.z) > 24) break;
+      }
+      p.y += 19 + Math.random() * 9;
+      this.collectibles.push(new MarshmallowCloud(this.scene, p));
+    }
+
     // Magna Cartas are rare: one crowns the Escher stairs (earn the climb),
     // one hides out in the far wilds.
     if (this.world.stairTopPoint) {

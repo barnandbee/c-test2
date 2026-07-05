@@ -77,6 +77,10 @@ import map — no npm install, no bundler.
   burner** (hold to rise, release to sink). Take it up during a run and
   the bell unlocks **Edith McCombe** — a kitchen sink on bird legs,
   with googly eyes, a gooseneck faucet and hot & cold taps.
+- **Marshmallow clouds (+5)** — puffy pink-and-white clouds drifting
+  ~20–28m above the forest, far higher than any tree or staircase.
+  Collect them like pine cones — but only the balloon flies that high,
+  which makes every flight a harvest run.
 - **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
   grabbing one also unlocks **William the Conqueror**: the badger in a
   golden crown with a royal red cape that streams behind him at speed.

@@ -158,6 +158,32 @@ function getAssets() {
   });
   const sealGeo = new THREE.SphereGeometry(0.055, 10, 8);
 
+  // --- marshmallow cloud puffs: soft displaced blobs -----------------------
+  const cloudBlobGeo = new THREE.IcosahedronGeometry(0.55, 2);
+  {
+    const pos = cloudBlobGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      const puff = 1 + Math.sin(x * 7.3 + y * 5.1 + z * 6.7) * 0.14;
+      pos.setXYZ(i, x * puff, y * puff, z * puff);
+    }
+    cloudBlobGeo.computeVertexNormals();
+  }
+  const cloudPinkMat = createToonMaterial({
+    color: 0xf5b8d0,
+    emissive: 0x3a2030,
+    emissiveIntensity: 1.0,
+    rim: { color: 0xfff0f6, strength: 0.55, threshold: 0.5 }
+  });
+  const cloudWhiteMat = createToonMaterial({
+    color: 0xf8f4f2,
+    emissive: 0x2f2a35,
+    emissiveIntensity: 1.0,
+    rim: { color: 0xffffff, strength: 0.5, threshold: 0.52 }
+  });
+
   assets = {
     pineConeGeo, pineConeMat,
     eggGeo, eggMat,
@@ -165,7 +191,8 @@ function getAssets() {
     frogEyeGeo, frogEyeMat, frogPupilGeo, frogPupilMat, frogLidGeo,
     frogHaunchGeo, frogShinGeo, frogFootGeo, frogArmGeo, frogHandGeo,
     frogSacGeo, frogWartGeo, frogNostrilGeo,
-    scrollGeo, scrollEndGeo, parchmentMat, parchmentDarkMat, sealMat, sealGeo
+    scrollGeo, scrollEndGeo, parchmentMat, parchmentDarkMat, sealMat, sealGeo,
+    cloudBlobGeo, cloudPinkMat, cloudWhiteMat
   };
   return assets;
 }
@@ -278,6 +305,52 @@ export class GoldenEgg extends Collectible {
     this.aura.geometry.dispose();
     this.aura.material.dispose();
     super.dispose();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Marshmallow cloud (+5)                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A puffy pink-and-white marshmallow cloud, floating far above the
+ * canopy — balloon altitude only. Collects exactly like a pine cone,
+ * just five times sweeter.
+ */
+export class MarshmallowCloud extends Collectible {
+  constructor(scene, position) {
+    super(scene, position, 5, 1.7);
+    const a = getAssets();
+
+    const puffCount = 5 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < puffCount; i++) {
+      const puff = new THREE.Mesh(
+        a.cloudBlobGeo,
+        Math.random() < 0.45 ? a.cloudPinkMat : a.cloudWhiteMat
+      );
+      const angle = (i / puffCount) * Math.PI * 2 + Math.random() * 0.9;
+      const r = i === 0 ? 0 : 0.5 + Math.random() * 0.55;
+      puff.position.set(Math.cos(angle) * r, (Math.random() - 0.5) * 0.35, Math.sin(angle) * r);
+      const s = i === 0 ? 1.2 : 0.55 + Math.random() * 0.5;
+      puff.scale.set(s * 1.2, s * 0.78, s);
+      puff.rotation.y = Math.random() * Math.PI;
+      this.group.add(puff);
+    }
+
+    this.baseY = position.y;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0xf7bcd6;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    // Slow tumble, gentle bob, and a bounded sideways drift.
+    this.group.rotation.y += dt * 0.25;
+    this.group.position.y = this.baseY + Math.sin(time * 0.9 + this.phase) * 0.4;
+    this.group.position.x += Math.sin(time * 0.3 + this.phase) * dt * 0.35;
   }
 }
 
