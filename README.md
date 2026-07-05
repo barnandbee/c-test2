@@ -84,10 +84,11 @@ import map — no npm install, no bundler.
 - **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
   grabbing one also unlocks **William the Conqueror**: the badger in a
   golden crown with a royal red cape that streams behind him at speed.
-- **Rhombus the Hat** — finish with a score **exactly divisible by 360**
-  (and not zero) to unlock the seventh hero: a resolutely 2D pink
-  rhombus in a top hat, who waddle-rocks along his bottom vertex and
-  pinwheels in mid-air. Pine cones are worth +1; do the arithmetic.
+- **Rhombus the Hat** — finish with a score of **exactly 90, 180, 270
+  or 360** (any right angle will do) to unlock the seventh hero: a
+  resolutely 2D pink rhombus in a top hat, who waddle-rocks along his
+  bottom vertex and pinwheels in mid-air. Pine cones are worth +1;
+  do the arithmetic.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.

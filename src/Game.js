@@ -562,14 +562,9 @@ export class Game {
       writeStorage(STORAGE_EDITH, '1');
       newlyUnlockedNames.push('Edith McCombe');
     }
-    // Rhombus the Hat: a final score exactly divisible by 360 (and not
-    // zero — bankruptcy impresses nobody, not even a rhombus).
-    if (
-      !this.rhombusUnlocked &&
-      this.points > 0 &&
-      Number.isInteger(this.points) &&
-      this.points % 360 === 0
-    ) {
+    // Rhombus the Hat: land the final score on a right angle — exactly
+    // 90, 180, 270 or 360. (Fractional Red October scores can't qualify.)
+    if (!this.rhombusUnlocked && [90, 180, 270, 360].includes(this.points)) {
       this.rhombusUnlocked = true;
       writeStorage(STORAGE_RHOMBUS, '1');
       newlyUnlockedNames.push('Rhombus the Hat');
