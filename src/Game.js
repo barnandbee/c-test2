@@ -15,6 +15,7 @@ import {
   PineCone,
   GoldenEgg,
   MarshmallowCloud,
+  AtomicCherry,
   MagnaCarta,
   ToxicFrog,
   ClockTower,
@@ -30,6 +31,7 @@ import { clamp } from './utils/MathUtils.js';
 const PINE_CONE_COUNT = 26;
 const GOLDEN_EGG_COUNT = 6;
 const MARSHMALLOW_COUNT = 12;
+const CHERRY_COUNT = 10;
 const FROG_COUNT = 8;
 const DAMAGE_PER_HIT = 10;
 const CART_HEALTH_DAMAGE = 20;
@@ -215,6 +217,14 @@ export class Game {
       }
       p.y += 19 + Math.random() * 9;
       this.collectibles.push(new MarshmallowCloud(this.scene, p));
+    }
+
+    // Atomic glacé cherries crown a handful of random trees.
+    const tops = [...this.world.treeTops];
+    for (let i = 0; i < CHERRY_COUNT && tops.length > 0; i++) {
+      const pick = Math.floor(Math.random() * tops.length);
+      const top = tops.splice(pick, 1)[0];
+      this.collectibles.push(new AtomicCherry(this.scene, top.clone()));
     }
 
     // Magna Cartas are rare: one crowns the Escher stairs (earn the climb),

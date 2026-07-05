@@ -81,6 +81,10 @@ import map — no npm install, no bundler.
   ~20–28m above the forest, far higher than any tree or staircase.
   Collect them like pine cones — but only the balloon flies that high,
   which makes every flight a harvest run.
+- **Atomic glacé cherries (+3)** — glowing candy-red cherries ringed by
+  orbiting green electrons, perched on the crowns of ten random trees
+  (7–12m up). Balloon work, mostly — though a bold leap from the Escher
+  stairs or a cliff onto a neighboring canopy can pick off the low ones.
 - **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
   grabbing one also unlocks **William the Conqueror**: the badger in a
   golden crown with a royal red cape that streams behind him at speed.

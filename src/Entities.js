@@ -184,6 +184,30 @@ function getAssets() {
     rim: { color: 0xffffff, strength: 0.5, threshold: 0.52 }
   });
 
+  // --- atomic glacé cherry: glossy, pulsing, faintly radioactive -----------
+  const cherryGeo = new THREE.SphereGeometry(0.3, 18, 14);
+  {
+    // A gentle top dimple where the stem meets the fruit.
+    const pos = cherryGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      if (y > 0.2) {
+        const t = (y - 0.2) / 0.1;
+        pos.setY(i, y - t * t * 0.05);
+      }
+    }
+    cherryGeo.computeVertexNormals();
+  }
+  const cherryMat = createToonMaterial({
+    color: 0xd01828,
+    emissive: 0xff2030,
+    emissiveIntensity: 0.6,
+    rim: { color: 0xfff0f0, strength: 0.7, threshold: 0.5 },
+    pulse: { speed: 3.5, phase: 0 }
+  });
+  const cherryStemGeo = new THREE.TorusGeometry(0.12, 0.022, 6, 10, Math.PI * 0.85);
+  const cherryStemMat = createToonMaterial({ color: 0x5a4426 });
+
   assets = {
     pineConeGeo, pineConeMat,
     eggGeo, eggMat,
@@ -192,7 +216,8 @@ function getAssets() {
     frogHaunchGeo, frogShinGeo, frogFootGeo, frogArmGeo, frogHandGeo,
     frogSacGeo, frogWartGeo, frogNostrilGeo,
     scrollGeo, scrollEndGeo, parchmentMat, parchmentDarkMat, sealMat, sealGeo,
-    cloudBlobGeo, cloudPinkMat, cloudWhiteMat
+    cloudBlobGeo, cloudPinkMat, cloudWhiteMat,
+    cherryGeo, cherryMat, cherryStemGeo, cherryStemMat
   };
   return assets;
 }
@@ -302,6 +327,57 @@ export class GoldenEgg extends Collectible {
 
   dispose() {
     // The aura's geometry/material are per-egg — free them explicitly.
+    this.aura.geometry.dispose();
+    this.aura.material.dispose();
+    super.dispose();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Atomic glacé cherry (+3)                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A glossy, gently radioactive glacé cherry perched on a treetop, ringed
+ * by orbiting green electrons. Mostly balloon territory — though a brave
+ * leap from the Escher stairs onto a neighboring crown can also do it.
+ */
+export class AtomicCherry extends Collectible {
+  constructor(scene, position) {
+    super(scene, position, 3, 1.1);
+    const a = getAssets();
+
+    this.mesh = new THREE.Mesh(a.cherryGeo, a.cherryMat);
+    this.mesh.castShadow = true;
+    this.group.add(this.mesh);
+
+    const stem = new THREE.Mesh(a.cherryStemGeo, a.cherryStemMat);
+    stem.position.set(0.05, 0.3, 0);
+    stem.rotation.z = -0.4;
+    this.group.add(stem);
+
+    // The atomic part: a little ring of green electrons.
+    this.aura = createAuraPoints(14, { radiusBase: 0.5, radiusVar: 0.15, heightBase: -0.1, heightVar: 0.25 });
+    this.aura.material.uniforms.uColor.value.set(0x8aff70);
+    this.aura.material.uniforms.uSize.value = 20;
+    this.group.add(this.aura);
+
+    this.baseY = position.y + 0.35;
+    this.group.position.y = this.baseY;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0xff5a4a;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    this.group.rotation.y += dt * 1.1;
+    this.group.position.y = this.baseY + Math.sin(time * 1.8 + this.phase) * 0.14;
+  }
+
+  dispose() {
     this.aura.geometry.dispose();
     this.aura.material.dispose();
     super.dispose();

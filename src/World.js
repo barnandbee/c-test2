@@ -34,6 +34,7 @@ export class World {
     this.colliders = [];        // { x, z, radius, top } cylinders for the player
     this.cameraColliders = [];  // { x, y, z, radius } spheres for the spring arm
     this.platforms = [];        // { minX, maxX, minZ, maxZ, top } standable AABB tops
+    this.treeTops = [];         // crown points of every tree (cherry perches)
     this._disposables = [];
 
     this.noise = new SimplexNoise2D(seed);
@@ -598,6 +599,8 @@ export class World {
       }
 
       this.colliders.push({ x: p.x, z: p.z, radius: 0.75 * s, top: p.h + 3.2 });
+      // Crown point, just proud of the canopy — where a cherry might sit.
+      this.treeTops.push(new THREE.Vector3(p.x, p.h - 0.2 + trunkHeight + 1.9 * s, p.z));
     });
 
     trunks.instanceMatrix.needsUpdate = true;
