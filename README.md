@@ -59,7 +59,11 @@ import map — no npm install, no bundler.
   cart. Getting run over costs **20 health and 20 points**. Listen for
   the headlights. Take **four hits**, survive the **full three minutes
   anyway**, and still finish with **50+ points**, and Magnus himself
-  joins the roster — green tunic, red cap, zero remorse.
+  joins the roster — green tunic, red cap, zero remorse. And should
+  Magnus himself be run over by his own cart **twice in one run**, the
+  paradox summons **Mr Flynn Boddington** — Finn Boffington's orange
+  nemesis twin, horned as ever, now with slanted brows and a handlebar
+  moustache of unmistakable intent.
 - **The Escher stairs** — a floating stone folly of switchback flights
   (with a mirrored flight hanging impossibly underneath) on the east
   side of the map. Hop all the way up for the summit Magna Carta, then
@@ -94,7 +98,8 @@ import map — no npm install, no bundler.
   **launchpad** grinds up out of the turf. A **rocket** lands on the pad
   only while your score sits **strictly between 88 and 112** — and it
   departs without you the moment your score leaves the window. Board it
-  (jump = main engine) and blast far above the clouds, where nine golden
+  with a **triple-tap** — and triple-tap to climb out, too; rockets
+  reward deliberation (jump = main engine) and blast far above the clouds, where nine golden
   **stars (+20)** hang in the void at 80–110m. Collect **five stars in
   one run** to unlock **Alien Ginsberg**: a small green poet with a
   beret, round spectacles, glowing antennae and a notebook he refuses

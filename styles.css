@@ -939,6 +939,40 @@ body {
   transform: rotate(-14deg);
 }
 
+/* Mr Flynn Boddington: Boffington's orange nemesis — same horns,
+   petrol waistcoat, and a moustache with intent. */
+.boddington-icon {
+  position: relative;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 34% 30%, #101014 0, #101014 2.5px, #ffffff 2.5px, #ffffff 6px, transparent 6.5px),
+    radial-gradient(circle at 66% 30%, #101014 0, #101014 2.5px, #ffffff 2.5px, #ffffff 6px, transparent 6.5px),
+    linear-gradient(#101014, #101014) 50% 52% / 16px 3px no-repeat,
+    linear-gradient(180deg, #e8862a 0%, #e8862a 62%, #1f4a58 62%, #1f4a58 100%);
+}
+
+.boddington-icon::before,
+.boddington-icon::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 0;
+  height: 0;
+  border-bottom: 12px solid #23232a;
+}
+
+.boddington-icon::before {
+  left: 2px;
+  border-left: 7px solid transparent;
+  transform: rotate(-24deg);
+}
+
+.boddington-icon::after {
+  right: 2px;
+  border-right: 7px solid transparent;
+  transform: rotate(24deg);
+}
+
 /* Magnus Carter: green tunic, pointy ears implied, infamous red cap. */
 .magnus-icon {
   background: none;

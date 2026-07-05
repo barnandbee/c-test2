@@ -63,6 +63,7 @@ const STORAGE_EDITH = 'mystic-badger.edithUnlocked';
 const STORAGE_RHOMBUS = 'mystic-badger.rhombusUnlocked';
 const STORAGE_GINSBERG = 'mystic-badger.ginsbergUnlocked';
 const STORAGE_MAGNUS = 'mystic-badger.magnusUnlocked';
+const STORAGE_BODDINGTON = 'mystic-badger.boddingtonUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const MAGNUS_HITS_REQUIRED = 4;
 const MAGNUS_MIN_SCORE = 50;
@@ -119,6 +120,7 @@ export class Game {
     this.rhombusUnlocked = readStorage(STORAGE_RHOMBUS) === '1';
     this.ginsbergUnlocked = readStorage(STORAGE_GINSBERG) === '1';
     this.magnusUnlocked = readStorage(STORAGE_MAGNUS) === '1';
+    this.boddingtonUnlocked = readStorage(STORAGE_BODDINGTON) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -408,6 +410,18 @@ export class Game {
     const creach = cart.hazardRadius + 0.4;
     if (cdx * cdx + cdz * cdz < creach * creach && Math.abs(cdy) < 2.4) {
       this.cartHits += 1;
+      // Magnus run over by his own cart, twice: a paradox so rude it
+      // summons his nemesis twin into existence.
+      if (
+        this.characterName === 'magnus' &&
+        this.cartHits >= 2 &&
+        !this.boddingtonUnlocked
+      ) {
+        this.boddingtonUnlocked = true;
+        writeStorage(STORAGE_BODDINGTON, '1');
+        this.runUnlockNames.push('Mr Flynn Boddington');
+        this.ui.showTimeToast('★ MR FLYNN BODDINGTON UNLOCKED!');
+      }
       this.health -= CART_HEALTH_DAMAGE;
       this.points = Math.max(0, this.points - CART_POINTS_DAMAGE);
       this.invulnTimer = INVULN_TIME;
@@ -480,6 +494,7 @@ export class Game {
     if (name === 'rhombus') return this.rhombusUnlocked;
     if (name === 'ginsberg') return this.ginsbergUnlocked;
     if (name === 'magnus') return this.magnusUnlocked;
+    if (name === 'boddington') return this.boddingtonUnlocked;
     return name === 'badger';
   }
 
@@ -492,7 +507,8 @@ export class Game {
       edith: this.edithUnlocked,
       rhombus: this.rhombusUnlocked,
       ginsberg: this.ginsbergUnlocked,
-      magnus: this.magnusUnlocked
+      magnus: this.magnusUnlocked,
+      boddington: this.boddingtonUnlocked
     };
   }
 
@@ -508,11 +524,23 @@ export class Game {
     this.ui.hideMenu();
   }
 
-  /** Double-tap/click: board the hovercraft when close, or hop out. */
+  /**
+   * Tap gestures. Double-tap boards/leaves the hovercraft or balloon and
+   * uncovers the launchpad; the ROCKET demands ceremony — triple-tap in,
+   * triple-tap out — so nobody falls out of orbit by accident.
+   */
   handleDoubleTap() {
-    if (!this.input.consumeDoubleTap() || !this.hovercraft) return;
+    const triple = this.input.consumeTripleTap();
+    const double = this.input.consumeDoubleTap();
+    if ((!triple && !double) || !this.hovercraft) return;
 
     if (this.player.vehicle) {
+      const isRocket = this.player.vehicle.kind === 'rocket';
+      if (isRocket ? !triple : !double) {
+        // Teach the gesture instead of silently ignoring it.
+        if (isRocket && double) this.ui.showTimeToast('TRIPLE-TAP TO EXIT THE ROCKET');
+        return;
+      }
       // Only allow dismounting where there's something to stand on —
       // otherwise the vehicle would be stranded mid-lake forever. (Only
       // real lake water counts; dry valleys are fine to hop out into.)
@@ -531,30 +559,50 @@ export class Game {
       return;
     }
 
-    // Board whichever vehicle is in reach.
-    for (const vehicle of [this.hovercraft, this.balloon, this.rocket]) {
+    // Rocket boarding: triple-tap only.
+    if (triple && this.rocket) {
+      const dx = this.player.position.x - this.rocket.position.x;
+      const dz = this.player.position.z - this.rocket.position.z;
+      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+        this.player.vehicle = this.rocket;
+        this.rocket.rider = this.player;
+        // Ignition: a proper kick off the pad.
+        this.player.velocity.y = 16;
+        this.ui.showTimeToast('TO THE STARS! HOLD JUMP TO THRUST');
+        this.particles.spawnBurst(
+          this._playerCenter.copy(this.player.position),
+          0xffb640,
+          { count: 44, speed: 5.5, size: 50, upBias: 0.2, life: 0.9 }
+        );
+        return;
+      }
+    }
+
+    if (!double) return;
+
+    // Board whichever double-tap vehicle is in reach.
+    for (const vehicle of [this.hovercraft, this.balloon]) {
       if (!vehicle) continue;
       const dx = this.player.position.x - vehicle.position.x;
       const dz = this.player.position.z - vehicle.position.z;
       if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
         this.player.vehicle = vehicle;
         vehicle.rider = this.player;
-        if (vehicle.kind === 'rocket') {
-          // Ignition: a proper kick off the pad.
-          this.player.velocity.y = 16;
-          this.ui.showTimeToast('TO THE STARS! HOLD JUMP TO THRUST');
-          this.particles.spawnBurst(
-            this._playerCenter.copy(this.player.position),
-            0xffb640,
-            { count: 44, speed: 5.5, size: 50, upBias: 0.2, life: 0.9 }
-          );
-        } else {
-          this.ui.showTimeToast(
-            vehicle.kind === 'balloon'
-              ? 'BALLOON! HOLD JUMP TO RISE'
-              : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
-          );
-        }
+        this.ui.showTimeToast(
+          vehicle.kind === 'balloon'
+            ? 'BALLOON! HOLD JUMP TO RISE'
+            : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
+        );
+        return;
+      }
+    }
+
+    // A double-tap near the parked rocket: teach the gesture.
+    if (this.rocket) {
+      const dx = this.player.position.x - this.rocket.position.x;
+      const dz = this.player.position.z - this.rocket.position.z;
+      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+        this.ui.showTimeToast('TRIPLE-TAP TO BOARD THE ROCKET');
         return;
       }
     }
@@ -592,7 +640,7 @@ export class Game {
         this.launchpad.position.z
       );
       this.rocket = new Rocket(this.scene, this.world, spot);
-      this.ui.showTimeToast('A ROCKET HAS LANDED!');
+      this.ui.showTimeToast('A ROCKET HAS LANDED! TRIPLE-TAP TO BOARD');
       this.particles.spawnBurst(
         this._playerCenter.set(spot.x, spot.y + 2, spot.z),
         0xd8ecf2,

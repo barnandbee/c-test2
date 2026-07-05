@@ -81,17 +81,21 @@ export class Input {
       this._touchJumpHeld = false;
     };
 
-    // Double-tap / double-click (any pointer type) — used to board and
-    // leave the hovercraft. pointerdown covers mouse AND touch.
+    // Multi-tap (any pointer type; pointerdown covers mouse AND touch).
+    // Two quick taps queue a double (vehicles, secrets); a third within
+    // the window also queues a triple (the rocket demands ceremony).
     this._lastTapTime = -Infinity;
+    this._tapCount = 0;
     this.doubleTapQueued = false;
+    this.tripleTapQueued = false;
     this.onPointerDown = () => {
       const now = performance.now();
-      if (now - this._lastTapTime < 500) {
-        this.doubleTapQueued = true;
-        this._lastTapTime = -Infinity;
-      } else {
-        this._lastTapTime = now;
+      this._tapCount = now - this._lastTapTime < 500 ? this._tapCount + 1 : 1;
+      this._lastTapTime = now;
+      if (this._tapCount === 2) this.doubleTapQueued = true;
+      if (this._tapCount >= 3) {
+        this.tripleTapQueued = true;
+        this._tapCount = 0;
       }
     };
     window.addEventListener('pointerdown', this.onPointerDown);
@@ -273,6 +277,13 @@ export class Input {
   consumeDoubleTap() {
     const queued = this.doubleTapQueued;
     this.doubleTapQueued = false;
+    return queued;
+  }
+
+  /** Edge-triggered triple-tap — returns true once per trio. */
+  consumeTripleTap() {
+    const queued = this.tripleTapQueued;
+    this.tripleTapQueued = false;
     return queued;
   }
 

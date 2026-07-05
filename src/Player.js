@@ -125,7 +125,8 @@ export class Player {
 
     this._disposables = [];
     if (this.character === 'hughes') this.root = this.buildCrispPacket();
-    else if (this.character === 'boffington') this.root = this.buildBoffington();
+    else if (this.character === 'boffington') this.root = this.buildBoffington('finn');
+    else if (this.character === 'boddington') this.root = this.buildBoffington('flynn');
     else if (this.character === 'edith') this.root = this.buildEdith();
     else if (this.character === 'rhombus') this.root = this.buildRhombus();
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
@@ -873,10 +874,33 @@ export class Player {
    * Mr Finn Boffington — a dapper blue block-fellow with curved dark
    * horns, a purple waistcoat over a bow tie, a beaming smile and slim
    * blue limbs. Painted per-vertex: waistcoat, V-opening, the lot.
+   *
+   * The 'flynn' variant builds his nemesis twin, Mr Flynn Boddington:
+   * identical build, but ORANGE, in a dark petrol waistcoat, with
+   * villainously slanted brows and a magnificent handlebar moustache.
    */
-  buildBoffington() {
+  buildBoffington(variant = 'finn') {
+    const flynn = variant === 'flynn';
     const root = new THREE.Group();
-    root.name = 'boffington';
+    root.name = flynn ? 'boddington' : 'boffington';
+
+    const palette = flynn
+      ? {
+          body: 0xe8862a,
+          vest: 0x1f4a58,
+          vestDark: 0x14343f,
+          limb: 0xc06a1a,
+          hand: 0xf0a050,
+          rim: 0xffd9a8
+        }
+      : {
+          body: 0x3aa0e8,
+          vest: 0x7a3fa8,
+          vestDark: 0x5f2f86,
+          limb: 0x2f7fc0,
+          hand: 0x5ab0e8,
+          rim: 0xbfe4ff
+        };
 
     const track = (resource) => {
       this._disposables.push(resource);
@@ -885,13 +909,13 @@ export class Player {
 
     const bodyMat = track(createToonMaterial({
       vertexColors: true,
-      rim: { color: 0xbfe4ff, strength: 0.35, threshold: 0.62 }
+      rim: { color: palette.rim, strength: 0.35, threshold: 0.62 }
     }));
     const limbMat = track(createToonMaterial({
-      color: 0x2f7fc0,
-      rim: { color: 0x9dd0ff, strength: 0.3, threshold: 0.64 }
+      color: palette.limb,
+      rim: { color: palette.rim, strength: 0.3, threshold: 0.64 }
     }));
-    const handMat = track(createToonMaterial({ color: 0x5ab0e8 }));
+    const handMat = track(createToonMaterial({ color: palette.hand }));
     const hornMat = track(createToonMaterial({
       color: 0x23232a,
       rim: { color: 0x8899cc, strength: 0.4, threshold: 0.6 }
@@ -916,9 +940,9 @@ export class Player {
       const nor = blockGeo.attributes.normal;
       const colors = new Float32Array(pos.count * 3);
       const c = new THREE.Color();
-      const blue = new THREE.Color(0x3aa0e8);
-      const vest = new THREE.Color(0x7a3fa8);
-      const vestDark = new THREE.Color(0x5f2f86);
+      const blue = new THREE.Color(palette.body);
+      const vest = new THREE.Color(palette.vest);
+      const vestDark = new THREE.Color(palette.vestDark);
 
       for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i);
@@ -993,6 +1017,25 @@ export class Player {
     mouth.position.set(0, 0.6, 0.18);
     mouth.rotation.z = Math.PI;
     body.add(mouth);
+
+    if (flynn) {
+      // The nemesis kit: slanted brows and a handlebar moustache whose
+      // tips curl upward with unmistakable intent.
+      const browGeo = track(new THREE.BoxGeometry(0.13, 0.03, 0.02));
+      for (const side of [-1, 1]) {
+        const brow = new THREE.Mesh(browGeo, hornMat);
+        brow.position.set(side * 0.14, 0.9, 0.21);
+        brow.rotation.z = side * 0.35; // inner ends low: villain scowl
+        body.add(brow);
+      }
+      const stacheGeo = track(new THREE.TorusGeometry(0.055, 0.016, 6, 10, 2.0));
+      for (const side of [-1, 1]) {
+        const stache = new THREE.Mesh(stacheGeo, hornMat);
+        stache.position.set(side * 0.065, 0.655, 0.2);
+        stache.rotation.z = side === -1 ? Math.PI * 0.95 : Math.PI * 1.05 - 2.0;
+        body.add(stache);
+      }
+    }
 
     // --- bow tie at the top of the waistcoat's V -----------------------------
     const tieWingGeo = track(new THREE.ConeGeometry(0.045, 0.09, 4));
