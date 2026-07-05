@@ -81,6 +81,21 @@ export class Input {
       this._touchJumpHeld = false;
     };
 
+    // Double-tap / double-click (any pointer type) — used to board and
+    // leave the hovercraft. pointerdown covers mouse AND touch.
+    this._lastTapTime = -Infinity;
+    this.doubleTapQueued = false;
+    this.onPointerDown = () => {
+      const now = performance.now();
+      if (now - this._lastTapTime < 500) {
+        this.doubleTapQueued = true;
+        this._lastTapTime = -Infinity;
+      } else {
+        this._lastTapTime = now;
+      }
+    };
+    window.addEventListener('pointerdown', this.onPointerDown);
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
@@ -254,6 +269,13 @@ export class Input {
     return queued;
   }
 
+  /** Edge-triggered double-tap/double-click — returns true once per pair. */
+  consumeDoubleTap() {
+    const queued = this.doubleTapQueued;
+    this.doubleTapQueued = false;
+    return queued;
+  }
+
   /** Mouse/touch-look deltas accumulated since the last call. */
   consumeMouseDelta() {
     const dx = this.mouseDX;
@@ -278,6 +300,7 @@ export class Input {
     window.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.domElement.removeEventListener('wheel', this.onWheel);
+    window.removeEventListener('pointerdown', this.onPointerDown);
 
     if (this._onFirstTouch) window.removeEventListener('touchstart', this._onFirstTouch);
 

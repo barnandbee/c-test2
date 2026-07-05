@@ -108,9 +108,14 @@ export class Player {
     this.tail = null;
     this.headGroup = null;
 
+    // --- vehicle & water state -------------------------------------------
+    this.vehicle = null; // a Hovercraft while riding, else null
+    this._lastDryPos = spawnPoint.clone();
+
     // --- events (wired by Game) ------------------------------------------
-    this.onLand = null; // (impactSpeed: number, position: Vector3) => void
-    this.onJump = null; // (position: Vector3) => void
+    this.onLand = null;   // (impactSpeed: number, position: Vector3) => void
+    this.onJump = null;   // (position: Vector3) => void
+    this.onSplash = null; // () => void — bounced off deep water
 
     // --- reusable scratch objects (no per-frame allocation) --------------
     this._wishDir = new THREE.Vector3();
@@ -824,6 +829,10 @@ export class Player {
    * @param {number} cameraYaw camera azimuth — movement is camera-relative
    */
   update(dt, input, cameraYaw) {
+    if (this.vehicle) {
+      this.updateVehicle(dt, input, cameraYaw);
+      return;
+    }
     const T = TUNING;
     const pos = this.position;
     const vel = this.velocity;
@@ -963,9 +972,80 @@ export class Player {
     // ---- safety net -----------------------------------------------------------
     if (pos.y < -40) this.respawn();
 
+    // ---- water: badgers (and crisp packets) cannot swim -----------------------
+    const wl = this.world.waterLevel;
+    if (wl !== undefined) {
+      if (pos.y < wl - 0.4) {
+        // Too deep — bounce back to the last dry footing with a splash.
+        pos.copy(this._lastDryPos);
+        vel.x *= -0.35;
+        vel.z *= -0.35;
+        vel.y = 4.5;
+        this.grounded = false;
+        if (this.onSplash) this.onSplash();
+      } else if (this.grounded && groundH > wl + 0.05) {
+        this._lastDryPos.copy(pos);
+      }
+    } else if (this.grounded) {
+      this._lastDryPos.copy(pos);
+    }
+
     // ---- pose -------------------------------------------------------------------
     this.root.position.copy(pos);
     this.animate(dt, hasInput);
+  }
+
+  /**
+   * Hovercraft physics: drifty, jump-free, and it doesn't care whether
+   * the surface below is turf or lake — it hovers over both.
+   */
+  updateVehicle(dt, input, cameraYaw) {
+    const pos = this.position;
+    const vel = this.velocity;
+
+    const ax = input.axisX;
+    const ay = input.axisY;
+    const wish = this._wishDir.set(
+      -Math.sin(cameraYaw) * ay + Math.cos(cameraYaw) * ax,
+      0,
+      -Math.cos(cameraYaw) * ay - Math.sin(cameraYaw) * ax
+    );
+    const hasInput = wish.lengthSq() > 1e-6;
+    if (hasInput) wish.normalize();
+
+    const MAX_SPEED = 11;
+    const rate = hasInput ? 14 : 3.5; // heavy throttle, feeble brakes
+    vel.x = moveToward(vel.x, wish.x * MAX_SPEED, rate * dt);
+    vel.z = moveToward(vel.z, wish.z * MAX_SPEED, rate * dt);
+    vel.y = 0;
+    input.consumeJump(); // no jumping a hovercraft; swallow the press
+
+    pos.x += vel.x * dt;
+    pos.z += vel.z * dt;
+    this.resolveColliders();
+
+    const b = this.world.playableRadius;
+    const distFromCenter = Math.hypot(pos.x, pos.z);
+    if (distFromCenter > b) {
+      const s = b / distFromCenter;
+      pos.x *= s;
+      pos.z *= s;
+    }
+
+    // Skim: hover height rides whichever is higher, ground or water.
+    const terrainH = this.world.getHeight(pos.x, pos.z);
+    const wl = this.world.waterLevel !== undefined ? this.world.waterLevel : -Infinity;
+    const targetY = Math.max(terrainH, wl) + 0.55;
+    pos.y = damp(pos.y, targetY, 7, dt);
+    this.grounded = true;
+
+    if (terrainH > wl + 0.05) {
+      this._lastDryPos.set(pos.x, terrainH, pos.z);
+    }
+
+    this.root.position.copy(pos);
+    this.animate(dt, hasInput);
+    this.vehicle.syncWithRider(pos, this.facingYaw, Math.hypot(vel.x, vel.z) / MAX_SPEED, dt);
   }
 
   resolveColliders() {
@@ -1039,11 +1119,14 @@ export class Player {
     this.root.rotation.y = this.facingYaw;
 
     // Trot cycle driven by ground distance covered, so feet never slide.
-    if (this.grounded) this.walkCycle += speed * dt * 2.4;
+    const riding = Boolean(this.vehicle);
+    if (this.grounded && !riding) this.walkCycle += speed * dt * 2.4;
 
     for (const leg of this.legs) {
       let target;
-      if (this.grounded) {
+      if (riding) {
+        target = 0; // planted on the hovercraft deck
+      } else if (this.grounded) {
         target = Math.sin(this.walkCycle + leg.phase) * 0.75 * speedT;
       } else {
         // Airborne: tuck front legs, trail rear legs.
@@ -1059,7 +1142,7 @@ export class Player {
     this.bodyGroup.scale.set(sxz, sy, sxz);
 
     // Body bob while trotting + slight pitch into jumps and falls.
-    const bob = this.grounded ? Math.abs(Math.sin(this.walkCycle)) * 0.055 * speedT : 0;
+    const bob = this.grounded && !riding ? Math.abs(Math.sin(this.walkCycle)) * 0.055 * speedT : 0;
     this.bodyGroup.position.y = 0.62 + bob;
     const targetTilt = this.grounded ? 0 : clamp(-this.velocity.y * 0.022, -0.3, 0.42);
     this.airTilt = damp(this.airTilt, targetTilt, 8, dt);
@@ -1088,11 +1171,14 @@ export class Player {
       this.hairGroup.rotation.z = Math.sin(t * 1.4) * 0.06 + Math.sin(this.walkCycle) * 0.05 * speedT;
     }
 
-    // Hughes: arms pump while trotting, flail skyward in the air.
+    // Stick arms pump while trotting, flail skyward in the air, and grip
+    // an imaginary tiller while riding.
     if (this.arms) {
       for (const arm of this.arms) {
         let target;
-        if (this.grounded) {
+        if (riding) {
+          target = -0.6;
+        } else if (this.grounded) {
           target = Math.sin(this.walkCycle + arm.phase) * 0.65 * speedT;
         } else {
           target = -2.4; // arms up — wheeee
@@ -1118,7 +1204,9 @@ export class Player {
   /* ================================================================ */
 
   reset() {
+    this.vehicle = null;
     this.respawn();
+    this._lastDryPos.copy(this.position);
     this.facingYaw = 0;
     this.walkCycle = 0;
     this.squash = 0;

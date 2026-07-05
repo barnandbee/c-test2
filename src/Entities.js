@@ -962,3 +962,272 @@ export class MagnusCarter {
     this._disposables.length = 0;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Red October — the submarine in the lake                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A dark-red submarine that periodically breaches somewhere in the lake,
+ * bobs on the surface for a while, then slips back under. Reaching her
+ * while surfaced is worth a suspiciously specific number of points —
+ * that's Game's business; this class just lurks.
+ */
+export class Submarine {
+  constructor(scene, world) {
+    this.scene = scene;
+    this.world = world;
+    this.state = 'submerged'; // submerged -> rising -> surfaced -> sinking
+    this.timer = 4;
+    this.justSurfaced = false;
+    this.surfacedY = world.waterLevel - 0.45;
+    this.submergedY = world.waterLevel - 6.0;
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const hullMat = track(createToonMaterial({
+      color: 0x6b2020,
+      rim: { color: 0xd88a8a, strength: 0.4, threshold: 0.6 }
+    }));
+    const darkMat = track(createToonMaterial({ color: 0x30181a }));
+    const beaconMat = track(createToonMaterial({
+      color: 0xff4040,
+      emissive: 0xff2020,
+      emissiveIntensity: 1.4,
+      pulse: { speed: 4.5, phase: 0 }
+    }));
+
+    const group = new THREE.Group();
+    this.group = group;
+
+    const hullGeo = track(new THREE.CapsuleGeometry(0.95, 5.2, 6, 14));
+    hullGeo.rotateZ(Math.PI / 2);
+    const hull = new THREE.Mesh(hullGeo, hullMat);
+    hull.castShadow = true;
+    group.add(hull);
+
+    const sailGeo = track(new THREE.BoxGeometry(0.6, 1.35, 1.9));
+    const sail = new THREE.Mesh(sailGeo, hullMat);
+    sail.position.set(0.3, 1.1, 0);
+    sail.castShadow = true;
+    group.add(sail);
+
+    const finGeo = track(new THREE.BoxGeometry(0.12, 1.5, 0.7));
+    const fin = new THREE.Mesh(finGeo, hullMat);
+    fin.position.set(-3.2, 0.4, 0);
+    group.add(fin);
+
+    const scopeGeo = track(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 8));
+    const scope = new THREE.Mesh(scopeGeo, darkMat);
+    scope.position.set(0.45, 2.2, 0);
+    group.add(scope);
+    const scopeHeadGeo = track(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8));
+    scopeHeadGeo.rotateX(Math.PI / 2);
+    const scopeHead = new THREE.Mesh(scopeHeadGeo, darkMat);
+    scopeHead.position.set(0.45, 2.68, 0.1);
+    group.add(scopeHead);
+
+    const beaconGeo = track(new THREE.SphereGeometry(0.09, 8, 6));
+    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+    beacon.position.set(0.15, 1.9, 0);
+    group.add(beacon);
+
+    this._placeInLake();
+    group.position.y = this.submergedY;
+    scene.add(group);
+  }
+
+  _placeInLake() {
+    const w = this.world;
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random() * w.lakeRadius * 0.45;
+    this.group.position.x = w.lakeCenterX + Math.cos(angle) * r;
+    this.group.position.z = w.lakeCenterZ + Math.sin(angle) * r;
+    this.group.rotation.y = Math.random() * Math.PI * 2;
+  }
+
+  get position() {
+    return this.group.position;
+  }
+
+  isSurfaced() {
+    return this.state === 'surfaced';
+  }
+
+  consumeJustSurfaced() {
+    const flag = this.justSurfaced;
+    this.justSurfaced = false;
+    return flag;
+  }
+
+  update(dt, time) {
+    this.timer -= dt;
+    const RISE_TIME = 3;
+    if (this.state === 'submerged') {
+      if (this.timer <= 0) {
+        this._placeInLake();
+        this.state = 'rising';
+        this.timer = RISE_TIME;
+      }
+    } else if (this.state === 'rising') {
+      const t = clamp(1 - this.timer / RISE_TIME, 0, 1);
+      const ease = t * t * (3 - 2 * t);
+      this.group.position.y = this.submergedY + (this.surfacedY - this.submergedY) * ease;
+      if (this.timer <= 0) {
+        this.state = 'surfaced';
+        this.timer = 10;
+        this.justSurfaced = true;
+      }
+    } else if (this.state === 'surfaced') {
+      this.group.position.y = this.surfacedY + Math.sin(time * 1.1) * 0.08;
+      this.group.rotation.z = Math.sin(time * 0.85) * 0.02;
+      if (this.timer <= 0) {
+        this.state = 'sinking';
+        this.timer = RISE_TIME;
+      }
+    } else if (this.state === 'sinking') {
+      const t = clamp(1 - this.timer / RISE_TIME, 0, 1);
+      const ease = t * t * (3 - 2 * t);
+      this.group.position.y = this.surfacedY + (this.submergedY - this.surfacedY) * ease;
+      if (this.timer <= 0) {
+        this.state = 'submerged';
+        this.timer = 6 + Math.random() * 6;
+      }
+    }
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Hovercraft                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A one-badger hovercraft. Parked, it idles and bobs where it was left;
+ * ridden, Player.updateVehicle() owns the physics and calls
+ * syncWithRider() so the craft tracks the rider's position and facing.
+ * It's the only way across the lake, since nobody here can swim.
+ */
+export class Hovercraft {
+  constructor(scene, world, position) {
+    this.scene = scene;
+    this.world = world;
+    this.position = position.clone();
+    this.rider = null;
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+
+    const skirtMat = track(createToonMaterial({
+      color: 0x2e3138,
+      rim: { color: 0x9db4e8, strength: 0.3, threshold: 0.64 }
+    }));
+    const deckMat = track(createToonMaterial({
+      color: 0xd8862a,
+      rim: { color: 0xffcf9a, strength: 0.4, threshold: 0.6 }
+    }));
+    const trimMat = track(createToonMaterial({ color: 0xf2ede0 }));
+    const beaconMat = track(createToonMaterial({
+      color: 0x8ae0ff,
+      emissive: 0x50c8ff,
+      emissiveIntensity: 1.3,
+      pulse: { speed: 3.2, phase: 0 }
+    }));
+
+    const group = new THREE.Group();
+    this.group = group;
+
+    const skirtGeo = track(new THREE.TorusGeometry(0.72, 0.27, 10, 22));
+    skirtGeo.rotateX(Math.PI / 2);
+    const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+    skirt.position.y = 0.26;
+    skirt.castShadow = true;
+    group.add(skirt);
+
+    const deckGeo = track(new THREE.CylinderGeometry(0.74, 0.8, 0.24, 20));
+    const deck = new THREE.Mesh(deckGeo, deckMat);
+    deck.position.y = 0.46;
+    deck.castShadow = true;
+    group.add(deck);
+
+    const screenGeo = track(new THREE.BoxGeometry(0.62, 0.34, 0.05));
+    const screen = new THREE.Mesh(screenGeo, trimMat);
+    screen.position.set(0, 0.75, 0.6);
+    screen.rotation.x = -0.35;
+    group.add(screen);
+
+    // Rear fan: guard ring + spinning blades.
+    const fan = new THREE.Group();
+    fan.position.set(0, 0.85, -0.72);
+    group.add(fan);
+    this.fanBlades = new THREE.Group();
+    fan.add(this.fanBlades);
+    const ringGeo = track(new THREE.TorusGeometry(0.34, 0.05, 8, 18));
+    const ring = new THREE.Mesh(ringGeo, skirtMat);
+    fan.add(ring);
+    const bladeGeo = track(new THREE.BoxGeometry(0.08, 0.6, 0.03));
+    for (let i = 0; i < 3; i++) {
+      const blade = new THREE.Mesh(bladeGeo, trimMat);
+      blade.rotation.z = (i / 3) * Math.PI * 2;
+      this.fanBlades.add(blade);
+    }
+
+    // A pulsing blue beacon so the craft is findable across the map.
+    const poleGeo = track(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6));
+    const pole = new THREE.Mesh(poleGeo, skirtMat);
+    pole.position.set(0, 1.35, -0.72);
+    group.add(pole);
+    const beaconGeo = track(new THREE.SphereGeometry(0.08, 8, 6));
+    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+    beacon.position.set(0, 1.62, -0.72);
+    group.add(beacon);
+
+    group.position.copy(position);
+    scene.add(group);
+  }
+
+  /** While parked: settle on the local surface and idle-bob. */
+  update(dt, time) {
+    if (this.rider) return;
+    const floor = Math.max(
+      this.world.getHeight(this.position.x, this.position.z),
+      this.world.waterLevel
+    );
+    this.group.position.set(
+      this.position.x,
+      floor + 0.06 + Math.sin(time * 1.8) * 0.03,
+      this.position.z
+    );
+    this.fanBlades.rotation.z += dt * 2;
+  }
+
+  /** While ridden: track the rider (whose feet stand on the deck). */
+  syncWithRider(riderPosition, yaw, speedT, dt) {
+    this.position.copy(riderPosition);
+    this.group.position.set(riderPosition.x, riderPosition.y - 0.55, riderPosition.z);
+    this.group.rotation.y = yaw;
+    this.fanBlades.rotation.z += dt * (6 + speedT * 34);
+  }
+
+  parkAt(position) {
+    this.position.copy(position);
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}

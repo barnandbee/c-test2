@@ -62,6 +62,16 @@ import map — no npm install, no bundler.
   (with a mirrored flight hanging impossibly underneath) on the east
   side of the map. Hop all the way up for the summit Magna Carta, then
   leap off the top like you mean it.
+- **The lake & Red October** — a carved lake on the west side, with a
+  shore sign that says exactly what it should. A dark-red submarine
+  periodically breaches, bobs, and slips back under. Reaching her while
+  surfaced is worth **+63.14159 points** (once per run). Nobody in this
+  forest can swim — wade too deep and you're bounced back to shore.
+- **The hovercraft** — parked somewhere random on dry land, marked by a
+  pulsing blue beacon. Stand next to it and **double-tap / double-click**
+  to hop in; it skims over land and water alike (it's the only way to
+  reach Red October). Double-tap again over solid ground to hop out —
+  it won't let you strand it mid-lake.
 
 ## Architecture
 

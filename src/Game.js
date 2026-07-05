@@ -18,6 +18,8 @@ import {
   ToxicFrog,
   ClockTower,
   MagnusCarter,
+  Submarine,
+  Hovercraft,
   disposeEntityAssets
 } from './Entities.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
@@ -34,6 +36,8 @@ const GAME_DURATION = 180;          // three twilight minutes
 const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
 const BOFFINGTON_TOWER_VISITS = 6;  // +60 banked seconds in one run
+const RED_OCTOBER_POINTS = 63.14159;
+const BOARDING_RANGE = 2.8;
 
 const STORAGE_HIGH_SCORE = 'mystic-badger.highScore';
 const STORAGE_UNLOCKED = 'mystic-badger.badgeretteUnlocked';
@@ -84,7 +88,7 @@ export class Game {
     this.particles = new ParticleFX(this.scene);
 
     // --- persistence ---------------------------------------------------------
-    this.highScore = parseInt(readStorage(STORAGE_HIGH_SCORE, '0'), 10) || 0;
+    this.highScore = parseFloat(readStorage(STORAGE_HIGH_SCORE, '0')) || 0;
     this.badgeretteUnlocked = readStorage(STORAGE_UNLOCKED) === '1';
     this.hughesUnlocked = readStorage(STORAGE_HUGHES) === '1';
     this.boffingtonUnlocked = readStorage(STORAGE_BOFFINGTON) === '1';
@@ -112,6 +116,25 @@ export class Game {
     };
     this.player.onLand = this._onPlayerLand;
 
+    // Splash-and-bounce feedback when the non-swimmer tries the lake.
+    this._lastSplashToast = -Infinity;
+    this._onPlayerSplash = () => {
+      const center = this.player.getColliderCenter(this._playerCenter);
+      this.particles.spawnBurst(center, 0xbfe4ef, {
+        count: 26,
+        speed: 3.4,
+        size: 40,
+        upBias: 0.8,
+        life: 0.6
+      });
+      const now = performance.now();
+      if (now - this._lastSplashToast > 2500) {
+        this.ui.showTimeToast("CAN'T SWIM!");
+        this._lastSplashToast = now;
+      }
+    };
+    this.player.onSplash = this._onPlayerSplash;
+
     // --- gameplay state ------------------------------------------------------
     this.health = 100;
     this.points = 0;
@@ -120,10 +143,13 @@ export class Game {
     this.isGameOver = false;
     this.towerVisits = 0;
     this.runUnlockNames = [];
+    this.redOctoberClaimed = false;
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
     this.cart = null;
+    this.submarine = null;
+    this.hovercraft = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
@@ -169,6 +195,11 @@ export class Game {
 
     // And somewhere out there, an elf guns a golf cart.
     this.cart = new MagnusCarter(this.scene, this.world, this.world.randomGroundPoint(30, 70));
+
+    // Red October lurks in the lake; the hovercraft is the only way out
+    // to meet her, parked at some random spot on dry land.
+    this.submarine = new Submarine(this.scene, this.world);
+    this.hovercraft = new Hovercraft(this.scene, this.world, this.world.randomGroundPoint(18, 60));
   }
 
   clearEntities() {
@@ -183,6 +214,15 @@ export class Game {
     if (this.cart) {
       this.cart.dispose();
       this.cart = null;
+    }
+    if (this.submarine) {
+      this.submarine.dispose();
+      this.submarine = null;
+    }
+    if (this.hovercraft) {
+      this.player.vehicle = null;
+      this.hovercraft.dispose();
+      this.hovercraft = null;
     }
   }
 
@@ -331,6 +371,51 @@ export class Game {
     return name === 'badger';
   }
 
+  /** Double-tap/click: board the hovercraft when close, or hop out. */
+  handleDoubleTap() {
+    if (!this.input.consumeDoubleTap() || !this.hovercraft) return;
+
+    if (this.player.vehicle) {
+      // Only allow dismounting where there's something to stand on —
+      // otherwise the craft would be stranded mid-lake forever.
+      const terrainH = this.world.getHeight(this.player.position.x, this.player.position.z);
+      if (terrainH > this.world.waterLevel - 0.1) {
+        this.player.vehicle = null;
+        this.hovercraft.rider = null;
+        this.hovercraft.parkAt(this.player.position);
+        this.ui.showTimeToast('HOPPED OUT');
+      }
+      return;
+    }
+
+    const dx = this.player.position.x - this.hovercraft.position.x;
+    const dz = this.player.position.z - this.hovercraft.position.z;
+    if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+      this.player.vehicle = this.hovercraft;
+      this.hovercraft.rider = this.player;
+      this.ui.showTimeToast('HOVERCRAFT! DOUBLE-TAP TO HOP OUT');
+    }
+  }
+
+  /** Reaching the surfaced Red October pays out π-adjacent riches. */
+  handleRedOctober() {
+    if (this.redOctoberClaimed || !this.submarine || !this.submarine.isSurfaced()) return;
+    const sub = this.submarine.position;
+    const dx = this.player.position.x - sub.x;
+    const dz = this.player.position.z - sub.z;
+    if (dx * dx + dz * dz > 5 * 5) return;
+
+    this.redOctoberClaimed = true;
+    this.points += RED_OCTOBER_POINTS;
+    this.ui.setPoints(this.points);
+    this.ui.showTimeToast('RED OCTOBER! +63.14159');
+    this.particles.spawnBurst(
+      this._playerCenter.set(sub.x, this.world.waterLevel + 1.5, sub.z),
+      0xff6a5a,
+      { count: 46, speed: 5.5, size: 50, upBias: 0.75, life: 1.0 }
+    );
+  }
+
   gameOver(reason) {
     this.isGameOver = true;
     if (document.pointerLockElement) document.exitPointerLock();
@@ -390,6 +475,7 @@ export class Game {
     this.isGameOver = false;
     this.towerVisits = 0;
     this.runUnlockNames = [];
+    this.redOctoberClaimed = false;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
@@ -431,10 +517,12 @@ export class Game {
       }
 
       this.invulnTimer = Math.max(0, this.invulnTimer - dt);
+      this.handleDoubleTap();
       this.player.update(dt, this.input, this.cameraRig.yaw);
       this.handlePickups();
       this.handleHazards();
       this.handleClockTower();
+      this.handleRedOctober();
       this.cameraRig.update(dt, this.player, this.input);
     } else {
       this.cameraRig.update(dt, this.player, null);
@@ -443,6 +531,22 @@ export class Game {
     for (const item of this.collectibles) item.update(dt, time);
     for (const frog of this.frogs) frog.update(dt, time);
     if (this.cart) this.cart.update(dt, time);
+    if (this.submarine) {
+      this.submarine.update(dt, time);
+      if (this.submarine.consumeJustSurfaced()) {
+        // Breach spray where she surfaces.
+        this.particles.spawnBurst(
+          this._playerCenter.set(
+            this.submarine.position.x,
+            this.world.waterLevel + 0.6,
+            this.submarine.position.z
+          ),
+          0xd8ecf2,
+          { count: 40, speed: 4.6, size: 46, upBias: 0.85, life: 0.9 }
+        );
+      }
+    }
+    if (this.hovercraft) this.hovercraft.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));

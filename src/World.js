@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { SimplexNoise2D, SeededRandom } from './utils/Noise.js';
 import { smoothstep, lerp, clamp } from './utils/MathUtils.js';
-import { createToonMaterial, createSkyMaterial, SharedUniforms } from './Shaders.js';
+import { createToonMaterial, createSkyMaterial, createWaterMaterial, SharedUniforms } from './Shaders.js';
 
 const TERRAIN_SIZE = 260;
 const TERRAIN_SEGMENTS = 200;
@@ -44,6 +44,23 @@ export class World {
     this._spawnRawHeight = this._rawHeight(0, 0);
     this.sunDirection = new THREE.Vector3(-0.52, 0.4, -0.72).normalize();
 
+    // --- the lake: a carved basin on the west side ----------------------
+    // Defined before any geometry is built, because getHeight() carves it.
+    const lakeAngle = 2.75;
+    this.lakeCenterX = Math.cos(lakeAngle) * 66;
+    this.lakeCenterZ = Math.sin(lakeAngle) * 66;
+    this.lakeRadius = 17;
+    // Water sits a little below the average rim height.
+    let rimSum = 0;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      rimSum += this.getHeight(
+        this.lakeCenterX + Math.cos(a) * this.lakeRadius * 1.15,
+        this.lakeCenterZ + Math.sin(a) * this.lakeRadius * 1.15
+      );
+    }
+    this.waterLevel = rimSum / 8 - 1.1;
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -54,6 +71,7 @@ export class World {
 
     this._buildAtmosphere(renderer);
     this._buildTerrain();
+    this._buildLake();
     this._buildForest();
     this._buildRocks();
     this._buildGrass();
@@ -80,12 +98,19 @@ export class World {
     return hills + plateau + detail;
   }
 
-  /** Public height query — includes the spawn flat and the rim mountains. */
+  /** Public height query — includes the spawn flat, rim mountains and lake. */
   getHeight(x, z) {
     const r = Math.hypot(x, z);
     let h = lerp(this._spawnRawHeight, this._rawHeight(x, z), smoothstep(5, 17, r));
     // Enclosing ridge that walls off the edge of the map.
     h += smoothstep(PLAYABLE_RADIUS - 6, TERRAIN_SIZE * 0.5, r) * 22;
+    // Carve the lake basin.
+    if (this.lakeRadius) {
+      const ld = Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ);
+      if (ld < this.lakeRadius) {
+        h -= (1 - smoothstep(this.lakeRadius * 0.45, this.lakeRadius, ld)) * 7;
+      }
+    }
     return h;
   }
 
@@ -130,6 +155,7 @@ export class World {
       x = Math.cos(angle) * r;
       z = Math.sin(angle) * r;
       if (this.getNormal(x, z, this._n).y < maxSlopeNormalY) continue;
+      if (this.getHeight(x, z) < this.waterLevel + 0.25) continue; // stay dry
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -283,6 +309,14 @@ export class World {
       c.lerp(rock, rockAmount);
       c.lerp(rockHi, rockAmount * smoothstep(8, 16, h) * 0.6);
 
+      // Lake bed: sandy shore banding into a dark teal depth.
+      const sandBlend = 1 - smoothstep(this.waterLevel - 0.7, this.waterLevel + 0.6, h);
+      if (sandBlend > 0) {
+        c.lerp(new THREE.Color(0x9a8a5e), sandBlend * 0.85);
+        const deepBlend = 1 - smoothstep(this.waterLevel - 4.5, this.waterLevel - 1.2, h);
+        c.lerp(new THREE.Color(0x27423f), deepBlend);
+      }
+
       colors[i * 3 + 0] = c.r;
       colors[i * 3 + 1] = c.g;
       colors[i * 3 + 2] = c.b;
@@ -296,6 +330,76 @@ export class World {
     this.terrain.receiveShadow = true;
     this.scene.add(this.terrain);
     this._disposables.push(geo, mat);
+  }
+
+  /* ================================================================ */
+  /*  Lake & signage                                                  */
+  /* ================================================================ */
+
+  _buildLake() {
+    const waterGeo = new THREE.CircleGeometry(this.lakeRadius * 0.99, 48);
+    waterGeo.rotateX(-Math.PI / 2);
+    const waterMat = createWaterMaterial();
+    this.water = new THREE.Mesh(waterGeo, waterMat);
+    this.water.position.set(this.lakeCenterX, this.waterLevel, this.lakeCenterZ);
+    this.scene.add(this.water);
+    this._disposables.push(waterGeo, waterMat);
+
+    // --- 'Watch out for Red October!' sign on the shore facing spawn ------
+    const toSpawn = new THREE.Vector2(-this.lakeCenterX, -this.lakeCenterZ).normalize();
+    const sx = this.lakeCenterX + toSpawn.x * (this.lakeRadius + 2.0);
+    const sz = this.lakeCenterZ + toSpawn.y * (this.lakeRadius + 2.0);
+    const sy = this.getHeight(sx, sz);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 256;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#8a6a42';
+    g.fillRect(0, 0, 512, 256);
+    g.strokeStyle = '#4a3520';
+    g.lineWidth = 14;
+    g.strokeRect(10, 10, 492, 236);
+    g.textAlign = 'center';
+    g.fillStyle = '#2c2014';
+    g.font = 'bold 52px Georgia, serif';
+    g.fillText('WATCH OUT FOR', 256, 100);
+    g.fillStyle = '#a01818';
+    g.font = 'bold 64px Georgia, serif';
+    g.fillText('RED OCTOBER!', 256, 190);
+    const signTex = new THREE.CanvasTexture(canvas);
+    signTex.colorSpace = THREE.SRGBColorSpace;
+
+    const woodMat = createToonMaterial({ color: 0x6e5232 });
+    const faceMat = createToonMaterial({
+      map: signTex,
+      emissiveMap: signTex,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.22
+    });
+    const postGeo = new THREE.CylinderGeometry(0.07, 0.09, 1.7, 8);
+    const boardGeo = new THREE.BoxGeometry(1.9, 0.95, 0.08);
+    const faceGeo = new THREE.PlaneGeometry(1.8, 0.88);
+    this._disposables.push(signTex, woodMat, faceMat, postGeo, boardGeo, faceGeo);
+
+    const sign = new THREE.Group();
+    sign.position.set(sx, sy, sz);
+    sign.rotation.y = Math.atan2(toSpawn.x, toSpawn.y);
+    const post = new THREE.Mesh(postGeo, woodMat);
+    post.position.y = 0.85;
+    post.castShadow = true;
+    sign.add(post);
+    const board = new THREE.Mesh(boardGeo, woodMat);
+    board.position.y = 1.55;
+    board.castShadow = true;
+    sign.add(board);
+    const face = new THREE.Mesh(faceGeo, faceMat);
+    face.position.set(0, 1.55, 0.05);
+    sign.add(face);
+    this.scene.add(sign);
+    this.lakeSign = sign;
+
+    this.colliders.push({ x: sx, z: sz, radius: 0.25, top: sy + 2 });
   }
 
   /* ================================================================ */
@@ -381,6 +485,7 @@ export class World {
       const x = Math.cos(angle) * r;
       const z = Math.sin(angle) * r;
       if (this.getNormal(x, z, normal).y < 0.74) continue;
+      if (this.getHeight(x, z) < this.waterLevel + 0.3) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -537,7 +642,7 @@ export class World {
         const r = this.rng.range(12, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.7) break;
+        if (this.getNormal(x, z, normal).y > 0.7 && this.getHeight(x, z) > this.waterLevel + 0.2) break;
       }
       const h = this.getHeight(x, z);
       const s = this.rng.range(0.5, 2.4);
@@ -600,7 +705,7 @@ export class World {
         const r = this.rng.range(3, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.82) break;
+        if (this.getNormal(x, z, normal).y > 0.82 && this.getHeight(x, z) > this.waterLevel + 0.15) break;
       }
       const h = this.getHeight(x, z);
       euler.set(this.rng.range(-0.25, 0.25), this.rng.range(0, Math.PI * 2), this.rng.range(-0.25, 0.25));
@@ -758,10 +863,11 @@ export class World {
   /* ================================================================ */
 
   dispose() {
-    for (const obj of [this.terrain, this.trunks, this.branches, this.canopies, this.rocks, this.grass, this.sky, this.stairs]) {
+    for (const obj of [this.terrain, this.trunks, this.branches, this.canopies, this.rocks, this.grass, this.sky, this.stairs, this.water]) {
       if (obj && obj.parent) obj.parent.remove(obj);
       if (obj && obj.isInstancedMesh) obj.dispose();
     }
+    if (this.lakeSign) this.scene.remove(this.lakeSign);
     if (this._stairMeshes) {
       for (const mesh of this._stairMeshes) this.scene.remove(mesh);
       this._stairMeshes.length = 0;

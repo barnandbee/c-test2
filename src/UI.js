@@ -5,6 +5,12 @@
  * lives in styles.css.
  */
 
+/** Scores may carry π-flavored decimals (thanks, Red October). */
+function formatScore(value) {
+  if (Number.isInteger(value)) return String(value);
+  return String(Math.round(value * 100000) / 100000);
+}
+
 export class UI {
   constructor() {
     this.healthFill = document.getElementById('health-fill');
@@ -52,7 +58,7 @@ export class UI {
   }
 
   setPoints(value) {
-    this.pointsValue.textContent = String(value);
+    this.pointsValue.textContent = formatScore(value);
     this.pointsValue.classList.remove('pop');
     // Force a reflow so re-adding the class restarts the CSS animation.
     void this.pointsValue.offsetWidth;
@@ -64,7 +70,7 @@ export class UI {
   /** Set the score display without the pop animation (resets). */
   setPointsSilent(value) {
     this.pointsValue.classList.remove('pop');
-    this.pointsValue.textContent = String(value);
+    this.pointsValue.textContent = formatScore(value);
   }
 
   /** Countdown display, m:ss, turning urgent under 30 seconds. */
@@ -111,8 +117,8 @@ export class UI {
       this.gameOverSubtitle.textContent = 'The twilight grows quiet…';
     }
 
-    this.finalScore.textContent = String(opts.score);
-    this.highScoreValue.textContent = String(opts.highScore);
+    this.finalScore.textContent = formatScore(opts.score);
+    this.highScoreValue.textContent = formatScore(opts.highScore);
     this.newHighBadge.classList.toggle('hidden', !opts.isNewHigh);
 
     // The roster appears once anything beyond the badger is unlocked;

@@ -315,6 +315,73 @@ export function createSkyMaterial() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Lake water                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Gently rippling translucent lake surface: vertex waves, drifting
+ * shimmer flecks, edge foam and a depth gradient toward the middle.
+ * Standard exp2 fog is applied manually (the lake sits at fog altitude
+ * anyway, so the height term would be saturated).
+ */
+export function createWaterMaterial() {
+  return new THREE.ShaderMaterial({
+    name: 'LakeWater',
+    transparent: true,
+    fog: true, // lets the renderer feed fogColor/fogDensity from scene.fog
+    uniforms: {
+      uTime: SharedUniforms.uTime,
+      uShallow: { value: new THREE.Color(0x3e8a96) },
+      uDeep: { value: new THREE.Color(0x14374d) },
+      uFoam: { value: new THREE.Color(0xd8ecec) },
+      fogColor: { value: new THREE.Color(0x86597a) },
+      fogDensity: { value: 0.0115 }
+    },
+    vertexShader: /* glsl */ `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying float vFogDepth;
+      varying float vWave;
+      void main() {
+        vUv = uv;
+        vec3 p = position;
+        float w1 = sin( p.x * 0.55 + uTime * 1.1 );
+        float w2 = cos( p.z * 0.65 + uTime * 0.8 );
+        p.y += ( w1 + w2 ) * 0.05;
+        vWave = w1 * w2;
+        vec4 mvPosition = modelViewMatrix * vec4( p, 1.0 );
+        vFogDepth = -mvPosition.z;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uTime;
+      uniform vec3 uShallow;
+      uniform vec3 uDeep;
+      uniform vec3 uFoam;
+      uniform vec3 fogColor;
+      uniform float fogDensity;
+      varying vec2 vUv;
+      varying float vFogDepth;
+      varying float vWave;
+      void main() {
+        float r = length( vUv - 0.5 ) * 2.0;
+        vec3 col = mix( uDeep, uShallow, smoothstep( 0.35, 1.0, r ) );
+        // Drifting sparkle flecks.
+        float shimmer = sin( vUv.x * 62.0 + uTime * 1.4 ) * sin( vUv.y * 57.0 - uTime * 1.1 );
+        col += uFoam * smoothstep( 0.93, 1.0, shimmer ) * 0.3;
+        col += uFoam * 0.07 * vWave;
+        // Foam collar where water meets the shore.
+        col = mix( col, uFoam, smoothstep( 0.96, 1.0, r ) * 0.75 );
+        float fogFactor = 1.0 - exp( -fogDensity * fogDensity * vFogDepth * vFogDepth );
+        col = mix( col, fogColor, clamp( fogFactor, 0.0, 1.0 ) );
+        gl_FragColor = vec4( col, 0.86 );
+      }
+    `
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /*  Particle materials                                                 */
 /* ------------------------------------------------------------------ */
 
