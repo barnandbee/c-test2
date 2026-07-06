@@ -120,6 +120,17 @@ import map — no npm install, no bundler.
   one horn and one antenna, half a moustache, a misinstalled crown
   point, Edith's faucet out the back, mismatched limbs, and an
   intermittent positional glitch that is definitely a feature.
+- **Mayonnaise** — finish a run with **300+ points** to unlock a jar of
+  mayonnaise: cream contents, gold lid, wraparound label, quiet
+  confidence.
+- **The cave** — a hollow rock dome hidden away from the landmarks.
+  Inside, on a pedestal, under a mysterious glow: a **BLT**. Double-tap
+  it and it says what everyone's thinking: *it's a BLT, but it's a bit
+  too dry…* Unless you're Mayonnaise — then it's worth **+55.5 points**
+  (once per run) and unlocks **Perpendicular Bird**: a pencil sketch of
+  a bird, in profile, top hat, both wings locked perfectly horizontal,
+  with a right-angle marker under the wing that literally says **90°**.
+  Casts no shadow. Drawings don't.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.
