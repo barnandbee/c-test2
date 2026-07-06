@@ -459,6 +459,62 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/*  'Puttmost Respect' minigame panel                                  */
+/* ------------------------------------------------------------------ */
+
+#putt-panel {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: var(--font-notes);
+  padding: 14px 30px;
+  background: var(--hud-bg);
+  border: 1px solid rgba(255, 212, 79, 0.4);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 14;
+}
+
+#putt-title {
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold);
+  text-shadow: 0 2px 12px rgba(255, 212, 79, 0.4);
+}
+
+#putt-strokes {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  color: rgba(243, 239, 255, 0.75);
+  margin: 4px 0 8px;
+}
+
+#putt-meter {
+  width: 240px;
+  height: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin: 0 auto 8px;
+}
+
+#putt-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #7be06b, var(--accent-gold), #ff5d5d);
+}
+
+#putt-help {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(243, 239, 255, 0.55);
+}
+
+/* ------------------------------------------------------------------ */
 /*  Controls hint                                                      */
 /* ------------------------------------------------------------------ */
 

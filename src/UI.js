@@ -30,6 +30,9 @@ export class UI {
     this.unlockNote = document.getElementById('unlock-note');
     this.restartBtn = document.getElementById('restart-btn');
     this.hint = document.getElementById('hint');
+    this.puttPanel = document.getElementById('putt-panel');
+    this.puttStrokes = document.getElementById('putt-strokes');
+    this.puttFill = document.getElementById('putt-fill');
     this.menu = document.getElementById('menu');
     this.menuRoster = document.getElementById('menu-roster');
     this.menuBestRow = document.getElementById('menu-best-row');
@@ -153,6 +156,24 @@ export class UI {
       card.classList.toggle('hidden', !available);
       card.classList.toggle('selected', char === currentCharacter);
     }
+  }
+
+  /* ---------------- 'Puttmost Respect' ---------------- */
+
+  showPutt() {
+    this.puttPanel.classList.remove('hidden');
+  }
+
+  hidePutt() {
+    this.puttPanel.classList.add('hidden');
+  }
+
+  setPuttStrokes(current, max) {
+    this.puttStrokes.textContent = `STROKE ${current} / ${max}`;
+  }
+
+  setPuttPower(t) {
+    this.puttFill.style.width = `${Math.round(t * 100)}%`;
   }
 
   /* ---------------- welcome menu ---------------- */

@@ -131,6 +131,17 @@ import map — no npm install, no bundler.
   a bird, in profile, top hat, both wings locked perfectly horizontal,
   with a right-angle marker under the wing that literally says **90°**.
   Casts no shadow. Drawings don't.
+- **The golf hole** — a mown-stripe putting green with a red flag and a
+  sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
+  has already run you over. Get **hit by the golf cart**, then drive
+  the **hovercraft onto the green** (as anyone *except* Magnus Carter),
+  and a challenge is issued: double-tap to play **Puttmost Respect**, a
+  putting minigame. The run clock **freezes** while you putt. Aim with
+  the camera, hold jump to charge the swinging power meter, release to
+  putt; the ball breaks with the slope and the rough is heavy. Three
+  strokes: sink it for **+18**, hole it in one for **+33**, miss out
+  entirely and receive only wisdom. Once per run; double-tap mid-game
+  to concede.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.
@@ -149,6 +160,8 @@ src/
                     mask) + kinematic character controller
   CameraRig.js      collision-aware, damped third-person spring arm
   Entities.js       pine cones, golden eggs, toxic frogs (shared assets)
+  PuttingGame.js    'Puttmost Respect' putting minigame (ball physics,
+                    power meter, slope break)
   Particles.js      GPU burst pool, gold aura, poison cloud point systems
   Shaders.js        toon/rim/sway/pulse material patches, exponential
                     height fog, sky gradient, all particle GLSL

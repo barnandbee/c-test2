@@ -28,6 +28,7 @@ import {
   Rocket,
   disposeEntityAssets
 } from './Entities.js';
+import { PuttingGame } from './PuttingGame.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
 
@@ -190,6 +191,10 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected = new Set();
     this.sandwichClaimed = false;
+    this.minigame = null;
+    this.puttPlayed = false;
+    this._puttPrompted = false;
+    this._puttFocus = { position: new THREE.Vector3(), velocity: new THREE.Vector3(), facingYaw: 0 };
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
@@ -567,6 +572,13 @@ export class Game {
     const double = this.input.consumeDoubleTap();
     if ((!triple && !double) || !this.hovercraft) return;
 
+    // At the pin, hovercraft-mounted and cart-bruised: putt instead of
+    // dismounting.
+    if (double && this.canStartPutt()) {
+      this.startPutting();
+      return;
+    }
+
     if (this.player.vehicle) {
       const isRocket = this.player.vehicle.kind === 'rocket';
       if (isRocket ? !triple : !double) {
@@ -752,6 +764,52 @@ export class Game {
     );
   }
 
+  /**
+   * 'Puttmost Respect' eligibility: any hero except Magnus (he plays
+   * off scratch and knows it), at least one cart hit this run, arriving
+   * at the pin aboard the hovercraft. Once per run.
+   */
+  canStartPutt() {
+    if (this.puttPlayed || this.minigame || this.characterName === 'magnus') return false;
+    if (this.cartHits < 1) return false;
+    if (this.player.vehicle !== this.hovercraft) return false;
+    const dx = this.player.position.x - this.world.greenCenterX;
+    const dz = this.player.position.z - this.world.greenCenterZ;
+    return dx * dx + dz * dz < (this.world.greenRadius + 2) ** 2;
+  }
+
+  startPutting() {
+    // Hop off the hovercraft; it waits by the green.
+    this.player.vehicle = null;
+    this.hovercraft.rider = null;
+    this.hovercraft.parkAt(this.player.position);
+    this.puttPlayed = true;
+    this.ui.showTimeToast('PUTTMOST RESPECT!');
+    this.minigame = new PuttingGame(this.scene, this.world, this.ui, (success, strokes) =>
+      this.endPutting(success, strokes)
+    );
+  }
+
+  endPutting(success, strokes) {
+    if (!this.minigame) return;
+    this.minigame.dispose();
+    this.minigame = null;
+    if (success) {
+      const holeInOne = strokes === 1;
+      const reward = holeInOne ? 33 : 18;
+      this.points += reward;
+      this.ui.setPoints(this.points);
+      this.ui.showTimeToast(holeInOne ? 'HOLE IN ONE! +33' : `SUNK IT! +${reward}`);
+      this.particles.spawnBurst(
+        this._playerCenter.set(this.world.greenCenterX, this.world.greenLevel + 1, this.world.greenCenterZ),
+        0x7be06b,
+        { count: 40, speed: 5, size: 48, upBias: 0.8, life: 0.9 }
+      );
+    } else {
+      this.ui.showTimeToast('PAR IS A STATE OF MIND');
+    }
+  }
+
   /** Reaching the surfaced Red October pays out π-adjacent riches. */
   handleRedOctober() {
     if (this.redOctoberClaimed || !this.submarine || !this.submarine.isSurfaced()) return;
@@ -863,6 +921,12 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected.clear();
     this.sandwichClaimed = false;
+    if (this.minigame) {
+      this.minigame.dispose();
+      this.minigame = null;
+    }
+    this.puttPlayed = false;
+    this._puttPrompted = false;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
@@ -898,6 +962,21 @@ export class Game {
       // Welcome menu: the forest breathes, the camera drifts, no clock.
       this.player.animate(dt, false);
       this.cameraRig.update(dt, this.player, null);
+    } else if (this.minigame) {
+      // 'Puttmost Respect': the run clock is FROZEN; input belongs to
+      // the putter and the camera belongs to the ball.
+      if (this.input.consumeDoubleTap()) {
+        this.minigame.abandon();
+      } else {
+        this.minigame.update(dt, this.input, this.cameraRig.yaw);
+      }
+      if (this.minigame) {
+        this._puttFocus.position.copy(this.minigame.focusPoint);
+        this.cameraRig.update(dt, this._puttFocus, this.input);
+      } else {
+        this.cameraRig.update(dt, this.player, this.input);
+      }
+      this.player.animate(dt, false);
     } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
       this.timeLeft -= dt;
@@ -916,6 +995,16 @@ export class Game {
       this.handleRedOctober();
       this.maybeSpawnBalloon();
       this.manageRocket();
+
+      // Whisper about the putting challenge when its stars align.
+      if (this.canStartPutt()) {
+        if (!this._puttPrompted) {
+          this.ui.showTimeToast('PUTTMOST RESPECT! DOUBLE-TAP TO PLAY');
+          this._puttPrompted = true;
+        }
+      } else {
+        this._puttPrompted = false;
+      }
 
       // "Getting in and flying" means genuinely leaving the ground.
       if (
