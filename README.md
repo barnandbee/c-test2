@@ -112,6 +112,14 @@ import map — no npm install, no bundler.
   resolutely 2D pink rhombus in a top hat, who waddle-rocks along his
   bottom vertex and pinwheels in mid-air. Pine cones are worth +1;
   do the arithmetic.
+- **Error #42** — collect **one of every species in a single run** —
+  a pine cone, a cherry, a cloud, a golden egg, a star and a Magna
+  Carta — and the character loader gives out. The eleventh hero is an
+  amalgamation of all the others: badger head, half-foil half-block
+  torso with a neon corruption seam, one googly eye and one alien eye,
+  one horn and one antenna, half a moustache, a misinstalled crown
+  point, Edith's faucet out the back, mismatched limbs, and an
+  intermittent positional glitch that is definitely a feature.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.

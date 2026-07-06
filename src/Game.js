@@ -64,7 +64,11 @@ const STORAGE_RHOMBUS = 'mystic-badger.rhombusUnlocked';
 const STORAGE_GINSBERG = 'mystic-badger.ginsbergUnlocked';
 const STORAGE_MAGNUS = 'mystic-badger.magnusUnlocked';
 const STORAGE_BODDINGTON = 'mystic-badger.boddingtonUnlocked';
+const STORAGE_ERROR42 = 'mystic-badger.error42Unlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+// One of each collectible species, identified by point value:
+// cone, cherry, cloud, egg, star, Magna Carta.
+const ERROR42_SET = [1, 3, 5, 10, 20, 25];
 const MAGNUS_HITS_REQUIRED = 4;
 const MAGNUS_MIN_SCORE = 50;
 
@@ -121,6 +125,7 @@ export class Game {
     this.ginsbergUnlocked = readStorage(STORAGE_GINSBERG) === '1';
     this.magnusUnlocked = readStorage(STORAGE_MAGNUS) === '1';
     this.boddingtonUnlocked = readStorage(STORAGE_BODDINGTON) === '1';
+    this.error42Unlocked = readStorage(STORAGE_ERROR42) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -176,6 +181,7 @@ export class Game {
     this.flewBalloon = false;
     this.starsCollected = 0;
     this.cartHits = 0;
+    this.itemTypesCollected = new Set();
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
@@ -353,6 +359,19 @@ export class Game {
         }
       }
 
+      // The full set — one of every species in a single run — corrupts
+      // the character loader in the best possible way.
+      this.itemTypesCollected.add(item.value);
+      if (
+        !this.error42Unlocked &&
+        ERROR42_SET.every((v) => this.itemTypesCollected.has(v))
+      ) {
+        this.error42Unlocked = true;
+        writeStorage(STORAGE_ERROR42, '1');
+        this.runUnlockNames.push('Error #42');
+        this.ui.showTimeToast('★ ERROR #42 UNLOCKED?!');
+      }
+
       const isEgg = item.value >= 10;
       this.particles.spawnBurst(item.group.position, item.burstColor, {
         count: isEgg ? 42 : 22,
@@ -495,6 +514,7 @@ export class Game {
     if (name === 'ginsberg') return this.ginsbergUnlocked;
     if (name === 'magnus') return this.magnusUnlocked;
     if (name === 'boddington') return this.boddingtonUnlocked;
+    if (name === 'error42') return this.error42Unlocked;
     return name === 'badger';
   }
 
@@ -508,7 +528,8 @@ export class Game {
       rhombus: this.rhombusUnlocked,
       ginsberg: this.ginsbergUnlocked,
       magnus: this.magnusUnlocked,
-      boddington: this.boddingtonUnlocked
+      boddington: this.boddingtonUnlocked,
+      error42: this.error42Unlocked
     };
   }
 
@@ -786,6 +807,7 @@ export class Game {
     this.flewBalloon = false;
     this.starsCollected = 0;
     this.cartHits = 0;
+    this.itemTypesCollected.clear();
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);

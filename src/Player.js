@@ -106,6 +106,7 @@ export class Player {
     this.arms = null;        // stick-limbed heroes only
     this.googlyEyes = null;  // rattling pupils (Hughes, Edith)
     this.rockMesh = null;    // Rhombus: the body that waddle-rocks
+    this.isGlitchy = false;  // Error #42's intermittent reality problem
     this.tail = null;
     this.headGroup = null;
 
@@ -131,6 +132,7 @@ export class Player {
     else if (this.character === 'rhombus') this.root = this.buildRhombus();
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
     else if (this.character === 'magnus') this.root = this.buildMagnus();
+    else if (this.character === 'error42') this.root = this.buildError42();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -1505,6 +1507,302 @@ export class Player {
     return root;
   }
 
+  /**
+   * Error #42 — what happens when the character loader segfaults. One of
+   * everything: badger head on a half-foil, half-block torso; one googly
+   * eye, one alien eye; one horn, one antenna; one badger ear, one elf
+   * ear; half a moustache; ginger locks and a half-cape sharing a sway
+   * rig; a crown point at a wrong angle; Edith's faucet out of the back;
+   * mismatched limbs; and an intermittent positional glitch, obviously.
+   */
+  buildError42() {
+    const root = new THREE.Group();
+    root.name = 'error42';
+    this.isGlitchy = true;
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const torsoMat = track(createToonMaterial({
+      vertexColors: true,
+      rim: { color: 0x00ffcc, strength: 0.45, threshold: 0.55 }
+    }));
+    const furMat = track(createToonMaterial({ vertexColors: true, rim: { color: 0xcfe0ff, strength: 0.25, threshold: 0.72 } }));
+    const darkMat = track(createToonMaterial({ color: 0x26262c }));
+    const skinMat = track(createToonMaterial({ color: 0xf0c090 }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const alienEyeMat = track(createToonMaterial({ color: 0x0a0a12, rim: { color: 0x9db4e8, strength: 0.6, threshold: 0.42 } }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const hairMat = track(createToonMaterial({ color: 0xc96a22, rim: { color: 0xffb36e, strength: 0.45, threshold: 0.6 } }));
+    const capeMat = track(createToonMaterial({ color: 0xa02030 }));
+    capeMat.side = THREE.DoubleSide;
+    const goldMat = track(createToonMaterial({ color: 0xf5c542, emissive: 0x4a3300, emissiveIntensity: 1.0 }));
+    const chromeMat = track(createToonMaterial({ color: 0xb8c0cc, rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 } }));
+    const bulbMat = track(createToonMaterial({ color: 0xb0ffd0, emissive: 0x50e890, emissiveIntensity: 1.4, pulse: { speed: 5.1, phase: 0 } }));
+    const stickBlueMat = track(createToonMaterial({ color: 0x2f7fc0 }));
+    const birdLegMat = track(createToonMaterial({ color: 0xd8a020 }));
+    const shoeMat = track(createToonMaterial({ color: 0xd8362a }));
+    const mouthMat = track(createToonMaterial({ color: 0x3a1410 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: foil on the left, block on the right, glitch seam ----------
+    const torsoGeo = track(new THREE.BoxGeometry(0.66, 0.9, 0.32, 8, 10, 4));
+    {
+      const pos = torsoGeo.attributes.position;
+      const nor = torsoGeo.attributes.normal;
+      const colors = new Float32Array(pos.count * 3);
+      const c = new THREE.Color();
+      const foilRed = new THREE.Color(0xd8362a);
+      const foilSilver = new THREE.Color(0xc4c6ce);
+      const blockBlue = new THREE.Color(0x3aa0e8);
+      const vest = new THREE.Color(0x7a3fa8);
+      const seam = new THREE.Color(0x00ffcc);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const py = pos.getY(i) / 0.45; // -1..1
+        if (Math.abs(x) < 0.025) {
+          c.copy(seam); // the corrupted byte boundary
+        } else if (x < 0) {
+          // Hughes half: red foil with a silver crimp band up top.
+          c.copy(py > 0.72 ? foilSilver : foilRed);
+          c.offsetHSL(0, 0, (furNoise(x * 9, py * 9, pos.getZ(i) * 9) - 0.5) * 0.1);
+        } else {
+          // Boffington half: blue with the waistcoat's lower purple.
+          c.copy(py < -0.1 ? vest : blockBlue);
+        }
+        colors[i * 3 + 0] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      torsoGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      // Crinkle only the foil half.
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        if (x < -0.03) {
+          const wob = 1 + (furNoise(x * 8 + 2, pos.getY(i) * 8, pos.getZ(i) * 8) - 0.5) * 0.12;
+          pos.setZ(i, pos.getZ(i) * wob);
+        }
+      }
+      torsoGeo.computeVertexNormals();
+    }
+    const torso = new THREE.Mesh(torsoGeo, torsoMat);
+    torso.position.y = 0.4;
+    torso.castShadow = true;
+    body.add(torso);
+
+    // --- Edith's faucet, out of the back, why not --------------------------
+    const stemGeo = track(new THREE.CylinderGeometry(0.03, 0.035, 0.22, 8));
+    const stem = new THREE.Mesh(stemGeo, chromeMat);
+    stem.position.set(0.12, 0.92, -0.14);
+    body.add(stem);
+    const neckGeo = track(new THREE.TorusGeometry(0.09, 0.025, 8, 12, Math.PI));
+    const neck = new THREE.Mesh(neckGeo, chromeMat);
+    neck.position.set(0.12, 1.03, -0.05);
+    neck.rotation.y = Math.PI / 2;
+    neck.rotation.z = Math.PI / 2;
+    body.add(neck);
+
+    // --- badger head, slightly too small for the body ----------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.06, 0.06);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const headGeo = track(new THREE.SphereGeometry(0.42, 32, 24));
+    paintVertexColors(headGeo, (n, p, c) => {
+      const cream = new THREE.Color(0xf4efe2);
+      const black = new THREE.Color(0x17171b);
+      const grey = new THREE.Color(0x84888f);
+      const stripeBand =
+        THREE.MathUtils.smoothstep(Math.abs(n.x), 0.13, 0.2) *
+        (1 - THREE.MathUtils.smoothstep(Math.abs(n.x), 0.42, 0.52));
+      const frontHalf = THREE.MathUtils.smoothstep(n.z, -0.35, -0.1);
+      const aboveJaw = THREE.MathUtils.smoothstep(n.y, -0.5, -0.28);
+      const rear = THREE.MathUtils.smoothstep(-n.z, 0.45, 0.8);
+      c.copy(cream).lerp(black, stripeBand * frontHalf * aboveJaw).lerp(grey, rear * 0.85);
+    });
+    const head = new THREE.Mesh(headGeo, furMat);
+    head.scale.set(0.78, 0.72, 0.9);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // --- mismatched eyes: googly left, alien almond right -------------------
+    const googlyWhiteGeo = track(new THREE.SphereGeometry(0.09, 12, 10));
+    const googlyWhite = new THREE.Mesh(googlyWhiteGeo, eyeWhiteMat);
+    googlyWhite.position.set(-0.13, 0.05, 0.27);
+    googlyWhite.scale.set(1, 1, 0.45);
+    headGroup.add(googlyWhite);
+    const pupilGeo = track(new THREE.SphereGeometry(0.04, 10, 8));
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+    pupil.position.set(-0.13, 0.05, 0.31);
+    headGroup.add(pupil);
+    this.googlyEyes = [{ pupil, baseX: -0.13, baseY: 0.05, seed: 4.2 }];
+
+    const alienEyeGeo = track(new THREE.SphereGeometry(0.1, 14, 12));
+    const alienEye = new THREE.Mesh(alienEyeGeo, alienEyeMat);
+    alienEye.position.set(0.14, 0.06, 0.26);
+    alienEye.scale.set(1.0, 1.5, 0.5);
+    alienEye.rotation.z = -0.25;
+    headGroup.add(alienEye);
+    const glintGeo = track(new THREE.SphereGeometry(0.02, 8, 6));
+    const glint = new THREE.Mesh(glintGeo, glintMat);
+    glint.position.set(0.11, 0.12, 0.31);
+    headGroup.add(glint);
+
+    // --- crooked smile + half a moustache -----------------------------------
+    const mouthGeo = track(new THREE.TorusGeometry(0.07, 0.014, 6, 12, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0.01, -0.14, 0.28);
+    mouth.rotation.z = Math.PI * 0.88; // smile, but corrupted
+    headGroup.add(mouth);
+    const stacheGeo = track(new THREE.TorusGeometry(0.05, 0.015, 6, 10, 2.0));
+    const stache = new THREE.Mesh(stacheGeo, darkMat);
+    stache.position.set(0.07, -0.08, 0.28);
+    stache.rotation.z = Math.PI * 1.05 - 2.0;
+    headGroup.add(stache);
+
+    // --- one horn, one antenna; one badger ear, one elf ear ------------------
+    const hornGeo = track(new THREE.TorusGeometry(0.11, 0.032, 8, 12, 1.8));
+    const horn = new THREE.Mesh(hornGeo, darkMat);
+    horn.position.set(-0.2, 0.24, 0);
+    horn.rotation.y = -0.35;
+    horn.rotation.z = 0.35;
+    headGroup.add(horn);
+
+    const antennaGeo = track(new THREE.CylinderGeometry(0.014, 0.018, 0.24, 6));
+    const antenna = new THREE.Mesh(antennaGeo, stickBlueMat);
+    antenna.position.set(0.18, 0.34, 0);
+    antenna.rotation.z = -0.3;
+    headGroup.add(antenna);
+    const bulbGeo = track(new THREE.SphereGeometry(0.045, 8, 6));
+    const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+    bulb.position.set(0.22, 0.46, 0);
+    headGroup.add(bulb);
+
+    const earGeo = track(new THREE.SphereGeometry(0.09, 12, 10));
+    const badgerEar = new THREE.Mesh(earGeo, darkMat);
+    badgerEar.position.set(0.24, 0.22, -0.04);
+    badgerEar.scale.set(1, 1.05, 0.6);
+    headGroup.add(badgerEar);
+    const elfEarGeo = track(new THREE.ConeGeometry(0.035, 0.14, 6));
+    const elfEar = new THREE.Mesh(elfEarGeo, skinMat);
+    elfEar.position.set(-0.3, 0.02, 0);
+    elfEar.rotation.z = Math.PI / 2 + 0.35;
+    headGroup.add(elfEar);
+
+    // --- a single crown point, installed incorrectly --------------------------
+    const pointGeo = track(new THREE.ConeGeometry(0.045, 0.14, 6));
+    const crownPoint = new THREE.Mesh(pointGeo, goldMat);
+    crownPoint.position.set(0.02, 0.3, -0.18);
+    crownPoint.rotation.x = 0.7;
+    headGroup.add(crownPoint);
+
+    // --- ginger locks AND a half-cape on one shared sway pivot ----------------
+    const hairGroup = new THREE.Group();
+    hairGroup.position.set(0, 0.2, -0.14);
+    headGroup.add(hairGroup);
+    this.hairGroup = hairGroup;
+    for (let i = 0; i < 2; i++) {
+      const t = i === 0 ? -0.4 : 0.9;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(t * 0.12, 0.1, 0.02),
+        new THREE.Vector3(t * 0.2, -0.2, -0.24),
+        new THREE.Vector3(t * 0.24, -0.55, -0.4)
+      ]);
+      const tubeGeo = track(new THREE.TubeGeometry(curve, 12, 0.045, 6, false));
+      const strand = new THREE.Mesh(tubeGeo, hairMat);
+      hairGroup.add(strand);
+    }
+    const capeGeo = track(new THREE.PlaneGeometry(0.34, 0.7, 3, 5));
+    {
+      const pos = capeGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const drop = (0.35 - pos.getY(i)) / 0.7;
+        pos.setZ(i, -drop * drop * 0.5);
+      }
+      capeGeo.computeVertexNormals();
+    }
+    const cape = new THREE.Mesh(capeGeo, capeMat);
+    cape.position.set(-0.18, -0.62, -0.1);
+    cape.rotation.x = 0.3;
+    hairGroup.add(cape);
+
+    // --- limbs: one blue stick arm, one orange; stick leg + bird leg -----------
+    const armGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.4, 8));
+    armGeo.translate(0, -0.2, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    const armMats = [stickBlueMat, birdLegMat];
+    this.arms = [];
+    [-1, 1].forEach((side, i) => {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.36, 0.55, 0);
+      pivot.rotation.z = -side * 0.45;
+      const arm = new THREE.Mesh(armGeo, armMats[i]);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, armMats[i]);
+      hand.position.set(0, -0.42, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    });
+
+    this.legs = [];
+    {
+      // Left: Hughes' stick leg with the jaunty red shoe.
+      const legGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.5, 8));
+      legGeo.translate(0, -0.25, 0);
+      const pivot = new THREE.Group();
+      pivot.position.set(-0.13, -0.05, 0);
+      const leg = new THREE.Mesh(legGeo, darkMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoeGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.52, 0.04);
+      shoe.scale.set(1.15, 0.55, 1.9);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: 0 });
+    }
+    {
+      // Right: Edith's bird leg, toes and all.
+      const thighGeo = track(new THREE.CylinderGeometry(0.03, 0.026, 0.28, 7));
+      thighGeo.translate(0, -0.14, 0);
+      const pivot = new THREE.Group();
+      pivot.position.set(0.15, -0.05, 0);
+      const thigh = new THREE.Mesh(thighGeo, birdLegMat);
+      thigh.rotation.x = 0.3;
+      thigh.castShadow = true;
+      pivot.add(thigh);
+      const shinGeo = track(new THREE.CylinderGeometry(0.022, 0.025, 0.26, 7));
+      const shin = new THREE.Mesh(shinGeo, birdLegMat);
+      shin.position.set(0, -0.38, -0.05);
+      shin.rotation.x = -0.25;
+      pivot.add(shin);
+      const toeGeo = track(new THREE.ConeGeometry(0.018, 0.12, 5));
+      for (const toe of [-0.5, 0, 0.5]) {
+        const t = new THREE.Mesh(toeGeo, birdLegMat);
+        t.position.set(Math.sin(toe) * 0.045, -0.51, 0.05);
+        t.rotation.x = Math.PI / 2 - 0.15;
+        t.rotation.z = -toe * 0.8;
+        pivot.add(t);
+      }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: Math.PI });
+    }
+
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -1920,6 +2218,19 @@ export class Player {
         );
       } else {
         this.rockMesh.rotation.z += dt * 3.2; // aerial flourish
+      }
+    }
+
+    // Error #42: brief positional corruption every couple of seconds.
+    if (this.isGlitchy) {
+      const cycle = t % 2.3;
+      if (cycle < 0.13) {
+        const s = Math.sin(t * 173.3);
+        this.bodyGroup.position.x = s * 0.055;
+        this.bodyGroup.rotation.y = s * 0.1;
+      } else {
+        this.bodyGroup.position.x = 0;
+        this.bodyGroup.rotation.y = 0;
       }
     }
 

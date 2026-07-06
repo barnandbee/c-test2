@@ -939,6 +939,38 @@ body {
   transform: rotate(-14deg);
 }
 
+/* Error #42: the character loader, corrupted. Half foil, half block,
+   mismatched eyes, neon glitch scanlines. */
+.error42-icon {
+  position: relative;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 32% 36%, #101014 0, #101014 2.5px, #ffffff 2.5px, #ffffff 6px, transparent 6.5px),
+    radial-gradient(ellipse 5px 8px at 68% 36%, #0a0a12 0, #0a0a12 60%, transparent 65%),
+    linear-gradient(#00ffcc, #00ffcc) 55% 62% / 70% 2px no-repeat,
+    linear-gradient(#ff00aa, #ff00aa) 38% 78% / 45% 2px no-repeat,
+    linear-gradient(103deg, #d8362a 0%, #d8362a 47%, #00ffcc 47%, #00ffcc 53%, #3aa0e8 53%, #3aa0e8 100%);
+  animation: error42-flicker 3.2s steps(1) infinite;
+}
+
+.error42-icon::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 3px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-bottom: 11px solid #23232a;
+  transform: rotate(-22deg);
+}
+
+@keyframes error42-flicker {
+  0%, 92%, 96%, 100% { transform: translateX(0); filter: none; }
+  93% { transform: translateX(-2px); filter: hue-rotate(90deg); }
+  95% { transform: translateX(2px); filter: hue-rotate(-60deg); }
+}
+
 /* Mr Flynn Boddington: Boffington's orange nemesis — same horns,
    petrol waistcoat, and a moustache with intent. */
 .boddington-icon {
