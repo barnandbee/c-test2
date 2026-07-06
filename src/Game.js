@@ -65,7 +65,12 @@ const STORAGE_GINSBERG = 'mystic-badger.ginsbergUnlocked';
 const STORAGE_MAGNUS = 'mystic-badger.magnusUnlocked';
 const STORAGE_BODDINGTON = 'mystic-badger.boddingtonUnlocked';
 const STORAGE_ERROR42 = 'mystic-badger.error42Unlocked';
+const STORAGE_MAYO = 'mystic-badger.mayoUnlocked';
+const STORAGE_PERPBIRD = 'mystic-badger.perpbirdUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+const MAYO_SCORE = 300;
+const SANDWICH_POINTS = 55.5;
+const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
 // cone, cherry, cloud, egg, star, Magna Carta.
 const ERROR42_SET = [1, 3, 5, 10, 20, 25];
@@ -126,6 +131,8 @@ export class Game {
     this.magnusUnlocked = readStorage(STORAGE_MAGNUS) === '1';
     this.boddingtonUnlocked = readStorage(STORAGE_BODDINGTON) === '1';
     this.error42Unlocked = readStorage(STORAGE_ERROR42) === '1';
+    this.mayoUnlocked = readStorage(STORAGE_MAYO) === '1';
+    this.perpbirdUnlocked = readStorage(STORAGE_PERPBIRD) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -182,6 +189,7 @@ export class Game {
     this.starsCollected = 0;
     this.cartHits = 0;
     this.itemTypesCollected = new Set();
+    this.sandwichClaimed = false;
     this.collectibles = [];
     this.frogs = [];
     this.clockTower = null;
@@ -515,6 +523,8 @@ export class Game {
     if (name === 'magnus') return this.magnusUnlocked;
     if (name === 'boddington') return this.boddingtonUnlocked;
     if (name === 'error42') return this.error42Unlocked;
+    if (name === 'mayo') return this.mayoUnlocked;
+    if (name === 'perpbird') return this.perpbirdUnlocked;
     return name === 'badger';
   }
 
@@ -529,7 +539,9 @@ export class Game {
       ginsberg: this.ginsbergUnlocked,
       magnus: this.magnusUnlocked,
       boddington: this.boddingtonUnlocked,
-      error42: this.error42Unlocked
+      error42: this.error42Unlocked,
+      mayo: this.mayoUnlocked,
+      perpbird: this.perpbirdUnlocked
     };
   }
 
@@ -614,6 +626,42 @@ export class Game {
             ? 'BALLOON! HOLD JUMP TO RISE'
             : 'HOVERCRAFT! DOUBLE-TAP TO HOP OUT'
         );
+        return;
+      }
+    }
+
+    // The sandwich in the cave. Most heroes find it wanting; one of
+    // them IS what it wants.
+    const sandwich = this.world.sandwichPos;
+    if (sandwich) {
+      const dx = this.player.position.x - sandwich.x;
+      const dz = this.player.position.z - sandwich.z;
+      const dy = this.player.position.y - sandwich.y;
+      if (dx * dx + dz * dz < SANDWICH_RANGE * SANDWICH_RANGE && Math.abs(dy) < 3) {
+        if (this.characterName === 'mayo') {
+          if (!this.sandwichClaimed) {
+            this.sandwichClaimed = true;
+            this.points += SANDWICH_POINTS;
+            this.ui.setPoints(this.points);
+            this.particles.spawnBurst(
+              this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
+              0xf2eed8,
+              { count: 36, speed: 4.2, size: 46, upBias: 0.7, life: 0.9 }
+            );
+            if (!this.perpbirdUnlocked) {
+              this.perpbirdUnlocked = true;
+              writeStorage(STORAGE_PERPBIRD, '1');
+              this.runUnlockNames.push('Perpendicular Bird');
+              this.ui.showTimeToast('★ PERPENDICULAR BIRD UNLOCKED! +55.5');
+            } else {
+              this.ui.showTimeToast('MUCH BETTER! +55.5');
+            }
+          } else {
+            this.ui.showTimeToast('ALREADY PERFECTLY MOIST');
+          }
+        } else {
+          this.ui.showTimeToast("IT'S A BLT, BUT IT'S A BIT TOO DRY…");
+        }
         return;
       }
     }
@@ -761,6 +809,12 @@ export class Game {
       writeStorage(STORAGE_RHOMBUS, '1');
       newlyUnlockedNames.push('Rhombus the Hat');
     }
+    // Mayonnaise: a jar this size only respects a 300+ finish.
+    if (!this.mayoUnlocked && this.points >= MAYO_SCORE) {
+      this.mayoUnlocked = true;
+      writeStorage(STORAGE_MAYO, '1');
+      newlyUnlockedNames.push('Mayonnaise');
+    }
     // Magnus Carter: take four cart hits, survive the full three minutes
     // anyway, and still finish with 50+. He respects that kind of grit.
     if (
@@ -808,6 +862,7 @@ export class Game {
     this.starsCollected = 0;
     this.cartHits = 0;
     this.itemTypesCollected.clear();
+    this.sandwichClaimed = false;
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);

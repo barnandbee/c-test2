@@ -133,6 +133,8 @@ export class Player {
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
     else if (this.character === 'magnus') this.root = this.buildMagnus();
     else if (this.character === 'error42') this.root = this.buildError42();
+    else if (this.character === 'mayo') this.root = this.buildMayo();
+    else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -1800,6 +1802,319 @@ export class Player {
       this.legs.push({ pivot, phase: Math.PI });
     }
 
+    return root;
+  }
+
+  /**
+   * Mayonnaise — a jar of mayonnaise. Cream contents, gold lid, a
+   * proper wraparound label, a friendly face, and stick limbs. The
+   * only hero capable of rescuing a dry sandwich.
+   */
+  buildMayo() {
+    const root = new THREE.Group();
+    root.name = 'mayo';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Wraparound label, drawn once at build time.
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#f6f2e8';
+    g.fillRect(0, 0, 512, 128);
+    g.strokeStyle = '#3a5a9c';
+    g.lineWidth = 10;
+    g.strokeRect(8, 8, 496, 112);
+    g.fillStyle = '#3a5a9c';
+    g.textAlign = 'center';
+    g.font = 'bold 56px Georgia, serif';
+    g.fillText('MAYONNAISE', 256, 82);
+    const labelTex = track(new THREE.CanvasTexture(canvas));
+    labelTex.colorSpace = THREE.SRGBColorSpace;
+
+    const mayoMat = track(createToonMaterial({
+      color: 0xf2eed8,
+      rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 } // glassy sheen
+    }));
+    const lidMat = track(createToonMaterial({
+      color: 0xd8b830,
+      rim: { color: 0xfff3c0, strength: 0.5, threshold: 0.55 }
+    }));
+    const labelMat = track(createToonMaterial({ map: labelTex }));
+    const limbMat = track(createToonMaterial({ color: 0xb8b4a4 }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x6a5030 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the jar ---------------------------------------------------------
+    const jarGeo = track(new THREE.CylinderGeometry(0.32, 0.34, 0.8, 18));
+    const jar = new THREE.Mesh(jarGeo, mayoMat);
+    jar.position.y = 0.42;
+    jar.castShadow = true;
+    body.add(jar);
+
+    const lidGeo = track(new THREE.CylinderGeometry(0.36, 0.36, 0.14, 18));
+    const lid = new THREE.Mesh(lidGeo, lidMat);
+    lid.position.y = 0.89;
+    lid.castShadow = true;
+    body.add(lid);
+
+    const labelGeo = track(new THREE.CylinderGeometry(0.335, 0.35, 0.3, 18, 1, true));
+    const label = new THREE.Mesh(labelGeo, labelMat);
+    label.position.y = 0.32;
+    body.add(label);
+
+    // --- face above the label ---------------------------------------------
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.07, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.032, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.012, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.12, 0.66, 0.28);
+      white.scale.set(1, 1.15, 0.5);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.115, 0.655, 0.32);
+      body.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.1, 0.675, 0.335);
+      body.add(glint);
+    }
+    const mouthGeo = track(new THREE.TorusGeometry(0.07, 0.014, 6, 12, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.54, 0.31);
+    mouth.rotation.z = Math.PI;
+    body.add(mouth);
+
+    // --- stick limbs --------------------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.38, 8));
+    armGeo.translate(0, -0.19, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, 0.55, 0);
+      pivot.rotation.z = -side * 0.45;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, limbMat);
+      hand.position.set(0, -0.4, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    const legGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.46, 8));
+    legGeo.translate(0, -0.23, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, -0.03, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, limbMat);
+      shoe.position.set(0, -0.48, 0.04);
+      shoe.scale.set(1.1, 0.55, 1.8);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Perpendicular Bird — a pencil sketch that got up and walked off the
+   * page. A flat plane bearing a hand-drawn bird in profile, facing
+   * right, tiny top hat, both wings locked perfectly horizontal, and a
+   * geometry-textbook right-angle marker under one wing reading 90°.
+   * Casts no shadow, because drawings don't.
+   */
+  buildPerpBird() {
+    const root = new THREE.Group();
+    root.name = 'perpbird';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 512;
+    const g = canvas.getContext('2d');
+    g.clearRect(0, 0, 512, 512);
+    const PENCIL = '#4a4a52';
+
+    // A sketchy stroke: draw twice with a slight jitter, like real pencil.
+    const sketch = (draw) => {
+      g.strokeStyle = PENCIL;
+      g.lineWidth = 5;
+      g.globalAlpha = 0.9;
+      draw(0, 0);
+      g.lineWidth = 2.5;
+      g.globalAlpha = 0.55;
+      draw(2.5, -1.5);
+      g.globalAlpha = 1;
+    };
+    const paperFill = (draw) => {
+      g.fillStyle = '#f8f6ef';
+      draw();
+      g.fill();
+    };
+
+    // Body (profile, facing right).
+    paperFill(() => {
+      g.beginPath();
+      g.ellipse(240, 300, 95, 72, 0, 0, Math.PI * 2);
+    });
+    sketch((ox, oy) => {
+      g.beginPath();
+      g.ellipse(240 + ox, 300 + oy, 95, 72, 0, 0, Math.PI * 2);
+      g.stroke();
+    });
+
+    // Head + beak, looking right.
+    paperFill(() => {
+      g.beginPath();
+      g.arc(340, 205, 46, 0, Math.PI * 2);
+    });
+    sketch((ox, oy) => {
+      g.beginPath();
+      g.arc(340 + ox, 205 + oy, 46, 0, Math.PI * 2);
+      g.stroke();
+    });
+    paperFill(() => {
+      g.beginPath();
+      g.moveTo(380, 195);
+      g.lineTo(428, 208);
+      g.lineTo(378, 222);
+      g.closePath();
+    });
+    sketch((ox, oy) => {
+      g.beginPath();
+      g.moveTo(380 + ox, 195 + oy);
+      g.lineTo(428 + ox, 208 + oy);
+      g.lineTo(378 + ox, 222 + oy);
+      g.closePath();
+      g.stroke();
+    });
+    // Eye.
+    g.fillStyle = PENCIL;
+    g.beginPath();
+    g.arc(350, 198, 6, 0, Math.PI * 2);
+    g.fill();
+
+    // The small top hat.
+    paperFill(() => {
+      g.beginPath();
+      g.rect(316, 122, 46, 46);
+    });
+    sketch((ox, oy) => {
+      g.beginPath();
+      g.rect(316 + ox, 122 + oy, 46, 46);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(300 + ox, 168 + oy);
+      g.lineTo(380 + ox, 168 + oy);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(318 + ox, 152 + oy);
+      g.lineTo(360 + ox, 152 + oy);
+      g.stroke();
+    });
+
+    // Both wings: one unbroken horizontal line of a wing each side —
+    // a perfect 180° across the body.
+    for (const [x0, x1] of [[42, 168], [312, 452]]) {
+      paperFill(() => {
+        g.beginPath();
+        g.rect(x0, 282, x1 - x0, 20);
+      });
+      sketch((ox, oy) => {
+        g.beginPath();
+        g.rect(x0 + ox, 282 + oy, x1 - x0, 20);
+        g.stroke();
+        // feather ticks
+        for (let fx = x0 + 22; fx < x1 - 8; fx += 34) {
+          g.beginPath();
+          g.moveTo(fx + ox, 302 + oy);
+          g.lineTo(fx - 10 + ox, 316 + oy);
+          g.stroke();
+        }
+      });
+    }
+
+    // Stick legs + feet.
+    sketch((ox, oy) => {
+      for (const lx of [216, 264]) {
+        g.beginPath();
+        g.moveTo(lx + ox, 368 + oy);
+        g.lineTo(lx + ox, 438 + oy);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(lx - 14 + ox, 444 + oy);
+        g.lineTo(lx + 18 + ox, 444 + oy);
+        g.stroke();
+      }
+    });
+
+    // The right angle, formally certified: arc + square marker + label.
+    sketch((ox, oy) => {
+      g.beginPath();
+      g.arc(330 + ox, 302 + oy, 30, Math.PI * 0.5, Math.PI * 0.06, true);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(330 + ox, 320 + oy);
+      g.lineTo(348 + ox, 320 + oy);
+      g.lineTo(348 + ox, 302 + oy);
+      g.stroke();
+    });
+    g.fillStyle = PENCIL;
+    g.font = 'bold 34px "Comic Sans MS", "Segoe Print", cursive';
+    g.textAlign = 'left';
+    g.fillText('90°', 362, 352);
+
+    const tex = track(new THREE.CanvasTexture(canvas));
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    const sketchMat = track(createToonMaterial({
+      map: tex,
+      emissiveMap: tex,
+      emissive: 0x9a9a9a,
+      emissiveIntensity: 1.0
+    }));
+    sketchMat.transparent = true;
+    sketchMat.alphaTest = 0.15;
+    sketchMat.side = THREE.DoubleSide;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    const planeGeo = track(new THREE.PlaneGeometry(1.2, 1.2));
+    const sheet = new THREE.Mesh(planeGeo, sketchMat);
+    sheet.position.y = 0.45;
+    // Drawings cast no shadows; that would be presumptuous.
+    body.add(sheet);
+    this.rockMesh = sheet; // borrow Rhombus' waddle-rock
+
+    this.legs = [];
     return root;
   }
 

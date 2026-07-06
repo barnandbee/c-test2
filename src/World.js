@@ -79,6 +79,7 @@ export class World {
     this._buildRocks();
     this._buildGrass();
     this._buildEscherStairs();
+    this._buildCave();
   }
 
   /* ================================================================ */
@@ -958,6 +959,153 @@ export class World {
   }
 
   /* ================================================================ */
+  /*  The cave (and its sandwich)                                     */
+  /* ================================================================ */
+
+  /**
+   * A hollow rock dome with a single entrance, tucked away from the
+   * other landmarks. Inside, on a stone pedestal, under a faint warm
+   * glow: a BLT. The game rules around it live in Game; the world just
+   * provides the architecture and remembers where the sandwich is.
+   */
+  _buildCave() {
+    // Find a home clear of the lake, the stairs and the blossom tree.
+    let spot = null;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const p = this.randomGroundPoint(38, 75, 0.82);
+      const dLake = Math.hypot(p.x - this.lakeCenterX, p.z - this.lakeCenterZ);
+      if (dLake < this.lakeRadius + 16) continue;
+      if (this.stairCenter && Math.hypot(p.x - this.stairCenter.x, p.z - this.stairCenter.z) < 22) continue;
+      if (this.blossomTree && Math.hypot(p.x - this.blossomTree.x, p.z - this.blossomTree.z) < 18) continue;
+      spot = p;
+      break;
+    }
+    if (!spot) spot = this.randomGroundPoint(38, 75);
+    this.cavePos = spot.clone();
+
+    const rockMat = createToonMaterial({
+      color: 0x4a4550,
+      rim: { color: 0x9d8fd4, strength: 0.35, threshold: 0.66 }
+    });
+    rockMat.side = THREE.DoubleSide;
+    const pedestalMat = createToonMaterial({ color: 0x5f5964 });
+    this._disposables.push(rockMat, pedestalMat);
+
+    const cave = new THREE.Group();
+    cave.position.copy(spot);
+    this.caveMeshes = cave;
+
+    // The shell: a dome with a vertical wedge missing — the entrance —
+    // dipping below grade so the rim never floats on sloped ground.
+    const GAP = 0.9; // radians of open doorway
+    const domeGeo = new THREE.SphereGeometry(5.2, 28, 16, GAP / 2, Math.PI * 2 - GAP, 0, Math.PI * 0.62);
+    {
+      // Roughen it so it reads as rock, not a geodesic observatory.
+      const pos = domeGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const lump = 1 + this.detailNoise.noise(x * 0.7 + 31, z * 0.7 - y * 0.5) * 0.12;
+        pos.setXYZ(i, x * lump, y * lump, z * lump);
+      }
+      domeGeo.computeVertexNormals();
+    }
+    this._disposables.push(domeGeo);
+    const dome = new THREE.Mesh(domeGeo, rockMat);
+    dome.castShadow = true;
+    dome.receiveShadow = true;
+    cave.add(dome);
+
+    // Face the doorway toward the map's heart. The geometry's gap is
+    // centered on local -X, so yaw maps -X onto the desired direction.
+    const dirX = -spot.x / (Math.hypot(spot.x, spot.z) || 1);
+    const dirZ = -spot.z / (Math.hypot(spot.x, spot.z) || 1);
+    cave.rotation.y = Math.atan2(dirZ, -dirX);
+
+    // Pedestal + sandwich, set deep inside, opposite the entrance.
+    const pedestalGeo = new THREE.CylinderGeometry(0.45, 0.55, 0.6, 10);
+    this._disposables.push(pedestalGeo);
+    const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+    const inwardX = -dirX * 2.4;
+    const inwardZ = -dirZ * 2.4;
+    pedestal.position.set(inwardX, 0.3, inwardZ);
+    pedestal.receiveShadow = true;
+    cave.add(pedestal);
+
+    const sandwich = this._buildSandwich();
+    sandwich.position.set(inwardX, 0.62, inwardZ);
+    cave.add(sandwich);
+    this.sandwichPos = new THREE.Vector3(
+      spot.x + inwardX,
+      spot.y + 0.7,
+      spot.z + inwardZ
+    );
+
+    // A faint shrine-glow so the BLT is discovered, not stumbled over.
+    const glow = new THREE.PointLight(0xffc9a0, 2.5, 8, 2);
+    glow.position.set(inwardX, 1.6, inwardZ);
+    cave.add(glow);
+
+    this.scene.add(cave);
+
+    // Solid walls: a collider ring with a gap where the doorway is.
+    const entranceAngle = Math.atan2(dirZ, dirX);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      let delta = Math.abs(a - entranceAngle);
+      if (delta > Math.PI) delta = Math.PI * 2 - delta;
+      if (delta < 0.55) continue; // the doorway
+      this.colliders.push({
+        x: spot.x + Math.cos(a) * 4.6,
+        z: spot.z + Math.sin(a) * 4.6,
+        radius: 1.35,
+        top: spot.y + 5
+      });
+    }
+  }
+
+  /** A modest BLT: bread, lettuce, tomato, bacon, bread. Too dry. */
+  _buildSandwich() {
+    const breadMat = createToonMaterial({ color: 0xe8c87a, rim: { color: 0xfff0d0, strength: 0.4, threshold: 0.6 } });
+    const crustMat = createToonMaterial({ color: 0xb08948 });
+    const lettuceMat = createToonMaterial({ color: 0x6fbf4a });
+    const tomatoMat = createToonMaterial({ color: 0xd84838 });
+    const baconMat = createToonMaterial({ color: 0x9c4434 });
+    const breadGeo = new THREE.BoxGeometry(0.44, 0.09, 0.44);
+    const lettuceGeo = new THREE.BoxGeometry(0.5, 0.03, 0.5);
+    const tomatoGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.035, 12);
+    const baconGeo = new THREE.BoxGeometry(0.46, 0.025, 0.14);
+    this._disposables.push(breadMat, crustMat, lettuceMat, tomatoMat, baconMat, breadGeo, lettuceGeo, tomatoGeo, baconGeo);
+
+    const s = new THREE.Group();
+    const bottom = new THREE.Mesh(breadGeo, breadMat);
+    bottom.position.y = 0.045;
+    s.add(bottom);
+    const lettuce = new THREE.Mesh(lettuceGeo, lettuceMat);
+    lettuce.position.y = 0.1;
+    lettuce.rotation.y = 0.1;
+    s.add(lettuce);
+    for (const [dx, dz] of [[-0.09, 0.05], [0.1, -0.06]]) {
+      const tomato = new THREE.Mesh(tomatoGeo, tomatoMat);
+      tomato.position.set(dx, 0.13, dz);
+      s.add(tomato);
+    }
+    for (const [dz, rot] of [[-0.08, 0.12], [0.09, -0.15]]) {
+      const bacon = new THREE.Mesh(baconGeo, baconMat);
+      bacon.position.set(0, 0.165, dz);
+      bacon.rotation.y = rot;
+      s.add(bacon);
+    }
+    const top = new THREE.Mesh(breadGeo, crustMat);
+    top.position.y = 0.225;
+    top.rotation.y = 0.08;
+    s.add(top);
+    for (const mesh of s.children) mesh.castShadow = true;
+    return s;
+  }
+
+  /* ================================================================ */
   /*  Lifecycle                                                       */
   /* ================================================================ */
 
@@ -968,6 +1116,7 @@ export class World {
     }
     if (this.lakeSign) this.scene.remove(this.lakeSign);
     if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
+    if (this.caveMeshes) this.scene.remove(this.caveMeshes);
     if (this.blossomAura) {
       this.blossomAura.geometry.dispose();
       this.blossomAura.material.dispose();

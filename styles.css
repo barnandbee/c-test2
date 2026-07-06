@@ -971,6 +971,37 @@ body {
   95% { transform: translateX(2px); filter: hue-rotate(-60deg); }
 }
 
+/* Mayonnaise: a jar. Gold lid, label band, quiet confidence. */
+.mayo-icon {
+  border-radius: 10px 10px 8px 8px;
+  border-color: transparent;
+  background-image:
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    linear-gradient(#d8b830, #d8b830),
+    linear-gradient(#3a5a9c, #3a5a9c),
+    linear-gradient(#f6f2e8, #f6f2e8),
+    linear-gradient(180deg, #f2eed8, #e8e2c8);
+  background-size: 5px 5px, 5px 5px, 100% 22%, 60% 3px, 70% 26%, 100% 100%;
+  background-position: 33% 42%, 64% 42%, 50% 0, 50% 72%, 50% 74%, 50% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
+.perpbird-icon {
+  border-radius: 6px;
+  border-color: #c8c4b8;
+  background-image:
+    radial-gradient(circle, #4a4a52 0 1.8px, transparent 2.2px),
+    linear-gradient(#4a4a52, #4a4a52),
+    radial-gradient(circle at 50% 50%, transparent 0 6.5px, #4a4a52 6.5px 8px, transparent 8.5px),
+    linear-gradient(#4a4a52, #4a4a52),
+    linear-gradient(180deg, #fbfaf5, #f1efe6);
+  background-size: 4px 4px, 100% 2.5px, 16px 16px, 8px 6px, 100% 100%;
+  background-position: 68% 30%, 50% 55%, 64% 32%, 62% 16%, 50% 50%;
+  background-repeat: no-repeat;
+}
+
 /* Mr Flynn Boddington: Boffington's orange nemesis — same horns,
    petrol waistcoat, and a moustache with intent. */
 .boddington-icon {
