@@ -123,8 +123,9 @@ import map — no npm install, no bundler.
 - **Mayonnaise** — finish a run with **300+ points** to unlock a jar of
   mayonnaise: cream contents, gold lid, wraparound label, quiet
   confidence.
-- **The cave** — a hollow rock dome hidden away from the landmarks.
-  Inside, on a pedestal, under a mysterious glow: a **BLT**. Double-tap
+- **The cave** — a short tunnel dug below grade under a low rock hood,
+  its wide mouth facing the heart of the map. Walk down the bare-earth
+  ramp: on a pedestal, under a mysterious glow, a **BLT**. Double-tap
   it and it says what everyone's thinking: *it's a BLT, but it's a bit
   too dry…* Unless you're Mayonnaise — then it's worth **+55.5 points**
   (once per run) and unlocks **Perpendicular Bird**: a pencil sketch of

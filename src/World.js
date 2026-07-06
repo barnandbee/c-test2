@@ -76,6 +76,35 @@ export class World {
     }
     this.waterLevel = rimSum / 8 - 1.1;
 
+    // --- the cave: a sunken grotto dug into the south side ---------------
+    // Decided before geometry exists because getHeight() digs its ramp:
+    // a short tunnel descending below grade, roofed by the rock hood that
+    // _buildCave() raises over it. A tiny deterministic search keeps the
+    // dig on gentle ground, well clear of the lake and the golf corner.
+    this.caveDepth = 1.7;
+    let caveBest = null;
+    for (const [da, r] of [[0, 50], [0.35, 46], [-0.35, 54], [0.6, 52], [-0.6, 47], [0.2, 58], [0, 44]]) {
+      const a = 4.05 + da;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e);
+      if (!caveBest || grad < caveBest.grad) caveBest = { x, z, grad };
+      if (caveBest.grad < 0.28) break;
+    }
+    this.caveX = caveBest.x;
+    this.caveZ = caveBest.z;
+    // The tunnel digs outward (away from the map's heart); the mouth
+    // faces inward, toward the action.
+    const caveR = Math.hypot(caveBest.x, caveBest.z);
+    this.caveDirX = caveBest.x / caveR;
+    this.caveDirZ = caveBest.z / caveR;
+    this.caveLevel = this.getHeight(this.caveX, this.caveZ); // grade, pre-dig
+    this.caveRadius = 5.0; // setting this arms the carve in getHeight()
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -140,7 +169,28 @@ export class World {
         h -= (1 - smoothstep(this.bunkerRadius * 0.3, this.bunkerRadius, bd)) * 0.55;
       }
     }
+    // Dig the cave: a short tunnel ramping below grade.
+    if (this.caveRadius) {
+      h -= this._caveDig(x, z) * this.caveDepth;
+    }
     return h;
+  }
+
+  /**
+   * The cave dig's carve profile, 0 → 1 (1 = full tunnel depth). A ramp
+   * descends from grade at the mouth to a flat-bottomed chamber; the
+   * same profile drives getHeight(), the terrain's earth tint and the
+   * spawn rejects, so collision and visuals can never disagree.
+   */
+  _caveDig(x, z) {
+    const rx = x - this.caveX;
+    const rz = z - this.caveZ;
+    const u = rx * this.caveDirX + rz * this.caveDirZ; // mouth → back wall
+    const v = -rx * this.caveDirZ + rz * this.caveDirX; // lateral
+    if (u < -7.5 || u > 4.8 || v < -4.5 || v > 4.5) return 0;
+    const along = smoothstep(-7.0, -1.2, u) * (1 - smoothstep(2.6, 4.6, u));
+    const across = 1 - smoothstep(1.8, 4.0, Math.abs(v));
+    return along * across;
   }
 
   /** True only inside the lake's carved footprint — water rules (drowning,
@@ -195,6 +245,8 @@ export class World {
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.25) continue;
       // Nothing spawns on the green — golf etiquette.
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 1.5) continue;
+      // …and nothing spawns in the cave dig or its doorway.
+      if (Math.hypot(x - this.caveX, z - this.caveZ) < this.caveRadius + 2.5) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -360,6 +412,12 @@ export class World {
       if (bunkerDist < this.bunkerRadius) {
         const sandy = 1 - smoothstep(this.bunkerRadius * 0.55, this.bunkerRadius, bunkerDist);
         c.lerp(new THREE.Color(0xe8d8a0), sandy);
+      }
+
+      // The cave dig: grass gives way to bare trodden earth.
+      const dig = this._caveDig(x, z);
+      if (dig > 0) {
+        c.lerp(new THREE.Color(0x4c3d31), dig * 0.85);
       }
 
       // Lake bed: sandy shore banding into a dark teal depth (lake only —
@@ -546,6 +604,8 @@ export class World {
       if (this.getNormal(x, z, normal).y < 0.74) continue;
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.3) continue;
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 2) continue;
+      // Trees near the cave mouth would wall off the camera's sightline.
+      if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -787,7 +847,8 @@ export class World {
         if (
           this.getNormal(x, z, normal).y > 0.7 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2) &&
-          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5
+          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5 &&
+          Math.hypot(x - this.caveX, z - this.caveZ) > 7
         ) break;
       }
       const h = this.getHeight(x, z);
@@ -854,7 +915,8 @@ export class World {
         if (
           this.getNormal(x, z, normal).y > 0.82 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15) &&
-          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 0.5
+          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 0.5 &&
+          this._caveDig(x, z) === 0
         ) break;
       }
       const h = this.getHeight(x, z);
@@ -1067,25 +1129,18 @@ export class World {
   /* ================================================================ */
 
   /**
-   * A hollow rock dome with a single entrance, tucked away from the
-   * other landmarks. Inside, on a stone pedestal, under a faint warm
-   * glow: a BLT. The game rules around it live in Game; the world just
-   * provides the architecture and remembers where the sandwich is.
+   * A sunken grotto: the terrain itself digs a short tunnel below grade
+   * (see the constructor and _caveDig), and this raises a low rock hood
+   * over the chamber with a wide-open mouth, so a trailing third-person
+   * camera can look straight down the ramp at the pedestal. Inside, under
+   * a faint warm glow: a BLT. The game rules around it live in Game; the
+   * world just provides the architecture and remembers where it is.
    */
   _buildCave() {
-    // Find a home clear of the lake, the stairs and the blossom tree.
-    let spot = null;
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const p = this.randomGroundPoint(38, 75, 0.82);
-      const dLake = Math.hypot(p.x - this.lakeCenterX, p.z - this.lakeCenterZ);
-      if (dLake < this.lakeRadius + 16) continue;
-      if (this.stairCenter && Math.hypot(p.x - this.stairCenter.x, p.z - this.stairCenter.z) < 22) continue;
-      if (this.blossomTree && Math.hypot(p.x - this.blossomTree.x, p.z - this.blossomTree.z) < 18) continue;
-      spot = p;
-      break;
-    }
-    if (!spot) spot = this.randomGroundPoint(38, 75);
+    const spot = new THREE.Vector3(this.caveX, this.caveLevel, this.caveZ);
     this.cavePos = spot.clone();
+    const dirX = this.caveDirX; // mouth → back wall
+    const dirZ = this.caveDirZ;
 
     const rockMat = createToonMaterial({
       color: 0x4a4550,
@@ -1099,10 +1154,11 @@ export class World {
     cave.position.copy(spot);
     this.caveMeshes = cave;
 
-    // The shell: a dome with a vertical wedge missing — the entrance —
-    // dipping below grade so the rim never floats on sloped ground.
-    const GAP = 0.9; // radians of open doorway
-    const domeGeo = new THREE.SphereGeometry(5.2, 28, 16, GAP / 2, Math.PI * 2 - GAP, 0, Math.PI * 0.62);
+    // The hood: a squashed spherical shell with 120° of missing wall —
+    // the mouth — whose rim dips below grade to meet the dug floor. Low
+    // and open enough that the sandwich is visible from outside.
+    const GAP = 2.1; // radians of open mouth
+    const domeGeo = new THREE.SphereGeometry(5.0, 28, 16, GAP / 2, Math.PI * 2 - GAP, 0, Math.PI * 0.68);
     {
       // Roughen it so it reads as rock, not a geodesic observatory.
       const pos = domeGeo.attributes.position;
@@ -1117,54 +1173,57 @@ export class World {
     }
     this._disposables.push(domeGeo);
     const dome = new THREE.Mesh(domeGeo, rockMat);
+    dome.scale.y = 0.62; // a low tunnel hood, not an observatory dome
     dome.castShadow = true;
     dome.receiveShadow = true;
     cave.add(dome);
 
-    // Face the doorway toward the map's heart. The geometry's gap is
-    // centered on local -X, so yaw maps -X onto the desired direction.
-    const dirX = -spot.x / (Math.hypot(spot.x, spot.z) || 1);
-    const dirZ = -spot.z / (Math.hypot(spot.x, spot.z) || 1);
-    cave.rotation.y = Math.atan2(dirZ, -dirX);
+    // Face the mouth back toward the map's heart (opposite the dig
+    // direction). The geometry's gap is centered on local -X, so yaw
+    // maps -X onto the mouth direction.
+    const mouthX = -dirX;
+    const mouthZ = -dirZ;
+    cave.rotation.y = Math.atan2(mouthZ, -mouthX);
 
-    // Pedestal + sandwich, set deep inside, opposite the entrance.
+    // Pedestal + sandwich on the chamber floor, past the tunnel's midpoint.
+    const inwardX = dirX * 1.2;
+    const inwardZ = dirZ * 1.2;
+    const floorY = this.getHeight(spot.x + inwardX, spot.z + inwardZ);
     const pedestalGeo = new THREE.CylinderGeometry(0.45, 0.55, 0.6, 10);
     this._disposables.push(pedestalGeo);
     const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
-    const inwardX = -dirX * 2.4;
-    const inwardZ = -dirZ * 2.4;
-    pedestal.position.set(inwardX, 0.3, inwardZ);
+    pedestal.position.set(inwardX, floorY - spot.y + 0.3, inwardZ);
     pedestal.receiveShadow = true;
     cave.add(pedestal);
 
     const sandwich = this._buildSandwich();
-    sandwich.position.set(inwardX, 0.62, inwardZ);
+    sandwich.position.set(inwardX, floorY - spot.y + 0.62, inwardZ);
     cave.add(sandwich);
     this.sandwichPos = new THREE.Vector3(
       spot.x + inwardX,
-      spot.y + 0.7,
+      floorY + 0.7,
       spot.z + inwardZ
     );
 
-    // A faint shrine-glow so the BLT is discovered, not stumbled over.
-    const glow = new THREE.PointLight(0xffc9a0, 2.5, 8, 2);
-    glow.position.set(inwardX, 1.6, inwardZ);
+    // A warm shrine-glow so the BLT is discovered, not stumbled over.
+    const glow = new THREE.PointLight(0xffc9a0, 3.0, 9, 2);
+    glow.position.set(inwardX, floorY - spot.y + 1.7, inwardZ);
     cave.add(glow);
 
     this.scene.add(cave);
 
-    // Solid walls: a collider ring with a gap where the doorway is.
-    const entranceAngle = Math.atan2(dirZ, dirX);
+    // Solid walls: a collider ring with a gap where the mouth is.
+    const mouthAngle = Math.atan2(mouthZ, mouthX);
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
-      let delta = Math.abs(a - entranceAngle);
+      let delta = Math.abs(a - mouthAngle);
       if (delta > Math.PI) delta = Math.PI * 2 - delta;
-      if (delta < 0.55) continue; // the doorway
+      if (delta < 1.05) continue; // the doorway
       this.colliders.push({
-        x: spot.x + Math.cos(a) * 4.6,
-        z: spot.z + Math.sin(a) * 4.6,
+        x: spot.x + Math.cos(a) * 4.3,
+        z: spot.z + Math.sin(a) * 4.3,
         radius: 1.35,
-        top: spot.y + 5
+        top: spot.y + 4
       });
     }
   }
