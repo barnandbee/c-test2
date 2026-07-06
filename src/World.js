@@ -46,6 +46,19 @@ export class World {
     this._spawnRawHeight = this._rawHeight(0, 0);
     this.sunDirection = new THREE.Vector3(-0.52, 0.4, -0.72).normalize();
 
+    // --- the golf corner: a mown green and its bunker --------------------
+    // Defined before geometry is built, because getHeight() flattens the
+    // green and scoops the bunker.
+    const golfAngle = 5.2;
+    this.greenCenterX = Math.cos(golfAngle) * 48;
+    this.greenCenterZ = Math.sin(golfAngle) * 48;
+    this.greenRadius = 6.5;
+    this.greenLevel = this._rawHeight(this.greenCenterX, this.greenCenterZ);
+    // Bunker guarding the approach, just off the green's edge.
+    this.bunkerCenterX = this.greenCenterX + Math.cos(golfAngle + 2.2) * 8.2;
+    this.bunkerCenterZ = this.greenCenterZ + Math.sin(golfAngle + 2.2) * 8.2;
+    this.bunkerRadius = 2.6;
+
     // --- the lake: a carved basin on the west side ----------------------
     // Defined before any geometry is built, because getHeight() carves it.
     const lakeAngle = 2.75;
@@ -80,6 +93,7 @@ export class World {
     this._buildGrass();
     this._buildEscherStairs();
     this._buildCave();
+    this._buildGolfFlag();
   }
 
   /* ================================================================ */
@@ -113,6 +127,17 @@ export class World {
       const ld = Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ);
       if (ld < this.lakeRadius) {
         h -= (1 - smoothstep(this.lakeRadius * 0.45, this.lakeRadius, ld)) * 7;
+      }
+    }
+    // Mow the golf green dead flat, and scoop the bunker.
+    if (this.greenRadius) {
+      const gd = Math.hypot(x - this.greenCenterX, z - this.greenCenterZ);
+      if (gd < this.greenRadius) {
+        h = lerp(this.greenLevel, h, smoothstep(this.greenRadius * 0.5, this.greenRadius, gd));
+      }
+      const bd = Math.hypot(x - this.bunkerCenterX, z - this.bunkerCenterZ);
+      if (bd < this.bunkerRadius) {
+        h -= (1 - smoothstep(this.bunkerRadius * 0.3, this.bunkerRadius, bd)) * 0.55;
       }
     }
     return h;
@@ -168,6 +193,8 @@ export class World {
       z = Math.sin(angle) * r;
       if (this.getNormal(x, z, this._n).y < maxSlopeNormalY) continue;
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.25) continue;
+      // Nothing spawns on the green — golf etiquette.
+      if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 1.5) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -320,6 +347,20 @@ export class World {
       const rockAmount = 1 - smoothstep(0.6, 0.82, slope);
       c.lerp(rock, rockAmount);
       c.lerp(rockHi, rockAmount * smoothstep(8, 16, h) * 0.6);
+
+      // The golf green: bright mown grass with alternating stripes; the
+      // bunker: pale raked sand.
+      const greenDist = Math.hypot(x - this.greenCenterX, z - this.greenCenterZ);
+      if (greenDist < this.greenRadius) {
+        const mow = 1 - smoothstep(this.greenRadius * 0.8, this.greenRadius, greenDist);
+        const stripe = Math.floor((x - z) / 1.6) % 2 === 0 ? 0.06 : -0.02;
+        c.lerp(new THREE.Color(0x4fae4a).offsetHSL(0, 0.05, stripe), mow);
+      }
+      const bunkerDist = Math.hypot(x - this.bunkerCenterX, z - this.bunkerCenterZ);
+      if (bunkerDist < this.bunkerRadius) {
+        const sandy = 1 - smoothstep(this.bunkerRadius * 0.55, this.bunkerRadius, bunkerDist);
+        c.lerp(new THREE.Color(0xe8d8a0), sandy);
+      }
 
       // Lake bed: sandy shore banding into a dark teal depth (lake only —
       // ordinary low valleys elsewhere keep their grass).
@@ -504,6 +545,7 @@ export class World {
       const z = Math.sin(angle) * r;
       if (this.getNormal(x, z, normal).y < 0.74) continue;
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.3) continue;
+      if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 2) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -742,7 +784,11 @@ export class World {
         const r = this.rng.range(12, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.7 && !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2)) break;
+        if (
+          this.getNormal(x, z, normal).y > 0.7 &&
+          !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2) &&
+          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5
+        ) break;
       }
       const h = this.getHeight(x, z);
       const s = this.rng.range(0.5, 2.4);
@@ -805,7 +851,11 @@ export class World {
         const r = this.rng.range(3, PLAYABLE_RADIUS - 2);
         x = Math.cos(angle) * r;
         z = Math.sin(angle) * r;
-        if (this.getNormal(x, z, normal).y > 0.82 && !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15)) break;
+        if (
+          this.getNormal(x, z, normal).y > 0.82 &&
+          !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15) &&
+          Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 0.5
+        ) break;
       }
       const h = this.getHeight(x, z);
       euler.set(this.rng.range(-0.25, 0.25), this.rng.range(0, Math.PI * 2), this.rng.range(-0.25, 0.25));
@@ -956,6 +1006,60 @@ export class World {
     this.scene.add(column);
     this._stairMeshes.push(column);
     this.colliders.push({ x, z, radius: 0.6, top: topY });
+  }
+
+  /* ================================================================ */
+  /*  The golf flag                                                   */
+  /* ================================================================ */
+
+  /** Hole, pole and a red pennant that ripples in the wind shader. */
+  _buildGolfFlag() {
+    const holeGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.06, 12);
+    const holeMat = createToonMaterial({ color: 0x14120f });
+    const poleGeo = new THREE.CylinderGeometry(0.03, 0.03, 2.3, 8);
+    const poleMat = createToonMaterial({
+      color: 0xf2f0e8,
+      rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 }
+    });
+    const flagMat = createToonMaterial({
+      color: 0xd8362a,
+      rim: { color: 0xff9a8a, strength: 0.4, threshold: 0.58 },
+      sway: { strength: 0.1, speed: 3.2 }
+    });
+    flagMat.side = THREE.DoubleSide;
+
+    // Triangular pennant with an aSway attribute so the tip flutters.
+    const flagGeo = new THREE.BufferGeometry();
+    const verts = new Float32Array([
+      0, 0, 0,
+      0, -0.34, 0,
+      0.62, -0.17, 0
+    ]);
+    flagGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    flagGeo.setAttribute('aSway', new THREE.BufferAttribute(new Float32Array([0, 0, 1]), 1));
+    flagGeo.computeVertexNormals();
+
+    this._disposables.push(holeGeo, holeMat, poleGeo, poleMat, flagGeo, flagMat);
+
+    const group = new THREE.Group();
+    const y = this.greenLevel;
+    group.position.set(this.greenCenterX, y, this.greenCenterZ);
+    this.golfFlag = group;
+
+    const hole = new THREE.Mesh(holeGeo, holeMat);
+    hole.position.y = 0.01;
+    group.add(hole);
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.y = 1.15;
+    pole.castShadow = true;
+    group.add(pole);
+    const flag = new THREE.Mesh(flagGeo, flagMat);
+    flag.position.set(0.03, 2.22, 0);
+    flag.rotation.y = this.rng.range(0, Math.PI * 2);
+    group.add(flag);
+
+    this.scene.add(group);
+    this.colliders.push({ x: this.greenCenterX, z: this.greenCenterZ, radius: 0.12, top: y + 2.3 });
   }
 
   /* ================================================================ */
@@ -1117,6 +1221,7 @@ export class World {
     if (this.lakeSign) this.scene.remove(this.lakeSign);
     if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
     if (this.caveMeshes) this.scene.remove(this.caveMeshes);
+    if (this.golfFlag) this.scene.remove(this.golfFlag);
     if (this.blossomAura) {
       this.blossomAura.geometry.dispose();
       this.blossomAura.material.dispose();

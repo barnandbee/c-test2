@@ -10,7 +10,8 @@
   --accent-gold: #ffd44f;
   --health-hi: #7be06b;
   --health-lo: #ff5d5d;
-  --font-stack: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-stack: "Caudex", Georgia, "Times New Roman", serif;
+  --font-notes: "Boogaloo", "Comic Sans MS", cursive;
 }
 
 * {
@@ -128,7 +129,7 @@ body {
 
 #menu-title .title-of {
   display: block;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-stack);
   font-style: italic;
   font-weight: 400;
   font-size: clamp(18px, 3vw, 30px);
@@ -379,9 +380,10 @@ body {
   left: 50%;
   top: 26%;
   transform: translateX(-50%);
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-family: var(--font-notes);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   color: #bfe0ff;
   text-shadow: 0 0 18px rgba(122, 183, 255, 0.8), 0 2px 6px rgba(0, 0, 0, 0.5);
   opacity: 0;
@@ -467,6 +469,7 @@ body {
   transform: translateX(-50%);
   display: flex;
   gap: 22px;
+  font-family: var(--font-notes);
   padding: 10px 22px;
   background: var(--hud-bg);
   border: 1px solid var(--hud-border);
@@ -719,8 +722,9 @@ body {
 }
 
 #unlock-note {
-  font-size: 13px;
-  font-weight: 700;
+  font-family: var(--font-notes);
+  font-size: 17px;
+  font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--accent-gold);
   margin-bottom: 12px;
