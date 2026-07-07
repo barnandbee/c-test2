@@ -1062,6 +1062,20 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Marblella: a glass marble with a cat's-eye twist and a window glint. */
+.marblella-icon {
+  border-radius: 50%;
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.95) 0 2.5px, rgba(255, 255, 255, 0.35) 5.5px, transparent 8px),
+    radial-gradient(ellipse 13px 6px at 56% 62%, #3ec8c0 0 45%, transparent 75%),
+    radial-gradient(ellipse 9px 5px at 44% 44%, #e86aa8 0 45%, transparent 78%),
+    radial-gradient(circle at 50% 45%, #e4f0f4 0 55%, #9fb8c8 100%);
+  box-shadow:
+    inset -2px -3px 6px rgba(30, 50, 80, 0.35),
+    0 0 8px rgba(160, 220, 230, 0.35);
+}
+
 /* Mr Flynn Boddington: Boffington's orange nemesis — same horns,
    petrol waistcoat, and a moustache with intent. */
 .boddington-icon {

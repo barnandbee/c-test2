@@ -132,6 +132,20 @@ import map — no npm install, no bundler.
   a bird, in profile, top hat, both wings locked perfectly horizontal,
   with a right-angle marker under the wing that literally says **90°**.
   Casts no shadow. Drawings don't.
+- **The cottage** — a little plastered cottage on a leveled yard, door
+  open, windows glowing. The roof lifts away dollhouse-style while
+  you're inside. Double-tap the appliances: the **alarm clock** rings
+  for **+20 seconds** (once per run — after that it's hoarse), the
+  stove and fridge have opinions, and the **Persian rug** slides aside
+  to reveal a **trap door** that will not budge. Not yet. Touch all
+  four fixtures in one run and **Marblella** rolls onto the roster: a
+  glass marble with a cat's-eye twist, the only hero who can enter
+  water — she's TOO DENSE to bounce off it (and too dense for the hot
+  air balloon, which refuses her outright). She sinks straight to the
+  lake bed and trundles along it, which means she can claim **Red
+  October even while the boat lurks submerged**. While you're down
+  there: a fan of coral glows on the lake bed, because someone should
+  see it.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

@@ -68,7 +68,12 @@ const STORAGE_BODDINGTON = 'mystic-badger.boddingtonUnlocked';
 const STORAGE_ERROR42 = 'mystic-badger.error42Unlocked';
 const STORAGE_MAYO = 'mystic-badger.mayoUnlocked';
 const STORAGE_PERPBIRD = 'mystic-badger.perpbirdUnlocked';
+const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+const ALARM_TIME_BONUS = 20;        // the cottage alarm clock, once per run
+const APPLIANCE_RANGE = 2.4;
+// Touch every one of these in a single run and the marble rolls in.
+const MARBLELLA_APPLIANCES = ['clock', 'stove', 'fridge', 'trapdoor'];
 const MAYO_SCORE = 300;
 const SANDWICH_POINTS = 55.5;
 const SANDWICH_RANGE = 2.6;
@@ -134,6 +139,7 @@ export class Game {
     this.error42Unlocked = readStorage(STORAGE_ERROR42) === '1';
     this.mayoUnlocked = readStorage(STORAGE_MAYO) === '1';
     this.perpbirdUnlocked = readStorage(STORAGE_PERPBIRD) === '1';
+    this.marblellaUnlocked = readStorage(STORAGE_MARBLELLA) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -191,6 +197,8 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected = new Set();
     this.sandwichClaimed = false;
+    this.alarmRung = false;
+    this.appliancesTouched = new Set();
     this.minigame = null;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -530,6 +538,7 @@ export class Game {
     if (name === 'error42') return this.error42Unlocked;
     if (name === 'mayo') return this.mayoUnlocked;
     if (name === 'perpbird') return this.perpbirdUnlocked;
+    if (name === 'marblella') return this.marblellaUnlocked;
     return name === 'badger';
   }
 
@@ -546,7 +555,8 @@ export class Game {
       boddington: this.boddingtonUnlocked,
       error42: this.error42Unlocked,
       mayo: this.mayoUnlocked,
-      perpbird: this.perpbirdUnlocked
+      perpbird: this.perpbirdUnlocked,
+      marblella: this.marblellaUnlocked
     };
   }
 
@@ -631,6 +641,12 @@ export class Game {
       const dx = this.player.position.x - vehicle.position.x;
       const dz = this.player.position.z - vehicle.position.z;
       if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+        // The balloon has a strict payload limit, and Marblella is a
+        // solid glass sphere.
+        if (vehicle.kind === 'balloon' && this.characterName === 'marblella') {
+          this.ui.showTimeToast('TOO DENSE!');
+          return;
+        }
         this.player.vehicle = vehicle;
         vehicle.rider = this.player;
         this.ui.showTimeToast(
@@ -678,6 +694,9 @@ export class Game {
       }
     }
 
+    // Inside the cottage: appliances answer to a double-tap.
+    if (this.handleCottage()) return;
+
     // A double-tap near the parked rocket: teach the gesture.
     if (this.rocket) {
       const dx = this.player.position.x - this.rocket.position.x;
@@ -703,6 +722,75 @@ export class Game {
         );
       }
     }
+  }
+
+  /**
+   * Cottage appliances: the alarm clock pays +20 seconds (once per run),
+   * the stove and fridge offer domestic color, and the rug slides aside
+   * to reveal a trap door that will not budge. Touch all four in one run
+   * and Marblella — a marble of unusual density — rolls onto the roster.
+   * Returns true when the tap was spent indoors.
+   */
+  handleCottage() {
+    const spots = this.world.cottage;
+    if (!spots) return false;
+    const px = this.player.position.x;
+    const py = this.player.position.y;
+    const pz = this.player.position.z;
+    // Nearest appliance wins — the stove and fridge stand close enough
+    // together that first-match order would talk over the wrong one.
+    let hit = null;
+    let bestSq = APPLIANCE_RANGE * APPLIANCE_RANGE;
+    for (const key of MARBLELLA_APPLIANCES) {
+      const p = spots[key];
+      const dx = px - p.x;
+      const dz = pz - p.z;
+      const dSq = dx * dx + dz * dz;
+      if (dSq < bestSq && Math.abs(py - p.y) < 2.5) {
+        hit = key;
+        bestSq = dSq;
+      }
+    }
+    if (!hit) return false;
+
+    if (hit === 'clock') {
+      if (!this.alarmRung) {
+        this.alarmRung = true;
+        this.timeLeft += ALARM_TIME_BONUS;
+        this.ui.setTimer(this.timeLeft);
+        this.ui.showTimeToast(`RUDE AWAKENING! +${ALARM_TIME_BONUS} SECONDS`);
+        this.particles.spawnBurst(
+          this._playerCenter.set(spots.clock.x, spots.clock.y + 0.4, spots.clock.z),
+          0x9ecbff,
+          { count: 30, speed: 4.2, size: 44, upBias: 0.8, life: 0.8 }
+        );
+      } else {
+        this.ui.showTimeToast('THE CLOCK HAS RUNG ITSELF HOARSE');
+      }
+    } else if (hit === 'stove') {
+      this.ui.showTimeToast('THE HOB IS BARELY WARM. PORRIDGE, RECENTLY.');
+    } else if (hit === 'fridge') {
+      this.ui.showTimeToast('NOTHING INSIDE BUT ONE PROUD PICKLE');
+    } else if (hit === 'trapdoor') {
+      if (!this.world._rugSlid) {
+        this.world.slideRug();
+        this.ui.showTimeToast('UNDER THE RUG: A TRAP DOOR!');
+      } else {
+        this.ui.showTimeToast("THE TRAP DOOR WON'T BUDGE. NOT YET.");
+      }
+    }
+
+    this.appliancesTouched.add(hit);
+    if (
+      !this.marblellaUnlocked &&
+      MARBLELLA_APPLIANCES.every((k) => this.appliancesTouched.has(k))
+    ) {
+      this.marblellaUnlocked = true;
+      writeStorage(STORAGE_MARBLELLA, '1');
+      this.runUnlockNames.push('Marblella');
+      this.ui.showTimeToast('★ MARBLELLA UNLOCKED!');
+    }
+    return true;
   }
 
   /**
@@ -810,20 +898,27 @@ export class Game {
     }
   }
 
-  /** Reaching the surfaced Red October pays out π-adjacent riches. */
+  /**
+   * Reaching the surfaced Red October pays out π-adjacent riches.
+   * Marblella doesn't wait for the breach: she sinks to the lake bed and
+   * claims the boat wherever it lurks — surfaced or not.
+   */
   handleRedOctober() {
-    if (this.redOctoberClaimed || !this.submarine || !this.submarine.isSurfaced()) return;
+    if (this.redOctoberClaimed || !this.submarine) return;
     const sub = this.submarine.position;
+    const diveClaim = this.characterName === 'marblella';
+    if (!this.submarine.isSurfaced() && !diveClaim) return;
     const dx = this.player.position.x - sub.x;
     const dz = this.player.position.z - sub.z;
-    if (dx * dx + dz * dz > 5 * 5) return;
+    const dy = this.player.position.y - sub.y;
+    if (dx * dx + dz * dz > 5 * 5 || Math.abs(dy) > 5) return;
 
     this.redOctoberClaimed = true;
     this.points += RED_OCTOBER_POINTS;
     this.ui.setPoints(this.points);
     this.ui.showTimeToast('RED OCTOBER! +63.14159');
     this.particles.spawnBurst(
-      this._playerCenter.set(sub.x, this.world.waterLevel + 1.5, sub.z),
+      this._playerCenter.set(sub.x, sub.y + 1.5, sub.z),
       0xff6a5a,
       { count: 46, speed: 5.5, size: 50, upBias: 0.75, life: 1.0 }
     );
@@ -921,6 +1016,9 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected.clear();
     this.sandwichClaimed = false;
+    this.alarmRung = false;
+    this.appliancesTouched.clear();
+    this.world.resetRug();
     if (this.minigame) {
       this.minigame.dispose();
       this.minigame = null;

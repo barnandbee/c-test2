@@ -105,6 +105,31 @@ export class World {
     this.caveLevel = this.getHeight(this.caveX, this.caveZ); // grade, pre-dig
     this.caveRadius = 5.0; // setting this arms the carve in getHeight()
 
+    // --- the cottage: a homely pad on the north-east side -----------------
+    // Sited before geometry exists because getHeight() levels its yard.
+    // Same tiny search as the cave: a handful of candidates, gentlest wins.
+    let cottageBest = null;
+    for (const [da, r] of [[0, 46], [0.3, 50], [-0.3, 44], [0.5, 54], [-0.5, 48], [0.15, 40]]) {
+      const a = 1.55 + da;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e);
+      if (!cottageBest || grad < cottageBest.grad) cottageBest = { x, z, grad };
+      if (cottageBest.grad < 0.25) break;
+    }
+    this.cottageX = cottageBest.x;
+    this.cottageZ = cottageBest.z;
+    // The front door faces the map's heart.
+    const cotR = Math.hypot(cottageBest.x, cottageBest.z);
+    this.cottageDoorX = -cottageBest.x / cotR;
+    this.cottageDoorZ = -cottageBest.z / cotR;
+    this.cottageLevel = this.getHeight(this.cottageX, this.cottageZ); // pre-level grade
+    this.cottageRadius = 7.0; // setting this arms the yard-leveling in getHeight()
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -123,6 +148,8 @@ export class World {
     this._buildEscherStairs();
     this._buildCave();
     this._buildGolfFlag();
+    this._buildCottage();
+    this._buildCoral();
   }
 
   /* ================================================================ */
@@ -172,6 +199,13 @@ export class World {
     // Dig the cave: a short tunnel ramping below grade.
     if (this.caveRadius) {
       h -= this._caveDig(x, z) * this.caveDepth;
+    }
+    // Level the cottage's yard so the little house sits square.
+    if (this.cottageRadius) {
+      const cd = Math.hypot(x - this.cottageX, z - this.cottageZ);
+      if (cd < this.cottageRadius) {
+        h = lerp(this.cottageLevel, h, smoothstep(this.cottageRadius * 0.45, this.cottageRadius, cd));
+      }
     }
     return h;
   }
@@ -247,6 +281,8 @@ export class World {
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 1.5) continue;
       // …and nothing spawns in the cave dig or its doorway.
       if (Math.hypot(x - this.caveX, z - this.caveZ) < this.caveRadius + 2.5) continue;
+      // …or in the cottage's yard.
+      if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 1.5) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -355,6 +391,22 @@ export class World {
 
     // Sky dome trails the camera so its bounds are never exited.
     this.sky.position.set(focus.x, 0, focus.z);
+
+    // Dollhouse rule: the cottage roof lifts away while someone is inside,
+    // so the third-person camera can see the room.
+    if (this.cottageRoof) {
+      const dx = focus.x - this.cottageX;
+      const dz = focus.z - this.cottageZ;
+      // Local frame: +Z is the door direction.
+      const lx = dx * this.cottageDoorZ - dz * this.cottageDoorX;
+      const lz = dx * this.cottageDoorX + dz * this.cottageDoorZ;
+      const inside =
+        Math.abs(lx) < 3.5 &&
+        lz > -3.0 &&
+        lz < 3.4 &&
+        focus.y < this.cottageLevel + 3;
+      this.cottageRoof.visible = !inside;
+    }
   }
 
   /* ================================================================ */
@@ -606,6 +658,7 @@ export class World {
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 2) continue;
       // Trees near the cave mouth would wall off the camera's sightline.
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
+      if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -848,7 +901,8 @@ export class World {
           this.getNormal(x, z, normal).y > 0.7 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2) &&
           Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5 &&
-          Math.hypot(x - this.caveX, z - this.caveZ) > 7
+          Math.hypot(x - this.caveX, z - this.caveZ) > 7 &&
+          Math.hypot(x - this.cottageX, z - this.cottageZ) > this.cottageRadius
         ) break;
       }
       const h = this.getHeight(x, z);
@@ -916,7 +970,8 @@ export class World {
           this.getNormal(x, z, normal).y > 0.82 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15) &&
           Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 0.5 &&
-          this._caveDig(x, z) === 0
+          this._caveDig(x, z) === 0 &&
+          Math.hypot(x - this.cottageX, z - this.cottageZ) > 4.5
         ) break;
       }
       const h = this.getHeight(x, z);
@@ -1269,6 +1324,353 @@ export class World {
   }
 
   /* ================================================================ */
+  /*  The cottage (and its appliances)                                */
+  /* ================================================================ */
+
+  /**
+   * A little stone-and-timber cottage on a leveled yard, front door
+   * facing the map's heart. Inside: an alarm clock on a table, a stove,
+   * a fridge, and a Persian rug hiding a trap door that will not budge.
+   * The roof lifts away (dollhouse-style) while someone is inside so
+   * the camera can see the room. Interaction rules live in Game; the
+   * world provides the architecture and remembers where everything is.
+   */
+  _buildCottage() {
+    const spot = new THREE.Vector3(this.cottageX, this.cottageLevel, this.cottageZ);
+    this.cottagePos = spot.clone();
+    const yaw = Math.atan2(this.cottageDoorX, this.cottageDoorZ); // local +Z → door
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const plasterMat = track(createToonMaterial({
+      color: 0xd8cbb2,
+      rim: { color: 0xffe9c8, strength: 0.3, threshold: 0.68 }
+    }));
+    plasterMat.side = THREE.DoubleSide; // walls read from indoors; gables are flat
+    const timberMat = track(createToonMaterial({ color: 0x5c4330 }));
+    const roofMat = track(createToonMaterial({
+      color: 0x8a4a3c,
+      rim: { color: 0xd88a6a, strength: 0.35, threshold: 0.64 }
+    }));
+    roofMat.side = THREE.DoubleSide;
+    const floorMat = track(createToonMaterial({ color: 0x8a6a48 }));
+    const darkWoodMat = track(createToonMaterial({ color: 0x4a3524 }));
+    const applianceMat = track(createToonMaterial({ color: 0x3c4048 }));
+    const fridgeMat = track(createToonMaterial({
+      color: 0xe8e4da,
+      rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 }
+    }));
+    const brassMat = track(createToonMaterial({
+      color: 0xd8a838,
+      emissive: 0x604010,
+      emissiveIntensity: 0.5,
+      pulse: { speed: 3.0, phase: 0 }
+    }));
+    const paneMat = track(createToonMaterial({
+      color: 0xffd98a,
+      emissive: 0xff9c30,
+      emissiveIntensity: 0.7
+    }));
+    const creamMat = track(createToonMaterial({ color: 0xf4efe0 }));
+    const redMat = track(createToonMaterial({ color: 0xb03030 }));
+
+    const cottage = new THREE.Group();
+    cottage.position.copy(spot);
+    cottage.rotation.y = yaw;
+    this.cottageMeshes = cottage;
+
+    const addBox = (w, h, d, mat, x, y, z, group = cottage) => {
+      const geo = track(new THREE.BoxGeometry(w, h, d));
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      return mesh;
+    };
+
+    // --- shell: floor, three-and-two-halves walls, glowing windows -------
+    addBox(6.4, 0.1, 5.4, floorMat, 0, 0, 0);
+    addBox(6.4, 2.5, 0.2, plasterMat, 0, 1.3, -2.6);               // back
+    addBox(0.2, 2.5, 5.0, plasterMat, -3.1, 1.3, 0);               // left
+    addBox(0.2, 2.5, 5.0, plasterMat, 3.1, 1.3, 0);                // right
+    addBox(2.1, 2.5, 0.2, plasterMat, -2.15, 1.3, 2.6);            // front L
+    addBox(2.1, 2.5, 0.2, plasterMat, 2.15, 1.3, 2.6);             // front R
+    addBox(2.2, 0.45, 0.2, timberMat, 0, 2.325, 2.6);              // lintel
+    addBox(0.3, 0.9, 1.1, paneMat, -3.1, 1.55, 0.6);               // windows
+    addBox(0.3, 0.9, 1.1, paneMat, 3.1, 1.55, 0.6);
+    // The door itself, swung wide in welcome.
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(-1.1, 1.15, 2.66);
+    doorPivot.rotation.y = -2.1;
+    cottage.add(doorPivot);
+    addBox(1.0, 2.0, 0.08, darkWoodMat, 0.5, 0, 0, doorPivot);
+
+    // --- roof: two slopes, two gables, a chimney — all in one group so
+    // it can lift away while someone is inside.
+    const roof = new THREE.Group();
+    cottage.add(roof);
+    this.cottageRoof = roof;
+    const slope = Math.atan2(1.65, 3.5);
+    for (const side of [-1, 1]) {
+      const slab = addBox(3.95, 0.16, 6.3, roofMat, side * 1.75, 3.33, 0, roof);
+      slab.rotation.z = side * slope;
+    }
+    const gableShape = new THREE.Shape([
+      new THREE.Vector2(-3.2, 2.5),
+      new THREE.Vector2(3.2, 2.5),
+      new THREE.Vector2(0, 4.15)
+    ]);
+    const gableGeo = track(new THREE.ShapeGeometry(gableShape));
+    for (const z of [-2.5, 2.5]) {
+      const gable = new THREE.Mesh(gableGeo, plasterMat);
+      gable.position.z = z;
+      gable.castShadow = true;
+      roof.add(gable);
+    }
+    addBox(0.55, 1.6, 0.55, plasterMat, 1.9, 3.6, -1.2, roof);
+    addBox(0.7, 0.12, 0.7, darkWoodMat, 1.9, 4.46, -1.2, roof);
+
+    // --- furnishings -------------------------------------------------------
+    // Bedside table + the two-bell alarm clock (the +20s prize).
+    const table = new THREE.Group();
+    table.position.set(-2.35, 0, -1.9);
+    cottage.add(table);
+    addBox(0.95, 0.07, 0.7, darkWoodMat, 0, 0.92, 0, table);
+    for (const [lx, lz] of [[-0.4, -0.26], [0.4, -0.26], [-0.4, 0.26], [0.4, 0.26]]) {
+      addBox(0.07, 0.9, 0.07, darkWoodMat, lx, 0.47, lz, table);
+    }
+    const clockGroup = new THREE.Group();
+    clockGroup.position.set(-2.35, 1.14, -1.9);
+    cottage.add(clockGroup);
+    const clockBodyGeo = track(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 18));
+    clockBodyGeo.rotateX(Math.PI / 2);
+    const clockBody = new THREE.Mesh(clockBodyGeo, redMat);
+    clockBody.position.y = 0.2;
+    clockBody.castShadow = true;
+    clockGroup.add(clockBody);
+    const clockFaceGeo = track(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 18));
+    clockFaceGeo.rotateX(Math.PI / 2);
+    const clockFace = new THREE.Mesh(clockFaceGeo, creamMat);
+    clockFace.position.set(0, 0.2, 0.075);
+    clockGroup.add(clockFace);
+    addBox(0.02, 0.1, 0.015, applianceMat, 0, 0.23, 0.085, clockGroup);  // minute hand
+    addBox(0.07, 0.02, 0.015, applianceMat, 0.025, 0.2, 0.085, clockGroup); // hour hand
+    const bellGeo = track(new THREE.SphereGeometry(0.07, 12, 8));
+    for (const side of [-1, 1]) {
+      const bell = new THREE.Mesh(bellGeo, brassMat);
+      bell.position.set(side * 0.1, 0.38, 0);
+      clockGroup.add(bell);
+    }
+    const clockLegGeo = track(new THREE.CylinderGeometry(0.014, 0.02, 0.1, 6));
+    for (const side of [-1, 1]) {
+      const leg = new THREE.Mesh(clockLegGeo, applianceMat);
+      leg.position.set(side * 0.12, 0.05, 0.03);
+      clockGroup.add(leg);
+    }
+
+    // Stove against the back wall.
+    addBox(1.05, 1.0, 0.85, applianceMat, 1.1, 0.55, -2.05);
+    addBox(1.05, 0.06, 0.85, darkWoodMat, 1.1, 1.08, -2.05);
+    const hobGeo = track(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 14));
+    const hobMat = track(createToonMaterial({ color: 0x16161a }));
+    for (const [hx, hz] of [[-0.24, -0.2], [0.24, -0.2], [-0.24, 0.2], [0.24, 0.2]]) {
+      const hob = new THREE.Mesh(hobGeo, hobMat);
+      hob.position.set(1.1 + hx, 1.125, -2.05 + hz);
+      cottage.add(hob);
+    }
+    addBox(0.8, 0.5, 0.05, darkWoodMat, 1.1, 0.5, -1.6);   // oven door
+    addBox(0.55, 0.05, 0.05, brassMat, 1.1, 0.68, -1.56);  // its handle
+
+    // Fridge along the right wall, humming quietly.
+    addBox(0.85, 1.7, 0.8, fridgeMat, 2.5, 0.9, -0.7);
+    addBox(0.05, 0.55, 0.06, applianceMat, 2.06, 1.15, -0.45); // handle
+
+    // The Persian rug — and, beneath it, the trap door.
+    const trapdoor = addBox(1.15, 0.04, 1.15, darkWoodMat, 0.2, 0.05, 0.5);
+    addBox(0.02, 0.045, 1.15, applianceMat, 0.02, 0.052, 0.5); // plank grooves
+    addBox(0.02, 0.045, 1.15, applianceMat, 0.4, 0.052, 0.5);
+    const ringGeo = track(new THREE.TorusGeometry(0.09, 0.014, 8, 16));
+    ringGeo.rotateX(Math.PI / 2);
+    const ring = new THREE.Mesh(ringGeo, applianceMat);
+    ring.position.set(0.55, 0.075, 0.5);
+    cottage.add(ring);
+    this._trapdoorMesh = trapdoor;
+
+    const rug = new THREE.Mesh(
+      track(new THREE.BoxGeometry(1.9, 0.04, 1.35)),
+      track(createToonMaterial({ map: track(this._makeRugTexture()) }))
+    );
+    rug.position.set(0.2, 0.09, 0.5);
+    rug.receiveShadow = true;
+    cottage.add(rug);
+    this._rugMesh = rug;
+    this._rugHome = rug.position.clone();
+    this._rugSlid = false;
+
+    // Warm hearth-light so the room reads at twilight.
+    const lamp = new THREE.PointLight(0xffd9a8, 2.4, 10, 2);
+    lamp.position.set(0, 2.1, 0);
+    cottage.add(lamp);
+
+    this.scene.add(cottage);
+
+    // --- interaction points (world space) ---------------------------------
+    const toWorld = (lx, ly, lz) =>
+      new THREE.Vector3(lx, ly, lz).applyQuaternion(cottage.quaternion).add(spot);
+    this.cottage = {
+      clock: toWorld(-2.35, 1.2, -1.9),
+      stove: toWorld(1.1, 0.9, -2.05),
+      fridge: toWorld(2.5, 0.9, -0.7),
+      trapdoor: toWorld(0.2, 0.4, 0.5)
+    };
+
+    // --- colliders: walls (sparing the doorway) and the big furniture -----
+    const pushWall = (lx, lz) => {
+      const p = toWorld(lx, 0, lz);
+      this.colliders.push({ x: p.x, z: p.z, radius: 0.35, top: spot.y + 2.6 });
+    };
+    for (let x = -2.8; x <= 2.81; x += 0.7) pushWall(x, -2.6);   // back
+    for (let z = -2.4; z <= 2.41; z += 0.685) {                   // sides
+      pushWall(-3.1, z);
+      pushWall(3.1, z);
+    }
+    for (const s of [-1, 1]) {                                    // front, minus door
+      pushWall(s * 1.5, 2.6);
+      pushWall(s * 2.2, 2.6);
+      pushWall(s * 2.9, 2.6);
+    }
+    const stoveP = toWorld(1.1, 0, -2.05);
+    this.colliders.push({ x: stoveP.x, z: stoveP.z, radius: 0.55, top: spot.y + 1.2 });
+    const fridgeP = toWorld(2.5, 0, -0.7);
+    this.colliders.push({ x: fridgeP.x, z: fridgeP.z, radius: 0.5, top: spot.y + 1.8 });
+    const tableP = toWorld(-2.35, 0, -1.9);
+    this.colliders.push({ x: tableP.x, z: tableP.z, radius: 0.42, top: spot.y + 1.1 });
+  }
+
+  /** The rug slides aside (first pull), revealing the trap door. */
+  slideRug() {
+    if (!this._rugMesh || this._rugSlid) return;
+    this._rugSlid = true;
+    this._rugMesh.position.set(this._rugHome.x + 1.15, this._rugHome.y, this._rugHome.z + 0.75);
+    this._rugMesh.rotation.y = 0.38;
+  }
+
+  /** Housekeeping between runs: the rug goes back where it was. */
+  resetRug() {
+    if (!this._rugMesh) return;
+    this._rugSlid = false;
+    this._rugMesh.position.copy(this._rugHome);
+    this._rugMesh.rotation.y = 0;
+  }
+
+  /** A small hand-drawn Persian rug: crimson field, navy border, medallion. */
+  _makeRugTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 192;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#8e2434';
+    g.fillRect(0, 0, 256, 192);
+    g.strokeStyle = '#2c3a6e';
+    g.lineWidth = 14;
+    g.strokeRect(10, 10, 236, 172);
+    g.strokeStyle = '#e8d8a8';
+    g.lineWidth = 3;
+    g.strokeRect(22, 22, 212, 148);
+    // Central medallion.
+    g.save();
+    g.translate(128, 96);
+    g.rotate(Math.PI / 4);
+    g.fillStyle = '#2c3a6e';
+    g.fillRect(-34, -34, 68, 68);
+    g.fillStyle = '#e8d8a8';
+    g.fillRect(-20, -20, 40, 40);
+    g.fillStyle = '#8e2434';
+    g.fillRect(-9, -9, 18, 18);
+    g.restore();
+    // Corner motifs.
+    g.fillStyle = '#e8d8a8';
+    for (const [cx, cy] of [[40, 40], [216, 40], [40, 152], [216, 152]]) {
+      g.beginPath();
+      g.arc(cx, cy, 8, 0, Math.PI * 2);
+      g.fill();
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  /* ================================================================ */
+  /*  Coral                                                           */
+  /* ================================================================ */
+
+  /** A fan of coral on the lake bed — scenery for whoever can sink. */
+  _buildCoral() {
+    const a = 0.9;
+    const cx = this.lakeCenterX + Math.cos(a) * this.lakeRadius * 0.4;
+    const cz = this.lakeCenterZ + Math.sin(a) * this.lakeRadius * 0.4;
+    const cy = this.getHeight(cx, cz);
+    this.coralPos = new THREE.Vector3(cx, cy, cz);
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const coralMat = track(createToonMaterial({
+      color: 0xff7a59,
+      emissive: 0x8a2a10,
+      emissiveIntensity: 0.7,
+      rim: { color: 0xffc0a8, strength: 0.55, threshold: 0.55 }
+    }));
+    const brainMat = track(createToonMaterial({
+      color: 0xe8637a,
+      emissive: 0x40101c,
+      emissiveIntensity: 0.4,
+      rim: { color: 0xffb0c0, strength: 0.5, threshold: 0.58 }
+    }));
+
+    const coral = new THREE.Group();
+    coral.position.set(cx, cy, cz);
+    coral.scale.setScalar(1.6); // it's dark down there — let it read
+    this.coralMeshes = coral;
+
+    // Fan of tapering fingers.
+    const fingerGeo = track(new THREE.CylinderGeometry(0.05, 0.16, 1, 8));
+    fingerGeo.translate(0, 0.5, 0);
+    for (let i = 0; i < 7; i++) {
+      const finger = new THREE.Mesh(fingerGeo, coralMat);
+      const spin = (i / 7) * Math.PI * 2 + 0.4;
+      finger.rotation.y = spin;
+      finger.rotation.x = 0.3 + (i % 3) * 0.16;
+      finger.scale.setScalar(0.8 + ((i * 37) % 5) * 0.16);
+      finger.position.set(Math.cos(spin) * 0.18, 0.05, Math.sin(spin) * 0.18);
+      coral.add(finger);
+    }
+    // A brain-coral boulder alongside.
+    const brainGeo = track(new THREE.SphereGeometry(0.5, 16, 12));
+    {
+      const pos = brainGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const lump = 1 + this.detailNoise.noise(x * 4.1 + 7, z * 4.1 - y * 2.2) * 0.1;
+        pos.setXYZ(i, x * lump, y * lump, z * lump);
+      }
+      brainGeo.computeVertexNormals();
+    }
+    const brain = new THREE.Mesh(brainGeo, brainMat);
+    brain.position.set(0.85, 0.28, -0.3);
+    brain.scale.y = 0.75;
+    coral.add(brain);
+
+    this.scene.add(coral);
+  }
+
+  /* ================================================================ */
   /*  Lifecycle                                                       */
   /* ================================================================ */
 
@@ -1280,6 +1682,8 @@ export class World {
     if (this.lakeSign) this.scene.remove(this.lakeSign);
     if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
     if (this.caveMeshes) this.scene.remove(this.caveMeshes);
+    if (this.cottageMeshes) this.scene.remove(this.cottageMeshes);
+    if (this.coralMeshes) this.scene.remove(this.coralMeshes);
     if (this.golfFlag) this.scene.remove(this.golfFlag);
     if (this.blossomAura) {
       this.blossomAura.geometry.dispose();

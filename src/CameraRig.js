@@ -95,6 +95,11 @@ export class CameraRig {
       Math.cos(this.yaw) * cp
     );
 
+    // If the focus itself is underwater (Marblella on the lake bed), the
+    // camera is allowed to dive after it instead of hovering topside.
+    const focusUnderwater =
+      this.world.waterLevel !== undefined && this.focus.y < this.world.waterLevel + 0.2;
+
     // ---- collision sweep: shorten the arm before it clips ----------------
     let allowedDistance = this.targetDistance;
     for (let i = 1; i <= SWEEP_STEPS; i++) {
@@ -103,6 +108,7 @@ export class CameraRig {
 
       let ground = this.world.getHeight(this._samplePoint.x, this._samplePoint.z);
       if (
+        !focusUnderwater &&
         this.world.waterLevel !== undefined &&
         ground < this.world.waterLevel &&
         this.world.isNearLake(this._samplePoint.x, this._samplePoint.z)
@@ -139,6 +145,7 @@ export class CameraRig {
     // Final guard: never let the camera itself dip under terrain or water.
     let camGround = this.world.getHeight(this.desiredPosition.x, this.desiredPosition.z);
     if (
+      !focusUnderwater &&
       this.world.waterLevel !== undefined &&
       camGround < this.world.waterLevel &&
       this.world.isNearLake(this.desiredPosition.x, this.desiredPosition.z)

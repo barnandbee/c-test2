@@ -109,6 +109,7 @@ export class Player {
     this.isGlitchy = false;  // Error #42's intermittent reality problem
     this.tail = null;
     this.headGroup = null;
+    this.marbleMesh = null;  // Marblella: the sphere that actually rolls
 
     // --- vehicle & water state -------------------------------------------
     this.vehicle = null; // a Hovercraft while riding, else null
@@ -135,6 +136,7 @@ export class Player {
     else if (this.character === 'error42') this.root = this.buildError42();
     else if (this.character === 'mayo') this.root = this.buildMayo();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
+    else if (this.character === 'marblella') this.root = this.buildMarblella();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2118,6 +2120,78 @@ export class Player {
     return root;
   }
 
+  /**
+   * Marblella: a glass marble with a twist of color trapped inside.
+   * She rolls rather than trots — and she is the only hero dense enough
+   * to walk the lake bed instead of bouncing off the water.
+   */
+  buildMarblella() {
+    const root = new THREE.Group();
+    root.name = 'marblella';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const glassMat = track(createToonMaterial({
+      color: 0xd6e8ee,
+      rim: { color: 0xffffff, strength: 0.85, threshold: 0.42 } // glassy edge
+    }));
+    glassMat.transparent = true;
+    glassMat.opacity = 0.6;
+    const swirlMat = track(createToonMaterial({
+      color: 0x3ec8c0,
+      emissive: 0x0c4844,
+      emissiveIntensity: 0.5
+    }));
+    const swirl2Mat = track(createToonMaterial({
+      color: 0xe86aa8,
+      emissive: 0x50143a,
+      emissiveIntensity: 0.5
+    }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // The marble itself — everything inside it rolls as one.
+    const marble = new THREE.Group();
+    marble.position.y = 0; // center of the sphere sits at bodyGroup height
+    body.add(marble);
+    this.marbleMesh = marble;
+
+    // Inner swirl first (drawn through the translucent shell): two
+    // interleaved ribbons, the classic cat's-eye twist.
+    const ribbonGeo = track(new THREE.TorusKnotGeometry(0.24, 0.07, 48, 8, 2, 3));
+    const ribbon = new THREE.Mesh(ribbonGeo, swirlMat);
+    ribbon.scale.setScalar(1.15);
+    marble.add(ribbon);
+    const ribbon2 = new THREE.Mesh(ribbonGeo, swirl2Mat);
+    ribbon2.scale.setScalar(0.75);
+    ribbon2.rotation.set(1.2, 0.5, 0.3);
+    marble.add(ribbon2);
+
+    const shellGeo = track(new THREE.SphereGeometry(0.6, 28, 20));
+    const shell = new THREE.Mesh(shellGeo, glassMat);
+    shell.castShadow = true;
+    marble.add(shell);
+
+    // A fixed window-light glint that does NOT roll — it stays up-left,
+    // the way a marble catches the sky.
+    const glintGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    const glint = new THREE.Mesh(glintGeo, glintMat);
+    glint.position.set(-0.18, 0.38, 0.28);
+    glint.scale.set(1, 0.6, 0.6);
+    body.add(glint);
+
+    this.legs = [];
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -2273,9 +2347,12 @@ export class Player {
 
     // ---- water: badgers (and crisp packets) cannot swim -----------------------
     // Only actual lake water counts — low valleys elsewhere are just valleys.
+    // Marblella is the exception: TOO DENSE to bounce, she simply sinks
+    // and trundles along the lake bed.
     const wl = this.world.waterLevel;
     const inLake = wl !== undefined && this.world.isNearLake(pos.x, pos.z);
-    if (inLake && pos.y < wl - 0.4) {
+    const sinks = this.character === 'marblella';
+    if (inLake && pos.y < wl - 0.4 && !sinks) {
       // Too deep — bounce back to the last dry footing with a splash.
       pos.copy(this._lastDryPos);
       vel.x *= -0.35;
@@ -2285,6 +2362,14 @@ export class Player {
       if (this.onSplash) this.onSplash();
     } else if (this.grounded && (!inLake || groundH > wl + 0.05)) {
       this._lastDryPos.copy(pos);
+    }
+    if (sinks && inLake && pos.y < wl - 0.2) {
+      // Underwater: the water drags at her, and even a dense marble
+      // doesn't plummet — but she never floats.
+      const drag = 1 / (1 + 2.2 * dt);
+      vel.x *= drag;
+      vel.z *= drag;
+      if (vel.y < -7) vel.y = -7;
     }
 
     // ---- pose -------------------------------------------------------------------
@@ -2520,6 +2605,13 @@ export class Player {
         }
         arm.pivot.rotation.x = damp(arm.pivot.rotation.x, target, 14, dt);
       }
+    }
+
+    // Marblella: a marble rolls — angular speed matched to ground speed
+    // so she never skids. (root already faces the travel direction, so
+    // rolling is a plain pitch about local X.)
+    if (this.marbleMesh) {
+      this.marbleMesh.rotation.x += (speed / 0.6) * dt;
     }
 
     // Rhombus: waddle-rock while trotting, pinwheel gently in the air.
