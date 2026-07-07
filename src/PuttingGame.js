@@ -152,7 +152,7 @@ export class PuttingGame {
     }
   }
 
-  /** Early exit (double-tap): counts as walking off the course. */
+  /** Early exit (Escape): counts as walking off the course. */
   abandon() {
     this.onFinish(false, this.strokes);
   }

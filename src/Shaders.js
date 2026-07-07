@@ -328,11 +328,13 @@ export function createWaterMaterial() {
   return new THREE.ShaderMaterial({
     name: 'LakeWater',
     transparent: true,
+    side: THREE.DoubleSide, // readable from the lake bed looking up, too
+    depthWrite: false,
     fog: true, // lets the renderer feed fogColor/fogDensity from scene.fog
     uniforms: {
       uTime: SharedUniforms.uTime,
-      uShallow: { value: new THREE.Color(0x3e8a96) },
-      uDeep: { value: new THREE.Color(0x14374d) },
+      uShallow: { value: new THREE.Color(0x4a9ec4) },
+      uDeep: { value: new THREE.Color(0x1b4a72) },
       uFoam: { value: new THREE.Color(0xd8ecec) },
       fogColor: { value: new THREE.Color(0x86597a) },
       fogDensity: { value: 0.0115 }
@@ -375,7 +377,7 @@ export function createWaterMaterial() {
         col = mix( col, uFoam, smoothstep( 0.96, 1.0, r ) * 0.75 );
         float fogFactor = 1.0 - exp( -fogDensity * fogDensity * vFogDepth * vFogDepth );
         col = mix( col, fogColor, clamp( fogFactor, 0.0, 1.0 ) );
-        gl_FragColor = vec4( col, 0.86 );
+        gl_FragColor = vec4( col, 0.6 );
       }
     `
   });

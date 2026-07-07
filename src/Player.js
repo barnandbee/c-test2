@@ -2111,7 +2111,8 @@ export class Player {
 
     const planeGeo = track(new THREE.PlaneGeometry(1.2, 1.2));
     const sheet = new THREE.Mesh(planeGeo, sketchMat);
-    sheet.position.y = 0.45;
+    sheet.scale.setScalar(1.5); // drawn at a bolder scale — she was timid
+    sheet.position.y = 0.62;
     // Drawings cast no shadows; that would be presumptuous.
     body.add(sheet);
     this.rockMesh = sheet; // borrow Rhombus' waddle-rock

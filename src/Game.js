@@ -1062,8 +1062,15 @@ export class Game {
       this.cameraRig.update(dt, this.player, null);
     } else if (this.minigame) {
       // 'Puttmost Respect': the run clock is FROZEN; input belongs to
-      // the putter and the camera belongs to the ball.
-      if (this.input.consumeDoubleTap()) {
+      // the putter and the camera belongs to the ball. Taps are discarded
+      // (click-dragging to aim must never read as a gesture) — conceding
+      // is the Escape key's job.
+      this.input.consumeDoubleTap();
+      this.input.consumeTripleTap();
+      // Aim by swinging the camera: A/D (or the joystick) orbits the
+      // ball, and mouse/touch drag still works through the rig itself.
+      this.cameraRig.yaw -= this.input.axisX * 1.8 * dt;
+      if (this.input.keys.has('Escape')) {
         this.minigame.abandon();
       } else {
         this.minigame.update(dt, this.input, this.cameraRig.yaw);
@@ -1094,14 +1101,21 @@ export class Game {
       this.maybeSpawnBalloon();
       this.manageRocket();
 
-      // Whisper about the putting challenge when its stars align.
+      // Whisper about the putting challenge when its stars align. The
+      // prompt re-arms only once the player has genuinely left the green
+      // — a hovercraft drifting across the eligibility ring must not
+      // machine-gun the toast.
       if (this.canStartPutt()) {
         if (!this._puttPrompted) {
           this.ui.showTimeToast('PUTTMOST RESPECT! DOUBLE-TAP TO PLAY');
           this._puttPrompted = true;
         }
-      } else {
-        this._puttPrompted = false;
+      } else if (this._puttPrompted) {
+        const dx = this.player.position.x - this.world.greenCenterX;
+        const dz = this.player.position.z - this.world.greenCenterZ;
+        if (dx * dx + dz * dz > (this.world.greenRadius + 9) ** 2) {
+          this._puttPrompted = false;
+        }
       }
 
       // "Getting in and flying" means genuinely leaving the ground.

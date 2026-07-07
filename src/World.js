@@ -407,6 +407,21 @@ export class World {
         focus.y < this.cottageLevel + 3;
       this.cottageRoof.visible = !inside;
     }
+
+    // Chimney smoke: puffs rise, wander a little, swell and thin out.
+    if (this._smokePuffs) {
+      this._smokeTime += dt;
+      for (const p of this._smokePuffs) {
+        const t = (this._smokeTime * 0.22 + p.phase) % 1;
+        p.mesh.position.set(
+          1.9 + Math.sin((this._smokeTime + p.phase * 9) * 1.3) * 0.16 * t,
+          4.55 + t * 2.6,
+          -1.2 + Math.cos((this._smokeTime + p.phase * 7) * 1.1) * 0.14 * t
+        );
+        p.mesh.scale.setScalar(0.5 + t * 1.7);
+        p.mat.opacity = 0.5 * (1 - t) * smoothstep(0, 0.12, t);
+      }
+    }
   }
 
   /* ================================================================ */
@@ -1416,7 +1431,8 @@ export class World {
     const slope = Math.atan2(1.65, 3.5);
     for (const side of [-1, 1]) {
       const slab = addBox(3.95, 0.16, 6.3, roofMat, side * 1.75, 3.33, 0, roof);
-      slab.rotation.z = side * slope;
+      // Each slab's inner (ridge-ward) end tilts UP toward the apex.
+      slab.rotation.z = -side * slope;
     }
     const gableShape = new THREE.Shape([
       new THREE.Vector2(-3.2, 2.5),
@@ -1432,6 +1448,21 @@ export class World {
     }
     addBox(0.55, 1.6, 0.55, plasterMat, 1.9, 3.6, -1.2, roof);
     addBox(0.7, 0.12, 0.7, darkWoodMat, 1.9, 4.46, -1.2, roof);
+
+    // Chimney smoke: a loop of puffs drifting up and dissolving. Each
+    // puff owns its material so opacity can fade independently.
+    const puffGeo = track(new THREE.SphereGeometry(0.16, 10, 8));
+    this._smokePuffs = [];
+    this._smokeTime = 0;
+    for (let i = 0; i < 4; i++) {
+      const puffMat = track(createToonMaterial({ color: 0xd8d2cc }));
+      puffMat.transparent = true;
+      puffMat.opacity = 0;
+      puffMat.depthWrite = false;
+      const puff = new THREE.Mesh(puffGeo, puffMat);
+      roof.add(puff);
+      this._smokePuffs.push({ mesh: puff, mat: puffMat, phase: i / 4 });
+    }
 
     // --- furnishings -------------------------------------------------------
     // Bedside table + the two-bell alarm clock (the +20s prize).
