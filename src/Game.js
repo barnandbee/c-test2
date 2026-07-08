@@ -301,6 +301,16 @@ export class Game {
       this.collectibles.push(new Star(this.scene, p));
     }
     this.launchpad = new Launchpad(this.scene, this.world);
+
+    // Cottage Lane's own hoard, waiting behind the square-number lock.
+    if (this.world.station) {
+      for (const p of this.world.station.coneSpots) {
+        this.collectibles.push(new PineCone(this.scene, p.clone()));
+      }
+      for (const p of this.world.station.eggSpots) {
+        this.collectibles.push(new GoldenEgg(this.scene, p.clone()));
+      }
+    }
   }
 
   clearEntities() {
@@ -697,6 +707,9 @@ export class Game {
     // Inside the cottage: appliances answer to a double-tap.
     if (this.handleCottage()) return;
 
+    // Down at Cottage Lane: the ticket machine and the way out.
+    if (this.handleStation()) return;
+
     // A double-tap near the parked rocket: teach the gesture.
     if (this.rocket) {
       const dx = this.player.position.x - this.rocket.position.x;
@@ -775,8 +788,16 @@ export class Game {
       if (!this.world._rugSlid) {
         this.world.slideRug();
         this.ui.showTimeToast('UNDER THE RUG: A TRAP DOOR!');
+      } else if (this.world._trapdoorOpen || this.isSquareScore()) {
+        // The lock respects square numbers; once open, it stays open.
+        this.world.openTrapdoor();
+        const entry = this.world.station.entry;
+        this.player.position.set(entry.x, entry.y + 0.2, entry.z);
+        this.player.velocity.set(0, 0, 0);
+        this.cameraRig.snapTo(this.player.position);
+        this.ui.showTimeToast('DOWN, DOWN… MIND THE GAP!');
       } else {
-        this.ui.showTimeToast("THE TRAP DOOR WON'T BUDGE. NOT YET.");
+        this.ui.showTimeToast('LOCKED. IT HUMS: “COME BACK PERFECTLY SQUARE.”');
       }
     }
 
@@ -791,6 +812,47 @@ export class Game {
       this.ui.showTimeToast('★ MARBLELLA UNLOCKED!');
     }
     return true;
+  }
+
+  /** The trap door's lock only respects a perfectly square score. */
+  isSquareScore() {
+    if (!Number.isInteger(this.points) || this.points <= 0) return false;
+    const r = Math.round(Math.sqrt(this.points));
+    return r * r === this.points;
+  }
+
+  /**
+   * Down on the 'Cottage Lane' platform: the ticket machine has an
+   * opinion, and the WAY OUT stairs teleport you back up to the rug.
+   * Returns true when the tap was spent underground.
+   */
+  handleStation() {
+    const st = this.world.station;
+    if (!st) return false;
+    const px = this.player.position.x;
+    const py = this.player.position.y;
+    const pz = this.player.position.z;
+    if (py > st.floorY + 6) return false; // not down here
+
+    const near = (p, range) => {
+      const dx = px - p.x;
+      const dz = pz - p.z;
+      return dx * dx + dz * dz < range * range && Math.abs(py - p.y) < 3;
+    };
+
+    if (near(st.exit, 2.4)) {
+      const home = this.world.cottage.trapdoor;
+      this.player.position.set(home.x + 0.9, this.world.cottageLevel + 0.1, home.z + 0.6);
+      this.player.velocity.set(0, 0, 0);
+      this.cameraRig.snapTo(this.player.position);
+      this.ui.showTimeToast('WAY OUT — BACK UP THE STAIRS');
+      return true;
+    }
+    if (near(st.ticket, 2.2)) {
+      this.ui.showTimeToast('OUT OF ORDER. IT ONLY EVER TOOK EXACT CHANGE.');
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -1019,6 +1081,7 @@ export class Game {
     this.alarmRung = false;
     this.appliancesTouched.clear();
     this.world.resetRug();
+    this.world.resetTrapdoor();
     if (this.minigame) {
       this.minigame.dispose();
       this.minigame = null;

@@ -137,7 +137,7 @@ import map — no npm install, no bundler.
   you're inside. Double-tap the appliances: the **alarm clock** rings
   for **+20 seconds** (once per run — after that it's hoarse), the
   stove and fridge have opinions, and the **Persian rug** slides aside
-  to reveal a **trap door** that will not budge. Not yet. Touch all
+  to reveal a **trap door** (see *Cottage Lane*, below). Touch all
   four fixtures in one run and **Marblella** rolls onto the roster: a
   glass marble with a cat's-eye twist, the only hero who can enter
   water — she's TOO DENSE to bounce off it (and too dense for the hot
@@ -146,6 +146,16 @@ import map — no npm install, no bundler.
   October even while the boat lurks submerged**. While you're down
   there: a fan of coral glows on the lake bed, because someone should
   see it.
+- **Cottage Lane** — the trap door's lock only respects a **perfectly
+  square score** (1, 4, 9, 16, 25…). Arrive square, double-tap, and it
+  swings open — down the stairs to a London Underground platform 14m
+  below the cottage: tiled arch, red accent bands, a sunken track bed
+  with rails and sleepers, the yellow line (mind the gap), a **COTTAGE
+  LANE roundel**, humming strip lights, a bench, and a **ticket
+  machine** that is out of order and only ever took exact change.
+  A few **pine cones and golden eggs** wait down there — one on the
+  tracks, for the brave. Once open, the door stays open for the rest
+  of the run; the **WAY OUT** stairs take you back up to the rug.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

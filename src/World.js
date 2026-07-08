@@ -149,6 +149,7 @@ export class World {
     this._buildCave();
     this._buildGolfFlag();
     this._buildCottage();
+    this._buildStation();
     this._buildCoral();
   }
 
@@ -243,6 +244,18 @@ export class World {
    */
   getGroundHeight(x, z, refY, terrainH) {
     let h = terrainH !== undefined ? terrainH : this.getHeight(x, z);
+    // Deep beneath the cottage the height field stops being the truth:
+    // inside the station's bounds, well below grade, its floors are the
+    // ground (the trench rides lower than the platform).
+    const st = this.station;
+    if (
+      st &&
+      refY < h - 8 &&
+      x > st.minX && x < st.maxX &&
+      z > st.minZ && z < st.maxZ
+    ) {
+      return z > st.trackMinZ ? st.trackFloorY : st.floorY;
+    }
     for (let i = 0; i < this.platforms.length; i++) {
       const p = this.platforms[i];
       if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ) continue;
@@ -1529,6 +1542,10 @@ export class World {
     ring.position.set(0.55, 0.075, 0.5);
     cottage.add(ring);
     this._trapdoorMesh = trapdoor;
+    this._trapdoorHome = { position: trapdoor.position.clone(), rotation: trapdoor.rotation.x };
+    this._trapdoorOpen = false;
+    // The void it opens onto — hidden under the door until it swings.
+    addBox(1.05, 0.06, 1.05, track(createToonMaterial({ color: 0x07070c })), 0.2, 0.01, 0.5);
 
     const rug = new THREE.Mesh(
       track(new THREE.BoxGeometry(1.9, 0.04, 1.35)),
@@ -1597,6 +1614,21 @@ export class World {
     this._rugMesh.rotation.y = 0;
   }
 
+  /** The trap door swings open against the floor, showing the void. */
+  openTrapdoor() {
+    if (!this._trapdoorMesh || this._trapdoorOpen) return;
+    this._trapdoorOpen = true;
+    this._trapdoorMesh.rotation.x = -2.6;
+    this._trapdoorMesh.position.set(0.2, 0.28, -0.12);
+  }
+
+  resetTrapdoor() {
+    if (!this._trapdoorMesh) return;
+    this._trapdoorOpen = false;
+    this._trapdoorMesh.rotation.x = this._trapdoorHome.rotation;
+    this._trapdoorMesh.position.copy(this._trapdoorHome.position);
+  }
+
   /** A small hand-drawn Persian rug: crimson field, navy border, medallion. */
   _makeRugTexture() {
     const canvas = document.createElement('canvas');
@@ -1629,6 +1661,240 @@ export class World {
       g.arc(cx, cy, 8, 0, Math.PI * 2);
       g.fill();
     }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  /* ================================================================ */
+  /*  The underground station                                         */
+  /* ================================================================ */
+
+  /**
+   * 'Cottage Lane' — a London Underground platform buried 14m beneath
+   * the cottage, reached through the trap door (Game gates entry on a
+   * perfectly square score). A tiled arch tunnel, a platform with its
+   * yellow line, a sunken track bed with rails, a roundel, a ticket
+   * machine that only ever took exact change, and a WAY OUT back up.
+   * getGroundHeight() treats the floors as ground while you're down
+   * here; the surface height field carries on 14m overhead, oblivious.
+   */
+  _buildStation() {
+    const cx = this.cottageX;
+    const cz = this.cottageZ;
+    const F = this.cottageLevel - 14; // platform floor
+    const R = 5.2;                    // arch radius
+    const HL = 12;                    // hall half-length along x
+
+    this.station = {
+      minX: cx - HL,
+      maxX: cx + HL,
+      minZ: cz - R,
+      maxZ: cz + R,
+      floorY: F,
+      trackMinZ: cz + 1.8,
+      trackFloorY: F - 1.0,
+      entry: new THREE.Vector3(cx - 8.5, F, cz - 2),
+      exit: new THREE.Vector3(cx - 11, F, cz - 2),
+      ticket: new THREE.Vector3(cx + 10.4, F + 0.9, cz - 3.6),
+      coneSpots: [
+        new THREE.Vector3(cx - 3, F, cz - 3.4),
+        new THREE.Vector3(cx + 2, F, cz + 0.6),
+        new THREE.Vector3(cx + 6.5, F, cz - 2.8),
+        new THREE.Vector3(cx - 1, F - 1.0, cz + 3.2) // on the tracks, daredevil
+      ],
+      eggSpots: [
+        new THREE.Vector3(cx + 9, F, cz + 0.8),
+        new THREE.Vector3(cx - 6.5, F - 1.0, cz + 3.6)
+      ]
+    };
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const station = new THREE.Group();
+    this.stationMeshes = station;
+
+    // --- the tiled arch --------------------------------------------------
+    const tileTex = track(this._makeTileTexture());
+    tileTex.wrapS = THREE.RepeatWrapping;
+    tileTex.wrapT = THREE.RepeatWrapping;
+    tileTex.repeat.set(10, 3);
+    const tileMat = track(createToonMaterial({ map: tileTex }));
+    tileMat.side = THREE.DoubleSide;
+    const archGeo = track(new THREE.CylinderGeometry(R, R, HL * 2, 36, 1, true, 0, Math.PI));
+    archGeo.rotateZ(Math.PI / 2);
+    const arch = new THREE.Mesh(archGeo, tileMat);
+    arch.position.set(cx, F, cz);
+    station.add(arch);
+
+    // End caps: half-discs closing the tunnel.
+    const capShape = new THREE.Shape();
+    capShape.absarc(0, 0, R - 0.02, 0, Math.PI, false);
+    const capGeo = track(new THREE.ShapeGeometry(capShape, 24));
+    for (const side of [-1, 1]) {
+      const cap = new THREE.Mesh(capGeo, tileMat);
+      cap.rotation.y = Math.PI / 2;
+      cap.position.set(cx + side * HL, F, cz);
+      station.add(cap);
+    }
+
+    const addBox = (w, h, d, mat, x, y, z) => {
+      const geo = track(new THREE.BoxGeometry(w, h, d));
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.receiveShadow = true;
+      station.add(mesh);
+      return mesh;
+    };
+
+    const concreteMat = track(createToonMaterial({ color: 0x8e8a92 }));
+    const darkMat = track(createToonMaterial({ color: 0x2c2a30 }));
+    const railMat = track(createToonMaterial({ color: 0xb8b4bc, rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 } }));
+    const sleeperMat = track(createToonMaterial({ color: 0x4a3a2c }));
+    const yellowMat = track(createToonMaterial({ color: 0xf4c918, emissive: 0x5a4a06, emissiveIntensity: 0.5 }));
+
+    // --- floors: platform slab + sunken track bed ------------------------
+    addBox(HL * 2, 0.2, R + 1.9, concreteMat, cx, F - 0.1, cz - (R - 1.8) / 2 - 0.05);
+    addBox(HL * 2, 0.2, R - 1.7, darkMat, cx, F - 1.1, cz + 1.8 + (R - 1.8) / 2);
+    // Platform face down to the trench.
+    addBox(HL * 2, 1.0, 0.14, concreteMat, cx, F - 0.5, cz + 1.83);
+    // Seal the trench: far wall up to the arch's spring line, and both
+    // ends below the caps — otherwise the raw sky leaks in from under
+    // the world.
+    addBox(HL * 2, 1.4, 0.18, darkMat, cx, F - 0.55, cz + R - 0.12);
+    for (const side of [-1, 1]) {
+      addBox(0.18, 1.4, R - 1.6, darkMat, cx + side * (HL - 0.09), F - 0.55, cz + 1.8 + (R - 1.8) / 2);
+    }
+    // The famous yellow line.
+    addBox(HL * 2, 0.03, 0.2, yellowMat, cx, F + 0.02, cz + 1.55);
+
+    // Rails + sleepers.
+    for (const rz of [cz + 2.7, cz + 3.9]) {
+      addBox(HL * 2, 0.09, 0.1, railMat, cx, F - 0.9, rz);
+    }
+    for (let i = -5; i <= 5; i++) {
+      addBox(0.3, 0.07, 1.7, sleeperMat, cx + i * 2.1, F - 0.97, cz + 3.3);
+    }
+
+    // --- the roundel: COTTAGE LANE ----------------------------------------
+    const roundel = new THREE.Group();
+    roundel.position.set(cx + 2.5, F + 2.6, cz - 4.15);
+    station.add(roundel);
+    const ringGeo = track(new THREE.TorusGeometry(0.62, 0.17, 10, 28));
+    const ringMat = track(createToonMaterial({ color: 0xd1231f, emissive: 0x4a0806, emissiveIntensity: 0.5 }));
+    roundel.add(new THREE.Mesh(ringGeo, ringMat));
+    const barTex = track(this._makeSignTexture('COTTAGE LANE', '#1b3f94', '#ffffff', 512, 96));
+    const barMat = track(createToonMaterial({ map: barTex, emissive: 0x0a1430, emissiveIntensity: 0.4 }));
+    const bar = addBox(2.1, 0.42, 0.1, barMat, 0, 0, 0);
+    station.remove(bar);
+    bar.position.z = 0.24; // the name bar rides proud of the ring
+    roundel.add(bar);
+
+    // --- WAY OUT sign + the stairs back up ---------------------------------
+    const outTex = track(this._makeSignTexture('WAY OUT →', '#101014', '#f4c918', 384, 96));
+    const outMat = track(createToonMaterial({ map: outTex, emissive: 0x2a2404, emissiveIntensity: 0.5 }));
+    const outSign = addBox(1.5, 0.42, 0.08, outMat, cx - 10.6, F + 2.7, cz - 2);
+    outSign.rotation.y = Math.PI / 2;
+    // A dark doorway and a few steps rising into the end wall.
+    const doorway = addBox(0.3, 2.6, 2.0, track(createToonMaterial({ color: 0x0a0a10 })), cx - HL + 0.2, F + 1.3, cz - 2);
+    doorway.rotation.y = 0;
+    for (let i = 0; i < 4; i++) {
+      addBox(0.4, 0.14 + i * 0.14, 1.8, concreteMat, cx - HL + 1.5 - i * 0.42, F + (0.14 + i * 0.14) / 2, cz - 2);
+    }
+
+    // --- ticket machine ------------------------------------------------------
+    const machineMat = track(createToonMaterial({ color: 0x35415c, rim: { color: 0x9db4e8, strength: 0.35, threshold: 0.6 } }));
+    addBox(0.95, 1.75, 0.55, machineMat, cx + 10.4, F + 0.875, cz - 3.9);
+    const screenMat = track(createToonMaterial({ color: 0x9fe8d8, emissive: 0x2a8a72, emissiveIntensity: 1.1 }));
+    addBox(0.55, 0.4, 0.05, screenMat, cx + 10.4, F + 1.32, cz - 3.6);
+    const btnMat = track(createToonMaterial({ color: 0xd8d4cc }));
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 3; c++) {
+        addBox(0.11, 0.11, 0.04, btnMat, cx + 10.18 + c * 0.22, F + 0.92 - r * 0.2, cz - 3.6);
+      }
+    }
+    addBox(0.3, 0.05, 0.05, darkMat, cx + 10.4, F + 0.55, cz - 3.6); // ticket slot
+
+    // --- a bench for waiting out the twilight -------------------------------
+    const benchMat = track(createToonMaterial({ color: 0x6a4a32 }));
+    addBox(2.0, 0.09, 0.5, benchMat, cx + 5.5, F + 0.5, cz - 4.1);
+    for (const side of [-0.8, 0.8]) {
+      addBox(0.12, 0.5, 0.45, darkMat, cx + 5.5 + side, F + 0.25, cz - 4.1);
+    }
+
+    // --- light: humming strips + warm pools ---------------------------------
+    const stripMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xfff6e0, emissiveIntensity: 1.3 }));
+    for (const lx of [cx - 7, cx, cx + 7]) {
+      addBox(2.4, 0.07, 0.28, stripMat, lx, F + 4.55, cz - 0.4);
+      const lamp = new THREE.PointLight(0xfff2dc, 2.0, 13, 2);
+      lamp.position.set(lx, F + 4.2, cz - 0.4);
+      station.add(lamp);
+    }
+
+    this.scene.add(station);
+
+    // --- colliders: tunnel sides, end walls, the machine ---------------------
+    // (tops sit far below grade, so surface play never notices them.)
+    const wallTop = F + 5;
+    for (let x = cx - HL + 0.6; x <= cx + HL - 0.5; x += 1.1) {
+      this.colliders.push({ x, z: cz - R + 0.25, radius: 0.6, top: wallTop });
+      this.colliders.push({ x, z: cz + R - 0.25, radius: 0.6, top: wallTop });
+    }
+    for (let z = cz - R + 1; z <= cz + R - 1; z += 1.1) {
+      this.colliders.push({ x: cx - HL + 0.25, z, radius: 0.6, top: wallTop });
+      this.colliders.push({ x: cx + HL - 0.25, z, radius: 0.6, top: wallTop });
+    }
+    this.colliders.push({ x: cx + 10.4, z: cz - 3.9, radius: 0.55, top: F + 1.9 });
+  }
+
+  /** Cream tiles with grout lines and a red accent band. */
+  _makeTileTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#e8e2d4';
+    g.fillRect(0, 0, 256, 128);
+    g.strokeStyle = '#b8b2a4';
+    g.lineWidth = 3;
+    for (let y = 0; y <= 128; y += 32) {
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(256, y);
+      g.stroke();
+    }
+    for (let row = 0; row < 4; row++) {
+      const offset = row % 2 === 0 ? 0 : 32;
+      for (let x = offset; x <= 256; x += 64) {
+        g.beginPath();
+        g.moveTo(x, row * 32);
+        g.lineTo(x, row * 32 + 32);
+        g.stroke();
+      }
+    }
+    // Red accent band along the second row.
+    g.fillStyle = 'rgba(180, 40, 36, 0.85)';
+    g.fillRect(0, 34, 256, 12);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  /** Simple one-line sign plate. */
+  _makeSignTexture(text, bg, fg, w, h) {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const g = canvas.getContext('2d');
+    g.fillStyle = bg;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = fg;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `bold ${Math.round(h * 0.55)}px "Lilita One", "Trebuchet MS", sans-serif`;
+    g.fillText(text, w / 2, h / 2 + 2);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
@@ -1714,6 +1980,7 @@ export class World {
     if (this.blossomMeshes) this.scene.remove(this.blossomMeshes);
     if (this.caveMeshes) this.scene.remove(this.caveMeshes);
     if (this.cottageMeshes) this.scene.remove(this.cottageMeshes);
+    if (this.stationMeshes) this.scene.remove(this.stationMeshes);
     if (this.coralMeshes) this.scene.remove(this.coralMeshes);
     if (this.golfFlag) this.scene.remove(this.golfFlag);
     if (this.blossomAura) {

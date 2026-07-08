@@ -10,7 +10,8 @@
   --accent-gold: #ffd44f;
   --health-hi: #7be06b;
   --health-lo: #ff5d5d;
-  --font-stack: "Caudex", Georgia, "Times New Roman", serif;
+  --font-stack: "Lilita One", "Trebuchet MS", sans-serif;
+  --font-logo: "Titan One", "Arial Black", sans-serif;
   --font-notes: "Boogaloo", "Comic Sans MS", cursive;
 }
 
@@ -108,6 +109,7 @@ body {
 
 #menu-title .title-line {
   display: block;
+  font-family: var(--font-logo);
   font-size: clamp(36px, 7vw, 72px);
   letter-spacing: 0.04em;
   background: linear-gradient(
