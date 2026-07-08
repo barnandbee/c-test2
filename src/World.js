@@ -461,9 +461,12 @@ export class World {
       }
     }
 
-    // The copse's sparkles drift in a slow carousel.
+    // The copse's sparkles drift in a slow carousel and twinkle.
     if (this._copseSparkles) {
       this._copseSparkles.rotation.y += dt * 0.07;
+      const tw = this._smokeTime * 3.1;
+      this._copseSparkles.material.size = 0.13 + Math.sin(tw) * 0.05;
+      this._copseSparkles.material.opacity = 0.7 + Math.sin(tw * 1.7 + 1.2) * 0.25;
     }
   }
 
@@ -1941,9 +1944,10 @@ export class World {
   /* ================================================================ */
 
   /**
-   * Mystic Forest Central: a copse of softly pulsing, sparkling trees
-   * on the floor of the hidden dell. There is no path in — the ring
-   * wall is a slide — so the only way to stand here is a ticket.
+   * Mystic Forest Central: a copse of leafy, twinkling trees on the
+   * floor of the hidden dell — sealed under a stone dome, so the only
+   * way in OR out is the Mystic Line. The ring wall is a slide and the
+   * sky is closed; no balloon, rocket or hovercraft may trespass.
    */
   _buildCopse() {
     const cx = this.dellX;
@@ -1968,10 +1972,10 @@ export class World {
       track(createToonMaterial({
         color: c,
         emissive: c,
-        emissiveIntensity: 0.4,
+        emissiveIntensity: 0.5,
         rim: { color: 0xffffff, strength: 0.7, threshold: 0.5 },
         sway: { strength: 0.16, speed: 1.2 },
-        pulse: { speed: 1.4, phase: i * 1.7 }
+        pulse: { speed: 1.6, phase: i * 1.7 } // the twinkle
       }))
     );
 
@@ -1981,27 +1985,37 @@ export class World {
       const tx = cx + Math.cos(a) * r;
       const tz = cz + Math.sin(a) * r;
       const th = this.getHeight(tx, tz);
-      const s = 0.8 + (i % 3) * 0.25;
+      const s = 0.55 + (i % 3) * 0.14; // short enough to fit under the dome
+      const trunkHeight = 5.4 * s;
       const trunk = new THREE.Mesh(trunkGeo, barkMat);
-      trunk.position.set(tx, th, tz);
+      trunk.position.set(tx, th - 0.1, tz);
       trunk.scale.setScalar(s);
       trunk.castShadow = true;
       copse.add(trunk);
-      const canopy = new THREE.Mesh(canopyGeo, glowMats[i % 3]);
-      canopy.position.set(tx, th, tz);
-      canopy.scale.setScalar(s);
-      copse.add(canopy);
+      // A proper head of leaves: three blobs clustered atop the trunk,
+      // each on its own twinkle phase.
+      for (let b = 0; b < 3; b++) {
+        const canopy = new THREE.Mesh(canopyGeo, glowMats[(i + b) % 3]);
+        const spread = 0.9 * s;
+        canopy.position.set(
+          tx + Math.sin(b * 2.4 + i) * spread,
+          th - 0.1 + trunkHeight * (0.86 + 0.08 * Math.sin(i * 3 + b * 5)),
+          tz + Math.cos(b * 2.4 + i) * spread
+        );
+        canopy.scale.setScalar(s * (1.05 + b * 0.18));
+        copse.add(canopy);
+      }
       this.colliders.push({ x: tx, z: tz, radius: 0.45 * s, top: th + 2.4 * s });
     }
 
-    // Drifting sparkles filling the bowl.
+    // Drifting sparkles filling the bowl (kept under the dome's spring).
     const COUNT = 90;
     const positions = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = Math.random() * 6.5;
       positions[i * 3] = Math.cos(a) * r;
-      positions[i * 3 + 1] = 0.5 + Math.random() * 6.5;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 5;
       positions[i * 3 + 2] = Math.sin(a) * r;
     }
     const sparkGeo = track(new THREE.BufferGeometry());
@@ -2019,11 +2033,44 @@ export class World {
     copse.add(sparks);
     this._copseSparkles = sparks;
 
-    const glow = new THREE.PointLight(0xbfeaff, 2.0, 16, 2);
+    const glow = new THREE.PointLight(0xbfeaff, 2.4, 18, 2);
     glow.position.set(cx, y + 3.5, cz);
     copse.add(glow);
 
+    // The dome: a rough stone shell closing the dell's sky. Its rim
+    // buries itself in the ring wall; it casts no shadow so the grove
+    // below keeps its glow.
+    const domeGeo = track(new THREE.SphereGeometry(this.dellRadius + 5.2, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.62));
+    {
+      const pos = domeGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const px = pos.getX(i);
+        const py = pos.getY(i);
+        const pz = pos.getZ(i);
+        const lump = 1 + this.detailNoise.noise(px * 0.4 + 53, pz * 0.4 - py * 0.3) * 0.08;
+        pos.setXYZ(i, px * lump, py * lump, pz * lump);
+      }
+      domeGeo.computeVertexNormals();
+    }
+    const domeMat = track(createToonMaterial({
+      color: 0x2e2b38,
+      rim: { color: 0x8a7fb8, strength: 0.4, threshold: 0.6 }
+    }));
+    domeMat.side = THREE.DoubleSide;
+    const dome = new THREE.Mesh(domeGeo, domeMat);
+    dome.scale.y = 0.55;
+    dome.position.set(cx, y, cz);
+    copse.add(dome);
+
     this.scene.add(copse);
+  }
+
+  /** True inside the dell's bowl (below its dome). */
+  isInDell(x, z, yPos) {
+    if (!this.dellRadius) return false;
+    const dx = x - this.dellX;
+    const dz = z - this.dellZ;
+    return dx * dx + dz * dz < (this.dellRadius + 2) ** 2 && yPos < this.dellLevel + 12;
   }
 
   /**
@@ -2088,6 +2135,19 @@ export class World {
       dirX,
       dirZ
     );
+
+    // Inside the sealed copse: the platform sign — and the only way
+    // home. Always visible; nobody outside can see it anyway.
+    const copseSign = makeSign(
+      'MYSTIC FOREST CENTRAL',
+      this.dellX + 3.4,
+      this.dellZ - 2.6,
+      -3.4,
+      2.6
+    );
+    copseSign.visible = true;
+    this.tubeSigns.copse = copseSign;
+    this.copseReturnPos = copseSign.position.clone();
   }
 
   revealTubeSign(which) {
@@ -2098,7 +2158,8 @@ export class World {
   resetTubeSigns() {
     if (!this.tubeSigns) return;
     for (const key of Object.keys(this.tubeSigns)) {
-      if (this.tubeSigns[key]) this.tubeSigns[key].visible = false;
+      // The copse's sign is permanent — it's the only way home.
+      if (this.tubeSigns[key]) this.tubeSigns[key].visible = key === 'copse';
     }
   }
 

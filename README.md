@@ -163,11 +163,19 @@ import map — no npm install, no bundler.
   **A) Upper Cottage Lane** — emerges at the cave mouth, where a
   roundel sign appears, **+55.5**; **B) Docklands** — the lake shore,
   new roundel, worth the same **+63.14159** as Red October herself;
-  **C) Mystic Forest Central** — end of the line: a copse of softly
-  glowing, sparkling trees on the floor of a hidden dell whose ring
-  wall is too steep to climb — no path leads there, only the ticket.
-  Fares pay out once per run each; the trains themselves are,
-  naturally, invisible.
+  **C) Mystic Forest Central** — end of the line: a copse of leafy,
+  twinkling trees on the floor of a hidden dell, **sealed under a
+  stone dome** — the ring wall is a slide, the sky is closed, and no
+  balloon, rocket or hovercraft may descend into it. Only the ticket
+  gets you in. Inside, **all color drains away**: the grove and your
+  hero alike render in near-grayscale until you leave. **Jump three
+  times in the Mystic Forest** and the grove holds an election: 
+  **President Fir Tree** joins the roster — three tiers of stately
+  conifer, googly statesman's eyes, branch arms for waving at
+  constituents, a red tie with a gold seal pin and a star of office
+  on his crown. The MYSTIC FOREST CENTRAL roundel by the trees is the
+  ride home. Fares pay out once per run each; the trains themselves
+  are, naturally, invisible.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

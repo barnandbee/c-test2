@@ -137,6 +137,7 @@ export class Player {
     else if (this.character === 'mayo') this.root = this.buildMayo();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
+    else if (this.character === 'fir') this.root = this.buildFir();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2193,6 +2194,126 @@ export class Player {
     return root;
   }
 
+  /**
+   * President Fir Tree: three tiers of stately conifer, a red tie with
+   * a gold seal pin, a star of office on the crown, and root-stub feet.
+   * Elected by three jumps in a sealed grove, as the constitution
+   * requires.
+   */
+  buildFir() {
+    const root = new THREE.Group();
+    root.name = 'fir';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const needleMat = track(createToonMaterial({
+      color: 0x2e6b3f,
+      rim: { color: 0xa8e8b0, strength: 0.45, threshold: 0.6 },
+      sway: { strength: 0.05, speed: 1.8 }
+    }));
+    const barkMat = track(createToonMaterial({ color: 0x5c4330 }));
+    const tieMat = track(createToonMaterial({ color: 0xc03038 }));
+    const goldMat = track(createToonMaterial({
+      color: 0xd8b830,
+      emissive: 0x604010,
+      emissiveIntensity: 0.6
+    }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // Trunk base + root-stub feet.
+    const trunkGeo = track(new THREE.CylinderGeometry(0.13, 0.17, 0.5, 10));
+    const trunk = new THREE.Mesh(trunkGeo, barkMat);
+    trunk.position.y = -0.38;
+    trunk.castShadow = true;
+    body.add(trunk);
+    const footGeo = track(new THREE.BoxGeometry(0.18, 0.1, 0.3));
+    for (const side of [-1, 1]) {
+      const foot = new THREE.Mesh(footGeo, barkMat);
+      foot.position.set(side * 0.13, -0.58, 0.05);
+      body.add(foot);
+    }
+
+    // Three tiers of presidential foliage.
+    const tierSpecs = [
+      [0.58, 0.62, -0.02],
+      [0.44, 0.55, 0.36],
+      [0.3, 0.48, 0.68]
+    ];
+    for (const [r, h, ty] of tierSpecs) {
+      const coneGeo = track(new THREE.ConeGeometry(r, h, 12));
+      const cone = new THREE.Mesh(coneGeo, needleMat);
+      cone.position.y = ty;
+      cone.castShadow = true;
+      body.add(cone);
+    }
+    // The star of office.
+    const starGeo = track(new THREE.OctahedronGeometry(0.09));
+    const star = new THREE.Mesh(starGeo, goldMat);
+    star.position.y = 1.0;
+    body.add(star);
+
+    // The tie: knot + tail down the front, with the gold seal pin.
+    const knotGeo = track(new THREE.BoxGeometry(0.11, 0.09, 0.06));
+    const knot = new THREE.Mesh(knotGeo, tieMat);
+    knot.position.set(0, 0.22, 0.42);
+    knot.rotation.x = -0.25;
+    body.add(knot);
+    const tailGeo = track(new THREE.BoxGeometry(0.09, 0.34, 0.05));
+    const tail = new THREE.Mesh(tailGeo, tieMat);
+    tail.position.set(0, 0.0, 0.5);
+    tail.rotation.x = -0.3;
+    body.add(tail);
+    const pinGeo = track(new THREE.SphereGeometry(0.028, 8, 6));
+    const pin = new THREE.Mesh(pinGeo, goldMat);
+    pin.position.set(0.03, 0.06, 0.54);
+    body.add(pin);
+
+    // Statesmanlike eyes on the middle tier.
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    const pupilGeo = track(new THREE.SphereGeometry(0.028, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.13, 0.42, 0.3);
+      white.scale.set(1, 1.15, 0.6);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.125, 0.415, 0.34);
+      body.add(pupil);
+    }
+
+    // Branch arms, for waving at constituents.
+    const armGeo = track(new THREE.CylinderGeometry(0.03, 0.05, 0.42, 7));
+    armGeo.translate(0, -0.21, 0);
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.42, 0.28, 0);
+      pivot.rotation.z = -side * 1.0;
+      const arm = new THREE.Mesh(armGeo, barkMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const sprigGeo = track(new THREE.ConeGeometry(0.09, 0.16, 8));
+      const sprig = new THREE.Mesh(sprigGeo, needleMat);
+      sprig.position.set(0, -0.44, 0);
+      pivot.add(sprig);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    this.legs = [];
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -2431,6 +2552,24 @@ export class Player {
       const s = b / distFromCenter;
       pos.x *= s;
       pos.z *= s;
+    }
+
+    // The Mystic Forest is closed at the top: no vehicle may descend
+    // into the dell. High overflight is fine; its dome is solid rock.
+    const w = this.world;
+    if (w.dellRadius) {
+      const ddx = pos.x - w.dellX;
+      const ddz = pos.z - w.dellZ;
+      const keepOut = w.dellRadius + 5.5;
+      const dSq = ddx * ddx + ddz * ddz;
+      if (dSq < keepOut * keepOut && pos.y < w.dellLevel + 13) {
+        const d = Math.sqrt(dSq);
+        // Dead center has no outward direction — invent one.
+        const nx = d > 1e-4 ? ddx / d : 1;
+        const nz = d > 1e-4 ? ddz / d : 0;
+        pos.x = w.dellX + nx * keepOut;
+        pos.z = w.dellZ + nz * keepOut;
+      }
     }
 
     // Floor is turf or lake water, whichever is higher (lake only).

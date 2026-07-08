@@ -69,7 +69,9 @@ const STORAGE_ERROR42 = 'mystic-badger.error42Unlocked';
 const STORAGE_MAYO = 'mystic-badger.mayoUnlocked';
 const STORAGE_PERPBIRD = 'mystic-badger.perpbirdUnlocked';
 const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
+const STORAGE_FIR = 'mystic-badger.firUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
 const ALARM_TIME_BONUS = 20;        // the cottage alarm clock, once per run
 const APPLIANCE_RANGE = 2.4;
 const TUBE_CAVE_POINTS = 55.5;      // Upper Cottage Lane fare rebate
@@ -142,6 +144,7 @@ export class Game {
     this.mayoUnlocked = readStorage(STORAGE_MAYO) === '1';
     this.perpbirdUnlocked = readStorage(STORAGE_PERPBIRD) === '1';
     this.marblellaUnlocked = readStorage(STORAGE_MARBLELLA) === '1';
+    this.firUnlocked = readStorage(STORAGE_FIR) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -185,6 +188,20 @@ export class Game {
     };
     this.player.onSplash = this._onPlayerSplash;
 
+    // Jumps inside the sealed Mystic Forest are counted — three of them
+    // constitute an election.
+    this._onPlayerJump = (position) => {
+      if (this.isGameOver || !this.world.isInDell(position.x, position.z, position.y)) return;
+      this.dellJumps += 1;
+      if (this.dellJumps >= FIR_JUMPS_REQUIRED && !this.firUnlocked) {
+        this.firUnlocked = true;
+        writeStorage(STORAGE_FIR, '1');
+        this.runUnlockNames.push('President Fir Tree');
+        this.ui.showTimeToast('★ PRESIDENT FIR TREE UNLOCKED!');
+      }
+    };
+    this.player.onJump = this._onPlayerJump;
+
     // --- gameplay state ------------------------------------------------------
     this.health = 100;
     this.points = 0;
@@ -204,6 +221,8 @@ export class Game {
     this.travelOpen = false;
     this.tubeCaveClaimed = false;
     this.tubeLakeClaimed = false;
+    this.dellJumps = 0;
+    this._inDell = false;
     this.minigame = null;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -562,6 +581,7 @@ export class Game {
     if (name === 'mayo') return this.mayoUnlocked;
     if (name === 'perpbird') return this.perpbirdUnlocked;
     if (name === 'marblella') return this.marblellaUnlocked;
+    if (name === 'fir') return this.firUnlocked;
     return name === 'badger';
   }
 
@@ -579,7 +599,8 @@ export class Game {
       error42: this.error42Unlocked,
       mayo: this.mayoUnlocked,
       perpbird: this.perpbirdUnlocked,
-      marblella: this.marblellaUnlocked
+      marblella: this.marblellaUnlocked,
+      fir: this.firUnlocked
     };
   }
 
@@ -725,6 +746,21 @@ export class Game {
 
     // Down at Cottage Lane: the ticket machine and the way out.
     if (this.handleStation()) return;
+
+    // At Mystic Forest Central: the platform sign is the ride home.
+    const ret = this.world.copseReturnPos;
+    if (ret && this.world.isInDell(this.player.position.x, this.player.position.z, this.player.position.y)) {
+      const dx = this.player.position.x - ret.x;
+      const dz = this.player.position.z - ret.z;
+      if (dx * dx + dz * dz < 2.8 * 2.8) {
+        const entry = this.world.station.entry;
+        this.player.position.set(entry.x, entry.y + 0.2, entry.z);
+        this.player.velocity.set(0, 0, 0);
+        this.cameraRig.snapTo(this.player.position);
+        this.ui.showTimeToast('THE INVISIBLE TRAIN — BACK TO COTTAGE LANE');
+        return;
+      }
+    }
 
     // A double-tap near the parked rocket: teach the gesture.
     if (this.rocket) {
@@ -1192,6 +1228,9 @@ export class Game {
     this.closeTravel();
     this.tubeCaveClaimed = false;
     this.tubeLakeClaimed = false;
+    this.dellJumps = 0;
+    this._inDell = false;
+    this.renderer.domElement.classList.remove('mystic');
     this.world.resetRug();
     this.world.resetTrapdoor();
     this.world.resetTubeSigns();
@@ -1215,6 +1254,8 @@ export class Game {
     this.player.dispose();
     this.player = new Player(this.world, spawn, name);
     this.player.onLand = this._onPlayerLand;
+    this.player.onSplash = this._onPlayerSplash;
+    this.player.onJump = this._onPlayerJump;
     this.scene.add(this.player.root);
   }
 
@@ -1322,6 +1363,18 @@ export class Game {
       this.cameraRig.update(dt, this.player, this.input);
     } else {
       this.cameraRig.update(dt, this.player, null);
+    }
+
+    // The Mystic Forest drains the world of color — a CSS filter on the
+    // canvas desaturates everything, hero included, while you're inside.
+    const inDell = this.world.isInDell(
+      this.player.position.x,
+      this.player.position.z,
+      this.player.position.y
+    );
+    if (inDell !== this._inDell) {
+      this._inDell = inDell;
+      this.renderer.domElement.classList.toggle('mystic', inDell);
     }
 
     for (const item of this.collectibles) item.update(dt, time);
