@@ -487,6 +487,91 @@ body {
   text-shadow: 0 2px 12px rgba(255, 212, 79, 0.4);
 }
 
+/* ---------- Mystic Line destination picker ---------- */
+
+#travel-panel {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: var(--font-notes);
+  padding: 16px 28px 12px;
+  background: var(--hud-bg);
+  border: 1px solid rgba(90, 140, 255, 0.55);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 15;
+}
+
+#travel-title {
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: #9ec2ff;
+  text-shadow: 0 2px 12px rgba(90, 140, 255, 0.45);
+}
+
+#travel-sub {
+  margin: 2px 0 10px;
+  font-size: 15px;
+  color: rgba(243, 239, 255, 0.75);
+}
+
+#travel-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.travel-option {
+  font-family: var(--font-notes);
+  font-size: 17px;
+  letter-spacing: 0.03em;
+  color: #f3efff;
+  background: rgba(27, 63, 148, 0.55);
+  border: 1px solid rgba(158, 194, 255, 0.5);
+  border-radius: 12px;
+  padding: 9px 22px;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.travel-option:hover {
+  background: rgba(48, 92, 190, 0.7);
+  transform: translateY(-1px);
+}
+
+.travel-letter {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #d1231f;
+  color: #fff;
+  font-size: 14px;
+}
+
+#travel-help {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: rgba(243, 239, 255, 0.55);
+}
+
+#travel-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: rgba(243, 239, 255, 0.7);
+  font-size: 22px;
+  cursor: pointer;
+  font-family: var(--font-stack);
+}
+
 #putt-strokes {
   font-size: 15px;
   letter-spacing: 0.12em;

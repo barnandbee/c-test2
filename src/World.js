@@ -130,6 +130,16 @@ export class World {
     this.cottageLevel = this.getHeight(this.cottageX, this.cottageZ); // pre-level grade
     this.cottageRadius = 7.0; // setting this arms the yard-leveling in getHeight()
 
+    // --- the hidden dell: a walled copse only the Mystic Line reaches -----
+    // A level bowl out near the rim, sealed inside a ring wall too steep
+    // to climb (steep terrain is a slide, not a floor). Defined before
+    // geometry exists because getHeight() raises the wall.
+    const dellAngle = 3.6;
+    this.dellX = Math.cos(dellAngle) * 90;
+    this.dellZ = Math.sin(dellAngle) * 90;
+    this.dellLevel = this.getHeight(this.dellX, this.dellZ);
+    this.dellRadius = 9; // setting this arms the carve in getHeight()
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -150,6 +160,8 @@ export class World {
     this._buildGolfFlag();
     this._buildCottage();
     this._buildStation();
+    this._buildCopse();
+    this._buildTubeSigns();
     this._buildCoral();
   }
 
@@ -206,6 +218,17 @@ export class World {
       const cd = Math.hypot(x - this.cottageX, z - this.cottageZ);
       if (cd < this.cottageRadius) {
         h = lerp(this.cottageLevel, h, smoothstep(this.cottageRadius * 0.45, this.cottageRadius, cd));
+      }
+    }
+    // The hidden dell: an unclimbable ring wall around a level bowl.
+    if (this.dellRadius) {
+      const dd = Math.hypot(x - this.dellX, z - this.dellZ);
+      if (dd < this.dellRadius + 6.5) {
+        const wall =
+          smoothstep(this.dellRadius - 2.5, this.dellRadius + 1, dd) *
+          (1 - smoothstep(this.dellRadius + 1, this.dellRadius + 6.5, dd));
+        h += wall * 10;
+        h = lerp(this.dellLevel, h, smoothstep(this.dellRadius - 3.5, this.dellRadius - 1.5, dd));
       }
     }
     return h;
@@ -296,6 +319,8 @@ export class World {
       if (Math.hypot(x - this.caveX, z - this.caveZ) < this.caveRadius + 2.5) continue;
       // …or in the cottage's yard.
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 1.5) continue;
+      // …or inside (or on the wall of) the hidden dell.
+      if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 5) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -434,6 +459,11 @@ export class World {
         p.mesh.scale.setScalar(0.5 + t * 1.7);
         p.mat.opacity = 0.5 * (1 - t) * smoothstep(0, 0.12, t);
       }
+    }
+
+    // The copse's sparkles drift in a slow carousel.
+    if (this._copseSparkles) {
+      this._copseSparkles.rotation.y += dt * 0.07;
     }
   }
 
@@ -687,6 +717,7 @@ export class World {
       // Trees near the cave mouth would wall off the camera's sightline.
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
+      if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -930,7 +961,8 @@ export class World {
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2) &&
           Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5 &&
           Math.hypot(x - this.caveX, z - this.caveZ) > 7 &&
-          Math.hypot(x - this.cottageX, z - this.cottageZ) > this.cottageRadius
+          Math.hypot(x - this.cottageX, z - this.cottageZ) > this.cottageRadius &&
+          Math.hypot(x - this.dellX, z - this.dellZ) > this.dellRadius + 5
         ) break;
       }
       const h = this.getHeight(x, z);
@@ -1882,7 +1914,7 @@ export class World {
     return tex;
   }
 
-  /** Simple one-line sign plate. */
+  /** Simple one-line sign plate; the font shrinks to fit long names. */
   _makeSignTexture(text, bg, fg, w, h) {
     const canvas = document.createElement('canvas');
     canvas.width = w;
@@ -1893,11 +1925,181 @@ export class World {
     g.fillStyle = fg;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `bold ${Math.round(h * 0.55)}px "Lilita One", "Trebuchet MS", sans-serif`;
+    let size = Math.round(h * 0.55);
+    do {
+      g.font = `bold ${size}px "Lilita One", "Trebuchet MS", sans-serif`;
+      size -= 2;
+    } while (g.measureText(text).width > w * 0.92 && size > 10);
     g.fillText(text, w / 2, h / 2 + 2);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
+  }
+
+  /* ================================================================ */
+  /*  Mystic Line surface works: the copse and the tube signs         */
+  /* ================================================================ */
+
+  /**
+   * Mystic Forest Central: a copse of softly pulsing, sparkling trees
+   * on the floor of the hidden dell. There is no path in — the ring
+   * wall is a slide — so the only way to stand here is a ticket.
+   */
+  _buildCopse() {
+    const cx = this.dellX;
+    const cz = this.dellZ;
+    const y = this.getHeight(cx, cz);
+    this.copsePos = new THREE.Vector3(cx, y, cz);
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const copse = new THREE.Group();
+    this.copseMeshes = copse;
+
+    const trunkGeo = track(this._makeTrunkGeometry());
+    const canopyGeo = track(this._makeCanopyGeometry());
+    const barkMat = track(createToonMaterial({
+      color: 0x7a6a8e,
+      rim: { color: 0xd9c9ff, strength: 0.5, threshold: 0.6 }
+    }));
+    const glowMats = [0x9fe8ff, 0xffc2ee, 0xc8ffc2].map((c, i) =>
+      track(createToonMaterial({
+        color: c,
+        emissive: c,
+        emissiveIntensity: 0.4,
+        rim: { color: 0xffffff, strength: 0.7, threshold: 0.5 },
+        sway: { strength: 0.16, speed: 1.2 },
+        pulse: { speed: 1.4, phase: i * 1.7 }
+      }))
+    );
+
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.5;
+      const r = i % 2 === 0 ? 3.2 : 4.6;
+      const tx = cx + Math.cos(a) * r;
+      const tz = cz + Math.sin(a) * r;
+      const th = this.getHeight(tx, tz);
+      const s = 0.8 + (i % 3) * 0.25;
+      const trunk = new THREE.Mesh(trunkGeo, barkMat);
+      trunk.position.set(tx, th, tz);
+      trunk.scale.setScalar(s);
+      trunk.castShadow = true;
+      copse.add(trunk);
+      const canopy = new THREE.Mesh(canopyGeo, glowMats[i % 3]);
+      canopy.position.set(tx, th, tz);
+      canopy.scale.setScalar(s);
+      copse.add(canopy);
+      this.colliders.push({ x: tx, z: tz, radius: 0.45 * s, top: th + 2.4 * s });
+    }
+
+    // Drifting sparkles filling the bowl.
+    const COUNT = 90;
+    const positions = new Float32Array(COUNT * 3);
+    for (let i = 0; i < COUNT; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.random() * 6.5;
+      positions[i * 3] = Math.cos(a) * r;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 6.5;
+      positions[i * 3 + 2] = Math.sin(a) * r;
+    }
+    const sparkGeo = track(new THREE.BufferGeometry());
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const sparkMat = track(new THREE.PointsMaterial({
+      color: 0xfff2c8,
+      size: 0.14,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    }));
+    const sparks = new THREE.Points(sparkGeo, sparkMat);
+    sparks.position.set(cx, y, cz);
+    copse.add(sparks);
+    this._copseSparkles = sparks;
+
+    const glow = new THREE.PointLight(0xbfeaff, 2.0, 16, 2);
+    glow.position.set(cx, y + 3.5, cz);
+    copse.add(glow);
+
+    this.scene.add(copse);
+  }
+
+  /**
+   * Roundel signs that pop into existence the first time each Mystic
+   * Line destination is visited: UPPER COTTAGE LANE at the cave mouth,
+   * DOCKLANDS on the lake shore. Hidden until revealTubeSign() is told.
+   */
+  _buildTubeSigns() {
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const poleGeo = track(new THREE.CylinderGeometry(0.06, 0.07, 2.6, 8));
+    const poleMat = track(createToonMaterial({ color: 0x3c4048 }));
+    const ringGeo = track(new THREE.TorusGeometry(0.5, 0.14, 10, 24));
+    const ringMat = track(createToonMaterial({ color: 0xd1231f, emissive: 0x4a0806, emissiveIntensity: 0.5 }));
+
+    const makeSign = (label, x, z, faceX, faceZ) => {
+      const y = this.getHeight(x, z);
+      const g = new THREE.Group();
+      g.position.set(x, y, z);
+      g.rotation.y = Math.atan2(faceX, faceZ);
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.position.y = 1.3;
+      pole.castShadow = true;
+      g.add(pole);
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.y = 2.6;
+      g.add(ring);
+      const barTex = track(this._makeSignTexture(label, '#1b3f94', '#ffffff', 512, 96));
+      const barMat = track(createToonMaterial({ map: barTex, emissive: 0x0a1430, emissiveIntensity: 0.4 }));
+      const barGeo = track(new THREE.BoxGeometry(1.7, 0.36, 0.09));
+      const bar = new THREE.Mesh(barGeo, barMat);
+      bar.position.set(0, 2.6, 0.2);
+      g.add(bar);
+      g.visible = false;
+      this.scene.add(g);
+      return g;
+    };
+
+    // Beside the cave mouth, off the ramp's shoulder.
+    const latX = -this.caveDirZ;
+    const latZ = this.caveDirX;
+    this.tubeSigns = {
+      cave: makeSign(
+        'UPPER COTTAGE LANE',
+        this.caveX - this.caveDirX * 8 + latX * 3,
+        this.caveZ - this.caveDirZ * 8 + latZ * 3,
+        -this.caveDirX,
+        -this.caveDirZ
+      ),
+      lake: null
+    };
+    // On the lake shore, a stroll from the Red October warning.
+    const lakeLen = Math.hypot(this.lakeCenterX, this.lakeCenterZ) || 1;
+    const dirX = -this.lakeCenterX / lakeLen;
+    const dirZ = -this.lakeCenterZ / lakeLen;
+    this.tubeSigns.lake = makeSign(
+      'DOCKLANDS',
+      this.lakeCenterX + dirX * (this.lakeRadius + 3.5) - dirZ * 5,
+      this.lakeCenterZ + dirZ * (this.lakeRadius + 3.5) + dirX * 5,
+      dirX,
+      dirZ
+    );
+  }
+
+  revealTubeSign(which) {
+    const sign = this.tubeSigns && this.tubeSigns[which];
+    if (sign) sign.visible = true;
+  }
+
+  resetTubeSigns() {
+    if (!this.tubeSigns) return;
+    for (const key of Object.keys(this.tubeSigns)) {
+      if (this.tubeSigns[key]) this.tubeSigns[key].visible = false;
+    }
   }
 
   /* ================================================================ */
@@ -1981,6 +2183,12 @@ export class World {
     if (this.caveMeshes) this.scene.remove(this.caveMeshes);
     if (this.cottageMeshes) this.scene.remove(this.cottageMeshes);
     if (this.stationMeshes) this.scene.remove(this.stationMeshes);
+    if (this.copseMeshes) this.scene.remove(this.copseMeshes);
+    if (this.tubeSigns) {
+      for (const key of Object.keys(this.tubeSigns)) {
+        if (this.tubeSigns[key]) this.scene.remove(this.tubeSigns[key]);
+      }
+    }
     if (this.coralMeshes) this.scene.remove(this.coralMeshes);
     if (this.golfFlag) this.scene.remove(this.golfFlag);
     if (this.blossomAura) {

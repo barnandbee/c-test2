@@ -33,6 +33,7 @@ export class UI {
     this.puttPanel = document.getElementById('putt-panel');
     this.puttStrokes = document.getElementById('putt-strokes');
     this.puttFill = document.getElementById('putt-fill');
+    this.travelPanel = document.getElementById('travel-panel');
     this.menu = document.getElementById('menu');
     this.menuRoster = document.getElementById('menu-roster');
     this.menuBestRow = document.getElementById('menu-best-row');
@@ -174,6 +175,26 @@ export class UI {
 
   setPuttPower(t) {
     this.puttFill.style.width = `${Math.round(t * 100)}%`;
+  }
+
+  /* ---------------- Mystic Line travel picker ---------------- */
+
+  showTravel() {
+    this.travelPanel.classList.remove('hidden');
+  }
+
+  hideTravel() {
+    this.travelPanel.classList.add('hidden');
+  }
+
+  /** onSelect('cave'|'lake'|'copse'); onClose() for the ✕. */
+  bindTravel(onSelect, onClose) {
+    for (const btn of this.travelPanel.querySelectorAll('.travel-option')) {
+      btn.addEventListener('click', () => onSelect(btn.dataset.dest));
+    }
+    this.travelPanel
+      .querySelector('#travel-close')
+      .addEventListener('click', onClose);
   }
 
   /* ---------------- welcome menu ---------------- */

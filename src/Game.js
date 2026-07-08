@@ -72,6 +72,8 @@ const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const ALARM_TIME_BONUS = 20;        // the cottage alarm clock, once per run
 const APPLIANCE_RANGE = 2.4;
+const TUBE_CAVE_POINTS = 55.5;      // Upper Cottage Lane fare rebate
+const TICKET_EXACT_CHANGE = 281;    // the machine's other operating condition
 // Touch every one of these in a single run and the marble rolls in.
 const MARBLELLA_APPLIANCES = ['clock', 'stove', 'fridge', 'trapdoor'];
 const MAYO_SCORE = 300;
@@ -199,6 +201,9 @@ export class Game {
     this.sandwichClaimed = false;
     this.alarmRung = false;
     this.appliancesTouched = new Set();
+    this.travelOpen = false;
+    this.tubeCaveClaimed = false;
+    this.tubeLakeClaimed = false;
     this.minigame = null;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -218,6 +223,10 @@ export class Game {
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
     this.ui.bindRestart(() => this.restart());
+    this.ui.bindTravel(
+      (dest) => this.travelTo(dest),
+      () => this.closeTravel()
+    );
 
     // --- welcome menu -------------------------------------------------------
     // The run doesn't begin until ENTER THE FOREST; meanwhile the camera
@@ -858,10 +867,100 @@ export class Game {
       return true;
     }
     if (near(st.ticket, 3.2)) {
-      this.ui.showTimeToast('OUT OF ORDER. IT ONLY EVER TOOK EXACT CHANGE.');
+      if (this.isTicketMachineOn()) {
+        this.openTravel();
+      } else {
+        this.ui.showTimeToast('OUT OF ORDER UNTIL THE MORNING RUSH (06:00–09:00). EXACT CHANGE: 281.');
+      }
       return true;
     }
     return false;
+  }
+
+  /**
+   * The ticket machine keeps banker's hours: operational during the
+   * morning rush (06:00–09:00 on the PLAYER'S clock), or for anyone
+   * presenting exactly 281 points. Exact change only.
+   */
+  isTicketMachineOn() {
+    const hour = new Date().getHours();
+    return (hour >= 6 && hour < 9) || this.points === TICKET_EXACT_CHANGE;
+  }
+
+  openTravel() {
+    this.travelOpen = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.ui.showTravel();
+    this.ui.showTimeToast('THE TICKET MACHINE HUMS INTO LIFE');
+  }
+
+  closeTravel() {
+    this.travelOpen = false;
+    this.ui.hideTravel();
+  }
+
+  /** Ride the Mystic Line: teleport, reveal the destination's roundel,
+   *  and pay out each destination's fare rebate once per run. */
+  travelTo(dest) {
+    if (!this.travelOpen || this.isGameOver) return;
+    this.closeTravel();
+    const w = this.world;
+
+    // Departure puff on the platform.
+    this.particles.spawnBurst(
+      this._playerCenter.copy(this.player.position).setY(this.player.position.y + 1),
+      0x9ec2ff,
+      { count: 30, speed: 4.5, size: 44, upBias: 0.7, life: 0.7 }
+    );
+
+    let target;
+    if (dest === 'cave') {
+      target = new THREE.Vector3(
+        w.caveX - w.caveDirX * 5,
+        0,
+        w.caveZ - w.caveDirZ * 5
+      );
+      w.revealTubeSign('cave');
+      if (!this.tubeCaveClaimed) {
+        this.tubeCaveClaimed = true;
+        this.points += TUBE_CAVE_POINTS;
+        this.ui.setPoints(this.points);
+        this.ui.showTimeToast('UPPER COTTAGE LANE! +55.5');
+      } else {
+        this.ui.showTimeToast('UPPER COTTAGE LANE');
+      }
+    } else if (dest === 'lake') {
+      const len = Math.hypot(w.lakeCenterX, w.lakeCenterZ) || 1;
+      const dirX = -w.lakeCenterX / len;
+      const dirZ = -w.lakeCenterZ / len;
+      target = new THREE.Vector3(
+        w.lakeCenterX + dirX * (w.lakeRadius + 3.5),
+        0,
+        w.lakeCenterZ + dirZ * (w.lakeRadius + 3.5)
+      );
+      w.revealTubeSign('lake');
+      if (!this.tubeLakeClaimed) {
+        this.tubeLakeClaimed = true;
+        this.points += RED_OCTOBER_POINTS;
+        this.ui.setPoints(this.points);
+        this.ui.showTimeToast('DOCKLANDS! +63.14159');
+      } else {
+        this.ui.showTimeToast('DOCKLANDS');
+      }
+    } else {
+      target = new THREE.Vector3(w.copsePos.x + 1.4, 0, w.copsePos.z + 0.8);
+      this.ui.showTimeToast('MYSTIC FOREST CENTRAL — END OF THE LINE');
+    }
+
+    target.y = w.getHeight(target.x, target.z) + 0.15;
+    this.player.position.copy(target);
+    this.player.velocity.set(0, 0, 0);
+    this.cameraRig.snapTo(this.player.position);
+    this.particles.spawnBurst(
+      this._playerCenter.set(target.x, target.y + 1, target.z),
+      0x9ec2ff,
+      { count: 36, speed: 5, size: 46, upBias: 0.75, life: 0.8 }
+    );
   }
 
   /**
@@ -997,6 +1096,7 @@ export class Game {
 
   gameOver(reason) {
     this.isGameOver = true;
+    this.closeTravel();
     if (document.pointerLockElement) document.exitPointerLock();
 
     // Persist the high score and any character unlocks.
@@ -1089,8 +1189,12 @@ export class Game {
     this.sandwichClaimed = false;
     this.alarmRung = false;
     this.appliancesTouched.clear();
+    this.closeTravel();
+    this.tubeCaveClaimed = false;
+    this.tubeLakeClaimed = false;
     this.world.resetRug();
     this.world.resetTrapdoor();
+    this.world.resetTubeSigns();
     if (this.minigame) {
       this.minigame.dispose();
       this.minigame = null;
@@ -1164,6 +1268,20 @@ export class Game {
       }
 
       this.invulnTimer = Math.max(0, this.invulnTimer - dt);
+
+      // The travel picker: number keys choose, wandering off dismisses.
+      if (this.travelOpen) {
+        if (this.input.keys.has('Digit1')) this.travelTo('cave');
+        else if (this.input.keys.has('Digit2')) this.travelTo('lake');
+        else if (this.input.keys.has('Digit3')) this.travelTo('copse');
+        else {
+          const t = this.world.station.ticket;
+          const dx = this.player.position.x - t.x;
+          const dz = this.player.position.z - t.z;
+          if (dx * dx + dz * dz > 6 * 6) this.closeTravel();
+        }
+      }
+
       this.handleDoubleTap();
       this.player.update(dt, this.input, this.cameraRig.yaw);
       this.handlePickups();

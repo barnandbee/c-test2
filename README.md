@@ -156,6 +156,18 @@ import map — no npm install, no bundler.
   A few **pine cones and golden eggs** wait down there — one on the
   tracks, for the brave. Once open, the door stays open for the rest
   of the run; the **WAY OUT** stairs take you back up to the rug.
+- **The Mystic Line** — the ticket machine operates only during the
+  **morning rush (06:00–09:00 on YOUR clock)** — or for a customer
+  presenting **exactly 281 points**. Exact change only. When it hums
+  into life it offers three destinations (tap, or press 1/2/3):
+  **A) Upper Cottage Lane** — emerges at the cave mouth, where a
+  roundel sign appears, **+55.5**; **B) Docklands** — the lake shore,
+  new roundel, worth the same **+63.14159** as Red October herself;
+  **C) Mystic Forest Central** — end of the line: a copse of softly
+  glowing, sparkling trees on the floor of a hidden dell whose ring
+  wall is too steep to climb — no path leads there, only the ticket.
+  Fares pay out once per run each; the trains themselves are,
+  naturally, invisible.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive
