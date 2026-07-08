@@ -176,6 +176,12 @@ import map — no npm install, no bundler.
   on his crown. The MYSTIC FOREST CENTRAL roundel by the trees is the
   ride home. Fares pay out once per run each; the trains themselves
   are, naturally, invisible.
+- **Margaret** — a classic wooden marionette with a painted face,
+  buttons for eyes, string hair and the four control strings rising to
+  an unseen crossbar. A demanding performance unlocks her: in a single
+  run, collect **5 atomic cherries**, **4 marshmallow clouds**, take
+  **5 frog hits**, and finish on a score whose **last digit is 4**
+  (14, 84, 134…). Curtain up.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

@@ -70,8 +70,14 @@ const STORAGE_MAYO = 'mystic-badger.mayoUnlocked';
 const STORAGE_PERPBIRD = 'mystic-badger.perpbirdUnlocked';
 const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_FIR = 'mystic-badger.firUnlocked';
+const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
+// Margaret's strings: 5 cherries + 4 clouds + 5 frog hits in one run,
+// and a final score whose last digit is 4.
+const MARGARET_CHERRIES = 5;
+const MARGARET_CLOUDS = 4;
+const MARGARET_FROG_HITS = 5;
 const ALARM_TIME_BONUS = 20;        // the cottage alarm clock, once per run
 const APPLIANCE_RANGE = 2.4;
 const TUBE_CAVE_POINTS = 55.5;      // Upper Cottage Lane fare rebate
@@ -145,6 +151,7 @@ export class Game {
     this.perpbirdUnlocked = readStorage(STORAGE_PERPBIRD) === '1';
     this.marblellaUnlocked = readStorage(STORAGE_MARBLELLA) === '1';
     this.firUnlocked = readStorage(STORAGE_FIR) === '1';
+    this.margaretUnlocked = readStorage(STORAGE_MARGARET) === '1';
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -223,6 +230,10 @@ export class Game {
     this.tubeLakeClaimed = false;
     this.dellJumps = 0;
     this._inDell = false;
+    // Margaret's tally: cherries (+3), clouds (+5) and frog hits.
+    this.cherriesCollected = 0;
+    this.cloudsCollected = 0;
+    this.frogHits = 0;
     this.minigame = null;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -418,6 +429,10 @@ export class Game {
         }
       }
 
+      // Margaret keeps count of her cherries (+3) and clouds (+5).
+      if (item.value === 3) this.cherriesCollected += 1;
+      if (item.value === 5) this.cloudsCollected += 1;
+
       // The full set — one of every species in a single run — corrupts
       // the character loader in the best possible way.
       this.itemTypesCollected.add(item.value);
@@ -461,6 +476,7 @@ export class Game {
       if (dx * dx + dz * dz > reach * reach || Math.abs(dy) > 2.4) continue;
 
       this.health -= DAMAGE_PER_HIT;
+      this.frogHits += 1; // Margaret counts her bruises
       this.invulnTimer = INVULN_TIME;
       this.ui.setHealth(this.health);
       this.ui.flashDamage();
@@ -582,6 +598,7 @@ export class Game {
     if (name === 'perpbird') return this.perpbirdUnlocked;
     if (name === 'marblella') return this.marblellaUnlocked;
     if (name === 'fir') return this.firUnlocked;
+    if (name === 'margaret') return this.margaretUnlocked;
     return name === 'badger';
   }
 
@@ -600,7 +617,8 @@ export class Game {
       mayo: this.mayoUnlocked,
       perpbird: this.perpbirdUnlocked,
       marblella: this.marblellaUnlocked,
-      fir: this.firUnlocked
+      fir: this.firUnlocked,
+      margaret: this.margaretUnlocked
     };
   }
 
@@ -1187,6 +1205,21 @@ export class Game {
       writeStorage(STORAGE_MAGNUS, '1');
       newlyUnlockedNames.push('Magnus Carter');
     }
+    // Margaret: 5 cherries, 4 clouds, 5 frog hits, and a final score
+    // whose last digit is a 4 (14, 84, 134…). The puppet demands the
+    // full performance.
+    if (
+      !this.margaretUnlocked &&
+      this.cherriesCollected >= MARGARET_CHERRIES &&
+      this.cloudsCollected >= MARGARET_CLOUDS &&
+      this.frogHits >= MARGARET_FROG_HITS &&
+      Number.isInteger(this.points) &&
+      Math.abs(this.points % 10) === 4
+    ) {
+      this.margaretUnlocked = true;
+      writeStorage(STORAGE_MARGARET, '1');
+      newlyUnlockedNames.push('Margaret');
+    }
 
     this.ui.showGameOver({
       score: this.points,
@@ -1230,6 +1263,9 @@ export class Game {
     this.tubeLakeClaimed = false;
     this.dellJumps = 0;
     this._inDell = false;
+    this.cherriesCollected = 0;
+    this.cloudsCollected = 0;
+    this.frogHits = 0;
     this.renderer.domElement.classList.remove('mystic');
     this.world.resetRug();
     this.world.resetTrapdoor();

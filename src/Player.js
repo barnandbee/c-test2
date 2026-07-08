@@ -138,6 +138,7 @@ export class Player {
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
+    else if (this.character === 'margaret') this.root = this.buildMargaret();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2311,6 +2312,195 @@ export class Player {
     }
 
     this.legs = [];
+    return root;
+  }
+
+  /**
+   * Margaret — a classic wooden marionette: a jointed pine body with a
+   * painted face, buttons for eyes, a mop of string hair, and the four
+   * control strings rising to an unseen crossbar overhead. She trots
+   * with the loose-limbed clatter of a puppet finding her own feet.
+   */
+  buildMargaret() {
+    const root = new THREE.Group();
+    root.name = 'margaret';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const woodMat = track(createToonMaterial({
+      color: 0xc79a5e,
+      rim: { color: 0xffe7bd, strength: 0.3, threshold: 0.66 }
+    }));
+    const jointMat = track(createToonMaterial({ color: 0x8a6338 }));
+    const cheekMat = track(createToonMaterial({ color: 0xd8695a }));
+    const buttonMat = track(createToonMaterial({ color: 0x2a2320 }));
+    const threadMat = track(createToonMaterial({ color: 0xf2ede0 }));
+    const mouthMat = track(createToonMaterial({ color: 0x6a2f28 }));
+    const hairMat = track(createToonMaterial({ color: 0x9c5a2c }));
+    const stringMat = track(createToonMaterial({
+      color: 0xf6f0dc,
+      emissive: 0x30302a,
+      emissiveIntensity: 0.25
+    }));
+
+    // Everything above the legs hangs off bodyGroup for bob/squash/tilt.
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: a segmented pine block, waist joint pegged ---------------
+    const chestGeo = track(new THREE.BoxGeometry(0.5, 0.42, 0.32));
+    const chest = new THREE.Mesh(chestGeo, woodMat);
+    chest.position.y = 0.34;
+    chest.castShadow = true;
+    body.add(chest);
+    const pelvisGeo = track(new THREE.BoxGeometry(0.42, 0.24, 0.3));
+    const pelvis = new THREE.Mesh(pelvisGeo, woodMat);
+    pelvis.position.y = 0.05;
+    pelvis.castShadow = true;
+    body.add(pelvis);
+    const waistGeo = track(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 8));
+    waistGeo.rotateX(Math.PI / 2);
+    const waist = new THREE.Mesh(waistGeo, jointMat);
+    waist.position.y = 0.19;
+    body.add(waist);
+
+    // --- head: rounded block on a peg neck, with a painted face ----------
+    const headGroup = new THREE.Group();
+    headGroup.position.y = 0.62;
+    body.add(headGroup);
+    this.headGroup = headGroup;
+    const neckGeo = track(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 8));
+    const neck = new THREE.Mesh(neckGeo, jointMat);
+    neck.position.y = -0.06;
+    headGroup.add(neck);
+    const headGeo = track(new THREE.BoxGeometry(0.4, 0.4, 0.36));
+    const head = new THREE.Mesh(headGeo, woodMat);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // Button eyes: dark discs with a bright cross-stitch of thread.
+    const buttonGeo = track(new THREE.CylinderGeometry(0.07, 0.07, 0.025, 14));
+    buttonGeo.rotateX(Math.PI / 2);
+    const threadGeo = track(new THREE.BoxGeometry(0.09, 0.012, 0.01));
+    for (const side of [-1, 1]) {
+      const button = new THREE.Mesh(buttonGeo, buttonMat);
+      button.position.set(side * 0.1, 0.04, 0.19);
+      headGroup.add(button);
+      const t1 = new THREE.Mesh(threadGeo, threadMat);
+      t1.position.set(side * 0.1, 0.04, 0.205);
+      t1.rotation.z = Math.PI / 4;
+      headGroup.add(t1);
+      const t2 = new THREE.Mesh(threadGeo, threadMat);
+      t2.position.set(side * 0.1, 0.04, 0.205);
+      t2.rotation.z = -Math.PI / 4;
+      headGroup.add(t2);
+    }
+    // Rosy painted cheeks.
+    const cheekGeo = track(new THREE.CircleGeometry(0.045, 12));
+    for (const side of [-1, 1]) {
+      const cheek = new THREE.Mesh(cheekGeo, cheekMat);
+      cheek.position.set(side * 0.14, -0.07, 0.181);
+      headGroup.add(cheek);
+    }
+    // A cheerful painted smile (a torus arc).
+    const smileGeo = track(new THREE.TorusGeometry(0.07, 0.012, 6, 14, Math.PI));
+    const smile = new THREE.Mesh(smileGeo, mouthMat);
+    smile.position.set(0, -0.05, 0.185);
+    smile.rotation.z = Math.PI;
+    headGroup.add(smile);
+    // A little pointed wooden nose.
+    const noseGeo = track(new THREE.ConeGeometry(0.035, 0.1, 8));
+    noseGeo.rotateX(Math.PI / 2);
+    const nose = new THREE.Mesh(noseGeo, woodMat);
+    nose.position.set(0, 0, 0.22);
+    headGroup.add(nose);
+
+    // --- string hair: a mop of yarn strands, swaying as a mane -----------
+    const hair = new THREE.Group();
+    hair.position.y = 0.2;
+    headGroup.add(hair);
+    this.hairGroup = hair;
+    const strandGeo = track(new THREE.CylinderGeometry(0.012, 0.008, 0.34, 5));
+    strandGeo.translate(0, -0.17, 0);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      const rr = 0.12 + (i % 3) * 0.03;
+      const strand = new THREE.Mesh(strandGeo, hairMat);
+      strand.position.set(Math.cos(a) * rr, 0.02, Math.sin(a) * rr * 0.8);
+      strand.rotation.x = Math.sin(a) * 0.3;
+      strand.rotation.z = Math.cos(a) * 0.3;
+      hair.add(strand);
+    }
+
+    // --- jointed arms: peg shoulders, dangling forearms ------------------
+    const upperArmGeo = track(new THREE.BoxGeometry(0.09, 0.24, 0.09));
+    upperArmGeo.translate(0, -0.12, 0);
+    const foreArmGeo = track(new THREE.BoxGeometry(0.075, 0.22, 0.075));
+    foreArmGeo.translate(0, -0.11, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.055, 8, 6));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.28, 0.5, 0);
+      const upper = new THREE.Mesh(upperArmGeo, woodMat);
+      upper.castShadow = true;
+      pivot.add(upper);
+      const elbow = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 8, 6)), jointMat);
+      elbow.position.y = -0.24;
+      pivot.add(elbow);
+      const fore = new THREE.Mesh(foreArmGeo, woodMat);
+      fore.position.y = -0.24;
+      pivot.add(fore);
+      const hand = new THREE.Mesh(handGeo, woodMat);
+      hand.position.y = -0.47;
+      pivot.add(hand);
+      pivot.rotation.z = -side * 0.2;
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- jointed legs: peg hips, block shins, wooden clog feet -----------
+    const thighGeo = track(new THREE.BoxGeometry(0.1, 0.3, 0.1));
+    thighGeo.translate(0, -0.15, 0);
+    const shinGeo = track(new THREE.BoxGeometry(0.085, 0.28, 0.085));
+    shinGeo.translate(0, -0.14, 0);
+    const clogGeo = track(new THREE.BoxGeometry(0.12, 0.08, 0.24));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, -0.05, 0);
+      const thigh = new THREE.Mesh(thighGeo, woodMat);
+      thigh.castShadow = true;
+      pivot.add(thigh);
+      const knee = new THREE.Mesh(track(new THREE.SphereGeometry(0.055, 8, 6)), jointMat);
+      knee.position.y = -0.3;
+      pivot.add(knee);
+      const shin = new THREE.Mesh(shinGeo, woodMat);
+      shin.position.y = -0.3;
+      pivot.add(shin);
+      const clog = new THREE.Mesh(clogGeo, jointMat);
+      clog.position.set(0, -0.6, 0.05);
+      pivot.add(clog);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // --- the control strings rising to an unseen crossbar overhead -------
+    const strGeo = track(new THREE.CylinderGeometry(0.004, 0.004, 2.0, 4));
+    strGeo.translate(0, 1.0, 0);
+    for (const [sx, sy, sz] of [[-0.28, 0.5, 0], [0.28, 0.5, 0], [0, 1.0, 0], [0.13, -0.05, 0.1]]) {
+      const str = new THREE.Mesh(strGeo, stringMat);
+      str.position.set(sx, sy, sz);
+      str.rotation.z = -sx * 0.12;
+      body.add(str);
+    }
+
     return root;
   }
 

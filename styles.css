@@ -1188,6 +1188,47 @@ body {
   transform: translateX(-50%);
 }
 
+/* Margaret: a wooden puppet head — string hair, button eyes, rosy cheeks. */
+.margaret-icon {
+  position: relative;
+  border-radius: 8px;
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 35% 46%, #2a2320 0 3px, transparent 3.5px),
+    radial-gradient(circle at 65% 46%, #2a2320 0 3px, transparent 3.5px),
+    radial-gradient(circle at 30% 62%, rgba(216, 105, 90, 0.85) 0 3px, transparent 4px),
+    radial-gradient(circle at 70% 62%, rgba(216, 105, 90, 0.85) 0 3px, transparent 4px),
+    linear-gradient(180deg, #d3a86a, #c79a5e);
+  box-shadow: inset -2px -3px 6px rgba(120, 80, 40, 0.35);
+  overflow: hidden;
+}
+
+.margaret-icon::before {
+  /* string-hair fringe across the top */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background:
+    repeating-linear-gradient(90deg, #9c5a2c 0 2px, transparent 2px 5px);
+}
+
+.margaret-icon::after {
+  /* painted smile */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 68%;
+  width: 14px;
+  height: 8px;
+  border: 2px solid #6a2f28;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  transform: translateX(-50%);
+}
+
 /* Marblella: a glass marble with a cat's-eye twist and a window glint. */
 .marblella-icon {
   border-radius: 50%;
