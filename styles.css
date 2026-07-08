@@ -502,7 +502,8 @@ body {
   border-radius: 18px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 15;
+  /* Above the touch look/move zones (15), or fingers can't reach it. */
+  z-index: 25;
 }
 
 #travel-title {
