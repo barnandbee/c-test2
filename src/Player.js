@@ -2473,9 +2473,16 @@ export class Player {
     const pos = this.position;
     const R = TUNING.radius;
     const colliders = this.world.colliders;
+    // Colliders are infinite below their top, which is right for trees
+    // and rocks — but down at station depth the surface world (notably
+    // the cottage's walls, sitting directly overhead) must not reach.
+    // Nothing exists this deep except the station, so the cutoff is safe.
+    const st = this.world.station;
+    const underground = st && pos.y < st.floorY + 6.5;
     for (let i = 0; i < colliders.length; i++) {
       const c = colliders[i];
       if (pos.y > c.top) continue;
+      if (underground && c.top > st.floorY + 7) continue;
       const dx = pos.x - c.x;
       const dz = pos.z - c.z;
       const minDist = c.radius + R;

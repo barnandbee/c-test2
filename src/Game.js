@@ -493,7 +493,11 @@ export class Game {
   /** The temporal bargain: touch the tower, gain seconds, lose the tower. */
   handleClockTower() {
     const tower = this.clockTower;
-    if (!tower || !tower.tryEnter(this.player.position)) return;
+    if (!tower) return;
+    // Surface business only — walking beneath it at station depth is
+    // not a visit.
+    if (Math.abs(this.player.position.y - tower.position.y) > 5) return;
+    if (!tower.tryEnter(this.player.position)) return;
 
     this.timeLeft += TOWER_TIME_BONUS;
     this.towerVisits += 1;
@@ -628,7 +632,8 @@ export class Game {
     if (triple && this.rocket) {
       const dx = this.player.position.x - this.rocket.position.x;
       const dz = this.player.position.z - this.rocket.position.z;
-      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+      const dy = this.player.position.y - this.rocket.position.y;
+      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE && Math.abs(dy) < 4) {
         this.player.vehicle = this.rocket;
         this.rocket.rider = this.player;
         // Ignition: a proper kick off the pad.
@@ -645,11 +650,13 @@ export class Game {
 
     if (!double) return;
 
-    // Board whichever double-tap vehicle is in reach.
+    // Board whichever double-tap vehicle is in reach. (In reach means in
+    // reach vertically too — no boarding through 14m of bedrock.)
     for (const vehicle of [this.hovercraft, this.balloon]) {
       if (!vehicle) continue;
       const dx = this.player.position.x - vehicle.position.x;
       const dz = this.player.position.z - vehicle.position.z;
+      if (Math.abs(this.player.position.y - vehicle.position.y) > 3.5) continue;
       if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
         // The balloon has a strict payload limit, and Marblella is a
         // solid glass sphere.
@@ -714,7 +721,8 @@ export class Game {
     if (this.rocket) {
       const dx = this.player.position.x - this.rocket.position.x;
       const dz = this.player.position.z - this.rocket.position.z;
-      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE) {
+      const dy = this.player.position.y - this.rocket.position.y;
+      if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE && Math.abs(dy) < 4) {
         this.ui.showTimeToast('TRIPLE-TAP TO BOARD THE ROCKET');
         return;
       }
@@ -725,7 +733,8 @@ export class Game {
     if (tree && this.launchpad && this.launchpad.state === 'hidden') {
       const dx = this.player.position.x - tree.x;
       const dz = this.player.position.z - tree.z;
-      if (dx * dx + dz * dz < 4.5 * 4.5) {
+      const dy = this.player.position.y - tree.y;
+      if (dx * dx + dz * dz < 4.5 * 4.5 && Math.abs(dy) < 6) {
         this.launchpad.reveal();
         this.ui.showTimeToast('A LAUNCHPAD EMERGES!');
         this.particles.spawnBurst(
@@ -848,7 +857,7 @@ export class Game {
       this.ui.showTimeToast('WAY OUT — BACK UP THE STAIRS');
       return true;
     }
-    if (near(st.ticket, 2.2)) {
+    if (near(st.ticket, 3.2)) {
       this.ui.showTimeToast('OUT OF ORDER. IT ONLY EVER TOOK EXACT CHANGE.');
       return true;
     }
