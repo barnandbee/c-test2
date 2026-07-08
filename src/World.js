@@ -2062,6 +2062,25 @@ export class World {
     dome.position.set(cx, y, cz);
     copse.add(dome);
 
+    // Containment: a solid, unbroken ring of tall collider cylinders
+    // buried in the wall, just inside the dome's footprint. Collider
+    // push works both ways — those inside are held in, those outside are
+    // held out — and the ring rises far above any possible jump, so the
+    // ONLY way across is the Mystic Line. (The wall terrain alone was a
+    // mere slide whose crest poked above the shallow dome, letting a
+    // running start crest it and escape over the top.)
+    const RING_R = this.dellRadius + 1.5;
+    const RING_N = 44;
+    for (let i = 0; i < RING_N; i++) {
+      const a = (i / RING_N) * Math.PI * 2;
+      this.colliders.push({
+        x: cx + Math.cos(a) * RING_R,
+        z: cz + Math.sin(a) * RING_R,
+        radius: 1.3,
+        top: y + 16
+      });
+    }
+
     this.scene.add(copse);
   }
 
