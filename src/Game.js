@@ -29,6 +29,7 @@ import {
   disposeEntityAssets
 } from './Entities.js';
 import { PuttingGame } from './PuttingGame.js';
+import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
 
@@ -72,6 +73,7 @@ const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_FIR = 'mystic-badger.firUnlocked';
 const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
+const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
 // Margaret's strings: 5 cherries + 4 clouds + 5 frog hits in one run,
 // and a final score whose last digit is 4.
@@ -152,6 +154,9 @@ export class Game {
     this.marblellaUnlocked = readStorage(STORAGE_MARBLELLA) === '1';
     this.firUnlocked = readStorage(STORAGE_FIR) === '1';
     this.margaretUnlocked = readStorage(STORAGE_MARGARET) === '1';
+    this.achievements = new Set(
+      (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
+    );
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -256,6 +261,10 @@ export class Game {
     this.ui.bindTravel(
       (dest) => this.travelTo(dest),
       () => this.closeTravel()
+    );
+    this.ui.bindAchievements(
+      () => this.ui.showAchievements(this.getAchievementsView()),
+      () => this.ui.hideAchievements()
     );
 
     // --- welcome menu -------------------------------------------------------
@@ -433,6 +442,10 @@ export class Game {
       if (item.value === 3) this.cherriesCollected += 1;
       if (item.value === 5) this.cloudsCollected += 1;
 
+      // Trophies for collecting the sky's bounty.
+      if (item.value === STAR_VALUE) this.awardAchievement('star');
+      if (item.value === 5) this.awardAchievement('cloud');
+
       // The full set — one of every species in a single run — corrupts
       // the character loader in the best possible way.
       this.itemTypesCollected.add(item.value);
@@ -546,6 +559,8 @@ export class Game {
     this.timeLeft += TOWER_TIME_BONUS;
     this.towerVisits += 1;
     this.ui.setTimer(this.timeLeft);
+    if (this.towerVisits >= 3) this.awardAchievement('tower3');
+    if (this.towerVisits >= 10) this.awardAchievement('tower10');
 
     // Banking a full extra minute in one run impresses Mr Boffington.
     if (this.towerVisits >= BOFFINGTON_TOWER_VISITS && !this.boffingtonUnlocked) {
@@ -619,6 +634,75 @@ export class Game {
       marblella: this.marblellaUnlocked,
       fir: this.firUnlocked,
       margaret: this.margaretUnlocked
+    };
+  }
+
+  /* ================================================================ */
+  /*  Achievements                                                    */
+  /* ================================================================ */
+
+  /** How many heroes are unlocked (badger is a given, not a trophy). */
+  unlockedCharacterCount() {
+    return Object.values(this.getUnlockedMap()).filter(Boolean).length;
+  }
+
+  /** Grant a trophy once, persist it, and announce it. */
+  awardAchievement(id) {
+    if (this.achievements.has(id)) return;
+    this.achievements.add(id);
+    writeStorage(STORAGE_ACHIEVEMENTS, [...this.achievements].join(','));
+    const def = TROPHIES.find((t) => t.id === id);
+    if (def) this.ui.showTimeToast(`🏆 ${def.title.toUpperCase()}`);
+  }
+
+  /**
+   * Continuously-checkable trophies — score milestones, decimal scores,
+   * unlock counts and Marblella's lake-bed dive. Cheap; called each
+   * active frame and again at the bell.
+   */
+  checkAchievements() {
+    const p = this.points;
+    if (p >= 50) this.awardAchievement('score50');
+    if (p >= 100) this.awardAchievement('score100');
+    if (p >= 200) this.awardAchievement('score200');
+    if (p >= 300) this.awardAchievement('score300');
+    if (p >= 400) this.awardAchievement('score400');
+    if (p >= 500) this.awardAchievement('score500');
+    if (!Number.isInteger(p)) this.awardAchievement('decimal');
+
+    const unlocked = this.unlockedCharacterCount();
+    if (unlocked >= 1) this.awardAchievement('unlock1');
+    if (unlocked >= 5) this.awardAchievement('unlock5');
+    if (unlocked >= 10) this.awardAchievement('unlock10');
+
+    // Deep Diver: Marblella at the bottom of the lake.
+    if (
+      this.characterName === 'marblella' &&
+      this.world.isNearLake(this.player.position.x, this.player.position.z) &&
+      this.player.position.y < this.world.waterLevel - 3
+    ) {
+      this.awardAchievement('lakebed');
+    }
+  }
+
+  /** The data the achievements viewer renders. */
+  getAchievementsView() {
+    const trophies = TROPHIES.map((t) => ({
+      medal: t.medal,
+      title: t.title,
+      desc: t.desc,
+      earned: this.achievements.has(t.id)
+    }));
+    const characters = CHARACTER_UNLOCKS.map((c) => ({
+      name: c.name,
+      how: c.how,
+      unlocked: this.isCharacterAllowed(c.key)
+    }));
+    return {
+      earnedCount: trophies.filter((t) => t.earned).length,
+      total: trophies.length,
+      trophies,
+      characters
     };
   }
 
@@ -867,6 +951,7 @@ export class Game {
         this.player.position.set(entry.x, entry.y + 0.2, entry.z);
         this.player.velocity.set(0, 0, 0);
         this.cameraRig.snapTo(this.player.position);
+        this.awardAchievement('tube');
         this.ui.showTimeToast('DOWN, DOWN… MIND THE GAP!');
       } else {
         this.ui.showTimeToast('LOCKED. IT HUMS: “COME BACK PERFECTLY SQUARE.”');
@@ -1108,6 +1193,7 @@ export class Game {
     this.minigame = null;
     if (success) {
       const holeInOne = strokes === 1;
+      if (holeInOne) this.awardAchievement('holeinone');
       const reward = holeInOne ? 33 : 18;
       this.points += reward;
       this.ui.setPoints(this.points);
@@ -1152,6 +1238,8 @@ export class Game {
     this.isGameOver = true;
     this.closeTravel();
     if (document.pointerLockElement) document.exitPointerLock();
+
+    if (reason === 'health') this.awardAchievement('rip');
 
     // Persist the high score and any character unlocks.
     const isNewHigh = this.points > this.highScore;
@@ -1220,6 +1308,10 @@ export class Game {
       writeStorage(STORAGE_MARGARET, '1');
       newlyUnlockedNames.push('Margaret');
     }
+
+    // Final-score trophies + any unlock-count milestones from this run's
+    // end-of-bell unlocks (score/decimal/50…500, unlock 1/5/10).
+    this.checkAchievements();
 
     this.ui.showGameOver({
       score: this.points,
@@ -1367,6 +1459,7 @@ export class Game {
       this.handleRedOctober();
       this.maybeSpawnBalloon();
       this.manageRocket();
+      this.checkAchievements();
 
       // Whisper about the putting challenge when its stars align. The
       // prompt re-arms only once the player has genuinely left the green

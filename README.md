@@ -196,6 +196,16 @@ import map — no npm install, no bundler.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.
+- **Achievements** — the game-over screen (which now scrolls, so the
+  full roster and buttons are always reachable) carries an
+  **Achievements** button. It opens a viewer listing every hero and the
+  deed that unlocks them, plus a wall of persistent trophies: score
+  milestones (50 / 100 / 200 / 300 / 400 / 500), a decimal score,
+  three and ten clock-tower visits in a run, a Puttmost hole-in-one,
+  reaching the tube station, diving to the lake bed as Marblella,
+  collecting a star or a cloud, letting your health hit zero, and
+  unlocking 1 / 5 / 10 characters. Earned trophies are saved locally
+  and announced with a 🏆 toast the moment you earn them.
 
 ## Architecture
 
@@ -217,6 +227,7 @@ src/
   Shaders.js        toon/rim/sway/pulse material patches, exponential
                     height fog, sky gradient, all particle GLSL
   Input.js          keyboard/mouse with pointer lock + jump buffering
+  Achievements.js   trophy + character-unlock definitions for the viewer
   UI.js             DOM HUD bindings
   utils/            seeded simplex noise, math helpers
 vendor/

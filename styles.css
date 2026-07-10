@@ -733,6 +733,14 @@ body {
   }
 }
 
+/* Compact the game-over card on small / short screens so the roster and
+   buttons stay reachable (the overlay scrolls, but less scrolling is nicer). */
+@media (max-width: 640px), (max-height: 720px) {
+  #game-over-card {
+    padding: 28px 22px;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Damage flash                                                       */
 /* ------------------------------------------------------------------ */
@@ -768,8 +776,12 @@ body {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* margin:auto on the card centres it when it fits AND lets the overlay
+     scroll (reaching the very top) when the content is taller than the
+     viewport — plain align/justify-center would clip the overflow. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 14px;
   z-index: 30;
   background: rgba(10, 6, 24, 0.55);
   backdrop-filter: blur(6px);
@@ -777,6 +789,10 @@ body {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.6s ease, visibility 0.6s;
+}
+
+#game-over-card {
+  margin: auto;
 }
 
 #game-over.visible {
@@ -855,6 +871,146 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Achievements                                                       */
+/* ------------------------------------------------------------------ */
+
+#achievements-btn,
+.ghost-btn {
+  font-family: var(--font-stack);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: rgba(243, 239, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 9px 22px;
+  margin: 0 0 18px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#achievements-btn:hover,
+.ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 212, 79, 0.5);
+}
+
+#achievements-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 14px;
+  z-index: 36;
+  background: rgba(8, 5, 20, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#achievements-card {
+  position: relative;
+  margin: auto;
+  width: min(760px, 100%);
+  text-align: center;
+  padding: 34px 30px 40px;
+  background: linear-gradient(160deg, rgba(38, 26, 74, 0.95), rgba(18, 12, 40, 0.96));
+  border: 1px solid rgba(255, 212, 79, 0.3);
+  border-radius: 22px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+#achievements-card h2 {
+  font-family: var(--font-logo);
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+#ach-progress {
+  font-size: 13px;
+  color: rgba(243, 239, 255, 0.6);
+  margin-bottom: 22px;
+}
+
+.ach-section-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(243, 239, 255, 0.5);
+  margin: 22px 0 12px;
+  text-align: left;
+}
+
+#ach-trophies,
+#ach-chars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.ach-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ach-item.earned {
+  background: rgba(255, 212, 79, 0.1);
+  border-color: rgba(255, 212, 79, 0.35);
+}
+
+.ach-item.locked {
+  opacity: 0.55;
+}
+
+.ach-medal {
+  flex: 0 0 auto;
+  font-size: 20px;
+  line-height: 1.2;
+  filter: grayscale(1);
+}
+
+.ach-item.earned .ach-medal {
+  filter: none;
+}
+
+.ach-text {
+  min-width: 0;
+}
+
+.ach-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hud-text);
+}
+
+.ach-desc {
+  font-size: 12px;
+  color: rgba(243, 239, 255, 0.6);
+  margin-top: 2px;
+}
+
+#ach-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: rgba(243, 239, 255, 0.7);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-stack);
 }
 
 /* ------------------------------------------------------------------ */

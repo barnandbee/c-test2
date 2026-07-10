@@ -1,0 +1,48 @@
+/**
+ * Achievements.js — static definitions for the achievements viewer:
+ * the trophy roster and the per-character unlock conditions. The earned
+ * state and the awarding logic live in Game.js; this module only
+ * describes what exists and how each thing reads on screen.
+ */
+
+/** Persistent trophies, in display order. `medal` is an emoji. */
+export const TROPHIES = [
+  { id: 'score50', medal: '🥉', title: 'Half Century', desc: 'Score 50 or more in a run.' },
+  { id: 'score100', medal: '🥈', title: 'Ton Up', desc: 'Score 100 or more in a run.' },
+  { id: 'score200', medal: '🏅', title: 'Double Ton', desc: 'Score 200 or more in a run.' },
+  { id: 'score300', medal: '🥇', title: 'Triple Ton', desc: 'Score 300 or more in a run.' },
+  { id: 'score400', medal: '🏆', title: 'Quadruple Ton', desc: 'Score 400 or more in a run.' },
+  { id: 'score500', medal: '👑', title: 'Quintuple Ton', desc: 'Score 500 or more in a run.' },
+  { id: 'decimal', medal: '🔢', title: 'Irrational', desc: 'Score a decimal (fractional) score.' },
+  { id: 'tower3', medal: '⏰', title: 'Timekeeper', desc: 'Visit the clock tower 3 times in one run.' },
+  { id: 'tower10', medal: '🕰️', title: 'Horologist', desc: 'Visit the clock tower 10 times in one run.' },
+  { id: 'holeinone', medal: '⛳', title: 'Hole in One', desc: 'Sink a hole-in-one at Puttmost Respect.' },
+  { id: 'tube', medal: '🚇', title: 'Mind the Gap', desc: 'Ride down to the Cottage Lane tube station.' },
+  { id: 'lakebed', medal: '🫧', title: 'Deep Diver', desc: 'Reach the bottom of the lake (Marblella only).' },
+  { id: 'star', medal: '⭐', title: 'Reach for the Stars', desc: 'Collect a star.' },
+  { id: 'cloud', medal: '☁️', title: 'Up in the Clouds', desc: 'Collect a marshmallow cloud.' },
+  { id: 'rip', medal: '💀', title: 'R.I.P.', desc: 'Let your health reach zero.' },
+  { id: 'unlock1', medal: '🎭', title: 'Recruiter', desc: 'Unlock a character.' },
+  { id: 'unlock5', medal: '🎪', title: 'Talent Scout', desc: 'Unlock 5 characters.' },
+  { id: 'unlock10', medal: '🌟', title: 'Impresario', desc: 'Unlock 10 characters.' }
+];
+
+/** Every hero and the deed that earns them, in roster order. */
+export const CHARACTER_UNLOCKS = [
+  { key: 'badger', name: 'Badger', how: 'Your starting hero — always available.' },
+  { key: 'badgerette', name: 'Badgerette', how: 'Finish a run with more than 30 points.' },
+  { key: 'hughes', name: '‘Crisp Packet’ Hughes', how: 'Survive the full three minutes without taking a single hit.' },
+  { key: 'boffington', name: 'Mr Finn Boffington', how: 'Bank 60 bonus seconds (six clock-tower visits) in one run.' },
+  { key: 'william', name: 'William the Conqueror', how: 'Grab a Magna Carta.' },
+  { key: 'edith', name: 'Edith McCombe', how: 'Take the hot air balloon up during a run.' },
+  { key: 'rhombus', name: 'Rhombus the Hat', how: 'Finish on a score of exactly 90, 180, 270 or 360.' },
+  { key: 'ginsberg', name: 'Alien Ginsberg', how: 'Collect five stars in one run.' },
+  { key: 'magnus', name: 'Magnus Carter', how: 'Take four cart hits, survive the full run, and finish with 50+.' },
+  { key: 'boddington', name: 'Mr Flynn Boddington', how: 'As Magnus, get run over by the cart twice in one run.' },
+  { key: 'error42', name: 'Error #42', how: 'Collect one of every species in a run: cone, cherry, cloud, egg, star, Magna Carta.' },
+  { key: 'mayo', name: 'Mayonnaise', how: 'Finish a run with 300+ points.' },
+  { key: 'perpbird', name: 'Perpendicular Bird', how: 'As Mayonnaise, double-tap the BLT in the cave.' },
+  { key: 'marblella', name: 'Marblella', how: 'Touch all four cottage fixtures (clock, stove, fridge, trap door) in one run.' },
+  { key: 'fir', name: 'President Fir Tree', how: 'Jump three times inside the sealed Mystic Forest.' },
+  { key: 'margaret', name: 'Margaret', how: 'In one run: 5 cherries, 4 clouds, 5 frog hits, and a final score ending in 4.' }
+];

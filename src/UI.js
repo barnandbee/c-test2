@@ -34,6 +34,12 @@ export class UI {
     this.puttStrokes = document.getElementById('putt-strokes');
     this.puttFill = document.getElementById('putt-fill');
     this.travelPanel = document.getElementById('travel-panel');
+    this.achievementsBtn = document.getElementById('achievements-btn');
+    this.achievementsPanel = document.getElementById('achievements-panel');
+    this.achClose = document.getElementById('ach-close');
+    this.achProgress = document.getElementById('ach-progress');
+    this.achTrophies = document.getElementById('ach-trophies');
+    this.achChars = document.getElementById('ach-chars');
     this.menu = document.getElementById('menu');
     this.menuRoster = document.getElementById('menu-roster');
     this.menuBestRow = document.getElementById('menu-best-row');
@@ -197,6 +203,66 @@ export class UI {
       .addEventListener('click', onClose);
   }
 
+  /* ---------------- achievements viewer ---------------- */
+
+  bindAchievements(onOpen, onClose) {
+    if (this.achievementsBtn) this.achievementsBtn.addEventListener('click', onOpen);
+    if (this.achClose) this.achClose.addEventListener('click', onClose);
+    // Tapping the dimmed backdrop (but not the card) also closes.
+    if (this.achievementsPanel) {
+      this.achievementsPanel.addEventListener('click', (e) => {
+        if (e.target === this.achievementsPanel) onClose();
+      });
+    }
+  }
+
+  /** view: { earnedCount, total, trophies:[{medal,title,desc,earned}],
+   *          characters:[{name,how,unlocked}] } */
+  showAchievements(view) {
+    if (!this.achievementsPanel) return;
+    this.achProgress.textContent = `${view.earnedCount} / ${view.total} trophies earned`;
+
+    this.achTrophies.innerHTML = '';
+    for (const t of view.trophies) {
+      this.achTrophies.appendChild(
+        this._achItem(t.earned ? t.medal : '🔒', t.title, t.desc, t.earned)
+      );
+    }
+
+    this.achChars.innerHTML = '';
+    for (const c of view.characters) {
+      this.achChars.appendChild(
+        this._achItem(c.unlocked ? '✅' : '🔒', c.name, c.how, c.unlocked)
+      );
+    }
+
+    this.achievementsPanel.classList.remove('hidden');
+  }
+
+  hideAchievements() {
+    if (this.achievementsPanel) this.achievementsPanel.classList.add('hidden');
+  }
+
+  /** Build one achievement/character row. */
+  _achItem(medal, title, desc, earned) {
+    const item = document.createElement('div');
+    item.className = `ach-item ${earned ? 'earned' : 'locked'}`;
+    const m = document.createElement('span');
+    m.className = 'ach-medal';
+    m.textContent = medal;
+    const text = document.createElement('div');
+    text.className = 'ach-text';
+    const tt = document.createElement('div');
+    tt.className = 'ach-title';
+    tt.textContent = title;
+    const dd = document.createElement('div');
+    dd.className = 'ach-desc';
+    dd.textContent = desc;
+    text.append(tt, dd);
+    item.append(m, text);
+    return item;
+  }
+
   /* ---------------- welcome menu ---------------- */
 
   showMenu() {
@@ -219,6 +285,7 @@ export class UI {
 
   hideGameOver() {
     this.gameOver.classList.remove('visible');
+    this.hideAchievements();
   }
 
   /** The character picked on the game-over screen (null = untouched). */
