@@ -140,6 +140,31 @@ export class World {
     this.dellLevel = this.getHeight(this.dellX, this.dellZ);
     this.dellRadius = 9; // setting this arms the carve in getHeight()
 
+    // --- the vegetable patch: Turnip Scart's grazing grounds --------------
+    // Purely decorative (no terrain carve), so a gentle-ground search that
+    // stays clear of the other landmarks is all it needs.
+    this.vegPatchRadius = 4;
+    let vegBest = null;
+    for (const [a, r] of [[0.9, 56], [1.15, 60], [0.55, 52], [1.4, 58], [0.3, 50], [1.7, 54]]) {
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const near =
+        Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ) < this.lakeRadius + 8 ||
+        Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 8 ||
+        Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 8 ||
+        Math.hypot(x - this.caveX, z - this.caveZ) < 12 ||
+        Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 10;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!vegBest || grad < vegBest.grad) vegBest = { x, z, grad };
+      if (vegBest.grad < 0.28) break;
+    }
+    this.vegPatchX = vegBest.x;
+    this.vegPatchZ = vegBest.z;
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -162,6 +187,7 @@ export class World {
     this._buildStation();
     this._buildCopse();
     this._buildTubeSigns();
+    this._buildVegPatch();
     this._buildCoral();
   }
 
@@ -321,6 +347,8 @@ export class World {
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 1.5) continue;
       // …or inside (or on the wall of) the hidden dell.
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 5) continue;
+      // …or on Turnip Scart's vegetable patch.
+      if (this.vegPatchRadius && Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 2) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -721,6 +749,7 @@ export class World {
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
+      if (Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 3) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -2183,6 +2212,137 @@ export class World {
   }
 
   /* ================================================================ */
+  /*  The vegetable patch                                             */
+  /* ================================================================ */
+
+  /**
+   * A little tilled plot — dark soil rows studded with cabbages, carrot
+   * tops and turnip crowns, ringed by a low picket fence. Turnip Scart
+   * the goat grazes here (the goat itself is spawned by Game).
+   */
+  _buildVegPatch() {
+    const cx = this.vegPatchX;
+    const cz = this.vegPatchZ;
+    this.vegPatchPos = new THREE.Vector3(cx, this.getHeight(cx, cz), cz);
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const soilMat = track(createToonMaterial({ color: 0x4a3626 }));
+    const leafMat = track(createToonMaterial({ color: 0x4e8a3c, rim: { color: 0xbfeaa0, strength: 0.35, threshold: 0.62 } }));
+    const cabbageMat = track(createToonMaterial({ color: 0x8ab86a }));
+    const carrotMat = track(createToonMaterial({ color: 0xe07a2c }));
+    const turnipMat = track(createToonMaterial({ color: 0xe6ddec }));
+    const turnipTopMat = track(createToonMaterial({ color: 0x9c5aa0 }));
+    const fenceMat = track(createToonMaterial({ color: 0xb59a6a }));
+
+    const patch = new THREE.Group();
+    this.vegPatchMeshes = patch;
+
+    const R = this.vegPatchRadius;
+    // Soil rows: flat dark ridges that follow the ground.
+    const rowGeo = track(new THREE.BoxGeometry(R * 1.7, 0.12, 0.5));
+    for (let i = -3; i <= 3; i++) {
+      const rz = cz + i * 0.9;
+      const rx = cx;
+      const row = new THREE.Mesh(rowGeo, soilMat);
+      row.position.set(rx, this.getHeight(rx, rz) + 0.06, rz);
+      row.receiveShadow = true;
+      patch.add(row);
+    }
+
+    // A deterministic scatter of vegetables across the rows.
+    let seed = 1337;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    for (let i = 0; i < 26; i++) {
+      const vx = cx + (rand() - 0.5) * R * 1.5;
+      const vz = cz + (rand() - 0.5) * R * 1.5;
+      if (Math.hypot(vx - cx, vz - cz) > R - 0.4) continue;
+      const gy = this.getHeight(vx, vz);
+      const kind = i % 3;
+      if (kind === 0) {
+        // Cabbage: a leafy ball.
+        const cab = new THREE.Mesh(track(new THREE.SphereGeometry(0.16, 10, 8)), cabbageMat);
+        cab.position.set(vx, gy + 0.13, vz);
+        cab.scale.y = 0.8;
+        cab.castShadow = true;
+        patch.add(cab);
+        for (let l = 0; l < 4; l++) {
+          const a = (l / 4) * Math.PI * 2;
+          const leaf = new THREE.Mesh(track(new THREE.ConeGeometry(0.09, 0.18, 5)), leafMat);
+          leaf.position.set(vx + Math.cos(a) * 0.13, gy + 0.06, vz + Math.sin(a) * 0.13);
+          leaf.rotation.set(Math.PI / 2.4, 0, a);
+          patch.add(leaf);
+        }
+      } else if (kind === 1) {
+        // Carrot: green frond with a hint of orange root.
+        for (let l = 0; l < 3; l++) {
+          const frond = new THREE.Mesh(track(new THREE.ConeGeometry(0.03, 0.28, 5)), leafMat);
+          frond.position.set(vx + (l - 1) * 0.04, gy + 0.15, vz);
+          frond.rotation.z = (l - 1) * 0.3;
+          patch.add(frond);
+        }
+        const root = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.14, 6)), carrotMat);
+        root.position.set(vx, gy + 0.02, vz);
+        root.rotation.x = Math.PI;
+        patch.add(root);
+      } else {
+        // Turnip: a pale crown poking out of the soil with a purple top.
+        const bulb = new THREE.Mesh(track(new THREE.SphereGeometry(0.11, 10, 8)), turnipMat);
+        bulb.position.set(vx, gy + 0.05, vz);
+        bulb.castShadow = true;
+        patch.add(bulb);
+        const cap = new THREE.Mesh(track(new THREE.SphereGeometry(0.11, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2)), turnipTopMat);
+        cap.position.set(vx, gy + 0.09, vz);
+        patch.add(cap);
+        const sprout = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.16, 5)), leafMat);
+        sprout.position.set(vx, gy + 0.16, vz);
+        patch.add(sprout);
+      }
+    }
+
+    // A low picket fence ringing the plot: pointed slats close together,
+    // with a gap for the gate. Two rails thread through them.
+    const picketGeo = track(new THREE.BoxGeometry(0.14, 0.44, 0.045));
+    const capGeo = track(new THREE.ConeGeometry(0.1, 0.12, 4));
+    const pickets = 46;
+    const fenceR = R + 0.3;
+    for (let i = 0; i < pickets; i++) {
+      const a = (i / pickets) * Math.PI * 2;
+      if (a > 0.15 && a < 0.95) continue; // the gate gap
+      const px = cx + Math.cos(a) * fenceR;
+      const pz = cz + Math.sin(a) * fenceR;
+      const gy = this.getHeight(px, pz);
+      const picket = new THREE.Mesh(picketGeo, fenceMat);
+      picket.position.set(px, gy + 0.22, pz);
+      picket.rotation.y = a + Math.PI / 2; // face tangent to the ring
+      picket.castShadow = true;
+      patch.add(picket);
+      const cap = new THREE.Mesh(capGeo, fenceMat);
+      cap.position.set(px, gy + 0.46, pz);
+      cap.rotation.y = Math.PI / 4;
+      patch.add(cap);
+      // A soft collider every few pickets so the player can't walk through.
+      if (i % 3 === 0) this.colliders.push({ x: px, z: pz, radius: 0.2, top: gy + 0.5 });
+    }
+    // Two horizontal rails threaded through the pickets.
+    const railGeo = track(new THREE.TorusGeometry(fenceR, 0.025, 6, 40, Math.PI * 2 - 0.85));
+    for (const ry of [0.14, 0.32]) {
+      const rail = new THREE.Mesh(railGeo, fenceMat);
+      rail.position.set(cx, this.getHeight(cx, cz) + ry, cz);
+      rail.rotation.x = Math.PI / 2;
+      rail.rotation.z = 0.95; // rotate the arc gap to line up with the gate
+      patch.add(rail);
+    }
+
+    this.scene.add(patch);
+  }
+
+  /* ================================================================ */
   /*  Coral                                                           */
   /* ================================================================ */
 
@@ -2264,6 +2424,7 @@ export class World {
     if (this.cottageMeshes) this.scene.remove(this.cottageMeshes);
     if (this.stationMeshes) this.scene.remove(this.stationMeshes);
     if (this.copseMeshes) this.scene.remove(this.copseMeshes);
+    if (this.vegPatchMeshes) this.scene.remove(this.vegPatchMeshes);
     if (this.tubeSigns) {
       for (const key of Object.keys(this.tubeSigns)) {
         if (this.tubeSigns[key]) this.scene.remove(this.tubeSigns[key]);

@@ -26,6 +26,7 @@ import {
   Star,
   Launchpad,
   Rocket,
+  Goat,
   disposeEntityAssets
 } from './Entities.js';
 import { PuttingGame } from './PuttingGame.js';
@@ -72,6 +73,7 @@ const STORAGE_PERPBIRD = 'mystic-badger.perpbirdUnlocked';
 const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_FIR = 'mystic-badger.firUnlocked';
 const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
+const STORAGE_JULIE = 'mystic-badger.julieUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
@@ -154,6 +156,7 @@ export class Game {
     this.marblellaUnlocked = readStorage(STORAGE_MARBLELLA) === '1';
     this.firUnlocked = readStorage(STORAGE_FIR) === '1';
     this.margaretUnlocked = readStorage(STORAGE_MARGARET) === '1';
+    this.julieUnlocked = readStorage(STORAGE_JULIE) === '1';
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -239,6 +242,8 @@ export class Game {
     this.cherriesCollected = 0;
     this.cloudsCollected = 0;
     this.frogHits = 0;
+    // Julie: the vehicle kinds dismounted from this run.
+    this.vehiclesDismounted = new Set();
     this.minigame = null;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -252,6 +257,7 @@ export class Game {
     this.balloon = null;
     this.launchpad = null;
     this.rocket = null;
+    this.goat = null;
     this.spawnEntities();
 
     this.ui.setHealth(this.health);
@@ -350,6 +356,11 @@ export class Game {
     }
     this.launchpad = new Launchpad(this.scene, this.world);
 
+    // Turnip Scart the goat, grazing his vegetable patch.
+    if (this.world.vegPatchPos) {
+      this.goat = new Goat(this.scene, this.world, this.world.vegPatchPos);
+    }
+
     // Cottage Lane's own hoard, waiting behind the square-number lock.
     if (this.world.station) {
       for (const p of this.world.station.coneSpots) {
@@ -394,6 +405,10 @@ export class Game {
     if (this.rocket) {
       this.rocket.dispose();
       this.rocket = null;
+    }
+    if (this.goat) {
+      this.goat.dispose();
+      this.goat = null;
     }
   }
 
@@ -614,6 +629,7 @@ export class Game {
     if (name === 'marblella') return this.marblellaUnlocked;
     if (name === 'fir') return this.firUnlocked;
     if (name === 'margaret') return this.margaretUnlocked;
+    if (name === 'julie') return this.julieUnlocked;
     return name === 'badger';
   }
 
@@ -633,8 +649,29 @@ export class Game {
       perpbird: this.perpbirdUnlocked,
       marblella: this.marblellaUnlocked,
       fir: this.firUnlocked,
-      margaret: this.margaretUnlocked
+      margaret: this.margaretUnlocked,
+      julie: this.julieUnlocked
     };
+  }
+
+  /**
+   * Julie the doodle: dismount from all three of the rocket, the
+   * hovercraft and the balloon within a single run.
+   */
+  registerDismount(kind) {
+    if (!['rocket', 'hovercraft', 'balloon'].includes(kind)) return;
+    this.vehiclesDismounted.add(kind);
+    if (
+      !this.julieUnlocked &&
+      this.vehiclesDismounted.has('rocket') &&
+      this.vehiclesDismounted.has('hovercraft') &&
+      this.vehiclesDismounted.has('balloon')
+    ) {
+      this.julieUnlocked = true;
+      writeStorage(STORAGE_JULIE, '1');
+      this.runUnlockNames.push('Julie');
+      this.ui.showTimeToast('★ JULIE UNLOCKED! GOOD GIRL!');
+    }
   }
 
   /* ================================================================ */
@@ -756,6 +793,8 @@ export class Game {
         vehicle.rider = null;
         vehicle.parkAt(this.player.position);
         this.ui.showTimeToast('HOPPED OUT');
+        // Julie: dismount all three flying/skimming machines in one run.
+        this.registerDismount(vehicle.kind);
       }
       return;
     }
@@ -1358,6 +1397,7 @@ export class Game {
     this.cherriesCollected = 0;
     this.cloudsCollected = 0;
     this.frogHits = 0;
+    this.vehiclesDismounted.clear();
     this.renderer.domElement.classList.remove('mystic');
     this.world.resetRug();
     this.world.resetTrapdoor();
@@ -1528,6 +1568,7 @@ export class Game {
     if (this.balloon) this.balloon.update(dt, time);
     if (this.launchpad) this.launchpad.update(dt);
     if (this.rocket) this.rocket.update(dt, time);
+    if (this.goat) this.goat.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));

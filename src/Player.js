@@ -139,6 +139,7 @@ export class Player {
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
     else if (this.character === 'margaret') this.root = this.buildMargaret();
+    else if (this.character === 'julie') this.root = this.buildJulie();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2499,6 +2500,181 @@ export class Player {
       str.position.set(sx, sy, sz);
       str.rotation.z = -sx * 0.12;
       body.add(str);
+    }
+
+    return root;
+  }
+
+  /**
+   * Julie — a fluffy blue-merle doodle: a curly grey-and-white marbled
+   * coat with dark patches, one black floppy ear, a black eye-mask over
+   * one bright-blue eye, a shaggy grey-white beard, a black button nose
+   * and a gold flower-shaped tag on her collar. A four-legged good girl.
+   */
+  buildJulie() {
+    const root = new THREE.Group();
+    root.name = 'julie';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const merle = track(createToonMaterial({
+      color: 0xb7bcc4,
+      rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 }
+    }));
+    const dark = track(createToonMaterial({
+      color: 0x2a2a30,
+      rim: { color: 0x9db4e8, strength: 0.3, threshold: 0.66 }
+    }));
+    const cream = track(createToonMaterial({ color: 0xe9e4d6 }));
+    const noseMat = track(createToonMaterial({ color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
+    const blueEye = track(createToonMaterial({ color: 0x4aa6d8, emissive: 0x123a52, emissiveIntensity: 0.5 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const collarMat = track(createToonMaterial({ color: 0x2f7bb0 }));
+    const goldMat = track(createToonMaterial({ color: 0xd8b830, emissive: 0x604010, emissiveIntensity: 0.5 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.6;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: fluffy merle coat with a few dark cloud-patches ---------
+    const torsoGeo = track(new THREE.SphereGeometry(0.6, 30, 22));
+    const torso = new THREE.Mesh(torsoGeo, merle);
+    torso.scale.set(1.0, 0.86, 1.34);
+    torso.castShadow = true;
+    body.add(torso);
+    // Curly-coat clumps + a couple of dark merle blotches.
+    const clumpGeo = track(new THREE.SphereGeometry(0.17, 10, 8));
+    const clumps = [
+      [0.28, 0.12, -0.35, dark], [-0.3, 0.05, 0.1, merle], [0.24, -0.05, 0.45, merle],
+      [-0.26, 0.16, -0.5, merle], [0.0, 0.28, -0.15, dark], [-0.2, -0.1, -0.6, dark],
+      [0.3, 0.0, 0.0, merle], [-0.3, 0.1, 0.5, merle], [0.1, 0.24, 0.4, merle]
+    ];
+    for (const [x, y, z, mat] of clumps) {
+      const clump = new THREE.Mesh(clumpGeo, mat);
+      clump.position.set(x, y, z);
+      clump.scale.setScalar(0.7 + ((x + z) % 0.3));
+      clump.castShadow = true;
+      body.add(clump);
+    }
+    // Pale fluffy chest.
+    const chest = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 14, 12)), cream);
+    chest.position.set(0, -0.14, 0.44);
+    chest.scale.set(0.9, 0.85, 0.7);
+    body.add(chest);
+
+    // --- head, tilted alert -------------------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.32, 0.72);
+    headGroup.rotation.z = 0.06;
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const headGeo = track(new THREE.SphereGeometry(0.36, 24, 18));
+    const head = new THREE.Mesh(headGeo, merle);
+    head.scale.set(0.95, 0.95, 1.0);
+    head.castShadow = true;
+    headGroup.add(head);
+    // Black mask over her left side (viewer's right), around the eye.
+    const mask = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 14, 12)), dark);
+    mask.position.set(-0.16, 0.05, 0.18);
+    mask.scale.set(0.9, 1.0, 0.7);
+    headGroup.add(mask);
+
+    // Fluffy grey-white muzzle + beard, black nose.
+    const muzzle = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 16, 12)), cream);
+    muzzle.position.set(0, -0.14, 0.28);
+    muzzle.scale.set(0.85, 0.8, 1.0);
+    muzzle.castShadow = true;
+    headGroup.add(muzzle);
+    for (let i = 0; i < 5; i++) {
+      const tuft = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 8, 6)), cream);
+      const a = (i / 5 - 0.5) * 1.6;
+      tuft.position.set(Math.sin(a) * 0.16, -0.28 - Math.abs(a) * 0.03, 0.28);
+      tuft.scale.set(0.7, 1.1, 0.7);
+      headGroup.add(tuft);
+    }
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), noseMat);
+    nose.position.set(0, -0.08, 0.5);
+    headGroup.add(nose);
+
+    // Bright blue eyes with glints (one sits in the black mask).
+    const eyeGeo = track(new THREE.SphereGeometry(0.055, 12, 10));
+    const glintGeo = track(new THREE.SphereGeometry(0.016, 8, 6));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, blueEye);
+      eye.position.set(side * 0.15, 0.06, 0.3);
+      headGroup.add(eye);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.13, 0.09, 0.35);
+      headGroup.add(glint);
+    }
+
+    // Floppy ears: her left one black, her right one grey — both dangle.
+    const earGeo = track(new THREE.SphereGeometry(0.14, 12, 10));
+    this.hairGroup = new THREE.Group(); // lets ears sway via the mane path
+    headGroup.add(this.hairGroup);
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(earGeo, side === -1 ? dark : merle);
+      ear.position.set(side * 0.3, 0.02, -0.02);
+      ear.scale.set(0.55, 1.5, 0.9);
+      ear.castShadow = true;
+      this.hairGroup.add(ear);
+    }
+
+    // Collar with the gold flower tag.
+    const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.24, 0.04, 8, 20)), collarMat);
+    collar.position.set(0, 0.08, 0.5);
+    collar.rotation.x = 1.3;
+    body.add(collar);
+    const tag = new THREE.Group();
+    tag.position.set(0, -0.12, 0.66);
+    body.add(tag);
+    for (let i = 0; i < 5; i++) {
+      const petal = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 8, 6)), goldMat);
+      const a = (i / 5) * Math.PI * 2;
+      petal.position.set(Math.cos(a) * 0.04, Math.sin(a) * 0.04, 0);
+      tag.add(petal);
+    }
+    const tagCenter = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), goldMat);
+    tag.add(tagCenter);
+
+    // Curly plume of a tail.
+    const tail = new THREE.Mesh(track(new THREE.SphereGeometry(0.16, 12, 10)), merle);
+    tail.position.set(0, 0.1, -0.62);
+    tail.scale.set(0.8, 1.2, 0.9);
+    tail.castShadow = true;
+    body.add(tail);
+    this.tail = tail;
+
+    // --- four legs with dark curly paws --------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.11, 0.36, 10));
+    const pawGeo = track(new THREE.SphereGeometry(0.12, 12, 10));
+    this.legs = [];
+    const slots = [
+      { x: -0.28, z: 0.4, phase: 0 },
+      { x: 0.28, z: 0.4, phase: Math.PI },
+      { x: -0.3, z: -0.44, phase: Math.PI },
+      { x: 0.3, z: -0.44, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.28, slot.z);
+      const leg = new THREE.Mesh(legGeo, merle);
+      leg.position.y = -0.16;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const paw = new THREE.Mesh(pawGeo, dark);
+      paw.position.set(0, -0.36, 0.04);
+      paw.scale.set(1, 0.7, 1.2);
+      paw.castShadow = true;
+      pivot.add(paw);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
     }
 
     return root;

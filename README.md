@@ -182,6 +182,16 @@ import map — no npm install, no bundler.
   run, collect **5 atomic cherries**, **4 marshmallow clouds**, take
   **5 frog hits**, and finish on a score whose **last digit is 4**
   (14, 84, 134…). Curtain up.
+- **Julie** — a fluffy blue-merle doodle: a curly grey-and-white
+  marbled coat with dark patches, one black floppy ear, a black
+  eye-mask over one bright-blue eye, a shaggy grey-white beard, a black
+  button nose and a gold flower-shaped tag on her collar. Unlock her by
+  **dismounting from all three of the rocket, the hovercraft and the
+  balloon in a single run**. Good girl.
+- **Turnip Scart** — a shaggy goat (an ambient NPC for now) who ambles
+  around a little fenced **vegetable patch** — dark tilled soil rows of
+  cabbages, carrots and purple-topped turnips — stopping to graze,
+  somewhere out on the map.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

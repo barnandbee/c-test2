@@ -1845,3 +1845,195 @@ export class Rocket {
     this._disposables.length = 0;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Turnip Scart — a grazing goat NPC                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Turnip Scart: a shaggy goat who ambles around his little vegetable
+ * patch and stops to graze. Purely ambient — no interaction (yet). He
+ * owns all his own geometry/materials and frees them on dispose.
+ */
+export class Goat {
+  constructor(scene, world, home) {
+    this.scene = scene;
+    this.world = world;
+    this.home = home.clone();
+    this.position = home.clone();
+    this.position.y = world.getHeight(home.x, home.z);
+    this.heading = Math.random() * Math.PI * 2;
+    this.wanderRadius = 4.5;
+    this.state = 'graze'; // graze <-> walk
+    this.stateTimer = 1.5 + Math.random() * 2;
+    this.speed = 0;
+    this.grazeAmount = 1; // 0 head-up, 1 head-down
+    this._disposables = [];
+
+    const track = (r) => {
+      this._disposables.push(r);
+      return r;
+    };
+    const coatMat = track(createToonMaterial({
+      color: 0xe8e2d2,
+      rim: { color: 0xffffff, strength: 0.35, threshold: 0.64 }
+    }));
+    const darkMat = track(createToonMaterial({ color: 0x6a5c48 }));
+    const hoofMat = track(createToonMaterial({ color: 0x2b2620 }));
+    const hornMat = track(createToonMaterial({ color: 0xbfae86, rim: { color: 0xffedc0, strength: 0.4, threshold: 0.6 } }));
+    const noseMat = track(createToonMaterial({ color: 0x3a2f28 }));
+    const eyeMat = track(createToonMaterial({ color: 0x141210 }));
+
+    const group = new THREE.Group();
+    group.position.copy(this.position);
+    this.group = group;
+
+    // Everything above the legs hangs off a body group.
+    const body = new THREE.Group();
+    body.position.y = 0.62;
+    group.add(body);
+
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.34, 0.5, 6, 12));
+    torsoGeo.rotateZ(Math.PI / 2);
+    const torso = new THREE.Mesh(torsoGeo, coatMat);
+    torso.scale.set(1.15, 0.95, 0.95);
+    torso.castShadow = true;
+    body.add(torso);
+
+    // A woolly saddle patch and a stubby tail.
+    const backGeo = track(new THREE.SphereGeometry(0.3, 16, 12));
+    const back = new THREE.Mesh(backGeo, darkMat);
+    back.position.set(-0.05, 0.16, 0);
+    back.scale.set(1.35, 0.5, 0.9);
+    body.add(back);
+    const tailGeo = track(new THREE.ConeGeometry(0.08, 0.2, 6));
+    const tail = new THREE.Mesh(tailGeo, coatMat);
+    tail.position.set(-0.62, 0.14, 0);
+    tail.rotation.z = 1.4;
+    body.add(tail);
+
+    // --- the neck + head, on a pivot so he can dip to graze -------------
+    const neckPivot = new THREE.Group();
+    neckPivot.position.set(0.5, 0.06, 0);
+    body.add(neckPivot);
+    this.neckPivot = neckPivot;
+
+    const neckGeo = track(new THREE.CylinderGeometry(0.13, 0.17, 0.42, 10));
+    const neck = new THREE.Mesh(neckGeo, coatMat);
+    neck.position.set(0.12, 0.18, 0);
+    neck.rotation.z = -0.7;
+    neck.castShadow = true;
+    neckPivot.add(neck);
+
+    const headGeo = track(new THREE.CapsuleGeometry(0.15, 0.22, 5, 10));
+    headGeo.rotateZ(Math.PI / 2);
+    const head = new THREE.Mesh(headGeo, coatMat);
+    head.position.set(0.34, 0.3, 0);
+    head.scale.set(1.15, 0.95, 0.85);
+    head.castShadow = true;
+    neckPivot.add(head);
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), noseMat);
+    nose.position.set(0.56, 0.26, 0);
+    nose.scale.set(0.7, 0.8, 1);
+    neckPivot.add(nose);
+
+    // Ears, curved horns, eyes and the obligatory chin beard.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.ConeGeometry(0.07, 0.22, 6)), coatMat);
+      ear.position.set(0.28, 0.4, side * 0.16);
+      ear.rotation.set(side * 0.6, 0, -1.9);
+      neckPivot.add(ear);
+
+      const horn = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.3, 7)), hornMat);
+      horn.position.set(0.22, 0.5, side * 0.09);
+      horn.rotation.set(side * 0.25, 0, -0.5);
+      horn.castShadow = true;
+      neckPivot.add(horn);
+
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), eyeMat);
+      eye.position.set(0.45, 0.34, side * 0.11);
+      neckPivot.add(eye);
+    }
+    const beard = new THREE.Mesh(track(new THREE.ConeGeometry(0.06, 0.22, 6)), coatMat);
+    beard.position.set(0.46, 0.12, 0);
+    beard.rotation.z = 0.25;
+    neckPivot.add(beard);
+
+    // --- legs: four, each a slim shin with a dark hoof -----------------
+    const legGeo = track(new THREE.CylinderGeometry(0.06, 0.05, 0.5, 8));
+    legGeo.translate(0, -0.25, 0);
+    const hoofGeo = track(new THREE.CylinderGeometry(0.07, 0.08, 0.1, 8));
+    this.legs = [];
+    const slots = [
+      { x: 0.34, z: 0.2, phase: 0 },
+      { x: 0.34, z: -0.2, phase: Math.PI },
+      { x: -0.34, z: 0.2, phase: Math.PI },
+      { x: -0.34, z: -0.2, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, 0.02, slot.z);
+      const leg = new THREE.Mesh(legGeo, coatMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const hoof = new THREE.Mesh(hoofGeo, hoofMat);
+      hoof.position.y = -0.5;
+      pivot.add(hoof);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+    this.body = body;
+
+    scene.add(group);
+  }
+
+  update(dt, time) {
+    this.stateTimer -= dt;
+
+    if (this.state === 'graze') {
+      this.speed = damp(this.speed, 0, 6, dt);
+      // Head dips down to the grass, with a gentle nibbling bob.
+      this.grazeAmount = damp(this.grazeAmount, 1, 5, dt);
+      this.neckPivot.rotation.z = -1.15 * this.grazeAmount + Math.sin(time * 6) * 0.06 * this.grazeAmount;
+      if (this.stateTimer <= 0) {
+        // Amble somewhere new — steer home if he's strayed off the patch.
+        const dxh = this.home.x - this.position.x;
+        const dzh = this.home.z - this.position.z;
+        this.heading = Math.hypot(dxh, dzh) > this.wanderRadius
+          ? Math.atan2(dxh, dzh) + (Math.random() - 0.5) * 0.9
+          : Math.random() * Math.PI * 2;
+        this.state = 'walk';
+        this.stateTimer = 1.2 + Math.random() * 2;
+      }
+    } else {
+      this.speed = damp(this.speed, 1.3, 4, dt);
+      this.grazeAmount = damp(this.grazeAmount, 0, 6, dt);
+      this.neckPivot.rotation.z = -1.15 * this.grazeAmount;
+      this.position.x += Math.sin(this.heading) * this.speed * dt;
+      this.position.z += Math.cos(this.heading) * this.speed * dt;
+      this.position.y = this.world.getHeight(this.position.x, this.position.z);
+      // Trotting leg swing.
+      for (const leg of this.legs) {
+        leg.pivot.rotation.x = Math.sin(time * 7 + leg.phase) * 0.5 * clamp(this.speed, 0, 1);
+      }
+      if (this.stateTimer <= 0) {
+        this.state = 'graze';
+        this.stateTimer = 2 + Math.random() * 3;
+      }
+    }
+
+    // Settle legs when idle.
+    if (this.state === 'graze') {
+      for (const leg of this.legs) leg.pivot.rotation.x = damp(leg.pivot.rotation.x, 0, 8, dt);
+    }
+
+    this.group.position.copy(this.position);
+    this.group.rotation.y = dampAngle(this.group.rotation.y, this.heading, 6, dt);
+  }
+
+  dispose() {
+    this.scene.remove(this.group);
+    for (const r of this._disposables) r.dispose();
+    this._disposables.length = 0;
+  }
+}

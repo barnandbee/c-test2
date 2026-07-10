@@ -1385,6 +1385,44 @@ body {
   transform: translateX(-50%);
 }
 
+/* Julie: a blue-merle doodle — black ear + eye-mask, blue eye, grey beard. */
+.julie-icon {
+  position: relative;
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 62% 44%, #4aa6d8 0 3px, transparent 3.5px),
+    radial-gradient(circle at 62% 44%, #2a2a30 0 8px, transparent 8.5px),
+    radial-gradient(circle at 50% 78%, #e9e4d6 0 9px, transparent 9.5px),
+    radial-gradient(circle at 50% 66%, #141417 0 2.5px, transparent 3px),
+    radial-gradient(circle at 30% 30%, #2a2a30 0 5px, transparent 6px),
+    radial-gradient(circle at 70% 26%, #cfd3da 0 5px, transparent 6px),
+    linear-gradient(150deg, #c6cad2, #a7adb8);
+}
+
+.julie-icon::before {
+  /* left floppy ear, black */
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 8px;
+  width: 13px;
+  height: 26px;
+  background: #2a2a30;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+}
+
+.julie-icon::after {
+  /* right floppy ear, grey */
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 8px;
+  width: 13px;
+  height: 26px;
+  background: #b7bcc4;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+}
+
 /* Marblella: a glass marble with a cat's-eye twist and a window glint. */
 .marblella-icon {
   border-radius: 50%;
