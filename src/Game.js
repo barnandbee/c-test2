@@ -1280,6 +1280,7 @@ export class Game {
   startVeggie() {
     if (document.pointerLockElement) document.exitPointerLock();
     this.input.suppressPointerLock = true; // keep the cursor visible for clicks
+    this.player.root.visible = false; // clear the board for the bird's-eye view
     // Cell selection is by tap; the on-screen joystick/look zones would
     // otherwise swallow those taps, so hide them for the duration.
     const tc = document.getElementById('touch-controls');
@@ -1310,6 +1311,7 @@ export class Game {
     this.veggieGame.dispose();
     this.veggieGame = null;
     this.input.suppressPointerLock = false;
+    this.player.root.visible = true;
     const tc = document.getElementById('touch-controls');
     if (tc) tc.classList.remove('hidden'); // restore the touch controls
     if (result === 'win') {
@@ -1496,6 +1498,7 @@ export class Game {
       this.veggieGame.dispose();
       this.veggieGame = null;
       this.input.suppressPointerLock = false;
+      this.player.root.visible = true;
       const tc = document.getElementById('touch-controls');
       if (tc) tc.classList.remove('hidden');
     }
@@ -1563,8 +1566,14 @@ export class Game {
       this.player.animate(dt, false);
     } else if (this.veggieGame) {
       // 'Veggie Tac Toe': clock FROZEN, a fixed bird's-eye camera over the
-      // patch, number keys 1-9 place a cabbage (clicks/taps too), Escape
-      // concedes. Taps are swallowed so they don't read as gestures.
+      // patch. Cells are HTML overlay buttons (tap/click); number keys 1-9
+      // work too; Escape concedes. Taps are swallowed so they don't read
+      // as gestures. The camera is set BEFORE the update so the overlay
+      // buttons project onto the board correctly from the first frame.
+      const c = this.world.vegPatchPos;
+      this.camera.position.set(c.x, c.y + 11, c.z + 0.01);
+      this.camera.lookAt(c.x, c.y, c.z);
+      this.camera.updateMatrixWorld();
       this.input.consumeDoubleTap();
       this.input.consumeTripleTap();
       if (this.input.keys.has('Escape')) {
@@ -1577,12 +1586,6 @@ export class Game {
           }
         }
         this.veggieGame.update(dt);
-      }
-      // Look straight down at the board.
-      if (this.veggieGame) {
-        const c = this.world.vegPatchPos;
-        this.camera.position.set(c.x, c.y + 11, c.z + 0.01);
-        this.camera.lookAt(c.x, c.y, c.z);
       }
       this.player.animate(dt, false);
     } else if (!this.isGameOver) {

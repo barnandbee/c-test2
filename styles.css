@@ -541,6 +541,33 @@ body {
   background: rgba(255, 255, 255, 0.18);
 }
 
+/* Transparent tap targets laid over the 3D board's cells. */
+.veggie-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* only the child buttons catch input */
+  z-index: 24;          /* above the touch overlays (15), below the panel (25) */
+}
+
+.veggie-cell {
+  position: absolute;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.veggie-cell:hover {
+  border-color: rgba(255, 225, 77, 0.7);
+  background: rgba(255, 225, 77, 0.14);
+}
+
+.veggie-cell:active {
+  background: rgba(255, 225, 77, 0.28);
+}
+
 /* ---------- Mystic Line destination picker ---------- */
 
 #travel-panel {

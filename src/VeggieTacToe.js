@@ -44,8 +44,6 @@ export class VeggieTacToe {
     this._doneTimer = 0;
     this._geos = [];
     this._mats = [];
-    this._raycaster = new THREE.Raycaster();
-    this._ndc = new THREE.Vector2();
 
     const geo = (g) => { this._geos.push(g); return g; };
     const mat = (m) => { this._mats.push(m); return m; };
@@ -74,33 +72,33 @@ export class VeggieTacToe {
       this.group.add(h);
     }
 
-    // A hover cursor tile that follows the pointer over empty cells.
-    this.cursor = new THREE.Mesh(
-      geo(new THREE.BoxGeometry(CELL * 0.9, 0.02, CELL * 0.9)),
-      mat(createToonMaterial({ color: 0xffe14d, emissive: 0x6a5810, emissiveIntensity: 0.6 }))
-    );
-    this.cursor.position.y = 0.32;
-    this.cursor.visible = false;
-    this.group.add(this.cursor);
-
     // Reusable piece materials.
     this._cabbageMat = mat(createToonMaterial({ color: 0x8ab86a, rim: { color: 0xd8f0c0, strength: 0.4, threshold: 0.6 } }));
     this._leafMat = mat(createToonMaterial({ color: 0x4e8a3c }));
     this._turnipMat = mat(createToonMaterial({ color: 0xe6ddec, rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 } }));
     this._turnipTopMat = mat(createToonMaterial({ color: 0x9c5aa0 }));
     this._pieces = new Array(9).fill(null);
+    this._scratchV = new THREE.Vector3();
 
-    // Listen on window (capture) rather than the canvas: on touch devices
-    // the on-screen control overlays sit above the canvas and would
-    // otherwise swallow every tap before it reached the board. UI taps
-    // (the Quit button) are ignored here.
-    this._onPointerDown = (e) => {
-      if (e.target && e.target.closest && e.target.closest('button, #veggie-panel, #hud')) return;
-      this._handlePointer(e);
-    };
-    this._onPointerMove = (e) => this.hover(e.clientX, e.clientY);
-    window.addEventListener('pointerdown', this._onPointerDown, true);
-    window.addEventListener('pointermove', this._onPointerMove, true);
+    // Input is a 3x3 grid of transparent HTML buttons laid over the board's
+    // on-screen projection. Native buttons never miss a tap/click on any
+    // device — far more reliable than raycasting through overlay layers.
+    this._overlay = document.createElement('div');
+    this._overlay.className = 'veggie-grid';
+    this._buttons = [];
+    for (let i = 0; i < 9; i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'veggie-cell';
+      b.addEventListener('click', () => {
+        if (this.state === 'play' && this.turn === 'player' && this.cells[i] === 0) {
+          this._place(i, 1);
+        }
+      });
+      this._overlay.appendChild(b);
+      this._buttons.push(b);
+    }
+    document.body.appendChild(this._overlay);
 
     ui.showVeggie();
     ui.setVeggieStatus('YOUR TURN — PLANT A CABBAGE');
@@ -113,28 +111,29 @@ export class VeggieTacToe {
     return { x: (col - 1) * CELL, z: (row - 1) * CELL };
   }
 
-  /** Pointer → board cell index, or -1. */
-  _pointerCell(e) {
-    const rect = this.domElement.getBoundingClientRect();
-    this._ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    this._ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    this._raycaster.setFromCamera(this._ndc, this.camera);
-    // Intersect the board's top plane (y = boardTopY, world space).
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.boardTopY);
-    const hit = new THREE.Vector3();
-    if (!this._raycaster.ray.intersectPlane(plane, hit)) return -1;
-    const lx = hit.x - this.center.x;
-    const lz = hit.z - this.center.z;
-    const col = Math.round(lx / CELL) + 1;
-    const row = Math.round(lz / CELL) + 1;
-    if (col < 0 || col > 2 || row < 0 || row > 2) return -1;
-    return row * 3 + col;
-  }
-
-  _handlePointer(e) {
-    if (this.state !== 'play' || this.turn !== 'player') return;
-    const i = this._pointerCell(e);
-    if (i >= 0 && this.cells[i] === 0) this._place(i, 1);
+  /** Project every cell centre to the screen and place its button there. */
+  _layoutButtons() {
+    if (!this._buttons) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const pts = [];
+    for (let i = 0; i < 9; i++) {
+      const p = this._cellPos(i);
+      this._scratchV.set(this.center.x + p.x, this.boardTopY, this.center.z + p.z);
+      this._scratchV.project(this.camera);
+      pts.push({ x: (this._scratchV.x * 0.5 + 0.5) * w, y: (-this._scratchV.y * 0.5 + 0.5) * h });
+    }
+    // Button size ≈ the on-screen spacing between adjacent cells.
+    const size = Math.max(28, Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) * 0.96);
+    for (let i = 0; i < 9; i++) {
+      const b = this._buttons[i];
+      b.style.left = `${pts[i].x - size / 2}px`;
+      b.style.top = `${pts[i].y - size / 2}px`;
+      b.style.width = `${size}px`;
+      b.style.height = `${size}px`;
+      const taken = this.cells[i] !== 0 || this.turn !== 'player' || this.state !== 'play';
+      b.style.pointerEvents = taken ? 'none' : 'auto';
+    }
   }
 
   /** Number keys 1-9 map to the board like a numpad-ish grid (1 = top-left). */
@@ -154,7 +153,6 @@ export class VeggieTacToe {
     piece.userData.grow = 0;
     this.group.add(piece);
     this._pieces[i] = piece;
-    this.cursor.visible = false;
 
     const winner = this._winner();
     if (winner || this.cells.every((v) => v !== 0)) {
@@ -226,6 +224,9 @@ export class VeggieTacToe {
   }
 
   update(dt) {
+    // Keep the tap-target buttons aligned with the board on screen.
+    this._layoutButtons();
+
     // Grow-in animation for newly placed pieces + a gentle winner bob.
     for (const piece of this._pieces) {
       if (!piece) continue;
@@ -246,22 +247,6 @@ export class VeggieTacToe {
     } else if (this.state === 'done') {
       this._doneTimer -= dt;
       if (this._doneTimer <= 0) this.onFinish(this.result);
-    }
-  }
-
-  /** Hover feedback: light the cell under the pointer during the player's turn. */
-  hover(clientX, clientY) {
-    if (this.state !== 'play' || this.turn !== 'player') {
-      this.cursor.visible = false;
-      return;
-    }
-    const i = this._pointerCell({ clientX, clientY });
-    if (i >= 0 && this.cells[i] === 0) {
-      const p = this._cellPos(i);
-      this.cursor.position.set(p.x, 0.32, p.z);
-      this.cursor.visible = true;
-    } else {
-      this.cursor.visible = false;
     }
   }
 
@@ -305,8 +290,8 @@ export class VeggieTacToe {
   _cone(r, h) { const g = new THREE.ConeGeometry(r, h, 6); this._geos.push(g); return g; }
 
   dispose() {
-    window.removeEventListener('pointerdown', this._onPointerDown, true);
-    window.removeEventListener('pointermove', this._onPointerMove, true);
+    if (this._overlay && this._overlay.parentNode) this._overlay.parentNode.removeChild(this._overlay);
+    this._buttons = null;
     this.scene.remove(this.group);
     for (const g of this._geos) g.dispose();
     for (const m of this._mats) m.dispose();
