@@ -188,18 +188,24 @@ import map — no npm install, no bundler.
   button nose and a gold flower-shaped tag on her collar. Unlock her by
   **dismounting from all three of the rocket, the hovercraft and the
   balloon in a single run**. Good girl.
-- **Turnip Scart** — a shaggy goat (an ambient NPC for now) who ambles
-  around a little fenced **vegetable patch** — dark tilled soil rows of
-  cabbages, carrots and purple-topped turnips — stopping to graze,
-  somewhere out on the map.
+- **Turnip Scart** — a shaggy goat who ambles around a little fenced
+  **vegetable patch** — dark tilled soil rows of cabbages, carrots and
+  purple-topped turnips — stopping to graze, somewhere out on the map.
+  Stand on his patch with a score that's a **multiple of 7** and
+  double-tap to challenge him to **Veggie Tac Toe**: tic-tac-toe from a
+  bird's-eye view, you planting 🥬 cabbages against his 🟣 turnips (tap
+  a square or press 1–9; the run clock freezes). **Beat the goat** and
+  he joins the roster as a playable character.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive
   the **hovercraft onto the green** (as anyone *except* Magnus Carter),
   and a challenge is issued: double-tap to play **Puttmost Respect**, a
-  putting minigame. The run clock **freezes** while you putt. Aim with
-  the camera, hold jump to charge the swinging power meter, release to
-  putt; the ball breaks with the slope and the rough is heavy. Three
+  putting minigame. The run clock **freezes** while you putt. A **club
+  and a bright aim arrow** show exactly where the ball will go; swing
+  the camera (A/D or drag) to aim, hold jump to charge the power meter
+  (the arrow grows and the club takes a backswing), release to putt.
+  The ball breaks with the slope and the rough is heavy. Three
   strokes: sink it for **+18**, hole it in one for **+33**, miss out
   entirely and receive only wisdom. Once per run; double-tap mid-game
   to concede.
@@ -232,7 +238,8 @@ src/
   CameraRig.js      collision-aware, damped third-person spring arm
   Entities.js       pine cones, golden eggs, toxic frogs (shared assets)
   PuttingGame.js    'Puttmost Respect' putting minigame (ball physics,
-                    power meter, slope break)
+                    power meter, slope break, club + aim arrow)
+  VeggieTacToe.js   'Veggie Tac Toe' — tic-tac-toe vs Turnip Scart
   Particles.js      GPU burst pool, gold aura, poison cloud point systems
   Shaders.js        toon/rim/sway/pulse material patches, exponential
                     height fog, sky gradient, all particle GLSL

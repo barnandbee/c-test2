@@ -55,9 +55,80 @@ export class PuttingGame {
     this._settleBall();
     scene.add(this.ball);
 
+    this._buildAimAids();
+
     ui.showPutt();
     ui.setPuttStrokes(1, MAX_STROKES);
     ui.setPuttPower(0);
+  }
+
+  /**
+   * The aiming aids: a bright ground arrow showing direction (and, by its
+   * length, power), and a little putter that addresses the ball and takes
+   * a backswing as the meter charges. Everything hangs off aimGroup, whose
+   * local -Z is the shot direction, so a single rotation.y = cameraYaw
+   * points the whole rig where the ball will go.
+   */
+  _buildAimAids() {
+    this._aimGeos = [];
+    this._aimMats = [];
+    const geo = (g) => { this._aimGeos.push(g); return g; };
+    const mat = (m) => { this._aimMats.push(m); return m; };
+
+    this.aimGroup = new THREE.Group();
+    this.scene.add(this.aimGroup);
+
+    // --- ground arrow (in its own group so we can scale its length) ------
+    this.arrowGroup = new THREE.Group();
+    this.arrowGroup.position.y = -0.055; // just above the green
+    this.aimGroup.add(this.arrowGroup);
+    const arrowMat = mat(createToonMaterial({
+      color: 0xffe14d,
+      emissive: 0x7a6410,
+      emissiveIntensity: 0.7
+    }));
+    const shaft = new THREE.Mesh(geo(new THREE.BoxGeometry(0.09, 0.02, 1.0)), arrowMat);
+    shaft.position.z = -0.75; // starts ~0.25 ahead of the ball, runs forward (-Z)
+    this.arrowGroup.add(shaft);
+    const headGeo = geo(new THREE.ConeGeometry(0.17, 0.34, 4));
+    const head = new THREE.Mesh(headGeo, arrowMat);
+    head.rotation.x = -Math.PI / 2; // point the cone along -Z
+    head.rotation.y = Math.PI / 4;
+    head.position.z = -1.42;
+    this.arrowGroup.add(head);
+
+    // --- putter ----------------------------------------------------------
+    this.clubGroup = new THREE.Group();
+    this.clubGroup.position.set(0.22, 0, 0.12); // addresses the ball from the side
+    this.aimGroup.add(this.clubGroup);
+    const shaftMat = mat(createToonMaterial({ color: 0xd8d8de, rim: { color: 0xffffff, strength: 0.5, threshold: 0.5 } }));
+    const headMat = mat(createToonMaterial({ color: 0x2a2a30 }));
+    const gripMat = mat(createToonMaterial({ color: 0x3a2a22 }));
+    const clubShaft = new THREE.Mesh(geo(new THREE.CylinderGeometry(0.018, 0.022, 1.0, 8)), shaftMat);
+    clubShaft.position.set(0, 0.5, 0.16);
+    clubShaft.rotation.x = 0.32;
+    this.clubGroup.add(clubShaft);
+    const grip = new THREE.Mesh(geo(new THREE.CylinderGeometry(0.03, 0.03, 0.24, 8)), gripMat);
+    grip.position.set(0, 0.92, 0.28);
+    grip.rotation.x = 0.32;
+    this.clubGroup.add(grip);
+    const clubHead = new THREE.Mesh(geo(new THREE.BoxGeometry(0.2, 0.09, 0.12)), headMat);
+    clubHead.position.set(0, 0.03, 0.02);
+    this.clubGroup.add(clubHead);
+  }
+
+  /** Point/scale the aids for the current aim + charge, or hide them. */
+  _updateAimAids(cameraYaw, visible, powerT) {
+    if (!this.aimGroup) return;
+    this.aimGroup.visible = visible;
+    if (!visible) return;
+    this.aimGroup.position.copy(this.ball.position);
+    this.aimGroup.rotation.y = cameraYaw;
+    // Arrow grows with power (or sits at a resting length while just aiming).
+    const len = 0.75 + powerT * 1.15;
+    this.arrowGroup.scale.z = len;
+    // Putter takes a backswing as the meter fills.
+    this.clubGroup.rotation.x = -powerT * 0.7;
   }
 
   _settleBall() {
@@ -74,6 +145,7 @@ export class PuttingGame {
     input.consumeJump(); // the button is a putter now, never a jump
 
     if (this.state === 'aim') {
+      this._updateAimAids(cameraYaw, true, 0);
       if (input.jumpHeld) {
         this.state = 'charging';
         this.power = 0;
@@ -83,11 +155,13 @@ export class PuttingGame {
       this.power += dt * 0.85;
       const t = 1 - Math.abs((this.power % 2) - 1);
       this.ui.setPuttPower(t);
+      this._updateAimAids(cameraYaw, true, t);
       if (!input.jumpHeld) {
         const strength = 3.5 + t * 13;
         this.ballVel.set(-Math.sin(cameraYaw) * strength, 0, -Math.cos(cameraYaw) * strength);
         this.strokes += 1;
         this.state = 'rolling';
+        this._updateAimAids(cameraYaw, false, 0);
         this.ui.setPuttPower(0);
         this.ui.setPuttStrokes(Math.min(this.strokes + 1, MAX_STROKES), MAX_STROKES);
       }
@@ -161,6 +235,9 @@ export class PuttingGame {
     this.scene.remove(this.ball);
     this.ballGeo.dispose();
     this.ballMat.dispose();
+    if (this.aimGroup) this.scene.remove(this.aimGroup);
+    for (const g of this._aimGeos || []) g.dispose();
+    for (const m of this._aimMats || []) m.dispose();
     this.ui.hidePutt();
   }
 }

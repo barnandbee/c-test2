@@ -30,6 +30,7 @@ import {
   disposeEntityAssets
 } from './Entities.js';
 import { PuttingGame } from './PuttingGame.js';
+import { VeggieTacToe } from './VeggieTacToe.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
@@ -74,6 +75,7 @@ const STORAGE_MARBLELLA = 'mystic-badger.marblellaUnlocked';
 const STORAGE_FIR = 'mystic-badger.firUnlocked';
 const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_JULIE = 'mystic-badger.julieUnlocked';
+const STORAGE_TURNIP = 'mystic-badger.turnipUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
@@ -157,6 +159,7 @@ export class Game {
     this.firUnlocked = readStorage(STORAGE_FIR) === '1';
     this.margaretUnlocked = readStorage(STORAGE_MARGARET) === '1';
     this.julieUnlocked = readStorage(STORAGE_JULIE) === '1';
+    this.turnipUnlocked = readStorage(STORAGE_TURNIP) === '1';
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -245,6 +248,8 @@ export class Game {
     // Julie: the vehicle kinds dismounted from this run.
     this.vehiclesDismounted = new Set();
     this.minigame = null;
+    this.veggieGame = null;
+    this._veggiePrompted = false;
     this.puttPlayed = false;
     this._puttPrompted = false;
     this._puttFocus = { position: new THREE.Vector3(), velocity: new THREE.Vector3(), facingYaw: 0 };
@@ -630,6 +635,7 @@ export class Game {
     if (name === 'fir') return this.firUnlocked;
     if (name === 'margaret') return this.margaretUnlocked;
     if (name === 'julie') return this.julieUnlocked;
+    if (name === 'turnip') return this.turnipUnlocked;
     return name === 'badger';
   }
 
@@ -650,7 +656,8 @@ export class Game {
       marblella: this.marblellaUnlocked,
       fir: this.firUnlocked,
       margaret: this.margaretUnlocked,
-      julie: this.julieUnlocked
+      julie: this.julieUnlocked,
+      turnip: this.turnipUnlocked
     };
   }
 
@@ -763,7 +770,15 @@ export class Game {
   handleDoubleTap() {
     const triple = this.input.consumeTripleTap();
     const double = this.input.consumeDoubleTap();
-    if ((!triple && !double) || !this.hovercraft) return;
+    if (!triple && !double) return;
+
+    // On the vegetable patch, on a multiple of 7: challenge Turnip Scart.
+    if (double && this.canStartVeggie()) {
+      this.startVeggie();
+      return;
+    }
+
+    if (!this.hovercraft) return;
 
     // At the pin, hovercraft-mounted and cart-bruised: putt instead of
     // dismounting.
@@ -1248,6 +1263,67 @@ export class Game {
   }
 
   /**
+   * 'Veggie Tac Toe' eligibility: standing on the vegetable patch with a
+   * whole-number score that's a positive multiple of 7, and no other
+   * minigame already running.
+   */
+  canStartVeggie() {
+    if (this.minigame || this.veggieGame || !this.world.vegPatchPos) return false;
+    if (!Number.isInteger(this.points) || this.points <= 0 || this.points % 7 !== 0) return false;
+    const dx = this.player.position.x - this.world.vegPatchX;
+    const dz = this.player.position.z - this.world.vegPatchZ;
+    return dx * dx + dz * dz < (this.world.vegPatchRadius + 1.5) ** 2;
+  }
+
+  startVeggie() {
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.ui.showTimeToast('VEGGIE TAC TOE vs TURNIP SCART!');
+    // Sit Turnip Scart at the board's edge as the opponent (and stop his
+    // wandering for the duration, so he doesn't graze across the cells).
+    if (this.goat) {
+      const c = this.world.vegPatchPos;
+      this.goat.position.set(c.x, this.world.getHeight(c.x, c.z + 2.9), c.z + 2.9);
+      this.goat.group.position.copy(this.goat.position);
+      this.goat.group.rotation.y = Math.PI; // face the board
+      this.goat.state = 'graze';
+      this.goat.stateTimer = 999;
+    }
+    this.veggieGame = new VeggieTacToe(
+      this.scene,
+      this.world,
+      this.camera,
+      this.renderer.domElement,
+      this.ui,
+      (result) => this.endVeggie(result)
+    );
+  }
+
+  endVeggie(result) {
+    if (!this.veggieGame) return;
+    this.veggieGame.dispose();
+    this.veggieGame = null;
+    if (result === 'win') {
+      if (!this.turnipUnlocked) {
+        this.turnipUnlocked = true;
+        writeStorage(STORAGE_TURNIP, '1');
+        this.runUnlockNames.push('Turnip Scart');
+        this.ui.showTimeToast('★ TURNIP SCART UNLOCKED! BAAA!');
+      } else {
+        this.ui.showTimeToast('WELL PLAYED — SCART TIPS HIS HORNS');
+      }
+      this.particles.spawnBurst(
+        this._playerCenter.set(this.world.vegPatchX, this.world.vegPatchPos.y + 1, this.world.vegPatchZ),
+        0x8ab86a,
+        { count: 40, speed: 5, size: 46, upBias: 0.8, life: 0.9 }
+      );
+    } else if (result === 'lose') {
+      this.ui.showTimeToast('OUTFOXED BY A GOAT');
+    } else {
+      this.ui.showTimeToast('A DRAW — COME BACK ON ANOTHER SEVEN');
+    }
+  }
+
+  /**
    * Reaching the surfaced Red October pays out π-adjacent riches.
    * Marblella doesn't wait for the breach: she sinks to the lake bed and
    * claims the boat wherever it lurks — surfaced or not.
@@ -1406,6 +1482,11 @@ export class Game {
       this.minigame.dispose();
       this.minigame = null;
     }
+    if (this.veggieGame) {
+      this.veggieGame.dispose();
+      this.veggieGame = null;
+    }
+    this._veggiePrompted = false;
     this.puttPlayed = false;
     this._puttPrompted = false;
     this.ui.setHealth(this.health);
@@ -1467,6 +1548,30 @@ export class Game {
         this.cameraRig.update(dt, this.player, this.input);
       }
       this.player.animate(dt, false);
+    } else if (this.veggieGame) {
+      // 'Veggie Tac Toe': clock FROZEN, a fixed bird's-eye camera over the
+      // patch, number keys 1-9 place a cabbage (clicks/taps too), Escape
+      // concedes. Taps are swallowed so they don't read as gestures.
+      this.input.consumeDoubleTap();
+      this.input.consumeTripleTap();
+      if (this.input.keys.has('Escape')) {
+        this.veggieGame.abandon();
+      } else {
+        for (const code of ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9']) {
+          if (this.input.keys.has(code)) {
+            this.veggieGame.handleKey(code);
+            this.input.keys.delete(code); // one placement per press
+          }
+        }
+        this.veggieGame.update(dt);
+      }
+      // Look straight down at the board.
+      if (this.veggieGame) {
+        const c = this.world.vegPatchPos;
+        this.camera.position.set(c.x, c.y + 11, c.z + 0.01);
+        this.camera.lookAt(c.x, c.y, c.z);
+      }
+      this.player.animate(dt, false);
     } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
       this.timeLeft -= dt;
@@ -1515,6 +1620,21 @@ export class Game {
         const dz = this.player.position.z - this.world.greenCenterZ;
         if (dx * dx + dz * dz > (this.world.greenRadius + 9) ** 2) {
           this._puttPrompted = false;
+        }
+      }
+
+      // Veggie Tac Toe: a multiple of 7 on the patch invites a game.
+      if (this.canStartVeggie()) {
+        if (!this._veggiePrompted) {
+          this.ui.showTimeToast('VEGGIE TAC TOE! DOUBLE-TAP TO CHALLENGE TURNIP SCART');
+          this._veggiePrompted = true;
+        }
+      } else if (this._veggiePrompted) {
+        const dx = this.player.position.x - this.world.vegPatchX;
+        const dz = this.player.position.z - this.world.vegPatchZ;
+        const off = dx * dx + dz * dz > (this.world.vegPatchRadius + 6) ** 2;
+        if (off || !Number.isInteger(this.points) || this.points % 7 !== 0) {
+          this._veggiePrompted = false;
         }
       }
 
@@ -1568,7 +1688,8 @@ export class Game {
     if (this.balloon) this.balloon.update(dt, time);
     if (this.launchpad) this.launchpad.update(dt);
     if (this.rocket) this.rocket.update(dt, time);
-    if (this.goat) this.goat.update(dt, time);
+    // Turnip Scart holds still while he's playing you at Veggie Tac Toe.
+    if (this.goat && !this.veggieGame) this.goat.update(dt, time);
     if (this.clockTower) {
       this.clockTower.update(dt);
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));
@@ -1592,6 +1713,8 @@ export class Game {
   dispose() {
     this.renderer.setAnimationLoop(null);
     window.removeEventListener('resize', this._onResize);
+    if (this.minigame) { this.minigame.dispose(); this.minigame = null; }
+    if (this.veggieGame) { this.veggieGame.dispose(); this.veggieGame = null; }
     this.clearEntities();
     disposeEntityAssets();
     this.particles.dispose();

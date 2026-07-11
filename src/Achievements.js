@@ -45,5 +45,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'marblella', name: 'Marblella', how: 'Touch all four cottage fixtures (clock, stove, fridge, trap door) in one run.' },
   { key: 'fir', name: 'President Fir Tree', how: 'Jump three times inside the sealed Mystic Forest.' },
   { key: 'margaret', name: 'Margaret', how: 'In one run: 5 cherries, 4 clouds, 5 frog hits, and a final score ending in 4.' },
-  { key: 'julie', name: 'Julie', how: 'Dismount from the rocket, the hovercraft AND the balloon in one run.' }
+  { key: 'julie', name: 'Julie', how: 'Dismount from the rocket, the hovercraft AND the balloon in one run.' },
+  { key: 'turnip', name: 'Turnip Scart', how: 'Beat the goat at Veggie Tac Toe on the vegetable patch (score a multiple of 7).' }
 ];

@@ -34,6 +34,8 @@ export class UI {
     this.puttStrokes = document.getElementById('putt-strokes');
     this.puttFill = document.getElementById('putt-fill');
     this.travelPanel = document.getElementById('travel-panel');
+    this.veggiePanel = document.getElementById('veggie-panel');
+    this.veggieStatus = document.getElementById('veggie-status');
     this.achievementsBtn = document.getElementById('achievements-btn');
     this.achievementsPanel = document.getElementById('achievements-panel');
     this.achClose = document.getElementById('ach-close');
@@ -181,6 +183,20 @@ export class UI {
 
   setPuttPower(t) {
     this.puttFill.style.width = `${Math.round(t * 100)}%`;
+  }
+
+  /* ---------------- Veggie Tac Toe ---------------- */
+
+  showVeggie() {
+    if (this.veggiePanel) this.veggiePanel.classList.remove('hidden');
+  }
+
+  hideVeggie() {
+    if (this.veggiePanel) this.veggiePanel.classList.add('hidden');
+  }
+
+  setVeggieStatus(text) {
+    if (this.veggieStatus) this.veggieStatus.textContent = text;
   }
 
   /* ---------------- Mystic Line travel picker ---------------- */

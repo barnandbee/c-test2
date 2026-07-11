@@ -487,6 +487,42 @@ body {
   text-shadow: 0 2px 12px rgba(255, 212, 79, 0.4);
 }
 
+/* ---------- Veggie Tac Toe ---------- */
+
+#veggie-panel {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: var(--font-notes);
+  padding: 14px 30px;
+  background: var(--hud-bg);
+  border: 1px solid rgba(138, 184, 106, 0.5);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 15;
+}
+
+#veggie-title {
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: #b6e08a;
+  text-shadow: 0 2px 12px rgba(138, 184, 106, 0.4);
+}
+
+#veggie-status {
+  font-size: 18px;
+  color: #f3efff;
+  margin: 2px 0 4px;
+}
+
+#veggie-help {
+  font-size: 12px;
+  color: rgba(243, 239, 255, 0.6);
+}
+
 /* ---------- Mystic Line destination picker ---------- */
 
 #travel-panel {
@@ -1383,6 +1419,49 @@ body {
   border-top: none;
   border-radius: 0 0 14px 14px;
   transform: translateX(-50%);
+}
+
+/* Turnip Scart: a goat — cream face, dark saddle crown, horns, beard. */
+.turnip-icon {
+  position: relative;
+  border-radius: 50% 50% 45% 45%;
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 38% 44%, #141210 0 2px, transparent 2.6px),
+    radial-gradient(circle at 62% 44%, #141210 0 2px, transparent 2.6px),
+    radial-gradient(circle at 50% 66%, #3a2f28 0 2px, transparent 2.6px),
+    linear-gradient(180deg, #efe9da, #e2dccb);
+}
+
+.turnip-icon::before {
+  /* dark woolly crown */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 6px;
+  height: 13px;
+  background: #6a5c48;
+  border-radius: 50% 50% 40% 40%;
+}
+
+.turnip-icon::after {
+  /* two horns curving back over the crown */
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 10px;
+  background:
+    radial-gradient(circle at 0 100%, transparent 6px, #bfae86 6px 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 100%, transparent 6px, #bfae86 6px 8px, transparent 8.5px);
+}
+
+/* chin beard */
+.turnip-icon {
+  box-shadow: 0 9px 0 -4px #efe9da;
 }
 
 /* Julie: a blue-merle doodle — black ear + eye-mask, blue eye, grey beard. */

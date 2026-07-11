@@ -140,6 +140,7 @@ export class Player {
     else if (this.character === 'fir') this.root = this.buildFir();
     else if (this.character === 'margaret') this.root = this.buildMargaret();
     else if (this.character === 'julie') this.root = this.buildJulie();
+    else if (this.character === 'turnip') this.root = this.buildTurnip();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2673,6 +2674,121 @@ export class Player {
       paw.scale.set(1, 0.7, 1.2);
       paw.castShadow = true;
       pivot.add(paw);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+
+    return root;
+  }
+
+  /**
+   * Turnip Scart — the goat from the vegetable patch, now playable: a
+   * cream body with a woolly dark saddle, curved horns, floppy ears, a
+   * chin beard and dark hooves. Beat him at Veggie Tac Toe to earn him.
+   */
+  buildTurnip() {
+    const root = new THREE.Group();
+    root.name = 'turnip';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const coat = track(createToonMaterial({
+      color: 0xe8e2d2,
+      rim: { color: 0xffffff, strength: 0.35, threshold: 0.64 }
+    }));
+    const dark = track(createToonMaterial({ color: 0x6a5c48 }));
+    const hoof = track(createToonMaterial({ color: 0x2b2620 }));
+    const hornMat = track(createToonMaterial({ color: 0xbfae86, rim: { color: 0xffedc0, strength: 0.4, threshold: 0.6 } }));
+    const noseMat = track(createToonMaterial({ color: 0x3a2f28 }));
+    const eyeMat = track(createToonMaterial({ color: 0x141210 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso + saddle + stubby tail ----------------------------------
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.36, 0.56, 6, 12));
+    torsoGeo.rotateX(Math.PI / 2); // long axis along Z (forward)
+    const torso = new THREE.Mesh(torsoGeo, coat);
+    torso.scale.set(0.95, 0.95, 1.15);
+    torso.castShadow = true;
+    body.add(torso);
+    const saddle = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 12)), dark);
+    saddle.position.set(0, 0.16, -0.05);
+    saddle.scale.set(0.9, 0.5, 1.35);
+    body.add(saddle);
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.08, 0.2, 6)), coat);
+    tail.position.set(0, 0.14, -0.62);
+    tail.rotation.x = -1.2;
+    body.add(tail);
+    this.tail = tail;
+
+    // --- head (dips when idle via headGroup) ---------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.24, 0.56);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const neck = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.17, 0.42, 10)), coat);
+    neck.position.set(0, 0.12, -0.06);
+    neck.rotation.x = 0.7;
+    neck.castShadow = true;
+    headGroup.add(neck);
+    const headGeo = track(new THREE.CapsuleGeometry(0.15, 0.22, 5, 10));
+    headGeo.rotateX(Math.PI / 2);
+    const head = new THREE.Mesh(headGeo, coat);
+    head.position.set(0, 0.3, 0.22);
+    head.scale.set(0.95, 0.85, 1.15);
+    head.castShadow = true;
+    headGroup.add(head);
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), noseMat);
+    nose.position.set(0, 0.26, 0.44);
+    nose.scale.set(1, 0.8, 0.7);
+    headGroup.add(nose);
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.ConeGeometry(0.07, 0.22, 6)), coat);
+      ear.position.set(side * 0.16, 0.4, 0.18);
+      ear.rotation.set(1.9, 0, side * 0.6);
+      headGroup.add(ear);
+      const horn = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.3, 7)), hornMat);
+      horn.position.set(side * 0.09, 0.5, 0.14);
+      horn.rotation.set(-0.5, 0, side * 0.25);
+      horn.castShadow = true;
+      headGroup.add(horn);
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), eyeMat);
+      eye.position.set(side * 0.11, 0.34, 0.34);
+      headGroup.add(eye);
+    }
+    const beard = new THREE.Mesh(track(new THREE.ConeGeometry(0.06, 0.22, 6)), coat);
+    beard.position.set(0, 0.12, 0.4);
+    beard.rotation.x = -0.3;
+    headGroup.add(beard);
+
+    // --- four legs with dark hooves ------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.06, 0.05, 0.5, 8));
+    legGeo.translate(0, -0.25, 0);
+    const hoofGeo = track(new THREE.CylinderGeometry(0.07, 0.08, 0.1, 8));
+    this.legs = [];
+    const slots = [
+      { x: -0.22, z: 0.32, phase: 0 },
+      { x: 0.22, z: 0.32, phase: Math.PI },
+      { x: -0.24, z: -0.34, phase: Math.PI },
+      { x: 0.24, z: -0.34, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.3, slot.z);
+      const leg = new THREE.Mesh(legGeo, coat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const hf = new THREE.Mesh(hoofGeo, hoof);
+      hf.position.y = -0.5;
+      pivot.add(hf);
       body.add(pivot);
       this.legs.push({ pivot, phase: slot.phase });
     }
