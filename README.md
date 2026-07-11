@@ -194,8 +194,10 @@ import map — no npm install, no bundler.
   Stand on his patch with a score that's a **multiple of 7** and
   double-tap to challenge him to **Veggie Tac Toe**: tic-tac-toe from a
   bird's-eye view, you planting 🥬 cabbages against his 🟣 turnips (tap
-  a square or press 1–9; the run clock freezes). **Beat the goat** and
-  he joins the roster as a playable character.
+  a square or press 1–9; the run clock freezes). The panel drops to the
+  bottom, clear of the board, and minimises if it's in the way. You get
+  **one game per run**. **Beat the goat** and he joins the roster as a
+  playable character.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive
@@ -218,9 +220,12 @@ import map — no npm install, no bundler.
   deed that unlocks them, plus a wall of persistent trophies: score
   milestones (50 / 100 / 200 / 300 / 400 / 500), a decimal score,
   three and ten clock-tower visits in a run, a Puttmost hole-in-one,
-  reaching the tube station, diving to the lake bed as Marblella,
-  collecting a star or a cloud, letting your health hit zero, and
-  unlocking 1 / 5 / 10 characters. Earned trophies are saved locally
+  reaching the tube station, riding the Mystic Line, diving to the lake
+  bed as Marblella, collecting a star or a cloud, clearing every star /
+  cloud / cherry / golden pine cone in a run (and all three of stars,
+  cherries and clouds together), letting your health hit zero, the
+  **Yo-Yo 🪀** (bouncing your score across 100 up-down-up-down-up in one
+  run), and unlocking 1 / 5 / 10 characters. Earned trophies are saved locally
   and announced with a 🏆 toast the moment you earn them.
 
 ## Architecture

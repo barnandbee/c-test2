@@ -491,12 +491,12 @@ body {
 
 #veggie-panel {
   position: fixed;
-  bottom: 76px;
+  bottom: 12px;             /* dropped to the very bottom, clear of the board */
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-notes);
-  padding: 14px 30px;
+  padding: 10px 40px 12px;
   background: var(--hud-bg);
   border: 1px solid rgba(138, 184, 106, 0.5);
   border-radius: 18px;
@@ -507,10 +507,36 @@ body {
 }
 
 #veggie-title {
-  font-size: 26px;
+  font-size: 22px;
   letter-spacing: 0.06em;
   color: #b6e08a;
   text-shadow: 0 2px 12px rgba(138, 184, 106, 0.4);
+}
+
+#veggie-min {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: rgba(243, 239, 255, 0.7);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-stack);
+}
+
+/* Minimised: only the title bar shows; the button flips to a maximise ▴. */
+#veggie-panel.minimised {
+  padding: 8px 40px;
+}
+
+#veggie-panel.minimised #veggie-body {
+  display: none;
+}
+
+#veggie-panel.minimised #veggie-min {
+  transform: rotate(180deg);
 }
 
 #veggie-status {

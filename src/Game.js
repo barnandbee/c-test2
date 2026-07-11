@@ -244,11 +244,21 @@ export class Game {
     // Margaret's tally: cherries (+3), clouds (+5) and frog hits.
     this.cherriesCollected = 0;
     this.cloudsCollected = 0;
+    this.eggsCollected = 0;
     this.frogHits = 0;
+    // Spawned counts this run, for the "clear them all" trophies.
+    this.spawnedStars = 0;
+    this.spawnedClouds = 0;
+    this.spawnedCherries = 0;
+    this.spawnedEggs = 0;
+    // Yo-Yo: how many times the score has crossed 100, and which side.
+    this._yoyoCrossings = 0;
+    this._over100 = false;
     // Julie: the vehicle kinds dismounted from this run.
     this.vehiclesDismounted = new Set();
     this.minigame = null;
     this.veggieGame = null;
+    this.veggiePlayed = false;
     this._veggiePrompted = false;
     this.puttPlayed = false;
     this._puttPrompted = false;
@@ -310,6 +320,7 @@ export class Game {
       const p = this.world.randomGroundPoint(30, 98, 0.72);
       this.collectibles.push(new GoldenEgg(this.scene, p));
     }
+    this.spawnedEggs = GOLDEN_EGG_COUNT;
     for (let i = 0; i < FROG_COUNT; i++) {
       const p = this.world.randomGroundPoint(14, 85);
       this.frogs.push(new ToxicFrog(this.scene, this.world, p));
@@ -326,14 +337,18 @@ export class Game {
       p.y += 19 + Math.random() * 9;
       this.collectibles.push(new MarshmallowCloud(this.scene, p));
     }
+    this.spawnedClouds = MARSHMALLOW_COUNT;
 
     // Atomic glacé cherries crown a handful of random trees.
     const tops = [...this.world.treeTops];
+    let cherries = 0;
     for (let i = 0; i < CHERRY_COUNT && tops.length > 0; i++) {
       const pick = Math.floor(Math.random() * tops.length);
       const top = tops.splice(pick, 1)[0];
       this.collectibles.push(new AtomicCherry(this.scene, top.clone()));
+      cherries++;
     }
+    this.spawnedCherries = cherries;
 
     // Magna Cartas are rare: one crowns the Escher stairs (earn the climb),
     // one hides out in the far wilds.
@@ -361,6 +376,7 @@ export class Game {
       p.y = 80 + Math.random() * 30;
       this.collectibles.push(new Star(this.scene, p));
     }
+    this.spawnedStars = STAR_COUNT;
     this.launchpad = new Launchpad(this.scene, this.world);
 
     // Turnip Scart the goat, grazing his vegetable patch.
@@ -460,9 +476,11 @@ export class Game {
         }
       }
 
-      // Margaret keeps count of her cherries (+3) and clouds (+5).
+      // Margaret keeps count of her cherries (+3) and clouds (+5); eggs
+      // (the golden pine cone, +10) get their own tally too.
       if (item.value === 3) this.cherriesCollected += 1;
       if (item.value === 5) this.cloudsCollected += 1;
+      if (item.value === 10) this.eggsCollected += 1;
 
       // Trophies for collecting the sky's bounty.
       if (item.value === STAR_VALUE) this.awardAchievement('star');
@@ -728,6 +746,26 @@ export class Game {
       this.player.position.y < this.world.waterLevel - 3
     ) {
       this.awardAchievement('lakebed');
+    }
+
+    // Clear-them-all sweeps (only meaningful once any of that species
+    // has actually spawned this run).
+    const allStars = this.spawnedStars > 0 && this.starsCollected >= this.spawnedStars;
+    const allClouds = this.spawnedClouds > 0 && this.cloudsCollected >= this.spawnedClouds;
+    const allCherries = this.spawnedCherries > 0 && this.cherriesCollected >= this.spawnedCherries;
+    const allEggs = this.spawnedEggs > 0 && this.eggsCollected >= this.spawnedEggs;
+    if (allStars) this.awardAchievement('allstars');
+    if (allClouds) this.awardAchievement('allclouds');
+    if (allCherries) this.awardAchievement('allcherries');
+    if (allEggs) this.awardAchievement('alleggs');
+    if (allStars && allClouds && allCherries) this.awardAchievement('allsky');
+
+    // Yo-Yo: the score bouncing across 100 — up, down, up, down, up.
+    const over = p > 100;
+    if (over !== this._over100) {
+      this._over100 = over;
+      this._yoyoCrossings += 1;
+      if (this._yoyoCrossings >= 5) this.awardAchievement('yoyo');
     }
   }
 
@@ -1099,6 +1137,7 @@ export class Game {
   travelTo(dest) {
     if (!this.travelOpen || this.isGameOver) return;
     this.closeTravel();
+    this.awardAchievement('train'); // rode the Mystic Line
     const w = this.world;
 
     // Departure puff on the platform.
@@ -1270,7 +1309,7 @@ export class Game {
    * minigame already running.
    */
   canStartVeggie() {
-    if (this.minigame || this.veggieGame || !this.world.vegPatchPos) return false;
+    if (this.minigame || this.veggieGame || this.veggiePlayed || !this.world.vegPatchPos) return false;
     if (!Number.isInteger(this.points) || this.points <= 0 || this.points % 7 !== 0) return false;
     const dx = this.player.position.x - this.world.vegPatchX;
     const dz = this.player.position.z - this.world.vegPatchZ;
@@ -1281,11 +1320,11 @@ export class Game {
     if (document.pointerLockElement) document.exitPointerLock();
     this.input.suppressPointerLock = true; // keep the cursor visible for clicks
     this.player.root.visible = false; // clear the board for the bird's-eye view
+    this.veggiePlayed = true;          // once per run
     // Cell selection is by tap; the on-screen joystick/look zones would
     // otherwise swallow those taps, so hide them for the duration.
     const tc = document.getElementById('touch-controls');
     if (tc) tc.classList.add('hidden');
-    this.ui.showTimeToast('VEGGIE TAC TOE vs TURNIP SCART!');
     // Sit Turnip Scart at the board's edge as the opponent (and stop his
     // wandering for the duration, so he doesn't graze across the cells).
     if (this.goat) {
@@ -1484,7 +1523,10 @@ export class Game {
     this._inDell = false;
     this.cherriesCollected = 0;
     this.cloudsCollected = 0;
+    this.eggsCollected = 0;
     this.frogHits = 0;
+    this._yoyoCrossings = 0;
+    this._over100 = false;
     this.vehiclesDismounted.clear();
     this.renderer.domElement.classList.remove('mystic');
     this.world.resetRug();
@@ -1502,6 +1544,7 @@ export class Game {
       const tc = document.getElementById('touch-controls');
       if (tc) tc.classList.remove('hidden');
     }
+    this.veggiePlayed = false;
     this._veggiePrompted = false;
     this.puttPlayed = false;
     this._puttPrompted = false;

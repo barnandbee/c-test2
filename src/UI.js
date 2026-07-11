@@ -188,7 +188,14 @@ export class UI {
   /* ---------------- Veggie Tac Toe ---------------- */
 
   showVeggie() {
-    if (this.veggiePanel) this.veggiePanel.classList.remove('hidden');
+    if (!this.veggiePanel) return;
+    this.veggiePanel.classList.remove('hidden', 'minimised');
+    // Wire the minimise/maximise toggle once.
+    if (!this._veggieMinWired) {
+      this._veggieMinWired = true;
+      const btn = document.getElementById('veggie-min');
+      if (btn) btn.addEventListener('click', () => this.veggiePanel.classList.toggle('minimised'));
+    }
   }
 
   hideVeggie() {

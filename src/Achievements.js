@@ -24,7 +24,14 @@ export const TROPHIES = [
   { id: 'rip', medal: '💀', title: 'R.I.P.', desc: 'Let your health reach zero.' },
   { id: 'unlock1', medal: '🎭', title: 'Recruiter', desc: 'Unlock a character.' },
   { id: 'unlock5', medal: '🎪', title: 'Talent Scout', desc: 'Unlock 5 characters.' },
-  { id: 'unlock10', medal: '🌟', title: 'Impresario', desc: 'Unlock 10 characters.' }
+  { id: 'unlock10', medal: '🎡', title: 'Impresario', desc: 'Unlock 10 characters.' },
+  { id: 'allstars', medal: '🌌', title: 'Star Cleaner', desc: 'Collect every star in a run.' },
+  { id: 'allclouds', medal: '🌥️', title: 'Cloud Cleaner', desc: 'Collect every marshmallow cloud in a run.' },
+  { id: 'allcherries', medal: '🍒', title: 'Cherry Cleaner', desc: 'Collect every atomic cherry in a run.' },
+  { id: 'alleggs', medal: '🥇', title: 'Golden Sweep', desc: 'Collect every golden pine cone in a run.' },
+  { id: 'allsky', medal: '🧹', title: 'Clean Sweep', desc: 'Clear all stars, cherries and clouds in one run.' },
+  { id: 'train', medal: '🚆', title: 'Getting the Train', desc: 'Ride the Mystic Line from the ticket machine.' },
+  { id: 'yoyo', medal: '🪀', title: 'Yo-Yo', desc: 'Cross 100 points up, down, up, down, up in one run.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
