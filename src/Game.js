@@ -76,6 +76,7 @@ const STORAGE_FIR = 'mystic-badger.firUnlocked';
 const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_JULIE = 'mystic-badger.julieUnlocked';
 const STORAGE_TURNIP = 'mystic-badger.turnipUnlocked';
+const STORAGE_SWEATSHIRT = 'mystic-badger.sweatshirtUnlocked';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
@@ -160,6 +161,7 @@ export class Game {
     this.margaretUnlocked = readStorage(STORAGE_MARGARET) === '1';
     this.julieUnlocked = readStorage(STORAGE_JULIE) === '1';
     this.turnipUnlocked = readStorage(STORAGE_TURNIP) === '1';
+    this.sweatshirtUnlocked = readStorage(STORAGE_SWEATSHIRT) === '1';
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -656,6 +658,7 @@ export class Game {
     if (name === 'margaret') return this.margaretUnlocked;
     if (name === 'julie') return this.julieUnlocked;
     if (name === 'turnip') return this.turnipUnlocked;
+    if (name === 'sweatshirt') return this.sweatshirtUnlocked;
     return name === 'badger';
   }
 
@@ -677,7 +680,8 @@ export class Game {
       fir: this.firUnlocked,
       margaret: this.margaretUnlocked,
       julie: this.julieUnlocked,
-      turnip: this.turnipUnlocked
+      turnip: this.turnipUnlocked,
+      sweatshirt: this.sweatshirtUnlocked
     };
   }
 
@@ -738,6 +742,15 @@ export class Game {
     if (unlocked >= 1) this.awardAchievement('unlock1');
     if (unlocked >= 5) this.awardAchievement('unlock5');
     if (unlocked >= 10) this.awardAchievement('unlock10');
+
+    // Haunted Sweatshirt: a spectral reward for amassing 30 achievements
+    // in total — earned trophies plus every hero unlocked so far.
+    if (!this.sweatshirtUnlocked && this.achievements.size + unlocked >= 30) {
+      this.sweatshirtUnlocked = true;
+      writeStorage(STORAGE_SWEATSHIRT, '1');
+      this.runUnlockNames.push('Haunted Sweatshirt');
+      this.ui.showTimeToast('★ HAUNTED SWEATSHIRT UNLOCKED!');
+    }
 
     // Deep Diver: Marblella at the bottom of the lake.
     if (

@@ -198,6 +198,12 @@ import map — no npm install, no bundler.
   bottom, clear of the board, and minimises if it's in the way. You get
   **one game per run**. **Beat the goat** and he joins the roster as a
   playable character.
+- **Haunted Sweatshirt** — an ethereal, faceless blue garment that
+  floats where a body should be: a translucent glowing torso with a
+  ribbed hem and collar, an empty neck void lit by a cold inner glow,
+  and two limp sleeves that sway as it drifts. No legs, no face — it
+  simply hovers. Unlock it once you've **amassed 30 achievements in
+  total** — trophies earned plus characters unlocked.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

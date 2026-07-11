@@ -53,5 +53,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'fir', name: 'President Fir Tree', how: 'Jump three times inside the sealed Mystic Forest.' },
   { key: 'margaret', name: 'Margaret', how: 'In one run: 5 cherries, 4 clouds, 5 frog hits, and a final score ending in 4.' },
   { key: 'julie', name: 'Julie', how: 'Dismount from the rocket, the hovercraft AND the balloon in one run.' },
-  { key: 'turnip', name: 'Turnip Scart', how: 'Beat the goat at Veggie Tac Toe on the vegetable patch (score a multiple of 7).' }
+  { key: 'turnip', name: 'Turnip Scart', how: 'Beat the goat at Veggie Tac Toe on the vegetable patch (score a multiple of 7).' },
+  { key: 'sweatshirt', name: 'Haunted Sweatshirt', how: 'Amass 30 achievements in total — trophies earned plus characters unlocked.' }
 ];

@@ -107,6 +107,7 @@ export class Player {
     this.googlyEyes = null;  // rattling pupils (Hughes, Edith)
     this.rockMesh = null;    // Rhombus: the body that waddle-rocks
     this.isGlitchy = false;  // Error #42's intermittent reality problem
+    this.isFloaty = false;   // Haunted Sweatshirt's ethereal hover
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -141,6 +142,7 @@ export class Player {
     else if (this.character === 'margaret') this.root = this.buildMargaret();
     else if (this.character === 'julie') this.root = this.buildJulie();
     else if (this.character === 'turnip') this.root = this.buildTurnip();
+    else if (this.character === 'sweatshirt') this.root = this.buildSweatshirt();
     else this.root = this.buildBadger(); // badger, badgerette, william
     this.root.position.copy(this.position);
   }
@@ -2816,6 +2818,137 @@ export class Player {
     return root;
   }
 
+  /**
+   * Haunted Sweatshirt — an ethereal, faceless blue garment that floats
+   * where a body should be. A boxy translucent torso with a ribbed hem,
+   * collar and cuffs; a dark empty neck void instead of a head; and two
+   * limp sleeves that dangle as arms so they sway. No legs, no face — it
+   * simply drifts (isFloaty), lit from within by a cold spectral glow.
+   */
+  buildSweatshirt() {
+    const root = new THREE.Group();
+    root.name = 'sweatshirt';
+    this.isFloaty = true;
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Translucent glowing cloth — double-sided so the hollow interior reads.
+    const clothMat = track(createToonMaterial({
+      color: 0x5b8fd8,
+      emissive: 0x2a5fb0,
+      emissiveIntensity: 0.9,
+      rim: { color: 0xcfe4ff, strength: 0.7, threshold: 0.4 }
+    }));
+    clothMat.transparent = true;
+    clothMat.opacity = 0.62;
+    clothMat.side = THREE.DoubleSide;
+    clothMat.depthWrite = false;
+
+    // A slightly deeper tone for the ribbed knit trim.
+    const ribMat = track(createToonMaterial({
+      color: 0x3f6fc0,
+      emissive: 0x24509a,
+      emissiveIntensity: 0.8,
+      rim: { color: 0xbcd6ff, strength: 0.6, threshold: 0.45 }
+    }));
+    ribMat.transparent = true;
+    ribMat.opacity = 0.7;
+    ribMat.side = THREE.DoubleSide;
+    ribMat.depthWrite = false;
+
+    // The empty neck hole: an unlit void where a head never was.
+    const voidMat = track(createToonMaterial({ color: 0x060912 }));
+    voidMat.side = THREE.DoubleSide;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.72;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: a soft boxy sweatshirt, gently barrelled --------------------
+    const torsoGeo = track(new THREE.BoxGeometry(0.64, 0.62, 0.4, 8, 8, 6));
+    {
+      const pos = torsoGeo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        // Barrel the sides out a touch and soften the corners.
+        const bulge = 1 + (1 - Math.abs(v.y / 0.31)) * 0.12;
+        v.x *= bulge;
+        v.z *= bulge * (1 + Math.abs(v.x) * 0.15);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      torsoGeo.computeVertexNormals();
+    }
+    const torso = new THREE.Mesh(torsoGeo, clothMat);
+    torso.castShadow = true;
+    body.add(torso);
+
+    // Ribbed waist hem.
+    const hem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.34, 0.34, 0.12, 20, 1, true)), ribMat);
+    hem.scale.set(1, 1, 1.18);
+    hem.position.y = -0.34;
+    body.add(hem);
+
+    // --- collar + hollow neck void -----------------------------------------
+    const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.15, 0.05, 8, 20)), ribMat);
+    collar.rotation.x = Math.PI / 2;
+    collar.position.y = 0.34;
+    body.add(collar);
+    const neckVoid = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.15, 0.22, 18, 1, true)), voidMat);
+    neckVoid.position.y = 0.3;
+    body.add(neckVoid);
+    // A cap at the bottom of the void so you can't see clean through.
+    const voidFloor = new THREE.Mesh(track(new THREE.CircleGeometry(0.14, 18)), voidMat);
+    voidFloor.rotation.x = -Math.PI / 2;
+    voidFloor.position.y = 0.2;
+    body.add(voidFloor);
+
+    // A faint inner glow orb suggesting the spectral presence within.
+    const ghostMat = track(createToonMaterial({
+      color: 0xbfe0ff,
+      emissive: 0x9cc8ff,
+      emissiveIntensity: 1.5,
+      pulse: { speed: 2.4, phase: 0 }
+    }));
+    ghostMat.transparent = true;
+    ghostMat.opacity = 0.5;
+    const ghost = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 12, 10)), ghostMat);
+    ghost.position.y = 0.05;
+    body.add(ghost);
+
+    // --- two dangling sleeves, rigged as swaying arms -----------------------
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, 0.24, 0);
+      // Shoulder cloth swells then tapers into the sleeve.
+      const sleeveGeo = track(new THREE.CapsuleGeometry(0.11, 0.42, 5, 10));
+      const sleeve = new THREE.Mesh(sleeveGeo, clothMat);
+      sleeve.position.y = -0.28;
+      sleeve.scale.set(1.05, 1, 1.05);
+      sleeve.rotation.z = side * 0.12;
+      sleeve.castShadow = true;
+      pivot.add(sleeve);
+      // Ribbed cuff at the wrist opening.
+      const cuff = new THREE.Mesh(track(new THREE.CylinderGeometry(0.09, 0.09, 0.1, 12, 1, true)), ribMat);
+      cuff.position.set(side * 0.06, -0.52, 0);
+      pivot.add(cuff);
+      body.add(pivot);
+      // Sleeves hang down at rest (offset the swing so they droop).
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, droop: 0.35 });
+    }
+
+    // No legs — it floats.
+    this.legs = [];
+
+    return root;
+  }
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -3287,6 +3420,20 @@ export class Player {
       } else {
         this.bodyGroup.position.x = 0;
         this.bodyGroup.rotation.y = 0;
+      }
+    }
+
+    // Haunted Sweatshirt: an ethereal idle hover and slow spectral sway,
+    // the empty garment drifting as if held aloft by nothing at all. The
+    // dangling sleeves swing lazily out of phase with the body.
+    if (this.isFloaty) {
+      this.bodyGroup.position.y += Math.sin(t * 1.8) * 0.06;
+      this.bodyGroup.rotation.z = Math.sin(t * 1.3) * 0.05;
+      this.bodyGroup.rotation.y += Math.sin(t * 0.7) * 0.06;
+      if (this.arms) {
+        for (const arm of this.arms) {
+          arm.pivot.rotation.z = Math.sin(t * 1.5 + arm.phase) * 0.14;
+        }
       }
     }
 

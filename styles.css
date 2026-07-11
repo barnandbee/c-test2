@@ -1535,6 +1535,48 @@ body {
   box-shadow: 0 9px 0 -4px #efe9da;
 }
 
+/* Haunted Sweatshirt: a glowing, faceless blue garment with an empty neck. */
+.sweatshirt-icon {
+  position: relative;
+  border-color: transparent;
+  border-radius: 30% 30% 40% 40%;
+  background:
+    radial-gradient(circle at 50% 24%, #060912 0 4px, transparent 4.6px),
+    linear-gradient(180deg, #6f9fe6, #4470c4);
+  box-shadow:
+    0 0 10px 1px rgba(120, 175, 255, 0.75),
+    -9px 6px 0 -5px #5b8fd8,
+    9px 6px 0 -5px #5b8fd8;
+}
+
+.sweatshirt-icon::before {
+  /* collar ring around the empty neck void */
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13px;
+  height: 8px;
+  border: 2px solid #bcd6ff;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.sweatshirt-icon::after {
+  /* two dangling sleeves */
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 0 0, #5b8fd8 5px, transparent 5.5px),
+    radial-gradient(circle at 100% 0, #5b8fd8 5px, transparent 5.5px);
+}
+
 /* Julie: a blue-merle doodle — black ear + eye-mask, blue eye, grey beard. */
 .julie-icon {
   position: relative;
