@@ -2542,65 +2542,114 @@ export class Player {
     root.add(body);
     this.bodyGroup = body;
 
-    // --- torso: fluffy merle coat with a few dark cloud-patches ---------
-    const torsoGeo = track(new THREE.SphereGeometry(0.6, 30, 22));
-    const torso = new THREE.Mesh(torsoGeo, merle);
-    torso.scale.set(1.0, 0.86, 1.34);
-    torso.castShadow = true;
-    body.add(torso);
-    // Curly-coat clumps + a couple of dark merle blotches.
-    const clumpGeo = track(new THREE.SphereGeometry(0.17, 10, 8));
-    const clumps = [
-      [0.28, 0.12, -0.35, dark], [-0.3, 0.05, 0.1, merle], [0.24, -0.05, 0.45, merle],
-      [-0.26, 0.16, -0.5, merle], [0.0, 0.28, -0.15, dark], [-0.2, -0.1, -0.6, dark],
-      [0.3, 0.0, 0.0, merle], [-0.3, 0.1, 0.5, merle], [0.1, 0.24, 0.4, merle]
-    ];
-    for (const [x, y, z, mat] of clumps) {
-      const clump = new THREE.Mesh(clumpGeo, mat);
-      clump.position.set(x, y, z);
-      clump.scale.setScalar(0.7 + ((x + z) % 0.3));
-      clump.castShadow = true;
-      body.add(clump);
+    // Shared unit-sphere geometry for the fur clumps (scaled per tuft).
+    const tuftGeo = track(new THREE.SphereGeometry(1, 6, 5));
+    const rng = () => Math.random();
+    // Plant a curly fur clump: a rounded blob (only gently elongated) so
+    // the coat reads as soft shaggy fur — a cloud of curls, not spikes.
+    const furTuft = (parent, px, py, pz, dir, mat, girth = 0.12, len = 0.14) => {
+      const m = new THREE.Mesh(tuftGeo, mat);
+      m.position.set(px, py, pz);
+      const d = dir.clone().normalize();
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), d);
+      const g = girth * (0.8 + rng() * 0.4);
+      m.scale.set(g, g * (0.85 + rng() * 0.3), len * (0.85 + rng() * 0.4));
+      m.rotateZ(rng() * Math.PI); // random curl
+      m.castShadow = true;
+      parent.add(m);
+      return m;
+    };
+
+    // --- torso: a dog-shaped body under a dense curly coat -------------
+    // A base ellipsoid keeps the volume filled; the shaggy silhouette is
+    // all the fur clumps planted over it.
+    const rx = 0.46, ry = 0.4, rz = 0.62;
+    const baseGeo = track(new THREE.SphereGeometry(1, 20, 16));
+    const base = new THREE.Mesh(baseGeo, merle);
+    base.scale.set(rx * 0.94, ry * 0.94, rz * 0.94);
+    base.position.y = 0.02;
+    base.castShadow = true;
+    body.add(base);
+    // Shoulders (front) and haunches (rear) give her a body, not a ball.
+    for (const side of [-1, 1]) {
+      const sh = new THREE.Mesh(baseGeo, merle);
+      sh.scale.set(0.22, 0.24, 0.26);
+      sh.position.set(side * 0.22, -0.02, 0.32);
+      body.add(sh);
+      const ha = new THREE.Mesh(baseGeo, merle);
+      ha.scale.set(0.27, 0.28, 0.3);
+      ha.position.set(side * 0.24, 0.0, -0.36);
+      body.add(ha);
     }
-    // Pale fluffy chest.
-    const chest = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 14, 12)), cream);
-    chest.position.set(0, -0.14, 0.44);
-    chest.scale.set(0.9, 0.85, 0.7);
-    body.add(chest);
+
+    // Curly coat: a dense cloud of rounded fur clumps over the body,
+    // cream on the belly/chest, a scattering of dark merle blotches.
+    for (let i = 0; i < 70; i++) {
+      const u = rng() * 2 - 1;
+      const theta = rng() * Math.PI * 2;
+      const r = Math.sqrt(1 - u * u);
+      const dx = r * Math.cos(theta);
+      const dy = u;
+      const dz = r * Math.sin(theta);
+      const dir = new THREE.Vector3(dx, dy, dz);
+      const px = dx * rx * 1.04;
+      const py = dy * ry * 1.04 + 0.02;
+      const pz = dz * rz * 1.04;
+      let mat = merle;
+      if (dy < -0.25 && Math.abs(dz) < 0.85) mat = cream;   // belly + chest
+      else if (rng() < 0.22) mat = dark;                     // merle blotches
+      furTuft(body, px, py, pz, dir, mat, 0.11 + rng() * 0.05, 0.12 + rng() * 0.05);
+    }
 
     // --- head, tilted alert -------------------------------------------
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 0.32, 0.72);
-    headGroup.rotation.z = 0.06;
+    headGroup.position.set(0, 0.34, 0.7);
+    headGroup.rotation.z = 0.05;
     body.add(headGroup);
     this.headGroup = headGroup;
 
-    const headGeo = track(new THREE.SphereGeometry(0.36, 24, 18));
-    const head = new THREE.Mesh(headGeo, merle);
-    head.scale.set(0.95, 0.95, 1.0);
+    const head = new THREE.Mesh(baseGeo, merle);
+    head.scale.set(0.3, 0.29, 0.32);
     head.castShadow = true;
     headGroup.add(head);
     // Black mask over her left side (viewer's right), around the eye.
-    const mask = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 14, 12)), dark);
-    mask.position.set(-0.16, 0.05, 0.18);
-    mask.scale.set(0.9, 1.0, 0.7);
+    const mask = new THREE.Mesh(baseGeo, dark);
+    mask.scale.set(0.19, 0.2, 0.15);
+    mask.position.set(-0.15, 0.04, 0.17);
     headGroup.add(mask);
+    // Shaggy forehead + cheek fur so the face reads fluffy, not smooth.
+    for (let i = 0; i < 18; i++) {
+      const u = rng() * 2 - 1;
+      const theta = rng() * Math.PI * 2;
+      const r = Math.sqrt(1 - u * u);
+      const dx = r * Math.cos(theta);
+      const dy = u;
+      const dz = r * Math.sin(theta);
+      if (dz > 0.5 && dy < 0.3) continue; // keep the face itself clear
+      const dir = new THREE.Vector3(dx, dy, dz);
+      const mat = dx < -0.3 && dz > -0.2 ? dark : merle; // fur over the mask side
+      furTuft(headGroup, dx * 0.31, dy * 0.3, dz * 0.33, dir, mat, 0.08, 0.09);
+    }
 
-    // Fluffy grey-white muzzle + beard, black nose.
-    const muzzle = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 16, 12)), cream);
-    muzzle.position.set(0, -0.14, 0.28);
-    muzzle.scale.set(0.85, 0.8, 1.0);
+    // Fluffy grey-white muzzle + a proper shaggy beard, black nose.
+    const muzzle = new THREE.Mesh(baseGeo, cream);
+    muzzle.scale.set(0.16, 0.15, 0.2);
+    muzzle.position.set(0, -0.13, 0.28);
     muzzle.castShadow = true;
     headGroup.add(muzzle);
-    for (let i = 0; i < 5; i++) {
-      const tuft = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 8, 6)), cream);
-      const a = (i / 5 - 0.5) * 1.6;
-      tuft.position.set(Math.sin(a) * 0.16, -0.28 - Math.abs(a) * 0.03, 0.28);
-      tuft.scale.set(0.7, 1.1, 0.7);
-      headGroup.add(tuft);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9 - 0.5) * 1.8;
+      furTuft(
+        headGroup,
+        Math.sin(a) * 0.15,
+        -0.24 - Math.abs(a) * 0.04,
+        0.24 + Math.cos(a) * 0.04,
+        new THREE.Vector3(Math.sin(a) * 0.5, -1, 0.3),
+        cream, 0.07, 0.13
+      );
     }
     const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), noseMat);
-    nose.position.set(0, -0.08, 0.5);
+    nose.position.set(0, -0.07, 0.48);
     headGroup.add(nose);
 
     // Bright blue eyes with glints (one sits in the black mask).
@@ -2608,32 +2657,40 @@ export class Player {
     const glintGeo = track(new THREE.SphereGeometry(0.016, 8, 6));
     for (const side of [-1, 1]) {
       const eye = new THREE.Mesh(eyeGeo, blueEye);
-      eye.position.set(side * 0.15, 0.06, 0.3);
+      eye.position.set(side * 0.14, 0.05, 0.3);
       headGroup.add(eye);
       const glint = new THREE.Mesh(glintGeo, glintMat);
-      glint.position.set(side * 0.13, 0.09, 0.35);
+      glint.position.set(side * 0.12, 0.08, 0.35);
       headGroup.add(glint);
     }
 
-    // Floppy ears: her left one black, her right one grey — both dangle.
-    const earGeo = track(new THREE.SphereGeometry(0.14, 12, 10));
+    // Floppy shaggy ears: left black, right grey — each a clump of tufts.
     this.hairGroup = new THREE.Group(); // lets ears sway via the mane path
     headGroup.add(this.hairGroup);
     for (const side of [-1, 1]) {
-      const ear = new THREE.Mesh(earGeo, side === -1 ? dark : merle);
-      ear.position.set(side * 0.3, 0.02, -0.02);
-      ear.scale.set(0.55, 1.5, 0.9);
-      ear.castShadow = true;
+      const earMat = side === -1 ? dark : merle;
+      const ear = new THREE.Group();
+      ear.position.set(side * 0.28, 0.04, -0.02);
       this.hairGroup.add(ear);
+      for (let i = 0; i < 5; i++) {
+        furTuft(
+          ear,
+          side * 0.02 + (rng() - 0.5) * 0.06,
+          -0.06 - i * 0.06,
+          (rng() - 0.5) * 0.06,
+          new THREE.Vector3(side * 0.3, -1, 0),
+          earMat, 0.1, 0.15 + i * 0.02
+        );
+      }
     }
 
     // Collar with the gold flower tag.
     const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.24, 0.04, 8, 20)), collarMat);
-    collar.position.set(0, 0.08, 0.5);
+    collar.position.set(0, 0.08, 0.48);
     collar.rotation.x = 1.3;
     body.add(collar);
     const tag = new THREE.Group();
-    tag.position.set(0, -0.12, 0.66);
+    tag.position.set(0, -0.12, 0.62);
     body.add(tag);
     for (let i = 0; i < 5; i++) {
       const petal = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 8, 6)), goldMat);
@@ -2644,33 +2701,47 @@ export class Player {
     const tagCenter = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), goldMat);
     tag.add(tagCenter);
 
-    // Curly plume of a tail.
-    const tail = new THREE.Mesh(track(new THREE.SphereGeometry(0.16, 12, 10)), merle);
-    tail.position.set(0, 0.1, -0.62);
-    tail.scale.set(0.8, 1.2, 0.9);
-    tail.castShadow = true;
+    // Shaggy curled plume of a tail (a clump of fur tufts).
+    const tail = new THREE.Group();
+    tail.position.set(0, 0.16, -0.58);
     body.add(tail);
     this.tail = tail;
+    for (let i = 0; i < 6; i++) {
+      const t = i / 5;
+      furTuft(
+        tail,
+        (rng() - 0.5) * 0.1,
+        0.02 + t * 0.22,
+        -t * 0.14,
+        new THREE.Vector3((rng() - 0.5) * 0.5, 1, -0.5),
+        rng() < 0.3 ? dark : merle, 0.11, 0.16
+      );
+    }
 
-    // --- four legs with dark curly paws --------------------------------
-    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.11, 0.36, 10));
+    // --- four legs: furry with dark paws -------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.1, 0.34, 10));
     const pawGeo = track(new THREE.SphereGeometry(0.12, 12, 10));
     this.legs = [];
     const slots = [
-      { x: -0.28, z: 0.4, phase: 0 },
-      { x: 0.28, z: 0.4, phase: Math.PI },
-      { x: -0.3, z: -0.44, phase: Math.PI },
-      { x: 0.3, z: -0.44, phase: 0 }
+      { x: -0.26, z: 0.36, phase: 0 },
+      { x: 0.26, z: 0.36, phase: Math.PI },
+      { x: -0.28, z: -0.4, phase: Math.PI },
+      { x: 0.28, z: -0.4, phase: 0 }
     ];
     for (const slot of slots) {
       const pivot = new THREE.Group();
-      pivot.position.set(slot.x, -0.28, slot.z);
+      pivot.position.set(slot.x, -0.26, slot.z);
       const leg = new THREE.Mesh(legGeo, merle);
-      leg.position.y = -0.16;
+      leg.position.y = -0.15;
       leg.castShadow = true;
       pivot.add(leg);
+      // Feathering: a ring of downward tufts around the upper leg.
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        furTuft(pivot, Math.cos(a) * 0.08, -0.06, Math.sin(a) * 0.08, new THREE.Vector3(Math.cos(a) * 0.4, -1, Math.sin(a) * 0.4), merle, 0.07, 0.11);
+      }
       const paw = new THREE.Mesh(pawGeo, dark);
-      paw.position.set(0, -0.36, 0.04);
+      paw.position.set(0, -0.34, 0.04);
       paw.scale.set(1, 0.7, 1.2);
       paw.castShadow = true;
       pivot.add(paw);
