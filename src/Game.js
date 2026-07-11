@@ -277,6 +277,8 @@ export class Game {
       () => this.ui.showAchievements(this.getAchievementsView()),
       () => this.ui.hideAchievements()
     );
+    // On-screen concede for Veggie Tac Toe (mobile has no Escape key).
+    this.ui.bindVeggieQuit(() => { if (this.veggieGame) this.veggieGame.abandon(); });
 
     // --- welcome menu -------------------------------------------------------
     // The run doesn't begin until ENTER THE FOREST; meanwhile the camera
@@ -1277,6 +1279,11 @@ export class Game {
 
   startVeggie() {
     if (document.pointerLockElement) document.exitPointerLock();
+    this.input.suppressPointerLock = true; // keep the cursor visible for clicks
+    // Cell selection is by tap; the on-screen joystick/look zones would
+    // otherwise swallow those taps, so hide them for the duration.
+    const tc = document.getElementById('touch-controls');
+    if (tc) tc.classList.add('hidden');
     this.ui.showTimeToast('VEGGIE TAC TOE vs TURNIP SCART!');
     // Sit Turnip Scart at the board's edge as the opponent (and stop his
     // wandering for the duration, so he doesn't graze across the cells).
@@ -1302,6 +1309,9 @@ export class Game {
     if (!this.veggieGame) return;
     this.veggieGame.dispose();
     this.veggieGame = null;
+    this.input.suppressPointerLock = false;
+    const tc = document.getElementById('touch-controls');
+    if (tc) tc.classList.remove('hidden'); // restore the touch controls
     if (result === 'win') {
       if (!this.turnipUnlocked) {
         this.turnipUnlocked = true;
@@ -1485,6 +1495,9 @@ export class Game {
     if (this.veggieGame) {
       this.veggieGame.dispose();
       this.veggieGame = null;
+      this.input.suppressPointerLock = false;
+      const tc = document.getElementById('touch-controls');
+      if (tc) tc.classList.remove('hidden');
     }
     this._veggiePrompted = false;
     this.puttPlayed = false;

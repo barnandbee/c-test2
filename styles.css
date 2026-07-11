@@ -502,7 +502,8 @@ body {
   border-radius: 18px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 15;
+  /* Above the touch overlays (15) so the Quit button stays tappable. */
+  z-index: 25;
 }
 
 #veggie-title {
@@ -521,6 +522,23 @@ body {
 #veggie-help {
   font-size: 12px;
   color: rgba(243, 239, 255, 0.6);
+}
+
+#veggie-quit {
+  margin-top: 10px;
+  font-family: var(--font-stack);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: rgba(243, 239, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 8px 26px;
+  cursor: pointer;
+}
+
+#veggie-quit:active {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* ---------- Mystic Line destination picker ---------- */

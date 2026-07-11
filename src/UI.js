@@ -199,6 +199,12 @@ export class UI {
     if (this.veggieStatus) this.veggieStatus.textContent = text;
   }
 
+  /** Wire the Veggie Tac Toe Quit button (mobile has no Escape key). */
+  bindVeggieQuit(cb) {
+    const btn = document.getElementById('veggie-quit');
+    if (btn) btn.addEventListener('click', cb);
+  }
+
   /* ---------------- Mystic Line travel picker ---------------- */
 
   showTravel() {

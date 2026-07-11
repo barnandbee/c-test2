@@ -90,10 +90,17 @@ export class VeggieTacToe {
     this._turnipTopMat = mat(createToonMaterial({ color: 0x9c5aa0 }));
     this._pieces = new Array(9).fill(null);
 
-    this._onPointerDown = (e) => this._handlePointer(e);
+    // Listen on window (capture) rather than the canvas: on touch devices
+    // the on-screen control overlays sit above the canvas and would
+    // otherwise swallow every tap before it reached the board. UI taps
+    // (the Quit button) are ignored here.
+    this._onPointerDown = (e) => {
+      if (e.target && e.target.closest && e.target.closest('button, #veggie-panel, #hud')) return;
+      this._handlePointer(e);
+    };
     this._onPointerMove = (e) => this.hover(e.clientX, e.clientY);
-    domElement.addEventListener('pointerdown', this._onPointerDown);
-    domElement.addEventListener('pointermove', this._onPointerMove);
+    window.addEventListener('pointerdown', this._onPointerDown, true);
+    window.addEventListener('pointermove', this._onPointerMove, true);
 
     ui.showVeggie();
     ui.setVeggieStatus('YOUR TURN — PLANT A CABBAGE');
@@ -298,8 +305,8 @@ export class VeggieTacToe {
   _cone(r, h) { const g = new THREE.ConeGeometry(r, h, 6); this._geos.push(g); return g; }
 
   dispose() {
-    this.domElement.removeEventListener('pointerdown', this._onPointerDown);
-    this.domElement.removeEventListener('pointermove', this._onPointerMove);
+    window.removeEventListener('pointerdown', this._onPointerDown, true);
+    window.removeEventListener('pointermove', this._onPointerMove, true);
     this.scene.remove(this.group);
     for (const g of this._geos) g.dispose();
     for (const m of this._mats) m.dispose();

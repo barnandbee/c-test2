@@ -52,8 +52,12 @@ export class Input {
     };
     this.onKeyUp = (e) => this.keys.delete(e.code);
 
+    // Set true while a minigame needs a visible cursor (e.g. clicking
+    // Veggie Tac Toe cells) so clicks don't grab pointer lock.
+    this.suppressPointerLock = false;
     this.onMouseDown = (e) => {
       if (e.button !== 0) return;
+      if (this.suppressPointerLock) return;
       if (!this.pointerLocked) {
         this.domElement.requestPointerLock();
         this.dragging = true;
