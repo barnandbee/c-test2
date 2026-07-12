@@ -166,6 +166,11 @@ export class World {
     this.dellZ = Math.sin(dellAngle) * 90;
     this.dellLevel = this.getHeight(this.dellX, this.dellZ);
     this.dellRadius = 9; // setting this arms the carve in getHeight()
+    // The sealing dome's dimensions, shared by getHeight() (which caps the
+    // bowl's ground below it) and _buildCopse() (which builds the mesh).
+    this.domeRadius = this.dellRadius + 5.2;
+    this.domeScaleY = 0.55;
+    this.domeHeadroom = 2.0; // ground stays this far below the dome shell
 
     // --- the vegetable patch: Turnip Scart's grazing grounds --------------
     // Purely decorative (no terrain carve), so a gentle-ground search that
@@ -283,6 +288,18 @@ export class World {
           (1 - smoothstep(this.dellRadius + 1, this.dellRadius + 6.5, dd));
         h += wall * 10;
         h = lerp(this.dellLevel, h, smoothstep(this.dellRadius - 3.5, this.dellRadius - 1.5, dd));
+      }
+      // Cap the bowl's ground safely below its own dome. The ring wall used
+      // to poke up through the shallow ceiling, giving a hard landing a
+      // sliver of standable ground to strand you on — "stuck in the
+      // ceiling". Containment is the tall collider ring's job, not the
+      // wall's, so trimming the ground here is free.
+      if (dd < this.domeRadius) {
+        const ceil =
+          this.dellLevel +
+          this.domeScaleY * Math.sqrt(this.domeRadius * this.domeRadius - dd * dd) -
+          this.domeHeadroom;
+        if (h > ceil) h = ceil;
       }
     }
     // Raise the snow-capped mountain. Inside the footprint the rolling
@@ -2220,7 +2237,7 @@ export class World {
     // The dome: a rough stone shell closing the dell's sky. Its rim
     // buries itself in the ring wall; it casts no shadow so the grove
     // below keeps its glow.
-    const domeGeo = track(new THREE.SphereGeometry(this.dellRadius + 5.2, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.62));
+    const domeGeo = track(new THREE.SphereGeometry(this.domeRadius, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.62));
     {
       const pos = domeGeo.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -2238,7 +2255,7 @@ export class World {
     }));
     domeMat.side = THREE.DoubleSide;
     const dome = new THREE.Mesh(domeGeo, domeMat);
-    dome.scale.y = 0.55;
+    dome.scale.y = this.domeScaleY;
     dome.position.set(cx, y, cz);
     copse.add(dome);
 

@@ -2622,7 +2622,10 @@ export class Player {
     };
 
     const suitMat = track(createToonMaterial({ color: 0xeef0f3, rim: { color: 0xbcd6ff, strength: 0.35, threshold: 0.66 } }));
-    const leatherMat = track(createToonMaterial({ color: 0x1a1a20, rim: { color: 0x8f9ac0, strength: 0.5, threshold: 0.55 } }));
+    // Leather: a deep brown-black with a strong warm sheen edge, so it
+    // clearly reads as glossy leather rather than a flat dark shell.
+    const leatherMat = track(createToonMaterial({ color: 0x241b16, rim: { color: 0xd8b98a, strength: 0.85, threshold: 0.42 } }));
+    const zipMat = track(createToonMaterial({ color: 0xb8bcc4, rim: { color: 0xffffff, strength: 0.6, threshold: 0.45 } }));
     const glassMat = track(createToonMaterial({ color: 0xcfe6ff, rim: { color: 0xffffff, strength: 0.55, threshold: 0.5 } }));
     glassMat.transparent = true;
     glassMat.opacity = 0.55;
@@ -2649,20 +2652,53 @@ export class Player {
     jacket.castShadow = true;
     body.add(jacket);
     // Open V of white suit down the chest.
-    const chest = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.34, 0.06)), suitMat);
+    const chest = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.34, 0.06)), suitMat);
     chest.position.set(0, 0.36, 0.24);
     body.add(chest);
     // A red rockstar tee triangle behind the V.
-    const tee = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.18, 0.04)), redMat);
+    const tee = new THREE.Mesh(track(new THREE.BoxGeometry(0.14, 0.18, 0.04)), redMat);
     tee.position.set(0, 0.3, 0.23);
     body.add(tee);
-    // Raised jacket collar: two angled lapels at the neck.
+    // The jacket's front panels flanking the open V, each with a silver
+    // zipper of teeth running up it — the clearest "leather jacket" tell.
     for (const side of [-1, 1]) {
-      const lapel = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.16, 0.06)), leatherMat);
-      lapel.position.set(side * 0.12, 0.52, 0.16);
-      lapel.rotation.z = side * 0.5;
-      lapel.rotation.x = -0.3;
+      const panel = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.4, 0.05)), leatherMat);
+      panel.position.set(side * 0.15, 0.35, 0.24);
+      panel.rotation.z = side * 0.06;
+      body.add(panel);
+      const zip = new THREE.Mesh(track(new THREE.BoxGeometry(0.02, 0.36, 0.05)), zipMat);
+      zip.position.set(side * 0.09, 0.35, 0.27);
+      body.add(zip);
+    }
+    // A leather belt / hem across the waist with a metal buckle.
+    const hem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.28, 0.28, 0.09, 16)), leatherMat);
+    hem.position.y = 0.15;
+    hem.scale.set(1.02, 1, 1.02);
+    body.add(hem);
+    const buckle = new THREE.Mesh(track(new THREE.BoxGeometry(0.08, 0.06, 0.04)), metalMat);
+    buckle.position.set(0, 0.15, 0.28);
+    body.add(buckle);
+    // Big upturned collar: two broad angled leather flaps standing at the neck.
+    for (const side of [-1, 1]) {
+      const lapel = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.2, 0.05)), leatherMat);
+      lapel.position.set(side * 0.14, 0.54, 0.14);
+      lapel.rotation.z = side * 0.55;
+      lapel.rotation.x = -0.45;
+      lapel.castShadow = true;
       body.add(lapel);
+    }
+    // Studded shoulders: leather epaulettes with a row of metal studs.
+    for (const side of [-1, 1]) {
+      const shoulder = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 12, 10)), leatherMat);
+      shoulder.position.set(side * 0.26, 0.52, 0);
+      shoulder.scale.set(1, 0.7, 1);
+      shoulder.castShadow = true;
+      body.add(shoulder);
+      for (let s = -1; s <= 1; s++) {
+        const stud = new THREE.Mesh(track(new THREE.SphereGeometry(0.018, 6, 6)), metalMat);
+        stud.position.set(side * 0.26 + s * 0.06, 0.6, 0.02);
+        body.add(stud);
+      }
     }
     // Life-support backpack.
     const pack = new THREE.Mesh(track(new THREE.BoxGeometry(0.32, 0.36, 0.16)), metalMat);
@@ -2687,15 +2723,22 @@ export class Player {
     const visor = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 16, 12, -0.9, 1.8, 0.9, 1.0)), visorMat);
     visor.position.set(0, -0.01, 0.02);
     headGroup.add(visor);
-    // Shades pushed over the helmet: a dark bar with two lenses + a bridge.
+    // Big wraparound shades pushed over the helmet: two bold lenses, a
+    // chunky bridge and temple arms sweeping back over the sides.
     for (const side of [-1, 1]) {
-      const lens = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.08, 0.04)), shadeMat);
-      lens.position.set(side * 0.09, 0.06, 0.21);
-      lens.rotation.y = side * -0.25;
+      const lens = new THREE.Mesh(track(new THREE.BoxGeometry(0.17, 0.13, 0.05)), shadeMat);
+      lens.position.set(side * 0.12, 0.05, 0.19);
+      lens.rotation.y = side * -0.32;
+      lens.castShadow = true;
       headGroup.add(lens);
+      // Temple arm hooking back toward the ear.
+      const temple = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.03, 0.03)), shadeMat);
+      temple.position.set(side * 0.2, 0.07, 0.02);
+      temple.rotation.y = side * 0.7;
+      headGroup.add(temple);
     }
-    const bridge = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.03, 0.03)), shadeMat);
-    bridge.position.set(0, 0.06, 0.23);
+    const bridge = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.045, 0.04)), shadeMat);
+    bridge.position.set(0, 0.07, 0.23);
     headGroup.add(bridge);
 
     // --- jacketed arms with white gloves -------------------------------
@@ -2709,6 +2752,10 @@ export class Player {
       const arm = new THREE.Mesh(armGeo, leatherMat);
       arm.castShadow = true;
       pivot.add(arm);
+      // A ribbed leather cuff at the wrist.
+      const cuff = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.065, 0.07, 10)), leatherMat);
+      cuff.position.set(0, -0.37, 0);
+      pivot.add(cuff);
       const glove = new THREE.Mesh(gloveGeo, suitMat);
       glove.position.set(0, -0.42, 0);
       pivot.add(glove);
