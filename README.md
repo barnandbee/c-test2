@@ -27,6 +27,19 @@ import map — no npm install, no bundler.
 | Mouse  | Orbit camera (click to pointer-lock)    |
 | Scroll | Zoom the spring arm                     |
 
+## Sound
+
+All sound is **synthesised at runtime** with the Web Audio API — there are
+no audio files, so the game stays a zero-asset static site that works
+offline. Jumps get a springy **bounce**, pickups **sparkle** (a grander
+shimmer for the golden ones), earning a trophy **chimes**, and unlocking a
+hero rings out a rising **slide-whistle**. Each vehicle rides on its own
+looping engine bed — the hovercraft's **whir**, the balloon's **burner
+hiss**, and the rocket's **roar** — that fades in on boarding and out on
+dismount. A **🔊 toggle** in the HUD mutes everything (remembered between
+runs). Audio unlocks on your first click or key, per browser autoplay
+rules.
+
 ## Gameplay
 
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.

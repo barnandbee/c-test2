@@ -31,6 +31,7 @@ import {
 } from './Entities.js';
 import { PuttingGame } from './PuttingGame.js';
 import { VeggieTacToe } from './VeggieTacToe.js';
+import { SoundFX } from './Audio.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
@@ -77,6 +78,7 @@ const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_JULIE = 'mystic-badger.julieUnlocked';
 const STORAGE_TURNIP = 'mystic-badger.turnipUnlocked';
 const STORAGE_SWEATSHIRT = 'mystic-badger.sweatshirtUnlocked';
+const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
@@ -141,6 +143,18 @@ export class Game {
     this.input = new Input(this.renderer.domElement);
     this.ui = new UI();
     this.particles = new ParticleFX(this.scene);
+
+    // --- procedural sound (Web Audio, no asset files) ------------------------
+    this.audio = new SoundFX();
+    this.audio.muted = readStorage(STORAGE_MUTED) === '1';
+    this.audio.armOnGesture(); // unlock on the first click / key / touch
+    this._vehicleSound = null;   // last vehicle kind announced to the audio bed
+    this._announcedUnlocks = 0;  // runUnlockNames length already slide-whistled
+    this.ui.bindMute(this.audio.muted, () => {
+      const muted = this.audio.toggleMuted();
+      writeStorage(STORAGE_MUTED, muted ? '1' : '0');
+      return muted;
+    });
 
     // --- persistence ---------------------------------------------------------
     this.highScore = parseFloat(readStorage(STORAGE_HIGH_SCORE, '0')) || 0;
@@ -211,6 +225,7 @@ export class Game {
     // Jumps inside the sealed Mystic Forest are counted — three of them
     // constitute an election.
     this._onPlayerJump = (position) => {
+      this.audio.play('jump'); // every jump gets a springy bounce
       if (this.isGameOver || !this.world.isInDell(position.x, position.z, position.y)) return;
       this.dellJumps += 1;
       if (this.dellJumps >= FIR_JUMPS_REQUIRED && !this.firUnlocked) {
@@ -454,6 +469,8 @@ export class Game {
       if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
 
       item.startCollect();
+      // Sparkle up — a grander shimmer for the big golden pickups.
+      this.audio.play('collect', item.value >= 10 ? 1 : 0);
       this.points += item.value;
       this.ui.setPoints(this.points);
 
@@ -721,6 +738,7 @@ export class Game {
     writeStorage(STORAGE_ACHIEVEMENTS, [...this.achievements].join(','));
     const def = TROPHIES.find((t) => t.id === id);
     if (def) this.ui.showTimeToast(`🏆 ${def.title.toUpperCase()}`);
+    this.audio.play('trophy');
   }
 
   /**
@@ -806,6 +824,7 @@ export class Game {
   /** Leave the welcome menu and start the clock. */
   beginRun() {
     if (!this.inMenu) return;
+    this.audio.resume(); // the "Enter the Forest" click unlocks audio
     const chosen = this.ui.getSelectedCharacter() || this.characterName;
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
@@ -1416,6 +1435,8 @@ export class Game {
   gameOver(reason) {
     this.isGameOver = true;
     this.closeTravel();
+    this.audio.stopAll(); // silence any engine bed at the bell
+    this._vehicleSound = null;
     if (document.pointerLockElement) document.exitPointerLock();
 
     if (reason === 'health') this.awardAchievement('rip');
@@ -1492,6 +1513,12 @@ export class Game {
     // end-of-bell unlocks (score/decimal/50…500, unlock 1/5/10).
     this.checkAchievements();
 
+    // Slide-whistle any heroes judged and unlocked here at the bell (the
+    // mid-run ones already sang out when they were earned).
+    if (newlyUnlockedNames.length > this.runUnlockNames.length) {
+      this.audio.play('unlock');
+    }
+
     this.ui.showGameOver({
       score: this.points,
       highScore: this.highScore,
@@ -1504,6 +1531,11 @@ export class Game {
   }
 
   restart() {
+    this.audio.resume(); // the restart click is a fresh user gesture
+    this.audio.stopAll();
+    this._vehicleSound = null;
+    this._announcedUnlocks = 0;
+
     // Apply the character chosen on the game-over screen (if any).
     const chosen = this.ui.getSelectedCharacter() || this.characterName;
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
@@ -1677,6 +1709,18 @@ export class Game {
       this.maybeSpawnBalloon();
       this.manageRocket();
       this.checkAchievements();
+
+      // Engine beds follow whatever the player is currently riding.
+      const vk = this.player.vehicle ? this.player.vehicle.kind : null;
+      if (vk !== this._vehicleSound) {
+        this._vehicleSound = vk;
+        this.audio.setVehicle(vk);
+      }
+      // Any fresh mid-run character unlock earns a slide-whistle.
+      if (this.runUnlockNames.length > this._announcedUnlocks) {
+        this._announcedUnlocks = this.runUnlockNames.length;
+        this.audio.play('unlock');
+      }
 
       // Whisper about the putting challenge when its stars align. The
       // prompt re-arms only once the player has genuinely left the green

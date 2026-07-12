@@ -303,6 +303,29 @@ body {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
+/* Sound toggle: lifted out of the HUD flex row (so the timer stays
+   centred) and parked just under the score panel. */
+#mute-btn {
+  position: fixed;
+  top: 74px;
+  right: 20px;
+  padding: 8px 12px;
+  font-size: 18px;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+#mute-btn.muted {
+  opacity: 0.55;
+}
+
+#mute-btn:active {
+  transform: scale(0.92);
+}
+
 .hud-icon {
   width: 20px;
   height: 20px;

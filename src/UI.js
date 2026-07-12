@@ -292,6 +292,25 @@ export class UI {
     return item;
   }
 
+  /* ---------------- sound toggle ---------------- */
+
+  /**
+   * Wire the mute button. `initialMuted` sets the starting glyph; `onToggle`
+   * flips the audio engine and returns the new muted state so we can sync
+   * the icon.
+   */
+  bindMute(initialMuted, onToggle) {
+    const btn = document.getElementById('mute-btn');
+    const icon = document.getElementById('mute-icon');
+    if (!btn || !icon) return;
+    const paint = (muted) => {
+      icon.textContent = muted ? '🔇' : '🔊';
+      btn.classList.toggle('muted', muted);
+    };
+    paint(initialMuted);
+    btn.addEventListener('click', () => paint(onToggle()));
+  }
+
   /* ---------------- welcome menu ---------------- */
 
   showMenu() {
