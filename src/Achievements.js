@@ -56,5 +56,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'turnip', name: 'Turnip Scart', how: 'Beat the goat at Veggie Tac Toe on the vegetable patch (score a multiple of 7).' },
   { key: 'sweatshirt', name: 'Haunted Sweatshirt', how: 'Amass 30 achievements in total — trophies earned plus characters unlocked.' },
   { key: 'jam', name: 'Jam', how: 'Score an all-time total of 1000 points across every run.' },
-  { key: 'dodeca', name: 'Dodecahedron the Beret', how: 'Finish a run with 300+ points while playing as Rhombus the Hat.' }
+  { key: 'dodeca', name: 'Dodecahedron the Beret', how: 'Finish a run with 300+ points while playing as Rhombus the Hat.' },
+  { key: 'polarpear', name: 'Polar Pear', how: 'Reach the mountain summit flag on 10 health, then survive to the bell.' },
+  { key: 'nighteye', name: 'Night Eye', how: 'Score an all-time total of 10000 points across every run.' }
 ];

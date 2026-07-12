@@ -138,6 +138,8 @@ export class Player {
     else if (this.character === 'mayo') this.root = this.buildMayo();
     else if (this.character === 'jam') this.root = this.buildJam();
     else if (this.character === 'dodeca') this.root = this.buildDodeca();
+    else if (this.character === 'polarpear') this.root = this.buildPolarPear();
+    else if (this.character === 'nighteye') this.root = this.buildNightEye();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -2185,6 +2187,282 @@ export class Player {
     beret.add(nub);
 
     this.legs = []; // a solid needs no legs
+    return root;
+  }
+
+  /**
+   * Polar Pear — a bulky white polar bear whose head is a ripe green pear,
+   * stalk, leaf and all, with a black bear nose, button eyes and little
+   * round snow-white ears. Trots on four padded paws.
+   */
+  buildPolarPear() {
+    const root = new THREE.Group();
+    root.name = 'polarpear';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const furMat = track(createToonMaterial({
+      color: 0xf1f4f7,
+      rim: { color: 0xcfe0ff, strength: 0.4, threshold: 0.66 }
+    }));
+    const pawMat = track(createToonMaterial({ color: 0xdfe4ea }));
+    const pearMat = track(createToonMaterial({
+      color: 0xbcd24a,
+      rim: { color: 0xe9f4a0, strength: 0.4, threshold: 0.6 }
+    }));
+    const stalkMat = track(createToonMaterial({ color: 0x6a4a2c }));
+    const leafMat = track(createToonMaterial({ color: 0x5fae4a }));
+    const noseMat = track(createToonMaterial({ color: 0x141417 }));
+    const eyeMat = track(createToonMaterial({ color: 0x141210 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- bulky torso with a bear's shoulder hump and a stubby tail ---------
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.4, 0.62, 6, 14));
+    torsoGeo.rotateX(Math.PI / 2); // long axis forward (+Z)
+    const torso = new THREE.Mesh(torsoGeo, furMat);
+    torso.scale.set(1.05, 1.0, 1.2);
+    torso.castShadow = true;
+    body.add(torso);
+    const hump = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 12)), furMat);
+    hump.position.set(0, 0.2, -0.24);
+    hump.scale.set(1.05, 0.8, 1.0);
+    hump.castShadow = true;
+    body.add(hump);
+    const tail = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), furMat);
+    tail.position.set(0, 0.1, -0.66);
+    body.add(tail);
+    this.tail = tail;
+
+    // --- head group: a pear on a thick furry neck --------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.26, 0.5);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const neck = new THREE.Mesh(track(new THREE.CylinderGeometry(0.2, 0.26, 0.34, 12)), furMat);
+    neck.position.set(0, 0.08, -0.02);
+    neck.rotation.x = 0.6;
+    neck.castShadow = true;
+    headGroup.add(neck);
+
+    // The pear itself, a lathed profile: bulbous below, a narrow neck above.
+    const profile = [
+      [0.002, 0.0], [0.14, 0.02], [0.22, 0.07], [0.255, 0.15], [0.25, 0.24],
+      [0.21, 0.33], [0.145, 0.42], [0.12, 0.5], [0.14, 0.56], [0.1, 0.62], [0.02, 0.66]
+    ].map(([r, y]) => new THREE.Vector2(r, y));
+    const pearGeo = track(new THREE.LatheGeometry(profile, 18));
+    const pear = new THREE.Mesh(pearGeo, pearMat);
+    pear.position.set(0, 0.18, 0.16);
+    pear.castShadow = true;
+    headGroup.add(pear);
+
+    // Stalk + leaf on the crown of the pear.
+    const stalk = new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 0.028, 0.16, 6)), stalkMat);
+    stalk.position.set(0, 0.86, 0.16);
+    stalk.rotation.z = 0.25;
+    headGroup.add(stalk);
+    const leaf = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 8, 6)), leafMat);
+    leaf.position.set(0.1, 0.84, 0.16);
+    leaf.scale.set(1.4, 0.3, 0.8);
+    leaf.rotation.z = 0.5;
+    headGroup.add(leaf);
+
+    // Snow-white round bear ears near the top of the pear.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), furMat);
+      ear.position.set(side * 0.15, 0.62, 0.14);
+      ear.scale.set(1, 1, 0.7);
+      ear.castShadow = true;
+      headGroup.add(ear);
+    }
+
+    // Face on the front of the pear: nose, eyes, glints.
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 10, 8)), noseMat);
+    nose.position.set(0, 0.2, 0.42);
+    nose.scale.set(1.1, 0.85, 0.8);
+    headGroup.add(nose);
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 10, 8)), eyeMat);
+      eye.position.set(side * 0.11, 0.34, 0.36);
+      headGroup.add(eye);
+      const glint = new THREE.Mesh(track(new THREE.SphereGeometry(0.015, 6, 6)), glintMat);
+      glint.position.set(side * 0.1, 0.36, 0.4);
+      headGroup.add(glint);
+    }
+
+    // --- four padded paws --------------------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.11, 0.1, 0.44, 10));
+    legGeo.translate(0, -0.22, 0);
+    const pawGeo = track(new THREE.SphereGeometry(0.13, 10, 8));
+    this.legs = [];
+    const slots = [
+      { x: -0.24, z: 0.3, phase: 0 },
+      { x: 0.24, z: 0.3, phase: Math.PI },
+      { x: -0.26, z: -0.32, phase: Math.PI },
+      { x: 0.26, z: -0.32, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.28, slot.z);
+      const leg = new THREE.Mesh(legGeo, furMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const paw = new THREE.Mesh(pawGeo, pawMat);
+      paw.position.set(0, -0.44, 0.05);
+      paw.scale.set(1, 0.7, 1.25);
+      pivot.add(paw);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+
+    return root;
+  }
+
+  /**
+   * Night Eye — a futuristic special-ops soldier in matte charcoal armour:
+   * a visored helmet with two glowing laser eyes that fire thin red beams,
+   * a chest rig, an antenna, and armoured stick limbs.
+   */
+  buildNightEye() {
+    const root = new THREE.Group();
+    root.name = 'nighteye';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const armorMat = track(createToonMaterial({
+      color: 0x2a2e36,
+      rim: { color: 0x6fb4ff, strength: 0.5, threshold: 0.55 }
+    }));
+    const darkMat = track(createToonMaterial({ color: 0x14161b }));
+    const metalMat = track(createToonMaterial({
+      color: 0x767c86,
+      rim: { color: 0xffffff, strength: 0.55, threshold: 0.5 }
+    }));
+    const visorMat = track(createToonMaterial({
+      color: 0x0a0e16,
+      rim: { color: 0x2a6cff, strength: 0.6, threshold: 0.48 }
+    }));
+    const laserMat = track(createToonMaterial({
+      color: 0xff3324,
+      emissive: 0xff1a10,
+      emissiveIntensity: 2.0,
+      pulse: { speed: 6.0, phase: 0 }
+    }));
+    const beamMat = track(createToonMaterial({ color: 0xff5a44, emissive: 0xff2a1a, emissiveIntensity: 1.6 }));
+    beamMat.transparent = true;
+    beamMat.opacity = 0.5;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- armoured torso with a chest rig -----------------------------------
+    const torso = new THREE.Mesh(track(new THREE.BoxGeometry(0.5, 0.6, 0.32, 3, 4, 2)), armorMat);
+    torso.position.y = 0.34;
+    torso.castShadow = true;
+    body.add(torso);
+    // Chest plate + a couple of glowing status lights.
+    const plate = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.34, 0.08)), darkMat);
+    plate.position.set(0, 0.42, 0.18);
+    body.add(plate);
+    for (const sx of [-0.1, 0.1]) {
+      const light = new THREE.Mesh(track(new THREE.SphereGeometry(0.02, 6, 6)), laserMat);
+      light.position.set(sx, 0.5, 0.23);
+      body.add(light);
+    }
+    // Shoulder pauldrons.
+    for (const side of [-1, 1]) {
+      const pauldron = new THREE.Mesh(track(new THREE.SphereGeometry(0.14, 12, 10)), armorMat);
+      pauldron.position.set(side * 0.3, 0.56, 0);
+      pauldron.scale.set(1, 0.7, 1);
+      pauldron.castShadow = true;
+      body.add(pauldron);
+    }
+
+    // --- helmet with a visor, laser eyes and beams -------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.72, 0);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const helmet = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 16, 14)), armorMat);
+    helmet.scale.set(1, 1.05, 1.05);
+    helmet.castShadow = true;
+    headGroup.add(helmet);
+    // Wraparound visor band.
+    const visor = new THREE.Mesh(track(new THREE.CylinderGeometry(0.205, 0.205, 0.13, 16, 1, true, -0.9, 1.8)), visorMat);
+    visor.position.set(0, 0.0, 0.02);
+    headGroup.add(visor);
+    // Two laser eyes that fire thin forward beams.
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 10, 8)), laserMat);
+      eye.position.set(side * 0.08, 0.0, 0.2);
+      headGroup.add(eye);
+      const beamGeo = track(new THREE.CylinderGeometry(0.012, 0.03, 0.9, 8, 1, true));
+      beamGeo.rotateX(Math.PI / 2); // point along +Z
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.set(side * 0.08, 0.0, 0.66);
+      headGroup.add(beam);
+    }
+    // Antenna with a blinking tip.
+    const antenna = new THREE.Mesh(track(new THREE.CylinderGeometry(0.008, 0.008, 0.24, 6)), metalMat);
+    antenna.position.set(0.14, 0.28, -0.06);
+    antenna.rotation.z = -0.2;
+    headGroup.add(antenna);
+    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.022, 8, 6)), laserMat);
+    tip.position.set(0.11, 0.4, -0.06);
+    headGroup.add(tip);
+
+    // --- armoured stick arms -----------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.05, 0.045, 0.42, 8));
+    armGeo.translate(0, -0.21, 0);
+    const fistGeo = track(new THREE.BoxGeometry(0.1, 0.1, 0.1));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.3, 0.52, 0);
+      const arm = new THREE.Mesh(armGeo, armorMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const fist = new THREE.Mesh(fistGeo, darkMat);
+      fist.position.set(0, -0.44, 0);
+      pivot.add(fist);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- armoured legs with boots ------------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.5, 8));
+    legGeo.translate(0, -0.25, 0);
+    const bootGeo = track(new THREE.BoxGeometry(0.13, 0.09, 0.2));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, 0.04, 0);
+      const leg = new THREE.Mesh(legGeo, armorMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const boot = new THREE.Mesh(bootGeo, darkMat);
+      boot.position.set(0, -0.5, 0.04);
+      pivot.add(boot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
     return root;
   }
 

@@ -243,6 +243,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   navy beret at a rakish tilt, little nub and all. A geometric cousin to
   Rhombus the Hat; feetless, so it drifts. Unlock it by finishing a run
   with **300+ points while playing as Rhombus the Hat**.
+- **Polar Pear** — a bulky white polar bear whose head is a ripe green
+  pear (stalk, leaf and little snow-white ears included). Unlock it by
+  reaching the **mountain summit flag on just 10 health** and then
+  **surviving the rest of the run** to the bell.
+- **Night Eye** — a futuristic special-ops soldier in matte charcoal
+  armour, with a visored helmet, an antenna and two glowing **laser eyes**
+  that fire thin red beams. Unlock it by scoring an **all-time total of
+  10000 points** across every run.
 - **The snow-capped mountain** — out in the far south-east corner,
   diagonally opposite the lake and the sealed Mystic Forest and well clear
   of the pink blossom tree and every other landmark, rises a proper peak: a
@@ -270,8 +278,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   large inviting button. The clock doesn't start until you press it.
 - **Achievements** — the game-over screen (which now scrolls, so the
   full roster and buttons are always reachable) carries an
-  **Achievements** button. It opens a viewer listing every hero and the
-  deed that unlocks them, plus a wall of persistent trophies: score
+  **Achievements** button. It opens a viewer listing every hero and every
+  trophy — but anything you **haven't unlocked yet keeps its how-to
+  hidden** (shown as `???`), so nothing spoils the way to earn it; the
+  description is revealed only once you've earned it. It lists score
   milestones (50 / 100 / 200 / 300 / 400 / 500), a decimal score,
   three and ten clock-tower visits in a run, a Puttmost hole-in-one,
   reaching the tube station, riding the Mystic Line, diving to the lake

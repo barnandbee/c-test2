@@ -80,6 +80,8 @@ const STORAGE_TURNIP = 'mystic-badger.turnipUnlocked';
 const STORAGE_SWEATSHIRT = 'mystic-badger.sweatshirtUnlocked';
 const STORAGE_JAM = 'mystic-badger.jamUnlocked';
 const STORAGE_DODECA = 'mystic-badger.dodecaUnlocked';
+const STORAGE_POLARPEAR = 'mystic-badger.polarpearUnlocked';
+const STORAGE_NIGHTEYE = 'mystic-badger.nightEyeUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_CHARACTER = 'mystic-badger.character';
@@ -98,7 +100,9 @@ const TICKET_EXACT_CHANGE = 281;    // the machine's other operating condition
 const MARBLELLA_APPLIANCES = ['clock', 'stove', 'fridge', 'trapdoor'];
 const MAYO_SCORE = 300;
 const JAM_TOTAL_SCORE = 1000;      // all-time cumulative points to unlock Jam
+const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Night Eye
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
+const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const SANDWICH_POINTS = 55.5;
 const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
@@ -185,6 +189,8 @@ export class Game {
     this.sweatshirtUnlocked = readStorage(STORAGE_SWEATSHIRT) === '1';
     this.jamUnlocked = readStorage(STORAGE_JAM) === '1';
     this.dodecaUnlocked = readStorage(STORAGE_DODECA) === '1';
+    this.polarpearUnlocked = readStorage(STORAGE_POLARPEAR) === '1';
+    this.nightEyeUnlocked = readStorage(STORAGE_NIGHTEYE) === '1';
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
@@ -261,6 +267,7 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected = new Set();
     this.sandwichClaimed = false;
+    this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
     this.alarmRung = false;
     this.appliancesTouched = new Set();
     this.travelOpen = false;
@@ -692,6 +699,8 @@ export class Game {
     if (name === 'sweatshirt') return this.sweatshirtUnlocked;
     if (name === 'jam') return this.jamUnlocked;
     if (name === 'dodeca') return this.dodecaUnlocked;
+    if (name === 'polarpear') return this.polarpearUnlocked;
+    if (name === 'nighteye') return this.nightEyeUnlocked;
     return name === 'badger';
   }
 
@@ -716,7 +725,9 @@ export class Game {
       turnip: this.turnipUnlocked,
       sweatshirt: this.sweatshirtUnlocked,
       jam: this.jamUnlocked,
-      dodeca: this.dodecaUnlocked
+      dodeca: this.dodecaUnlocked,
+      polarpear: this.polarpearUnlocked,
+      nighteye: this.nightEyeUnlocked
     };
   }
 
@@ -1543,15 +1554,26 @@ export class Game {
       writeStorage(STORAGE_DODECA, '1');
       newlyUnlockedNames.push('Dodecahedron the Beret');
     }
+    // Polar Pear: touched the summit flag on 10 HP and lived to the bell.
+    if (!this.polarpearUnlocked && reason === 'time' && this.reachedSummitLowHP) {
+      this.polarpearUnlocked = true;
+      writeStorage(STORAGE_POLARPEAR, '1');
+      newlyUnlockedNames.push('Polar Pear');
+    }
 
     // All-time points bank: Jam joins the roster once the lifetime total
-    // (this run included) reaches 1000.
+    // (this run included) reaches 1000; Night Eye at 10000.
     this.totalScore += this.points;
     writeStorage(STORAGE_TOTAL_SCORE, this.totalScore);
     if (!this.jamUnlocked && this.totalScore >= JAM_TOTAL_SCORE) {
       this.jamUnlocked = true;
       writeStorage(STORAGE_JAM, '1');
       newlyUnlockedNames.push('Jam');
+    }
+    if (!this.nightEyeUnlocked && this.totalScore >= NIGHTEYE_TOTAL_SCORE) {
+      this.nightEyeUnlocked = true;
+      writeStorage(STORAGE_NIGHTEYE, '1');
+      newlyUnlockedNames.push('Night Eye');
     }
 
     // Final-score trophies + any unlock-count milestones from this run's
@@ -1605,6 +1627,7 @@ export class Game {
     this.cartHits = 0;
     this.itemTypesCollected.clear();
     this.sandwichClaimed = false;
+    this.reachedSummitLowHP = false;
     this.alarmRung = false;
     this.appliancesTouched.clear();
     this.closeTravel();
@@ -1757,6 +1780,20 @@ export class Game {
       this.maybeSpawnBalloon();
       this.manageRocket();
       this.checkAchievements();
+
+      // Polar Pear: touch the mountain's summit flag on 10 (or fewer) health.
+      // Surviving to the bell from here earns the reward (judged at gameOver).
+      if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH && this.world.mountainRadius) {
+        const mdx = this.player.position.x - this.world.mountainX;
+        const mdz = this.player.position.z - this.world.mountainZ;
+        if (mdx * mdx + mdz * mdz < 4 * 4) {
+          const summitY = this.world.getHeight(this.world.mountainX, this.world.mountainZ);
+          if (Math.abs(this.player.position.y - summitY) < 3) {
+            this.reachedSummitLowHP = true;
+            this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
+          }
+        }
+      }
 
       // Engine beds follow whatever the player is currently riding.
       const vk = this.player.vehicle ? this.player.vehicle.kind : null;

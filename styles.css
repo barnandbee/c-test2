@@ -1476,6 +1476,66 @@ body {
   border-radius: 50%;
 }
 
+/* Polar Pear: a green pear head with a bear's snowy ears and dark nose. */
+.polarpear-icon {
+  position: relative;
+  border-color: transparent;
+  border-radius: 44% 44% 50% 50% / 38% 38% 62% 62%;
+  background:
+    radial-gradient(circle at 39% 52%, #141210 0 1.6px, transparent 2.1px),
+    radial-gradient(circle at 61% 52%, #141210 0 1.6px, transparent 2.1px),
+    radial-gradient(circle at 50% 68%, #17171a 0 2.6px, transparent 3.1px),
+    linear-gradient(180deg, #c6da58, #b0c840);
+  box-shadow: -6px -2px 0 -5px #f1f4f7, 6px -2px 0 -5px #f1f4f7;
+}
+
+.polarpear-icon::before {
+  /* the stalk */
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(14deg);
+  width: 2.5px;
+  height: 6px;
+  background: #6a4a2c;
+  border-radius: 2px;
+}
+
+/* Night Eye: a charcoal helmet with a dark visor and glowing laser eyes. */
+.nighteye-icon {
+  position: relative;
+  border-color: transparent;
+  border-radius: 46% 46% 38% 38%;
+  background: linear-gradient(180deg, #3a3f48, #22262d);
+}
+
+.nighteye-icon::before {
+  /* visor band */
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 8%;
+  right: 8%;
+  height: 6px;
+  background: #0a0e16;
+  border-radius: 3px;
+}
+
+.nighteye-icon::after {
+  /* two glowing red laser eyes on the visor */
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 8%;
+  right: 8%;
+  height: 6px;
+  background:
+    radial-gradient(circle at 32% 50%, #ff3324 0 2px, transparent 2.6px),
+    radial-gradient(circle at 68% 50%, #ff3324 0 2px, transparent 2.6px);
+  filter: drop-shadow(0 0 2px #ff3324);
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

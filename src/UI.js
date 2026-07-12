@@ -251,17 +251,21 @@ export class UI {
     if (!this.achievementsPanel) return;
     this.achProgress.textContent = `${view.earnedCount} / ${view.total} trophies earned`;
 
+    // Locked rows keep their name but hide the how-to, so nothing spoils
+    // the way to earn it.
+    const HIDDEN = '???';
+
     this.achTrophies.innerHTML = '';
     for (const t of view.trophies) {
       this.achTrophies.appendChild(
-        this._achItem(t.earned ? t.medal : '🔒', t.title, t.desc, t.earned)
+        this._achItem(t.earned ? t.medal : '🔒', t.title, t.earned ? t.desc : HIDDEN, t.earned)
       );
     }
 
     this.achChars.innerHTML = '';
     for (const c of view.characters) {
       this.achChars.appendChild(
-        this._achItem(c.unlocked ? '✅' : '🔒', c.name, c.how, c.unlocked)
+        this._achItem(c.unlocked ? '✅' : '🔒', c.name, c.unlocked ? c.how : HIDDEN, c.unlocked)
       );
     }
 
