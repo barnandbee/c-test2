@@ -136,6 +136,8 @@ export class Player {
     else if (this.character === 'magnus') this.root = this.buildMagnus();
     else if (this.character === 'error42') this.root = this.buildError42();
     else if (this.character === 'mayo') this.root = this.buildMayo();
+    else if (this.character === 'jam') this.root = this.buildJam();
+    else if (this.character === 'dodeca') this.root = this.buildDodeca();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -1942,6 +1944,247 @@ export class Player {
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
     }
 
+    return root;
+  }
+
+  /**
+   * Jam — Mayonnaise's funkier cousin: a glass jar of deep berry preserve
+   * under a gingham cloth cap tied with string. Dresses the same BLT, to
+   * the same effect ("it's funky, but it works!"). Stick limbs and a jar
+   * face, built to the same rig as Mayo so the animation just works.
+   */
+  buildJam() {
+    const root = new THREE.Group();
+    root.name = 'jam';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Wraparound label, drawn once at build time.
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#f6efe2';
+    g.fillRect(0, 0, 512, 128);
+    g.strokeStyle = '#7a1f47';
+    g.lineWidth = 10;
+    g.strokeRect(8, 8, 496, 112);
+    g.fillStyle = '#7a1f47';
+    g.textAlign = 'center';
+    g.font = 'bold 64px Georgia, serif';
+    g.fillText('JAM', 256, 88);
+    const labelTex = track(new THREE.CanvasTexture(canvas));
+    labelTex.colorSpace = THREE.SRGBColorSpace;
+
+    // Glassy jar (top) with the jam visible as a deep berry fill (bottom).
+    const glassMat = track(createToonMaterial({
+      color: 0xd8b6c8,
+      rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 }
+    }));
+    const jamMat = track(createToonMaterial({
+      color: 0x9b2d5e,
+      emissive: 0x3a0f24,
+      emissiveIntensity: 0.5,
+      rim: { color: 0xffa6d0, strength: 0.5, threshold: 0.5 }
+    }));
+    const capMat = track(createToonMaterial({
+      color: 0xcc3b46,
+      rim: { color: 0xffc0b0, strength: 0.4, threshold: 0.6 }
+    }));
+    const stringMat = track(createToonMaterial({ color: 0xe8dcc0 }));
+    const labelMat = track(createToonMaterial({ map: labelTex }));
+    const limbMat = track(createToonMaterial({ color: 0xb8a4ac }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x4a1028 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the jar: berry fill below, clear glass above ----------------------
+    const fillGeo = track(new THREE.CylinderGeometry(0.31, 0.34, 0.5, 18));
+    const fill = new THREE.Mesh(fillGeo, jamMat);
+    fill.position.y = 0.27;
+    fill.castShadow = true;
+    body.add(fill);
+    const glassGeo = track(new THREE.CylinderGeometry(0.32, 0.315, 0.34, 18));
+    const glass = new THREE.Mesh(glassGeo, glassMat);
+    glass.position.y = 0.65;
+    glass.castShadow = true;
+    body.add(glass);
+
+    // --- gingham cloth cap tied with string --------------------------------
+    const capGeo = track(new THREE.SphereGeometry(0.37, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2));
+    const cap = new THREE.Mesh(capGeo, capMat);
+    cap.position.y = 0.82;
+    cap.scale.set(1, 0.7, 1);
+    cap.castShadow = true;
+    body.add(cap);
+    const stringGeo = track(new THREE.TorusGeometry(0.35, 0.02, 6, 20));
+    const string = new THREE.Mesh(stringGeo, stringMat);
+    string.rotation.x = Math.PI / 2;
+    string.position.y = 0.84;
+    body.add(string);
+
+    const labelGeo = track(new THREE.CylinderGeometry(0.315, 0.335, 0.28, 18, 1, true));
+    const label = new THREE.Mesh(labelGeo, labelMat);
+    label.position.y = 0.2;
+    body.add(label);
+
+    // --- face on the clear glass above the label ---------------------------
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.07, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.032, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.012, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.12, 0.68, 0.26);
+      white.scale.set(1, 1.15, 0.5);
+      body.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.115, 0.675, 0.3);
+      body.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.1, 0.695, 0.315);
+      body.add(glint);
+    }
+    const mouthGeo = track(new THREE.TorusGeometry(0.07, 0.014, 6, 12, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.56, 0.29);
+    mouth.rotation.z = Math.PI;
+    body.add(mouth);
+
+    // --- stick limbs (same rig as Mayo) ------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.38, 8));
+    armGeo.translate(0, -0.19, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, 0.55, 0);
+      pivot.rotation.z = -side * 0.45;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, limbMat);
+      hand.position.set(0, -0.4, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    const legGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.46, 8));
+    legGeo.translate(0, -0.23, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, -0.03, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, limbMat);
+      shoe.position.set(0, -0.48, 0.04);
+      shoe.scale.set(1.1, 0.55, 1.8);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Dodecahedron the Beret — a twelve-faced solid with a jaunty French
+   * beret tilted over one edge, a little stalk on top. A geometric cousin
+   * to Rhombus the Hat; feetless, so it drifts on the hover bed.
+   */
+  buildDodeca() {
+    const root = new THREE.Group();
+    root.name = 'dodeca';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const bodyMat = track(createToonMaterial({
+      color: 0x2f9e8f,
+      rim: { color: 0xa6f0e2, strength: 0.5, threshold: 0.55 }
+    }));
+    const beretMat = track(createToonMaterial({
+      color: 0x11223a,
+      rim: { color: 0x8fb0e8, strength: 0.4, threshold: 0.6 }
+    }));
+    const nubMat = track(createToonMaterial({ color: 0x2a3a54 }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const mouthMat = track(createToonMaterial({ color: 0x14322c }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the dodecahedron ---------------------------------------------------
+    const solidGeo = track(new THREE.DodecahedronGeometry(0.46, 0));
+    const solid = new THREE.Mesh(solidGeo, bodyMat);
+    solid.position.y = 0.32;
+    solid.castShadow = true;
+    body.add(solid);
+
+    // Face on the front.
+    const eyeWhiteGeo = track(new THREE.SphereGeometry(0.075, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.034, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.013, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      white.position.set(side * 0.13, 0.36, 0.4);
+      white.scale.set(1, 1.15, 0.5);
+      solid.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.13, 0.355, 0.44);
+      solid.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.11, 0.375, 0.46);
+      solid.add(glint);
+    }
+    const mouthGeo = track(new THREE.TorusGeometry(0.08, 0.015, 6, 14, Math.PI));
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 0.24, 0.43);
+    mouth.rotation.z = Math.PI;
+    solid.add(mouth);
+
+    // --- the beret: a flat felt disc at a rakish tilt, with a stalk --------
+    const beret = new THREE.Group();
+    beret.position.set(0.04, 0.66, -0.02);
+    beret.rotation.z = -0.22;
+    solid.add(beret);
+    const discGeo = track(new THREE.SphereGeometry(0.3, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2));
+    const disc = new THREE.Mesh(discGeo, beretMat);
+    disc.scale.set(1, 0.42, 1);
+    disc.castShadow = true;
+    beret.add(disc);
+    // A slight overhang lip around the rim.
+    const lipGeo = track(new THREE.TorusGeometry(0.27, 0.05, 8, 20));
+    const lip = new THREE.Mesh(lipGeo, beretMat);
+    lip.rotation.x = Math.PI / 2;
+    lip.position.y = 0.02;
+    beret.add(lip);
+    // The little nub on top.
+    const nub = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), nubMat);
+    nub.position.y = 0.14;
+    beret.add(nub);
+
+    this.legs = []; // a solid needs no legs
     return root;
   }
 

@@ -1421,6 +1421,61 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Jam: Mayo's funky cousin — berry jar under a red gingham cap. */
+.jam-icon {
+  border-radius: 10px 10px 8px 8px;
+  border-color: transparent;
+  background-image:
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    linear-gradient(#cc3b46, #cc3b46),
+    linear-gradient(#7a1f47, #7a1f47),
+    linear-gradient(#f6efe2, #f6efe2),
+    linear-gradient(180deg, #9b2d5e, #7a1f47);
+  background-size: 5px 5px, 5px 5px, 100% 24%, 60% 3px, 70% 26%, 100% 100%;
+  background-position: 33% 40%, 64% 40%, 50% 0, 50% 72%, 50% 74%, 50% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Dodecahedron the Beret: a faceted teal solid in a jaunty navy beret. */
+.dodeca-icon {
+  position: relative;
+  border-color: transparent;
+  border-radius: 46% 46% 44% 44%;
+  background-image:
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    radial-gradient(circle, #101014 0 2px, transparent 2.5px),
+    conic-gradient(from 90deg, #2f9e8f, #37b3a2, #2a8e80, #37b3a2, #2f9e8f);
+  background-size: 5px 5px, 5px 5px, 100% 100%;
+  background-position: 36% 58%, 64% 58%, 50% 50%;
+  background-repeat: no-repeat;
+}
+
+.dodeca-icon::before {
+  /* the felt beret, tilted */
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 46%;
+  transform: translateX(-50%) rotate(-12deg);
+  width: 22px;
+  height: 9px;
+  background: #11223a;
+  border-radius: 50%;
+}
+
+.dodeca-icon::after {
+  /* the little nub on top */
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 54%;
+  width: 3px;
+  height: 3px;
+  background: #2a3a54;
+  border-radius: 50%;
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

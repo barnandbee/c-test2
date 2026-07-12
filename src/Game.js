@@ -78,6 +78,9 @@ const STORAGE_MARGARET = 'mystic-badger.margaretUnlocked';
 const STORAGE_JULIE = 'mystic-badger.julieUnlocked';
 const STORAGE_TURNIP = 'mystic-badger.turnipUnlocked';
 const STORAGE_SWEATSHIRT = 'mystic-badger.sweatshirtUnlocked';
+const STORAGE_JAM = 'mystic-badger.jamUnlocked';
+const STORAGE_DODECA = 'mystic-badger.dodecaUnlocked';
+const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
@@ -94,6 +97,8 @@ const TICKET_EXACT_CHANGE = 281;    // the machine's other operating condition
 // Touch every one of these in a single run and the marble rolls in.
 const MARBLELLA_APPLIANCES = ['clock', 'stove', 'fridge', 'trapdoor'];
 const MAYO_SCORE = 300;
+const JAM_TOTAL_SCORE = 1000;      // all-time cumulative points to unlock Jam
+const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const SANDWICH_POINTS = 55.5;
 const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
@@ -178,6 +183,9 @@ export class Game {
     this.julieUnlocked = readStorage(STORAGE_JULIE) === '1';
     this.turnipUnlocked = readStorage(STORAGE_TURNIP) === '1';
     this.sweatshirtUnlocked = readStorage(STORAGE_SWEATSHIRT) === '1';
+    this.jamUnlocked = readStorage(STORAGE_JAM) === '1';
+    this.dodecaUnlocked = readStorage(STORAGE_DODECA) === '1';
+    this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -554,6 +562,7 @@ export class Game {
       this.frogHits += 1; // Margaret counts her bruises
       this.invulnTimer = INVULN_TIME;
       this.ui.setHealth(this.health);
+      this.audio.play('ribbit');
       this.ui.flashDamage();
       this.player.applyKnockback(frog.position.x, frog.position.z);
       this.particles.spawnBurst(center, 0x86e05a, {
@@ -596,6 +605,7 @@ export class Game {
       this.invulnTimer = INVULN_TIME;
       this.ui.setHealth(this.health);
       this.ui.setPoints(this.points);
+      this.audio.play('carthorn'); // beep beep!
       this.ui.flashDamage();
       this.player.applyKnockback(cart.position.x, cart.position.z, 13);
       this.particles.spawnBurst(center, 0xffe6a0, {
@@ -680,6 +690,8 @@ export class Game {
     if (name === 'julie') return this.julieUnlocked;
     if (name === 'turnip') return this.turnipUnlocked;
     if (name === 'sweatshirt') return this.sweatshirtUnlocked;
+    if (name === 'jam') return this.jamUnlocked;
+    if (name === 'dodeca') return this.dodecaUnlocked;
     return name === 'badger';
   }
 
@@ -702,7 +714,9 @@ export class Game {
       margaret: this.margaretUnlocked,
       julie: this.julieUnlocked,
       turnip: this.turnipUnlocked,
-      sweatshirt: this.sweatshirtUnlocked
+      sweatshirt: this.sweatshirtUnlocked,
+      jam: this.jamUnlocked,
+      dodeca: this.dodecaUnlocked
     };
   }
 
@@ -945,27 +959,32 @@ export class Game {
       const dz = this.player.position.z - sandwich.z;
       const dy = this.player.position.y - sandwich.y;
       if (dx * dx + dz * dz < SANDWICH_RANGE * SANDWICH_RANGE && Math.abs(dy) < 3) {
-        if (this.characterName === 'mayo') {
+        const isMayo = this.characterName === 'mayo';
+        const isJam = this.characterName === 'jam';
+        if (isMayo || isJam) {
           if (!this.sandwichClaimed) {
             this.sandwichClaimed = true;
             this.points += SANDWICH_POINTS;
             this.ui.setPoints(this.points);
-            this.audio.play('squelch'); // mayo onto the sandwich
+            this.audio.play('squelch'); // spread onto the sandwich
             this.particles.spawnBurst(
               this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
-              0xf2eed8,
+              isJam ? 0x9b2d5e : 0xf2eed8,
               { count: 36, speed: 4.2, size: 46, upBias: 0.7, life: 0.9 }
             );
-            if (!this.perpbirdUnlocked) {
+            // Mayo's dressing summons the Perpendicular Bird; Jam just… works.
+            if (isMayo && !this.perpbirdUnlocked) {
               this.perpbirdUnlocked = true;
               writeStorage(STORAGE_PERPBIRD, '1');
               this.runUnlockNames.push('Perpendicular Bird');
               this.ui.showTimeToast('★ PERPENDICULAR BIRD UNLOCKED! +55.5');
+            } else if (isJam) {
+              this.ui.showTimeToast("IT'S FUNKY, BUT IT WORKS! +55.5");
             } else {
               this.ui.showTimeToast('MUCH BETTER! +55.5');
             }
           } else {
-            this.ui.showTimeToast('ALREADY PERFECTLY MOIST');
+            this.ui.showTimeToast('ALREADY PERFECTLY DRESSED');
           }
         } else {
           this.ui.showTimeToast("IT'S A BLT, BUT IT'S A BIT TOO DRY…");
@@ -1517,6 +1536,22 @@ export class Game {
       this.margaretUnlocked = true;
       writeStorage(STORAGE_MARGARET, '1');
       newlyUnlockedNames.push('Margaret');
+    }
+    // Dodecahedron the Beret: a 300+ finish while playing as Rhombus.
+    if (!this.dodecaUnlocked && this.characterName === 'rhombus' && this.points >= DODECA_SCORE) {
+      this.dodecaUnlocked = true;
+      writeStorage(STORAGE_DODECA, '1');
+      newlyUnlockedNames.push('Dodecahedron the Beret');
+    }
+
+    // All-time points bank: Jam joins the roster once the lifetime total
+    // (this run included) reaches 1000.
+    this.totalScore += this.points;
+    writeStorage(STORAGE_TOTAL_SCORE, this.totalScore);
+    if (!this.jamUnlocked && this.totalScore >= JAM_TOTAL_SCORE) {
+      this.jamUnlocked = true;
+      writeStorage(STORAGE_JAM, '1');
+      newlyUnlockedNames.push('Jam');
     }
 
     // Final-score trophies + any unlock-count milestones from this run's

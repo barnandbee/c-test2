@@ -40,9 +40,11 @@ offline.
 - **Feedback** — a springy **bounce** on jumps, a **sparkle** on pickups
   (grander for the golden ones), a **chime** for each trophy, and a rising
   **slide-whistle** when a hero unlocks.
+- **Hazards** — a croaky **ribbit** when a toxic frog gets you, and a
+  cartoon **beep beep** when Magnus clips you with the golf cart.
 - **Events** — a brassy **bugle** for the Magna Carta, **clock ticks** when
   time is banked, a **sonar ping** on striking the submarine, a wet
-  **squelch** as Mayonnaise dresses the sandwich, a departing-**train**
+  **squelch** as Mayonnaise (or Jam) dresses the sandwich, a departing-**train**
   motif on the Mystic Line, and a **victory fanfare** for winning Veggie
   Tac Toe.
 - **Vehicles** — each rides its own looping engine bed (hovercraft **whir**,
@@ -232,6 +234,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   and two limp sleeves that sway as it drifts. No legs, no face — it
   simply hovers. Unlock it once you've **amassed 30 achievements in
   total** — trophies earned plus characters unlocked.
+- **Jam** — Mayonnaise's funkier cousin: a glass jar of deep berry
+  preserve under a red gingham cloth cap tied with string. Like Mayo, she
+  can dress the cave BLT for the same **+55.5** — "it's funky, but it
+  works!" Unlock her by scoring an **all-time total of 1000 points**
+  across every run you've ever played.
+- **Dodecahedron the Beret** — a twelve-faced teal solid wearing a jaunty
+  navy beret at a rakish tilt, little nub and all. A geometric cousin to
+  Rhombus the Hat; feetless, so it drifts. Unlock it by finishing a run
+  with **300+ points while playing as Rhombus the Hat**.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

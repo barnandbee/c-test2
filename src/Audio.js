@@ -114,6 +114,8 @@ export class SoundFX {
       case 'squelch': return this._squelch();
       case 'train': return this._train();
       case 'win': return this._win();
+      case 'ribbit': return this._ribbit();
+      case 'carthorn': return this._carthorn();
       default: return;
     }
   }
@@ -313,6 +315,59 @@ export class SoundFX {
     // A sparkle flourish on top.
     this._blip('triangle', 1568, 1568, t + 0.44, 0.3, 0.16);
     this._blip('sine', 2093, 2093, t + 0.5, 0.3, 0.1);
+  }
+
+  /** A wet, croaky frog ribbit for a toxic-frog collision. */
+  _ribbit() {
+    const t = this.ctx.currentTime;
+    // Two croaks: a low warble whose pitch bobs, through a resonant lowpass.
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 700;
+    lp.Q.value = 6;
+    lp.connect(this.master);
+    for (const start of [0, 0.16]) {
+      const o = this.ctx.createOscillator();
+      o.type = 'sawtooth';
+      const a = t + start;
+      o.frequency.setValueAtTime(150, a);
+      o.frequency.linearRampToValueAtTime(230, a + 0.06);
+      o.frequency.linearRampToValueAtTime(120, a + 0.12);
+      // Fast amplitude flutter gives the croak its gravel.
+      const flutter = this.ctx.createOscillator();
+      flutter.frequency.value = 45;
+      const flutterGain = this.ctx.createGain();
+      flutterGain.gain.value = 0.35;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, a);
+      g.gain.exponentialRampToValueAtTime(0.28, a + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, a + 0.13);
+      flutter.connect(flutterGain).connect(g.gain);
+      o.connect(g).connect(lp);
+      o.start(a); o.stop(a + 0.15);
+      flutter.start(a); flutter.stop(a + 0.15);
+    }
+  }
+
+  /** A cartoon 'beep beep' car horn for the golf-cart hit. */
+  _carthorn() {
+    const t = this.ctx.currentTime;
+    // Two quick honks — a stacked major-third dyad, square-wave brash.
+    for (const start of [0, 0.18]) {
+      for (const f of [440, 554]) {
+        const o = this.ctx.createOscillator();
+        o.type = 'square';
+        o.frequency.value = f;
+        const g = this.ctx.createGain();
+        const a = t + start;
+        g.gain.setValueAtTime(0.0001, a);
+        g.gain.exponentialRampToValueAtTime(0.14, a + 0.01);
+        g.gain.setValueAtTime(0.14, a + 0.11);
+        g.gain.exponentialRampToValueAtTime(0.0001, a + 0.14);
+        o.connect(g).connect(this.master);
+        o.start(a); o.stop(a + 0.16);
+      }
+    }
   }
 
   /* ---------------- vehicle beds ---------------- */
