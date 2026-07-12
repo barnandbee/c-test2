@@ -82,6 +82,8 @@ const STORAGE_JAM = 'mystic-badger.jamUnlocked';
 const STORAGE_DODECA = 'mystic-badger.dodecaUnlocked';
 const STORAGE_POLARPEAR = 'mystic-badger.polarpearUnlocked';
 const STORAGE_NIGHTEYE = 'mystic-badger.nightEyeUnlocked';
+const STORAGE_PINEPENGUIN = 'mystic-badger.pinepenguinUnlocked';
+const STORAGE_BILLY = 'mystic-badger.billyUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -112,9 +114,6 @@ const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
 // cone, cherry, cloud, egg, star, Magna Carta.
 const ERROR42_SET = [1, 3, 5, 10, 20, 25];
-// Every playable hero's key (badger included) — for the "with every
-// character" score trophies.
-const ALL_CHARACTERS = CHARACTER_UNLOCKS.map((c) => c.key);
 const MAGNUS_HITS_REQUIRED = 4;
 const MAGNUS_MIN_SCORE = 50;
 
@@ -204,6 +203,8 @@ export class Game {
     this.dodecaUnlocked = readStorage(STORAGE_DODECA) === '1';
     this.polarpearUnlocked = readStorage(STORAGE_POLARPEAR) === '1';
     this.nightEyeUnlocked = readStorage(STORAGE_NIGHTEYE) === '1';
+    this.pinepenguinUnlocked = readStorage(STORAGE_PINEPENGUIN) === '1';
+    this.billyUnlocked = readStorage(STORAGE_BILLY) === '1';
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -723,6 +724,8 @@ export class Game {
     if (name === 'dodeca') return this.dodecaUnlocked;
     if (name === 'polarpear') return this.polarpearUnlocked;
     if (name === 'nighteye') return this.nightEyeUnlocked;
+    if (name === 'pinepenguin') return this.pinepenguinUnlocked;
+    if (name === 'billy') return this.billyUnlocked;
     return name === 'badger';
   }
 
@@ -749,7 +752,9 @@ export class Game {
       jam: this.jamUnlocked,
       dodeca: this.dodecaUnlocked,
       polarpear: this.polarpearUnlocked,
-      nighteye: this.nightEyeUnlocked
+      nighteye: this.nightEyeUnlocked,
+      pinepenguin: this.pinepenguinUnlocked,
+      billy: this.billyUnlocked
     };
   }
 
@@ -807,11 +812,11 @@ export class Game {
     if (p >= 500) this.awardAchievement('score500');
     if (!Number.isInteger(p)) this.awardAchievement('decimal');
 
-    // C-series: score 100 / 200 / 300 with EVERY character (tracked across
-    // all runs). Marks the current hero once it crosses each bar.
-    if (p >= 100) this._markCharScore(this.scored100, STORAGE_SCORED100, 'c100');
-    if (p >= 200) this._markCharScore(this.scored200, STORAGE_SCORED200, 'c200');
-    if (p >= 300) this._markCharScore(this.scored300, STORAGE_SCORED300, 'c300');
+    // C-series: score 100 / 200 / 300 with 10 / 20 / 30 different characters
+    // (tracked across all runs). Marks the current hero as it crosses a bar.
+    if (p >= 100) this._markCharScore(this.scored100, STORAGE_SCORED100, 'c100', 10);
+    if (p >= 200) this._markCharScore(this.scored200, STORAGE_SCORED200, 'c200', 20);
+    if (p >= 300) this._markCharScore(this.scored300, STORAGE_SCORED300, 'c300', 30);
 
     // Snooker: land on exactly 147 having collected one of every item type.
     if (p === 147 && ERROR42_SET.every((v) => this.itemTypesCollected.has(v))) {
@@ -866,6 +871,15 @@ export class Game {
     if (allCherries) this.awardAchievement('allcherries');
     if (allEggs) this.awardAchievement('alleggs');
     if (allStars && allClouds && allCherries) this.awardAchievement('allsky');
+
+    // Billy Rocketfingers: clear every star AND ride to all three stations
+    // in the same run.
+    if (!this.billyUnlocked && allStars && this.stationsVisited.size >= 3) {
+      this.billyUnlocked = true;
+      writeStorage(STORAGE_BILLY, '1');
+      this.runUnlockNames.push('Billy Rocketfingers');
+      this.ui.showTimeToast('★ BILLY ROCKETFINGERS UNLOCKED! 🎸');
+    }
 
     // Yo-Yo: the score bouncing across 100 — up, down, up, down, up.
     const over = p > 100;
@@ -925,15 +939,15 @@ export class Game {
 
   /**
    * Note that the current hero has crossed a score bar, persist it, and
-   * award the trophy once every character has cleared that bar.
+   * award the trophy once `need` distinct characters have cleared that bar.
    */
-  _markCharScore(set, storageKey, achId) {
+  _markCharScore(set, storageKey, achId, need) {
     if (this.achievements.has(achId)) return;
     if (!set.has(this.characterName)) {
       set.add(this.characterName);
       writeStorage(storageKey, [...set].join(','));
     }
-    if (ALL_CHARACTERS.every((k) => set.has(k))) this.awardAchievement(achId);
+    if (set.size >= need) this.awardAchievement(achId);
   }
 
   /** Leave the welcome menu and start the clock. */
@@ -1887,6 +1901,13 @@ export class Game {
             if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH) {
               this.reachedSummitLowHP = true;
               this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
+            }
+            // Pineapple Penguin: summit the flag with a score over 333.
+            if (!this.pinepenguinUnlocked && this.points > 333) {
+              this.pinepenguinUnlocked = true;
+              writeStorage(STORAGE_PINEPENGUIN, '1');
+              this.runUnlockNames.push('Pineapple Penguin');
+              this.ui.showTimeToast('★ PINEAPPLE PENGUIN UNLOCKED!');
             }
           }
         }

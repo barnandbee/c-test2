@@ -254,6 +254,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   armour, with a visored helmet, an antenna and two glowing **laser eyes**
   that fire thin red beams. Unlock it by scoring an **all-time total of
   10000 points** across every run.
+- **Pineapple Penguin** — an upright penguin (black back, white belly,
+  orange feet and flippers) whose head is a whole **pineapple**:
+  crosshatched golden skin, a spiky green crown and a little beak. Unlock
+  it by reaching the **mountain summit flag with a score over 333**.
+- **Billy Rocketfingers** — a cool astronaut in a white spacesuit under a
+  black **rockstar leather jacket** (raised collar, open lapels over a red
+  tee), a bubble helmet with a gold visor and a pair of **shades** pushed
+  over the front, plus a life-support pack. Unlock it by **collecting every
+  star AND riding to all three Mystic Line stations in one run**.
 - **The snow-capped mountain** — out in the far south-east corner,
   diagonally opposite the lake and the sealed Mystic Forest and well clear
   of the pink blossom tree and every other landmark, rises a proper peak: a
@@ -293,8 +302,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   cherries and clouds together), letting your health hit zero, the
   **Yo-Yo 🪀** (bouncing your score across 100 up-down-up-down-up in one
   run), and unlocking 1 / 5 / 10 characters. It also tracks the long-haul
-  feats: scoring 100 / 200 / 300 with **every** character (**C Unit** /
-  **C Change** / **C U Later**), playing as 5 / 10 / 20 different heroes,
+  feats: scoring 100 with 10 / 200 with 20 / 300 with 30 different
+  characters (**C Unit** / **C Change** / **C U Later**), playing as
+  5 / 10 / 20 different heroes,
   visiting all three Mystic Line stations in one run, taking President Fir
   Tree home to the Mystic Forest, taking Polar Pear to the summit flag,
   beating Turnip Scart at Veggie Tac Toe *while playing as Turnip Scart*,

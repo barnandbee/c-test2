@@ -32,9 +32,9 @@ export const TROPHIES = [
   { id: 'allsky', medal: '🧹', title: 'Clean Sweep', desc: 'Clear all stars, cherries and clouds in one run.' },
   { id: 'train', medal: '🚆', title: 'Getting the Train', desc: 'Ride the Mystic Line from the ticket machine.' },
   { id: 'yoyo', medal: '🪀', title: 'Yo-Yo', desc: 'Cross 100 points up, down, up, down, up in one run.' },
-  { id: 'c100', medal: '💯', title: 'C Unit', desc: 'Score 100 or more with every character.' },
-  { id: 'c200', medal: '🌊', title: 'C Change', desc: 'Score 200 or more with every character.' },
-  { id: 'c300', medal: '👋', title: 'C U Later', desc: 'Score 300 or more with every character.' },
+  { id: 'c100', medal: '💯', title: 'C Unit', desc: 'Score 100 or more with 10 different characters.' },
+  { id: 'c200', medal: '🌊', title: 'C Change', desc: 'Score 200 or more with 20 different characters.' },
+  { id: 'c300', medal: '👋', title: 'C U Later', desc: 'Score 300 or more with 30 different characters.' },
   { id: 'play5', medal: '🎬', title: 'Repertory', desc: 'Play as 5 different characters.' },
   { id: 'play10', medal: '🎟️', title: 'Full Cast', desc: 'Play as 10 different characters.' },
   { id: 'play20', medal: '🎠', title: 'The Whole Menagerie', desc: 'Play as 20 different characters.' },
@@ -69,5 +69,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'jam', name: 'Jam', how: 'Score an all-time total of 1000 points across every run.' },
   { key: 'dodeca', name: 'Dodecahedron the Beret', how: 'Finish a run with 300+ points while playing as Rhombus the Hat.' },
   { key: 'polarpear', name: 'Polar Pear', how: 'Reach the mountain summit flag on 10 health, then survive to the bell.' },
-  { key: 'nighteye', name: 'Night Eye', how: 'Score an all-time total of 10000 points across every run.' }
+  { key: 'nighteye', name: 'Night Eye', how: 'Score an all-time total of 10000 points across every run.' },
+  { key: 'pinepenguin', name: 'Pineapple Penguin', how: 'Reach the mountain summit flag with a score over 333.' },
+  { key: 'billy', name: 'Billy Rocketfingers', how: 'Collect every star AND visit all three Mystic Line stations in one run.' }
 ];

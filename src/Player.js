@@ -140,6 +140,8 @@ export class Player {
     else if (this.character === 'dodeca') this.root = this.buildDodeca();
     else if (this.character === 'polarpear') this.root = this.buildPolarPear();
     else if (this.character === 'nighteye') this.root = this.buildNightEye();
+    else if (this.character === 'pinepenguin') this.root = this.buildPinePenguin();
+    else if (this.character === 'billy') this.root = this.buildBilly();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -2458,6 +2460,275 @@ export class Player {
       pivot.add(leg);
       const boot = new THREE.Mesh(bootGeo, darkMat);
       boot.position.set(0, -0.5, 0.04);
+      pivot.add(boot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Pineapple Penguin — an upright penguin (black back, white belly, orange
+   * feet and flippers) whose head is a whole pineapple: a crosshatched
+   * golden fruit with a spiky green crown, a penguin's beak and eyes.
+   */
+  buildPinePenguin() {
+    const root = new THREE.Group();
+    root.name = 'pinepenguin';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Pineapple skin texture: a golden diamond crosshatch, drawn once.
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#d8a838';
+    g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = '#9c6f22';
+    g.lineWidth = 4;
+    for (let i = -128; i < 256; i += 24) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 128, 128); g.stroke();
+      g.beginPath(); g.moveTo(i, 128); g.lineTo(i + 128, 0); g.stroke();
+    }
+    g.fillStyle = '#7a5518';
+    for (let y = 0; y < 128; y += 24) for (let x = 0; x < 128; x += 24) { g.beginPath(); g.arc(x, y, 2.5, 0, 7); g.fill(); }
+    const skinTex = track(new THREE.CanvasTexture(canvas));
+    skinTex.colorSpace = THREE.SRGBColorSpace;
+
+    const blackMat = track(createToonMaterial({ color: 0x1b1b22, rim: { color: 0x8fa6d8, strength: 0.3, threshold: 0.68 } }));
+    const bellyMat = track(createToonMaterial({ color: 0xf4f2ea, rim: { color: 0xffffff, strength: 0.3, threshold: 0.7 } }));
+    const beakMat = track(createToonMaterial({ color: 0xf0902a }));
+    const footMat = track(createToonMaterial({ color: 0xe07c1e }));
+    const pineMat = track(createToonMaterial({ map: skinTex, rim: { color: 0xffe9a0, strength: 0.35, threshold: 0.62 } }));
+    const leafMat = track(createToonMaterial({ color: 0x4e9e3e, rim: { color: 0xbfe89a, strength: 0.35, threshold: 0.62 } }));
+    const eyeMat = track(createToonMaterial({ color: 0x141210 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- upright egg-shaped body, black with a white belly --------------
+    const torso = new THREE.Mesh(track(new THREE.SphereGeometry(0.36, 18, 16)), blackMat);
+    torso.scale.set(0.92, 1.15, 0.9);
+    torso.position.y = 0.16;
+    torso.castShadow = true;
+    body.add(torso);
+    const belly = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 14)), bellyMat);
+    belly.scale.set(0.8, 1.05, 0.7);
+    belly.position.set(0, 0.14, 0.14);
+    body.add(belly);
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.12, 0.2, 8)), blackMat);
+    tail.position.set(0, -0.12, -0.28);
+    tail.rotation.x = 1.9;
+    body.add(tail);
+
+    // --- head group: a pineapple with a beak and a leafy crown ----------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.42, 0.02);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const pineGeo = track(new THREE.SphereGeometry(0.24, 18, 16));
+    const pine = new THREE.Mesh(pineGeo, pineMat);
+    pine.scale.set(1, 1.3, 1);
+    pine.position.y = 0.16;
+    pine.castShadow = true;
+    headGroup.add(pine);
+
+    // Spiky green crown of leaves.
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      const lean = i === 0 ? 0 : 0.5;
+      const leaf = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.28, 5)), leafMat);
+      leaf.position.set(Math.cos(a) * 0.09 * lean, 0.46 + (i === 0 ? 0.06 : 0), Math.sin(a) * 0.09 * lean);
+      leaf.rotation.set(lean ? Math.cos(a) * 0.5 : 0, 0, lean ? -Math.sin(a) * 0.5 : 0);
+      leaf.castShadow = true;
+      headGroup.add(leaf);
+    }
+
+    // Beak + eyes on the pineapple's front.
+    const beak = new THREE.Mesh(track(new THREE.ConeGeometry(0.06, 0.16, 8)), beakMat);
+    beak.position.set(0, 0.12, 0.26);
+    beak.rotation.x = Math.PI / 2;
+    headGroup.add(beak);
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 10, 8)), eyeMat);
+      eye.position.set(side * 0.1, 0.24, 0.2);
+      headGroup.add(eye);
+      const glint = new THREE.Mesh(track(new THREE.SphereGeometry(0.014, 6, 6)), glintMat);
+      glint.position.set(side * 0.09, 0.26, 0.23);
+      headGroup.add(glint);
+    }
+
+    // --- flippers as swaying arms --------------------------------------
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.33, 0.22, 0);
+      pivot.rotation.z = -side * 0.2;
+      const flipperGeo = track(new THREE.CapsuleGeometry(0.055, 0.34, 4, 8));
+      const flipper = new THREE.Mesh(flipperGeo, blackMat);
+      flipper.position.y = -0.2;
+      flipper.scale.set(0.6, 1, 1.3);
+      flipper.castShadow = true;
+      pivot.add(flipper);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- two stubby orange webbed feet ----------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 8));
+    legGeo.translate(0, -0.08, 0);
+    const footGeo = track(new THREE.SphereGeometry(0.1, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.12, -0.22, 0.02);
+      const leg = new THREE.Mesh(legGeo, footMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const foot = new THREE.Mesh(footGeo, footMat);
+      foot.position.set(0, -0.14, 0.08);
+      foot.scale.set(1.1, 0.4, 1.6);
+      pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Billy Rocketfingers — a cool astronaut: a white spacesuit under a black
+   * rockstar leather jacket (raised collar, open lapels), a bubble helmet
+   * with a gold visor and a pair of shades pushed over the front, a
+   * life-support pack, and armoured boots.
+   */
+  buildBilly() {
+    const root = new THREE.Group();
+    root.name = 'billy';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const suitMat = track(createToonMaterial({ color: 0xeef0f3, rim: { color: 0xbcd6ff, strength: 0.35, threshold: 0.66 } }));
+    const leatherMat = track(createToonMaterial({ color: 0x1a1a20, rim: { color: 0x8f9ac0, strength: 0.5, threshold: 0.55 } }));
+    const glassMat = track(createToonMaterial({ color: 0xcfe6ff, rim: { color: 0xffffff, strength: 0.55, threshold: 0.5 } }));
+    glassMat.transparent = true;
+    glassMat.opacity = 0.55;
+    const visorMat = track(createToonMaterial({ color: 0xd8a838, emissive: 0x6a4a10, emissiveIntensity: 0.6, rim: { color: 0xfff0c0, strength: 0.5, threshold: 0.5 } }));
+    const shadeMat = track(createToonMaterial({ color: 0x0a0a10, rim: { color: 0x5a6a9a, strength: 0.6, threshold: 0.5 } }));
+    const metalMat = track(createToonMaterial({ color: 0x8b909a, rim: { color: 0xffffff, strength: 0.5, threshold: 0.5 } }));
+    const redMat = track(createToonMaterial({ color: 0xd8362a }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- white suit torso, wrapped in a black leather jacket ------------
+    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.24, 0.34, 5, 12)), suitMat);
+    torso.position.y = 0.34;
+    torso.castShadow = true;
+    body.add(torso);
+    // Jacket shell: a slightly larger dark capsule, open at the front.
+    const jacket = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.27, 0.3, 5, 12)), leatherMat);
+    jacket.position.set(0, 0.32, -0.02);
+    jacket.scale.set(1.05, 1, 1.05);
+    jacket.castShadow = true;
+    body.add(jacket);
+    // Open V of white suit down the chest.
+    const chest = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.34, 0.06)), suitMat);
+    chest.position.set(0, 0.36, 0.24);
+    body.add(chest);
+    // A red rockstar tee triangle behind the V.
+    const tee = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.18, 0.04)), redMat);
+    tee.position.set(0, 0.3, 0.23);
+    body.add(tee);
+    // Raised jacket collar: two angled lapels at the neck.
+    for (const side of [-1, 1]) {
+      const lapel = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.16, 0.06)), leatherMat);
+      lapel.position.set(side * 0.12, 0.52, 0.16);
+      lapel.rotation.z = side * 0.5;
+      lapel.rotation.x = -0.3;
+      body.add(lapel);
+    }
+    // Life-support backpack.
+    const pack = new THREE.Mesh(track(new THREE.BoxGeometry(0.32, 0.36, 0.16)), metalMat);
+    pack.position.set(0, 0.36, -0.26);
+    pack.castShadow = true;
+    body.add(pack);
+
+    // --- bubble helmet with a gold visor and shades over it -------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.72, 0);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const helmet = new THREE.Mesh(track(new THREE.SphereGeometry(0.23, 18, 16)), glassMat);
+    helmet.castShadow = true;
+    headGroup.add(helmet);
+    // A white neck ring under the helmet.
+    const ring = new THREE.Mesh(track(new THREE.CylinderGeometry(0.19, 0.19, 0.08, 16)), suitMat);
+    ring.position.y = -0.18;
+    headGroup.add(ring);
+    // Gold visor across the front.
+    const visor = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 16, 12, -0.9, 1.8, 0.9, 1.0)), visorMat);
+    visor.position.set(0, -0.01, 0.02);
+    headGroup.add(visor);
+    // Shades pushed over the helmet: a dark bar with two lenses + a bridge.
+    for (const side of [-1, 1]) {
+      const lens = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.08, 0.04)), shadeMat);
+      lens.position.set(side * 0.09, 0.06, 0.21);
+      lens.rotation.y = side * -0.25;
+      headGroup.add(lens);
+    }
+    const bridge = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.03, 0.03)), shadeMat);
+    bridge.position.set(0, 0.06, 0.23);
+    headGroup.add(bridge);
+
+    // --- jacketed arms with white gloves -------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.055, 0.05, 0.4, 8));
+    armGeo.translate(0, -0.2, 0);
+    const gloveGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.3, 0.52, 0);
+      const arm = new THREE.Mesh(armGeo, leatherMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const glove = new THREE.Mesh(gloveGeo, suitMat);
+      glove.position.set(0, -0.42, 0);
+      pivot.add(glove);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- white suit legs with silver boots -----------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.48, 8));
+    legGeo.translate(0, -0.24, 0);
+    const bootGeo = track(new THREE.BoxGeometry(0.13, 0.1, 0.22));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, 0.05, 0);
+      const leg = new THREE.Mesh(legGeo, suitMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const boot = new THREE.Mesh(bootGeo, metalMat);
+      boot.position.set(0, -0.48, 0.04);
       pivot.add(boot);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
