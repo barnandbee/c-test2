@@ -34,7 +34,11 @@ export class SoundFX {
       this.master.gain.value = this.muted ? 0 : 0.9;
       this.master.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().then(() => this.startMusic()).catch(() => {});
+    } else if (this.ctx.state === 'running') {
+      this.startMusic();
+    }
   }
 
   /**
@@ -104,6 +108,12 @@ export class SoundFX {
       case 'collect': return this._collect(variant >= 1);
       case 'unlock': return this._unlock();
       case 'trophy': return this._trophy();
+      case 'bugle': return this._bugle();
+      case 'ticks': return this._ticks();
+      case 'sonar': return this._sonar();
+      case 'squelch': return this._squelch();
+      case 'train': return this._train();
+      case 'win': return this._win();
       default: return;
     }
   }
@@ -174,6 +184,135 @@ export class SoundFX {
     const t = this.ctx.currentTime;
     this._blip('triangle', 1047, 1047, t, 0.2, 0.2);       // C6
     this._blip('triangle', 1568, 1568, t + 0.11, 0.28, 0.2); // G6
+  }
+
+  /** A brassy little bugle 'charge!' fanfare for the Magna Carta. */
+  _bugle() {
+    const t = this.ctx.currentTime;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2600;
+    lp.connect(this.master);
+    // G4 C5 E5 — G5, the classic cavalry call, last note held & vibra'd.
+    const notes = [[392, 0.0, 0.12], [523, 0.12, 0.12], [659, 0.24, 0.12], [784, 0.38, 0.5]];
+    for (const [f, dt, dur] of notes) {
+      this._blip('sawtooth', f, f, t + dt, dur, 0.22, lp);
+      this._blip('square', f, f, t + dt, dur, 0.05, lp); // reedy edge
+    }
+  }
+
+  /** A little run of clock ticks — time has been added. */
+  _ticks(n = 5) {
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < n; i++) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this._noise();
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = i % 2 ? 2600 : 2000; // tick… tock…
+      bp.Q.value = 8;
+      const g = this.ctx.createGain();
+      const at = t + i * 0.11;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.16, at + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+      src.connect(bp).connect(g).connect(this.master);
+      src.start(at);
+      src.stop(at + 0.06);
+    }
+  }
+
+  /** A deep sonar ping + metallic clang for striking the submarine. */
+  _sonar() {
+    const t = this.ctx.currentTime;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1400;
+    lp.connect(this.master);
+    // The ping: a pure tone with a long, watery decay.
+    const ping = this.ctx.createOscillator();
+    ping.type = 'sine';
+    ping.frequency.setValueAtTime(720, t);
+    ping.frequency.exponentialRampToValueAtTime(660, t + 0.5);
+    const pg = this.ctx.createGain();
+    pg.gain.setValueAtTime(0.0001, t);
+    pg.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    ping.connect(pg).connect(lp);
+    ping.start(t); ping.stop(t + 1.15);
+    // A dull hull clang underneath.
+    this._blip('square', 150, 90, t, 0.35, 0.16, lp);
+    this._blip('triangle', 226, 140, t, 0.3, 0.1, lp);
+  }
+
+  /** A wet mayonnaise squelch for dressing the sandwich. */
+  _squelch() {
+    const t = this.ctx.currentTime;
+    // Bandpassed noise whose filter sweeps down — a gloopy splat.
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noise();
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1600, t);
+    bp.frequency.exponentialRampToValueAtTime(300, t + 0.28);
+    bp.Q.value = 3;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    src.connect(bp).connect(g).connect(this.master);
+    src.start(t); src.stop(t + 0.36);
+    // A low 'blop' that drops in pitch, the last squeeze from the jar.
+    this._blip('sine', 300, 90, t + 0.02, 0.26, 0.16);
+  }
+
+  /** A departing-train motif: a two-tone horn over accelerating chuffs. */
+  _train() {
+    const t = this.ctx.currentTime;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1600;
+    lp.connect(this.master);
+    // Two-tone horn (a falling minor third), held.
+    for (const [f, g] of [[330, 0.14], [262, 0.14]]) {
+      const o = this.ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = f;
+      const og = this.ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t);
+      og.gain.exponentialRampToValueAtTime(g, t + 0.08);
+      og.gain.setValueAtTime(g, t + 0.6);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      o.connect(og).connect(lp);
+      o.start(t); o.stop(t + 0.95);
+    }
+    // Chuffs: filtered-noise puffs that speed up as the train pulls away.
+    let ct = t;
+    for (let i = 0; i < 6; i++) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this._noise();
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 500;
+      bp.Q.value = 1.2;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, ct);
+      g.gain.exponentialRampToValueAtTime(0.14, ct + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ct + 0.14);
+      src.connect(bp).connect(g).connect(this.master);
+      src.start(ct); src.stop(ct + 0.16);
+      ct += 0.22 - i * 0.02; // accelerate
+    }
+  }
+
+  /** A bright ascending fanfare for winning Veggie Tac Toe. */
+  _win() {
+    const t = this.ctx.currentTime;
+    const notes = [523, 659, 784, 1047]; // C E G C
+    notes.forEach((f, i) => this._blip('triangle', f, f, t + i * 0.1, 0.26, 0.2));
+    // A sparkle flourish on top.
+    this._blip('triangle', 1568, 1568, t + 0.44, 0.3, 0.16);
+    this._blip('sine', 2093, 2093, t + 0.5, 0.3, 0.1);
   }
 
   /* ---------------- vehicle beds ---------------- */
@@ -321,9 +460,219 @@ export class SoundFX {
     return { nodes: [roar, sub, rumble], gain: out };
   }
 
-  /** Silence everything (e.g. on game over). */
+  /* ---------------- movement (footsteps / roll / hover) ---------------- */
+
+  /** A soft, padded footfall. `speed01` gives faster steps a touch more body. */
+  footstep(speed01 = 0.5) {
+    if (!this.ctx || this.ctx.state !== 'running' || this.muted) return;
+    const t = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noise();
+    // Start the read at a random offset so successive steps aren't identical.
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 320 + Math.random() * 120;
+    const g = this.ctx.createGain();
+    const peak = 0.05 + speed01 * 0.04;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    src.connect(lp).connect(g).connect(this.master);
+    src.start(t, Math.random() * 1.5);
+    src.stop(t + 0.13);
+    // A soft low thud gives the step weight.
+    this._blip('sine', 120 + Math.random() * 30, 70, t, 0.09, 0.05 + speed01 * 0.03);
+  }
+
+  /**
+   * Set the continuous movement bed: 'roll' (marble), 'hover' (feetless
+   * heroes) or null (footstep walkers / nothing). Crossfades like vehicles.
+   */
+  setMoveBed(kind) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    if (this._move && this._move.kind === kind) return;
+    this._stopMove();
+    if (!kind) return;
+    this._move = kind === 'roll' ? this._rollBed() : this._hoverBed();
+    if (this._move) this._move.kind = kind;
+  }
+
+  /** Modulate the active move bed by speed (0..1). No-op if no bed. */
+  setMoveIntensity(x) {
+    if (!this._move) return;
+    const t = this.ctx.currentTime;
+    const v = Math.max(0.0001, Math.min(1, x));
+    this._move.intensity.gain.setTargetAtTime(v, t, 0.08);
+  }
+
+  _stopMove() {
+    const m = this._move;
+    this._move = null;
+    if (!m) return;
+    const t = this.ctx.currentTime;
+    m.gain.gain.cancelScheduledValues(t);
+    m.gain.gain.setValueAtTime(m.gain.gain.value, t);
+    m.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    for (const n of m.nodes) { try { n.stop(t + 0.25); } catch (e) { /* gains */ } }
+  }
+
+  /** Marble roll: a low granular rumble whose brightness rides with speed. */
+  _rollBed() {
+    const t = this.ctx.currentTime;
+    const out = this.ctx.createGain();
+    out.gain.value = 0.22;
+    out.connect(this.master);
+    const intensity = this.ctx.createGain(); // 0..1 speed modulation
+    intensity.gain.value = 0.0001;
+    intensity.connect(out);
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noise();
+    src.loop = true;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 380;
+    lp.Q.value = 3;
+    src.connect(lp).connect(intensity);
+    // A low tone under it gives the marble mass on the boards.
+    const tone = this.ctx.createOscillator();
+    tone.type = 'triangle';
+    tone.frequency.value = 70;
+    const tg = this.ctx.createGain();
+    tg.gain.value = 0.4;
+    tone.connect(tg).connect(intensity);
+
+    src.start(t); tone.start(t);
+    return { nodes: [src, tone], gain: out, intensity };
+  }
+
+  /** Feetless hover: an airy, ethereal whoosh that swells with movement. */
+  _hoverBed() {
+    const t = this.ctx.currentTime;
+    const out = this.ctx.createGain();
+    out.gain.value = 0.2;
+    out.connect(this.master);
+    const intensity = this.ctx.createGain();
+    intensity.gain.value = 0.0001;
+    intensity.connect(out);
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noise();
+    src.loop = true;
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 900;
+    bp.Q.value = 0.6;
+    src.connect(bp).connect(intensity);
+    // A soft sine glow gives the hover a warm, spectral undertone.
+    const glow = this.ctx.createOscillator();
+    glow.type = 'sine';
+    glow.frequency.value = 138;
+    const gg = this.ctx.createGain();
+    gg.gain.value = 0.5;
+    glow.connect(gg).connect(intensity);
+    // Slow LFO wafts the airflow so it never sits still.
+    const lfo = this.ctx.createOscillator();
+    lfo.frequency.value = 0.6;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 300;
+    lfo.connect(lfoGain).connect(bp.frequency);
+
+    src.start(t); glow.start(t); lfo.start(t);
+    return { nodes: [src, glow, lfo], gain: out, intensity };
+  }
+
+  /* ---------------- ambient music (looped placeholder) ---------------- */
+
+  /**
+   * A gentle, evolving ambient loop synthesised on the fly — a warm triad
+   * pad drifting through a four-chord progression under a sparse pentatonic
+   * arpeggio. Deliberately a PLACEHOLDER: swap in your own track later by
+   * replacing this method. Uses a lookahead scheduler on the audio clock.
+   */
+  startMusic() {
+    if (this._music || !this.ctx || this.ctx.state !== 'running') return;
+    const bus = this.ctx.createGain();
+    bus.gain.value = 0.11;
+    bus.connect(this.master);
+    const warmth = this.ctx.createBiquadFilter();
+    warmth.type = 'lowpass';
+    warmth.frequency.value = 1500;
+    warmth.connect(bus);
+    this._music = { bus, warmth };
+    this._musicStep = 0;
+    this._musicBeat = 0.5; // seconds per step
+    this._musicNext = this.ctx.currentTime + 0.1;
+    // vi–IV–I–V in A minor, each held for 8 steps (4 s). Roots + triads (Hz).
+    this._musicChords = [
+      [220.0, 261.6, 329.6], // Am
+      [174.6, 220.0, 261.6], // F
+      [261.6, 329.6, 392.0], // C
+      [196.0, 246.9, 293.7]  // G
+    ];
+    // A minor pentatonic for the arpeggio (two octaves up-ish).
+    this._musicScale = [440.0, 523.3, 587.3, 659.3, 784.0, 880.0];
+    this._musicTick();
+  }
+
+  _musicTick() {
+    if (!this._music) return;
+    const lookahead = 0.25;
+    while (this._musicNext < this.ctx.currentTime + lookahead) {
+      this._musicNoteAt(this._musicNext, this._musicStep);
+      this._musicNext += this._musicBeat;
+      this._musicStep++;
+    }
+    this._musicTimer = setTimeout(() => this._musicTick(), 60);
+  }
+
+  _musicNoteAt(t, step) {
+    const chord = this._musicChords[Math.floor(step / 8) % this._musicChords.length];
+    const dest = this._music.warmth;
+    // Pad: retrigger the sustained triad at the top of each chord.
+    if (step % 8 === 0) {
+      const hold = this._musicBeat * 8;
+      for (const f of chord) {
+        const o = this.ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.09, t + 0.8);         // slow swell
+        g.gain.setValueAtTime(0.09, t + hold - 1.0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + hold); // fade out
+        o.connect(g).connect(dest);
+        o.start(t); o.stop(t + hold + 0.05);
+      }
+    }
+    // Arpeggio: a soft pluck on some beats, resting on others for space.
+    if (step % 2 === 0 || step % 8 === 3) {
+      const f = this._musicScale[(step * 3) % this._musicScale.length];
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.connect(g).connect(dest);
+      o.start(t); o.stop(t + 0.65);
+    }
+  }
+
+  stopMusic() {
+    if (this._musicTimer) { clearTimeout(this._musicTimer); this._musicTimer = 0; }
+    if (this._music) {
+      const t = this.ctx.currentTime;
+      this._music.bus.gain.setTargetAtTime(0.0001, t, 0.3);
+      this._music = null;
+    }
+  }
+
+  /** Silence the transient beds (e.g. on game over); music keeps drifting. */
   stopAll() {
     this._stopVehicle();
+    this._stopMove();
     this._pendingVehicle = null;
   }
 }

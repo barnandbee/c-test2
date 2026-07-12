@@ -150,6 +150,8 @@ export class Game {
     this.audio.armOnGesture(); // unlock on the first click / key / touch
     this._vehicleSound = null;   // last vehicle kind announced to the audio bed
     this._announcedUnlocks = 0;  // runUnlockNames length already slide-whistled
+    this._moveKind = null;       // 'roll' | 'hover' | 'foot' movement-sound mode
+    this._lastStep = 0;          // walk-cycle half-phase index, for footstep timing
     this.ui.bindMute(this.audio.muted, () => {
       const muted = this.audio.toggleMuted();
       writeStorage(STORAGE_MUTED, muted ? '1' : '0');
@@ -477,6 +479,7 @@ export class Game {
       // The Magna Carta announces itself — and crowns a king, once.
       if (item.value === MAGNA_CARTA_VALUE) {
         this.ui.showTimeToast('YOU GOT THE MAGNA CARTA, BABY!');
+        this.audio.play('bugle');
         if (!this.williamUnlocked) {
           this.williamUnlocked = true;
           writeStorage(STORAGE_WILLIAM, '1');
@@ -618,6 +621,7 @@ export class Game {
     this.timeLeft += TOWER_TIME_BONUS;
     this.towerVisits += 1;
     this.ui.setTimer(this.timeLeft);
+    this.audio.play('ticks'); // clock ticks as time is banked
     if (this.towerVisits >= 3) this.awardAchievement('tower3');
     if (this.towerVisits >= 10) this.awardAchievement('tower10');
 
@@ -946,6 +950,7 @@ export class Game {
             this.sandwichClaimed = true;
             this.points += SANDWICH_POINTS;
             this.ui.setPoints(this.points);
+            this.audio.play('squelch'); // mayo onto the sandwich
             this.particles.spawnBurst(
               this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
               0xf2eed8,
@@ -1053,6 +1058,7 @@ export class Game {
         this.alarmRung = true;
         this.timeLeft += ALARM_TIME_BONUS;
         this.ui.setTimer(this.timeLeft);
+        this.audio.play('ticks'); // clock ticks as time is banked
         this.ui.showTimeToast(`RUDE AWAKENING! +${ALARM_TIME_BONUS} SECONDS`);
         this.particles.spawnBurst(
           this._playerCenter.set(spots.clock.x, spots.clock.y + 0.4, spots.clock.z),
@@ -1170,6 +1176,7 @@ export class Game {
     if (!this.travelOpen || this.isGameOver) return;
     this.closeTravel();
     this.awardAchievement('train'); // rode the Mystic Line
+    this.audio.play('train');
     const w = this.world;
 
     // Departure puff on the platform.
@@ -1386,6 +1393,7 @@ export class Game {
     const tc = document.getElementById('touch-controls');
     if (tc) tc.classList.remove('hidden'); // restore the touch controls
     if (result === 'win') {
+      this.audio.play('win');
       if (!this.turnipUnlocked) {
         this.turnipUnlocked = true;
         writeStorage(STORAGE_TURNIP, '1');
@@ -1424,6 +1432,7 @@ export class Game {
     this.redOctoberClaimed = true;
     this.points += RED_OCTOBER_POINTS;
     this.ui.setPoints(this.points);
+    this.audio.play('sonar'); // striking the submarine
     this.ui.showTimeToast('RED OCTOBER! +63.14159');
     this.particles.spawnBurst(
       this._playerCenter.set(sub.x, sub.y + 1.5, sub.z),
@@ -1435,8 +1444,9 @@ export class Game {
   gameOver(reason) {
     this.isGameOver = true;
     this.closeTravel();
-    this.audio.stopAll(); // silence any engine bed at the bell
+    this.audio.stopAll(); // silence any engine / movement bed at the bell
     this._vehicleSound = null;
+    this._moveKind = null;
     if (document.pointerLockElement) document.exitPointerLock();
 
     if (reason === 'health') this.awardAchievement('rip');
@@ -1534,6 +1544,7 @@ export class Game {
     this.audio.resume(); // the restart click is a fresh user gesture
     this.audio.stopAll();
     this._vehicleSound = null;
+    this._moveKind = null;
     this._announcedUnlocks = 0;
 
     // Apply the character chosen on the game-over screen (if any).
@@ -1651,6 +1662,7 @@ export class Game {
       } else {
         this.cameraRig.update(dt, this.player, this.input);
       }
+      this.audio.setMoveIntensity(0); // no roll/hover hum during the putt
       this.player.animate(dt, false);
     } else if (this.veggieGame) {
       // 'Veggie Tac Toe': clock FROZEN, a fixed bird's-eye camera over the
@@ -1675,6 +1687,7 @@ export class Game {
         }
         this.veggieGame.update(dt);
       }
+      this.audio.setMoveIntensity(0); // no roll/hover hum during the game
       this.player.animate(dt, false);
     } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
@@ -1720,6 +1733,32 @@ export class Game {
       if (this.runUnlockNames.length > this._announcedUnlocks) {
         this._announcedUnlocks = this.runUnlockNames.length;
         this.audio.play('unlock');
+      }
+
+      // Movement sound: footsteps for walkers, a continuous rolling bed for
+      // Marblella, and an airy hover bed for the feetless heroes.
+      const pl = this.player;
+      const moveKind = pl.marbleMesh
+        ? 'roll'
+        : (pl.legs && pl.legs.length === 0 ? 'hover' : 'foot');
+      if (moveKind !== this._moveKind) {
+        this._moveKind = moveKind;
+        this.audio.setMoveBed(moveKind === 'foot' ? null : moveKind);
+        this._lastStep = Math.floor(pl.walkCycle / Math.PI);
+      }
+      const horiz = Math.hypot(pl.velocity.x, pl.velocity.z);
+      const speed01 = clamp(horiz / 7, 0, 1);
+      const moving = pl.grounded && !pl.vehicle && horiz > 1.2;
+      if (moveKind === 'foot') {
+        // A footfall at each half-cycle of the leg swing while grounded.
+        const step = Math.floor(pl.walkCycle / Math.PI);
+        if (moving && step !== this._lastStep) this.audio.footstep(speed01);
+        this._lastStep = step;
+      } else {
+        // Roll/hover intensity tracks speed; the sweatshirt keeps a faint
+        // ethereal presence even at rest. Silent while riding a vehicle.
+        const floor = pl.isFloaty ? 0.3 : 0;
+        this.audio.setMoveIntensity(pl.vehicle ? 0 : Math.max(floor, moving ? speed01 : 0));
       }
 
       // Whisper about the putting challenge when its stars align. The

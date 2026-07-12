@@ -31,14 +31,29 @@ import map — no npm install, no bundler.
 
 All sound is **synthesised at runtime** with the Web Audio API — there are
 no audio files, so the game stays a zero-asset static site that works
-offline. Jumps get a springy **bounce**, pickups **sparkle** (a grander
-shimmer for the golden ones), earning a trophy **chimes**, and unlocking a
-hero rings out a rising **slide-whistle**. Each vehicle rides on its own
-looping engine bed — the hovercraft's **whir**, the balloon's **burner
-hiss**, and the rocket's **roar** — that fades in on boarding and out on
-dismount. A **🔊 toggle** in the HUD mutes everything (remembered between
-runs). Audio unlocks on your first click or key, per browser autoplay
-rules.
+offline.
+
+- **Movement** — walkers get soft **footsteps** paced to their trot;
+  Marblella has a low continuous **rolling** rumble; and the feetless
+  heroes (the Haunted Sweatshirt, Perpendicular Bird, President Fir Tree,
+  Rhombus the Hat) drift on an airy **hover** whoosh that swells with speed.
+- **Feedback** — a springy **bounce** on jumps, a **sparkle** on pickups
+  (grander for the golden ones), a **chime** for each trophy, and a rising
+  **slide-whistle** when a hero unlocks.
+- **Events** — a brassy **bugle** for the Magna Carta, **clock ticks** when
+  time is banked, a **sonar ping** on striking the submarine, a wet
+  **squelch** as Mayonnaise dresses the sandwich, a departing-**train**
+  motif on the Mystic Line, and a **victory fanfare** for winning Veggie
+  Tac Toe.
+- **Vehicles** — each rides its own looping engine bed (hovercraft **whir**,
+  balloon **burner hiss**, rocket **roar**) that fades in on boarding and
+  out on dismount.
+- **Ambient music** — a gentle, evolving **placeholder loop** (a warm triad
+  pad drifting through a four-chord progression under a sparse arpeggio),
+  synthesised in `startMusic()` and ready to be swapped for your own track.
+
+A **🔊 toggle** in the HUD mutes everything (remembered between runs).
+Audio unlocks on your first click or key, per browser autoplay rules.
 
 ## Gameplay
 
