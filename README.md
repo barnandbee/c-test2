@@ -243,6 +243,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   navy beret at a rakish tilt, little nub and all. A geometric cousin to
   Rhombus the Hat; feetless, so it drifts. Unlock it by finishing a run
   with **300+ points while playing as Rhombus the Hat**.
+- **The snow-capped mountain** — over on the plain eastern side of the
+  map (away from the house, lake and veg patch) rises a proper peak: a
+  clean, evenly-graded cone about 20 units tall, green at the foot,
+  banding through bare rock into a bright **snow cap**. Its slopes are
+  deliberately tuned to stay **climbable** (never a slide), and a little
+  **cairn with a fluttering blue pennant** crowns the summit to reward the
+  climb. Built straight into the height field, so collision, the surface
+  tint and the snowline can never disagree.
 - **The golf hole** — a mown-stripe putting green with a red flag and a
   sand bunker, tucked on a hillside. Mostly decorative — unless Magnus
   has already run you over. Get **hit by the golf cart**, then drive

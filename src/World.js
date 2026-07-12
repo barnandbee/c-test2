@@ -46,6 +46,30 @@ export class World {
     this._spawnRawHeight = this._rawHeight(0, 0);
     this.sunDirection = new THREE.Vector3(-0.52, 0.4, -0.72).normalize();
 
+    // --- the snow-capped mountain: a climbable peak on the empty east side.
+    // Armed before any geometry so getHeight() raises it for every landmark
+    // siting search and every collision query. A smooth cone gentle enough
+    // to walk up (max slope ~0.96 → normal.y ~0.72, above the 0.6 slide
+    // threshold), rising well clear of the house, lake and veg patch.
+    const mountainAngle = -0.2; // east, a touch south — the plain quarter
+    const mountainDist = 61;
+    this.mountainX = Math.cos(mountainAngle) * mountainDist;
+    this.mountainZ = Math.sin(mountainAngle) * mountainDist;
+    this.mountainRadius = 32;
+    this.mountainHeight = 18;
+    this.snowLine = this.mountainHeight * 0.5; // bump height where snow begins
+    // The foot's grade, averaged around the footprint rim (raw terrain, no
+    // mountain), so the clean cone joins the surrounding land seamlessly.
+    let mBaseSum = 0;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      mBaseSum += this._rawHeight(
+        this.mountainX + Math.cos(a) * this.mountainRadius,
+        this.mountainZ + Math.sin(a) * this.mountainRadius
+      );
+    }
+    this.mountainBaseLevel = mBaseSum / 8;
+
     // --- the golf corner: a mown green and its bunker --------------------
     // Defined before geometry is built, because getHeight() flattens the
     // green and scoops the bunker.
@@ -189,6 +213,7 @@ export class World {
     this._buildTubeSigns();
     this._buildVegPatch();
     this._buildCoral();
+    this._buildMountainPeak();
   }
 
   /* ================================================================ */
@@ -257,7 +282,37 @@ export class World {
         h = lerp(this.dellLevel, h, smoothstep(this.dellRadius - 3.5, this.dellRadius - 1.5, dd));
       }
     }
+    // Raise the snow-capped mountain. Inside the footprint the rolling
+    // terrain (plateau cliffs and all) is REPLACED outright by a clean
+    // radial cone off a fixed base level, so the walkable slope is exactly
+    // the cone's — always gentle. A skirt just beyond the foot eases the
+    // base level back to the surrounding land, keeping the join smooth.
+    if (this.mountainRadius) {
+      const R = this.mountainRadius;
+      const skirt = 9;
+      const md = Math.hypot(x - this.mountainX, z - this.mountainZ);
+      if (md < R + skirt) {
+        const cone = this.mountainBaseLevel + this._mountainBump(x, z);
+        const w = 1 - smoothstep(R, R + skirt, md); // 1 on the cone, 0 past the skirt
+        h = lerp(h, cone, w);
+      }
+    }
     return h;
+  }
+
+  /**
+   * The mountain's height above its foot at (x,z), 0 at (and beyond) the
+   * footprint rising to `mountainHeight` at the summit. A plain smoothstep
+   * cone: gentle at the base, gentle-domed at the top, an even, climbable
+   * grade through the middle (max slope ~0.84 → normal.y ~0.77, well above
+   * the 0.6 slide threshold). Drives getHeight() and the snow tint, so
+   * terrain, physics and colour can never disagree.
+   */
+  _mountainBump(x, z) {
+    const md = Math.hypot(x - this.mountainX, z - this.mountainZ);
+    if (md >= this.mountainRadius) return 0;
+    const t = clamp(1 - md / this.mountainRadius, 0, 1);
+    return this.mountainHeight * smoothstep(0, 1, t);
   }
 
   /**
@@ -516,7 +571,10 @@ export class World {
     const dirt = new THREE.Color(0x6f5a40);
     const rock = new THREE.Color(0x6d6469);
     const rockHi = new THREE.Color(0x8b8390);
+    const snowHi = new THREE.Color(0xf4f6fc); // sunlit snow
+    const snowLo = new THREE.Color(0xccd6ef); // snow in shade, faintly blue
     const c = new THREE.Color();
+    const snowCol = new THREE.Color();
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
@@ -573,6 +631,17 @@ export class World {
         c.lerp(new THREE.Color(0x9a8a5e), sandBlend * 0.85);
         const deepBlend = 1 - smoothstep(this.waterLevel - 4.5, this.waterLevel - 1.2, h);
         c.lerp(new THREE.Color(0x27423f), deepBlend);
+      }
+
+      // The mountain: a bare rocky collar rising into a bright snow cap,
+      // the snow faintly blue where the slope falls into shade.
+      const mtn = this._mountainBump(x, z);
+      if (mtn > 1) {
+        const rockT = smoothstep(this.mountainHeight * 0.22, this.mountainHeight * 0.5, mtn);
+        c.lerp(rock, rockT * 0.6);
+        const snowT = smoothstep(this.snowLine, this.snowLine + this.mountainHeight * 0.22, mtn);
+        snowCol.copy(snowHi).lerp(snowLo, (1 - slope) * 0.7);
+        c.lerp(snowCol, snowT);
       }
 
       colors[i * 3 + 0] = c.r;
@@ -750,6 +819,9 @@ export class World {
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
       if (Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 3) continue;
+      // Keep the mountain's snowy cap and rocky collar bare — trees only on
+      // its green lower slopes (and everywhere else).
+      if (this.mountainRadius && this._mountainBump(x, z) > this.snowLine * 0.7) continue;
       let tooClose = false;
       for (const p of placements) {
         const dx = x - p.x;
@@ -1269,6 +1341,82 @@ export class World {
 
     this.scene.add(group);
     this.colliders.push({ x: this.greenCenterX, z: this.greenCenterZ, radius: 0.12, top: y + 2.3 });
+  }
+
+  /**
+   * A summit marker crowning the snow-capped mountain: a little cairn of
+   * snow-dusted stones with a fluttering blue pennant, so climbing all the
+   * way up has a payoff to plant your flag beside. Purely decorative.
+   */
+  _buildMountainPeak() {
+    if (!this.mountainRadius) return;
+    const x = this.mountainX;
+    const z = this.mountainZ;
+    const y = this.getHeight(x, z); // the domed summit
+
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    this.mountainPeak = group;
+
+    const stoneMat = createToonMaterial({
+      color: 0x8a8590,
+      rim: { color: 0xe8ecf6, strength: 0.4, threshold: 0.6 }
+    });
+    const capMat = createToonMaterial({ color: 0xf4f6fc });
+    this._disposables.push(stoneMat, capMat);
+
+    // Cairn: three stacked, jittered stones with snowy caps.
+    const sizes = [0.42, 0.3, 0.2];
+    let cy = 0;
+    for (let i = 0; i < sizes.length; i++) {
+      const s = sizes[i];
+      const stoneGeo = new THREE.IcosahedronGeometry(s, 0);
+      this._disposables.push(stoneGeo);
+      const stone = new THREE.Mesh(stoneGeo, stoneMat);
+      cy += s * 0.85;
+      stone.position.set((i % 2 ? 1 : -1) * 0.05, cy, 0);
+      stone.rotation.set(i * 0.7, i * 1.3, i * 0.4);
+      stone.scale.set(1, 0.8, 1);
+      stone.castShadow = true;
+      group.add(stone);
+      const capGeo = new THREE.SphereGeometry(s * 0.92, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+      this._disposables.push(capGeo);
+      const cap = new THREE.Mesh(capGeo, capMat);
+      cap.position.copy(stone.position);
+      cap.position.y += s * 0.12;
+      cap.scale.set(1, 0.55, 1);
+      group.add(cap);
+      cy += s * 0.7;
+    }
+
+    // Flag pole with a fluttering blue pennant.
+    const poleGeo = new THREE.CylinderGeometry(0.028, 0.028, 2.0, 8);
+    const poleMat = createToonMaterial({ color: 0x6a5030 });
+    const flagMat = createToonMaterial({
+      color: 0x3f8fd8,
+      rim: { color: 0xbfe0ff, strength: 0.45, threshold: 0.55 },
+      sway: { strength: 0.12, speed: 3.6 }
+    });
+    flagMat.side = THREE.DoubleSide;
+    const flagGeo = new THREE.BufferGeometry();
+    flagGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      0, 0, 0,
+      0, -0.36, 0,
+      0.66, -0.18, 0
+    ]), 3));
+    flagGeo.setAttribute('aSway', new THREE.BufferAttribute(new Float32Array([0, 0, 1]), 1));
+    flagGeo.computeVertexNormals();
+    this._disposables.push(poleGeo, poleMat, flagGeo, flagMat);
+
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.set(0.24, cy + 1.0, 0.18);
+    pole.castShadow = true;
+    group.add(pole);
+    const flag = new THREE.Mesh(flagGeo, flagMat);
+    flag.position.set(0.27, cy + 1.9, 0.18);
+    group.add(flag);
+
+    this.scene.add(group);
   }
 
   /* ================================================================ */
