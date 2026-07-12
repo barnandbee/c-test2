@@ -116,8 +116,16 @@ export class SoundFX {
       case 'win': return this._win();
       case 'ribbit': return this._ribbit();
       case 'carthorn': return this._carthorn();
+      case 'select': return this._select();
       default: return;
     }
+  }
+
+  /** A soft UI pip for flipping between character choices. */
+  _select() {
+    const t = this.ctx.currentTime;
+    this._blip('triangle', 660, 990, t, 0.09, 0.14);
+    this._blip('sine', 1320, 1320, t + 0.01, 0.07, 0.05);
   }
 
   /** A springy cartoon bounce: a quick upward pitch bend with a wobble. */

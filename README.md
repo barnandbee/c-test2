@@ -38,8 +38,9 @@ offline.
   heroes (the Haunted Sweatshirt, Perpendicular Bird, President Fir Tree,
   Rhombus the Hat) drift on an airy **hover** whoosh that swells with speed.
 - **Feedback** — a springy **bounce** on jumps, a **sparkle** on pickups
-  (grander for the golden ones), a **chime** for each trophy, and a rising
-  **slide-whistle** when a hero unlocks.
+  (grander for the golden ones), a **chime** for each trophy, a rising
+  **slide-whistle** when a hero unlocks, and a soft **pip** each time you
+  flip between character choices.
 - **Hazards** — a croaky **ribbit** when a toxic frog gets you, and a
   cartoon **beep beep** when Magnus clips you with the golf cart.
 - **Events** — a brassy **bugle** for the Magna Carta, **clock ticks** when
@@ -53,6 +54,8 @@ offline.
 - **Ambient music** — a gentle, evolving **placeholder loop** (a warm triad
   pad drifting through a four-chord progression under a sparse arpeggio),
   synthesised in `startMusic()` and ready to be swapped for your own track.
+  It plays **over the welcome menu too** (from your first click), not just
+  in-game.
 
 A **🔊 toggle** in the HUD mutes everything (remembered between runs).
 Audio unlocks on your first click or key, per browser autoplay rules.
@@ -290,7 +293,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   cherries and clouds together), letting your health hit zero, the
   **Yo-Yo 🪀** (bouncing your score across 100 up-down-up-down-up in one
   run), and unlocking 1 / 5 / 10 characters. Earned trophies are saved locally
-  and announced with a 🏆 toast the moment you earn them.
+  and announced with a 🏆 toast the moment you earn them. Two lifetime stats
+  sit up top: your **all-time points** (summed across every run) and your
+  **favourite hero** (the character you've played the most, with its run
+  count).
 
 ## Architecture
 

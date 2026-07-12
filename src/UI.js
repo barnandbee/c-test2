@@ -40,6 +40,8 @@ export class UI {
     this.achievementsPanel = document.getElementById('achievements-panel');
     this.achClose = document.getElementById('ach-close');
     this.achProgress = document.getElementById('ach-progress');
+    this.achTotal = document.getElementById('ach-total');
+    this.achFav = document.getElementById('ach-fav');
     this.achTrophies = document.getElementById('ach-trophies');
     this.achChars = document.getElementById('ach-chars');
     this.menu = document.getElementById('menu');
@@ -59,12 +61,21 @@ export class UI {
 
     // Character cards toggle a .selected highlight and remember the pick.
     this.charCards = Array.from(document.querySelectorAll('.char-card'));
+    this._onCharacterToggle = null; // set via bindCharacterToggle
     this._onCardClick = (e) => {
       const card = e.currentTarget;
+      const changed = this._selectedCharacter !== card.dataset.char;
       this._selectedCharacter = card.dataset.char;
       for (const c of this.charCards) c.classList.toggle('selected', c === card);
+      if (this._onCharacterToggle) this._onCharacterToggle(changed);
     };
     for (const card of this.charCards) card.addEventListener('click', this._onCardClick);
+  }
+
+  /** Wire a callback fired when a character card is clicked (menu + game
+   *  over). Receives whether the pick actually changed. */
+  bindCharacterToggle(cb) {
+    this._onCharacterToggle = cb;
   }
 
   setHealth(value) {
@@ -250,6 +261,14 @@ export class UI {
   showAchievements(view) {
     if (!this.achievementsPanel) return;
     this.achProgress.textContent = `${view.earnedCount} / ${view.total} trophies earned`;
+
+    // Lifetime stats: all-time points banked and the most-played hero.
+    if (this.achTotal) this.achTotal.textContent = formatScore(Math.round(view.totalScore || 0));
+    if (this.achFav) {
+      this.achFav.textContent = view.favourite
+        ? `${view.favourite.name} (${view.favourite.plays})`
+        : '—';
+    }
 
     // Locked rows keep their name but hide the how-to, so nothing spoils
     // the way to earn it.

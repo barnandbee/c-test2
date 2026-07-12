@@ -83,6 +83,7 @@ const STORAGE_DODECA = 'mystic-badger.dodecaUnlocked';
 const STORAGE_POLARPEAR = 'mystic-badger.polarpearUnlocked';
 const STORAGE_NIGHTEYE = 'mystic-badger.nightEyeUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
+const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
@@ -166,6 +167,12 @@ export class Game {
       writeStorage(STORAGE_MUTED, muted ? '1' : '0');
       return muted;
     });
+    // Flipping between character choices makes a soft pip — and, since it's
+    // a user gesture, also unlocks/starts the ambient music over the menu.
+    this.ui.bindCharacterToggle(() => {
+      this.audio.resume();
+      this.audio.play('select');
+    });
 
     // --- persistence ---------------------------------------------------------
     this.highScore = parseFloat(readStorage(STORAGE_HIGH_SCORE, '0')) || 0;
@@ -192,6 +199,9 @@ export class Game {
     this.polarpearUnlocked = readStorage(STORAGE_POLARPEAR) === '1';
     this.nightEyeUnlocked = readStorage(STORAGE_NIGHTEYE) === '1';
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
+    // Per-character run tally, for the "favourite hero" stat.
+    this.charUsage = {};
+    try { this.charUsage = JSON.parse(readStorage(STORAGE_CHAR_USAGE, '{}')) || {}; } catch (e) { this.charUsage = {}; }
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -845,9 +855,35 @@ export class Game {
     return {
       earnedCount: trophies.filter((t) => t.earned).length,
       total: trophies.length,
+      totalScore: this.totalScore,
+      favourite: this.favouriteCharacter(),
       trophies,
       characters
     };
+  }
+
+  /** Human-readable name for a character key (badger + every unlockable). */
+  characterDisplayName(key) {
+    if (key === 'badger') return 'Badger';
+    const c = CHARACTER_UNLOCKS.find((u) => u.key === key);
+    return c ? c.name : key;
+  }
+
+  /** The most-played hero: { name, plays } — or null if nothing logged yet. */
+  favouriteCharacter() {
+    let bestKey = null;
+    let bestN = 0;
+    for (const [k, n] of Object.entries(this.charUsage)) {
+      if (n > bestN) { bestN = n; bestKey = k; }
+    }
+    return bestKey ? { name: this.characterDisplayName(bestKey), plays: bestN } : null;
+  }
+
+  /** Tally one run against the character currently in play. */
+  recordCharacterUse() {
+    const k = this.characterName;
+    this.charUsage[k] = (this.charUsage[k] || 0) + 1;
+    writeStorage(STORAGE_CHAR_USAGE, JSON.stringify(this.charUsage));
   }
 
   /** Leave the welcome menu and start the clock. */
@@ -858,6 +894,7 @@ export class Game {
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
     }
+    this.recordCharacterUse(); // tally this run against the chosen hero
     this.inMenu = false;
     this.clock.getDelta(); // flush menu time so the countdown starts clean
     this.ui.hideMenu();
@@ -1609,6 +1646,7 @@ export class Game {
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
     }
+    this.recordCharacterUse(); // tally this run against the chosen hero
 
     this.clearEntities();
     this.spawnEntities();
