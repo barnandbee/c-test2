@@ -51,11 +51,14 @@ export class World {
     // siting search and every collision query. A smooth cone gentle enough
     // to walk up (max slope ~0.96 → normal.y ~0.72, above the 0.6 slide
     // threshold), rising well clear of the house, lake and veg patch.
-    const mountainAngle = -0.2; // east, a touch south — the plain quarter
-    const mountainDist = 61;
+    // The far south-east corner — diagonally opposite the lake (north-west)
+    // and the sealed Mystic Forest (south-west), and well clear of the pink
+    // blossom tree and every other landmark.
+    const mountainAngle = -0.506; // ~ -29°, out toward the SE rim
+    const mountainDist = 71;
     this.mountainX = Math.cos(mountainAngle) * mountainDist;
     this.mountainZ = Math.sin(mountainAngle) * mountainDist;
-    this.mountainRadius = 32;
+    this.mountainRadius = 26;
     this.mountainHeight = 18;
     this.snowLine = this.mountainHeight * 0.5; // bump height where snow begins
     // The foot's grade, averaged around the footprint rim (raw terrain, no

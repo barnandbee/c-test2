@@ -243,9 +243,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   navy beret at a rakish tilt, little nub and all. A geometric cousin to
   Rhombus the Hat; feetless, so it drifts. Unlock it by finishing a run
   with **300+ points while playing as Rhombus the Hat**.
-- **The snow-capped mountain** — over on the plain eastern side of the
-  map (away from the house, lake and veg patch) rises a proper peak: a
-  clean, evenly-graded cone about 20 units tall, green at the foot,
+- **The snow-capped mountain** — out in the far south-east corner,
+  diagonally opposite the lake and the sealed Mystic Forest and well clear
+  of the pink blossom tree and every other landmark, rises a proper peak: a
+  clean, evenly-graded cone about 18 units tall, green at the foot,
   banding through bare rock into a bright **snow cap**. Its slopes are
   deliberately tuned to stay **climbable** (never a slide), and a little
   **cairn with a fluttering blue pennant** crowns the summit to reward the
