@@ -31,7 +31,18 @@ export const TROPHIES = [
   { id: 'alleggs', medal: '🥇', title: 'Golden Sweep', desc: 'Collect every golden pine cone in a run.' },
   { id: 'allsky', medal: '🧹', title: 'Clean Sweep', desc: 'Clear all stars, cherries and clouds in one run.' },
   { id: 'train', medal: '🚆', title: 'Getting the Train', desc: 'Ride the Mystic Line from the ticket machine.' },
-  { id: 'yoyo', medal: '🪀', title: 'Yo-Yo', desc: 'Cross 100 points up, down, up, down, up in one run.' }
+  { id: 'yoyo', medal: '🪀', title: 'Yo-Yo', desc: 'Cross 100 points up, down, up, down, up in one run.' },
+  { id: 'c100', medal: '💯', title: 'C Unit', desc: 'Score 100 or more with every character.' },
+  { id: 'c200', medal: '🌊', title: 'C Change', desc: 'Score 200 or more with every character.' },
+  { id: 'c300', medal: '👋', title: 'C U Later', desc: 'Score 300 or more with every character.' },
+  { id: 'play5', medal: '🎬', title: 'Repertory', desc: 'Play as 5 different characters.' },
+  { id: 'play10', medal: '🎟️', title: 'Full Cast', desc: 'Play as 10 different characters.' },
+  { id: 'play20', medal: '🎠', title: 'The Whole Menagerie', desc: 'Play as 20 different characters.' },
+  { id: 'allstations', medal: '🚉', title: 'End of the Line', desc: 'Visit all three Mystic Line stations in one run.' },
+  { id: 'firforest', medal: '🌲', title: 'Homecoming', desc: 'Take President Fir Tree into the Mystic Forest.' },
+  { id: 'polarsummit', medal: '🐻‍❄️', title: 'Peak Bear', desc: 'Take Polar Pear to the mountain summit flag.' },
+  { id: 'turnipwin', medal: '🐐', title: 'Kid vs Goat', desc: 'Beat Turnip Scart at Veggie Tac Toe while playing as Turnip Scart.' },
+  { id: 'snooker', medal: '🎱', title: 'Snooker', desc: 'Score exactly 147 in a run, having collected one of every item type.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

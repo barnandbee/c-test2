@@ -84,6 +84,9 @@ const STORAGE_POLARPEAR = 'mystic-badger.polarpearUnlocked';
 const STORAGE_NIGHTEYE = 'mystic-badger.nightEyeUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
+const STORAGE_SCORED100 = 'mystic-badger.scored100';
+const STORAGE_SCORED200 = 'mystic-badger.scored200';
+const STORAGE_SCORED300 = 'mystic-badger.scored300';
 const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
@@ -109,6 +112,9 @@ const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
 // cone, cherry, cloud, egg, star, Magna Carta.
 const ERROR42_SET = [1, 3, 5, 10, 20, 25];
+// Every playable hero's key (badger included) — for the "with every
+// character" score trophies.
+const ALL_CHARACTERS = CHARACTER_UNLOCKS.map((c) => c.key);
 const MAGNUS_HITS_REQUIRED = 4;
 const MAGNUS_MIN_SCORE = 50;
 
@@ -202,6 +208,11 @@ export class Game {
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
     try { this.charUsage = JSON.parse(readStorage(STORAGE_CHAR_USAGE, '{}')) || {}; } catch (e) { this.charUsage = {}; }
+    // Which characters have scored 100 / 200 / 300, for the C-series trophies.
+    const loadSet = (key) => new Set((readStorage(key, '') || '').split(',').filter(Boolean));
+    this.scored100 = loadSet(STORAGE_SCORED100);
+    this.scored200 = loadSet(STORAGE_SCORED200);
+    this.scored300 = loadSet(STORAGE_SCORED300);
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -276,6 +287,7 @@ export class Game {
     this.starsCollected = 0;
     this.cartHits = 0;
     this.itemTypesCollected = new Set();
+    this.stationsVisited = new Set(); // Mystic Line stops used this run
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
     this.alarmRung = false;
@@ -795,10 +807,35 @@ export class Game {
     if (p >= 500) this.awardAchievement('score500');
     if (!Number.isInteger(p)) this.awardAchievement('decimal');
 
+    // C-series: score 100 / 200 / 300 with EVERY character (tracked across
+    // all runs). Marks the current hero once it crosses each bar.
+    if (p >= 100) this._markCharScore(this.scored100, STORAGE_SCORED100, 'c100');
+    if (p >= 200) this._markCharScore(this.scored200, STORAGE_SCORED200, 'c200');
+    if (p >= 300) this._markCharScore(this.scored300, STORAGE_SCORED300, 'c300');
+
+    // Snooker: land on exactly 147 having collected one of every item type.
+    if (p === 147 && ERROR42_SET.every((v) => this.itemTypesCollected.has(v))) {
+      this.awardAchievement('snooker');
+    }
+
     const unlocked = this.unlockedCharacterCount();
     if (unlocked >= 1) this.awardAchievement('unlock1');
     if (unlocked >= 5) this.awardAchievement('unlock5');
     if (unlocked >= 10) this.awardAchievement('unlock10');
+
+    // Play-count trophies: distinct heroes ever taken into a run.
+    const played = Object.keys(this.charUsage).length;
+    if (played >= 5) this.awardAchievement('play5');
+    if (played >= 10) this.awardAchievement('play10');
+    if (played >= 20) this.awardAchievement('play20');
+
+    // President Fir Tree, home in the Mystic Forest.
+    if (
+      this.characterName === 'fir' &&
+      this.world.isInDell(this.player.position.x, this.player.position.z, this.player.position.y)
+    ) {
+      this.awardAchievement('firforest');
+    }
 
     // Haunted Sweatshirt: a spectral reward for amassing 30 achievements
     // in total — earned trophies plus every hero unlocked so far.
@@ -884,6 +921,19 @@ export class Game {
     const k = this.characterName;
     this.charUsage[k] = (this.charUsage[k] || 0) + 1;
     writeStorage(STORAGE_CHAR_USAGE, JSON.stringify(this.charUsage));
+  }
+
+  /**
+   * Note that the current hero has crossed a score bar, persist it, and
+   * award the trophy once every character has cleared that bar.
+   */
+  _markCharScore(set, storageKey, achId) {
+    if (this.achievements.has(achId)) return;
+    if (!set.has(this.characterName)) {
+      set.add(this.characterName);
+      writeStorage(storageKey, [...set].join(','));
+    }
+    if (ALL_CHARACTERS.every((k) => set.has(k))) this.awardAchievement(achId);
   }
 
   /** Leave the welcome menu and start the clock. */
@@ -1243,6 +1293,8 @@ export class Game {
     if (!this.travelOpen || this.isGameOver) return;
     this.closeTravel();
     this.awardAchievement('train'); // rode the Mystic Line
+    this.stationsVisited.add(dest);
+    if (this.stationsVisited.size >= 3) this.awardAchievement('allstations');
     this.audio.play('train');
     const w = this.world;
 
@@ -1461,6 +1513,8 @@ export class Game {
     if (tc) tc.classList.remove('hidden'); // restore the touch controls
     if (result === 'win') {
       this.audio.play('win');
+      // Beating Turnip Scart while playing AS Turnip Scart — a civil war.
+      if (this.characterName === 'turnip') this.awardAchievement('turnipwin');
       if (!this.turnipUnlocked) {
         this.turnipUnlocked = true;
         writeStorage(STORAGE_TURNIP, '1');
@@ -1664,6 +1718,7 @@ export class Game {
     this.starsCollected = 0;
     this.cartHits = 0;
     this.itemTypesCollected.clear();
+    this.stationsVisited.clear();
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false;
     this.alarmRung = false;
@@ -1819,16 +1874,20 @@ export class Game {
       this.manageRocket();
       this.checkAchievements();
 
-      // Polar Pear: touch the mountain's summit flag on 10 (or fewer) health.
-      // Surviving to the bell from here earns the reward (judged at gameOver).
-      if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH && this.world.mountainRadius) {
+      // The mountain summit flag: the 'Peak Bear' trophy for taking Polar
+      // Pear up, and the arming of Polar Pear's own unlock (summited on 10
+      // HP, then survive to the bell — judged at gameOver).
+      if (this.world.mountainRadius) {
         const mdx = this.player.position.x - this.world.mountainX;
         const mdz = this.player.position.z - this.world.mountainZ;
         if (mdx * mdx + mdz * mdz < 4 * 4) {
           const summitY = this.world.getHeight(this.world.mountainX, this.world.mountainZ);
           if (Math.abs(this.player.position.y - summitY) < 3) {
-            this.reachedSummitLowHP = true;
-            this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
+            if (this.characterName === 'polarpear') this.awardAchievement('polarsummit');
+            if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH) {
+              this.reachedSummitLowHP = true;
+              this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
+            }
           }
         }
       }

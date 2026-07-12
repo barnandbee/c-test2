@@ -292,7 +292,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   cloud / cherry / golden pine cone in a run (and all three of stars,
   cherries and clouds together), letting your health hit zero, the
   **Yo-Yo 🪀** (bouncing your score across 100 up-down-up-down-up in one
-  run), and unlocking 1 / 5 / 10 characters. Earned trophies are saved locally
+  run), and unlocking 1 / 5 / 10 characters. It also tracks the long-haul
+  feats: scoring 100 / 200 / 300 with **every** character (**C Unit** /
+  **C Change** / **C U Later**), playing as 5 / 10 / 20 different heroes,
+  visiting all three Mystic Line stations in one run, taking President Fir
+  Tree home to the Mystic Forest, taking Polar Pear to the summit flag,
+  beating Turnip Scart at Veggie Tac Toe *while playing as Turnip Scart*,
+  and **Snooker 🎱** — landing on exactly 147 in a run having collected one
+  of every item type. Earned trophies are saved locally
   and announced with a 🏆 toast the moment you earn them. Two lifetime stats
   sit up top: your **all-time points** (summed across every run) and your
   **favourite hero** (the character you've played the most, with its run
