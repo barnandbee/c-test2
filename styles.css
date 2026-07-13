@@ -1635,6 +1635,22 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Pickle Stick: a warty green gherkin with two big googly eyes. */
+.pickle-icon {
+  position: relative;
+  border-color: transparent;
+  border-radius: 44% 44% 46% 46% / 34% 34% 66% 66%;
+  background:
+    radial-gradient(circle at 38% 40%, #ffffff 0 3.2px, transparent 3.6px),
+    radial-gradient(circle at 62% 40%, #ffffff 0 3.2px, transparent 3.6px),
+    radial-gradient(circle at 39% 42%, #101014 0 1.5px, transparent 1.9px),
+    radial-gradient(circle at 63% 42%, #101014 0 1.5px, transparent 1.9px),
+    radial-gradient(circle at 32% 66%, #3f6b1e 0 1.3px, transparent 1.7px),
+    radial-gradient(circle at 60% 74%, #3f6b1e 0 1.3px, transparent 1.7px),
+    radial-gradient(circle at 50% 58%, #3f6b1e 0 1.3px, transparent 1.7px),
+    linear-gradient(180deg, #6a9a34, #547d27);
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

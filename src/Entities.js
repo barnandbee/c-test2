@@ -235,9 +235,71 @@ function getAssets() {
     pulse: { speed: 2.8, phase: 0 }
   });
 
+  // --- pickle stick: a warty gherkin with a pair of googly eyes ----------
+  const pickleGeo = new THREE.CapsuleGeometry(0.17, 0.42, 6, 16);
+  {
+    const pos = pickleGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      const r = Math.hypot(x, z);
+      if (r > 0.01) {
+        const wart = 1 + Math.sin(x * 24 + y * 9) * Math.sin(z * 21 - y * 7) * 0.09;
+        pos.setX(i, x * wart);
+        pos.setZ(i, z * wart);
+      }
+    }
+    pickleGeo.computeVertexNormals();
+  }
+  const pickleMat = createToonMaterial({
+    color: 0x5f8f2e,
+    emissive: 0x1c2f0e,
+    emissiveIntensity: 0.5,
+    rim: { color: 0xc4ec6e, strength: 0.45, threshold: 0.56 }
+  });
+  const googlyWhiteGeo = new THREE.SphereGeometry(0.078, 12, 10);
+  const googlyWhiteMat = createToonMaterial({ color: 0xffffff, rim: { color: 0xdfe8ff, strength: 0.3, threshold: 0.7 } });
+  const googlyPupilGeo = new THREE.SphereGeometry(0.04, 8, 6);
+  const googlyPupilMat = createToonMaterial({ color: 0x101014 });
+
+  // --- platinum guava: a metallic fruit ringed by a prism halo -----------
+  const guavaGeo = new THREE.SphereGeometry(0.32, 24, 18);
+  {
+    const pos = guavaGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const taper = y > 0 ? 1 - (y / 0.32) * 0.16 : 1 + (y / 0.32) * 0.06;
+      pos.setX(i, pos.getX(i) * taper);
+      pos.setZ(i, pos.getZ(i) * taper);
+      pos.setY(i, y * 1.12);
+    }
+    guavaGeo.computeVertexNormals();
+  }
+  const guavaMat = createFoggedStandardMaterial({
+    color: 0xdfe4ee,
+    metalness: 1.0,
+    roughness: 0.16,
+    envMapIntensity: 1.7,
+    emissive: 0x20242e,
+    emissiveIntensity: 0.7
+  });
+  const guavaLeafGeo = new THREE.ConeGeometry(0.07, 0.18, 5);
+  const guavaLeafMat = createToonMaterial({ color: 0x9fb7c8, emissive: 0x30424e, emissiveIntensity: 0.6, rim: { color: 0xe8f2ff, strength: 0.6, threshold: 0.5 } });
+  const guavaHaloGeo = new THREE.TorusGeometry(0.52, 0.022, 8, 40);
+  const guavaHaloMat = createToonMaterial({
+    color: 0xeaf2ff,
+    emissive: 0xbcd4ff,
+    emissiveIntensity: 1.8,
+    rim: { color: 0xffffff, strength: 0.7, threshold: 0.4 },
+    pulse: { speed: 2.2, phase: 0 }
+  });
+
   assets = {
     pineConeGeo, pineConeMat,
     eggGeo, eggMat,
+    pickleGeo, pickleMat, googlyWhiteGeo, googlyWhiteMat, googlyPupilGeo, googlyPupilMat,
+    guavaGeo, guavaMat, guavaLeafGeo, guavaLeafMat, guavaHaloGeo, guavaHaloMat,
     frogBodyGeo, frogMat, frogSkinMat, frogSacMat, frogWartMat,
     frogEyeGeo, frogEyeMat, frogPupilGeo, frogPupilMat, frogLidGeo,
     frogHaunchGeo, frogShinGeo, frogFootGeo, frogArmGeo, frogHandGeo,
@@ -543,6 +605,115 @@ export class MagnaCarta extends Collectible {
     this.group.rotation.y += dt * 0.7;
     this.group.rotation.z = Math.sin(time * 1.4 + this.phase) * 0.12;
     this.group.position.y = this.baseY + Math.sin(time * 1.7 + this.phase) * 0.13;
+  }
+
+  dispose() {
+    this.aura.geometry.dispose();
+    this.aura.material.dispose();
+    super.dispose();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Pickle Stick (+8.88)                                               */
+/* ------------------------------------------------------------------ */
+
+/** A warty gherkin with a pair of googly eyes that bounces on the spot. */
+export class PickleStick extends Collectible {
+  constructor(scene, position) {
+    super(scene, position, 8.88, 1.0);
+    const a = getAssets();
+    const body = new THREE.Mesh(a.pickleGeo, a.pickleMat);
+    body.castShadow = true;
+    this.group.add(body);
+    this.body = body;
+    this.eyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(a.googlyWhiteGeo, a.googlyWhiteMat);
+      white.position.set(side * 0.08, 0.2, 0.14);
+      this.group.add(white);
+      const pupil = new THREE.Mesh(a.googlyPupilGeo, a.googlyPupilMat);
+      pupil.position.set(side * 0.08, 0.18, 0.2);
+      this.group.add(pupil);
+      this.eyes.push({ pupil, bx: side * 0.08, by: 0.18, seed: Math.random() * 6.28 });
+    }
+    this.baseY = position.y + 0.5;
+    this.group.position.y = this.baseY;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0x8ac83a;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    // A lively little bounce, plus wobble and rattling googly pupils.
+    this.group.position.y = this.baseY + Math.abs(Math.sin(time * 4 + this.phase)) * 0.22;
+    this.group.rotation.y += dt * 1.1;
+    this.body.rotation.z = Math.sin(time * 5 + this.phase) * 0.12;
+    for (const e of this.eyes) {
+      e.pupil.position.x = e.bx + Math.sin(time * 12 + e.seed) * 0.022;
+      e.pupil.position.y = e.by + Math.cos(time * 9.5 + e.seed) * 0.022;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Platinum Guava (+50)                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A rare platinum fruit that plummets from the heavens once per run and
+ * lands somewhere on the grass, ringed by a spinning prism halo and a
+ * shower of sparkles. Worth a hefty 50 — if you can find it in time.
+ */
+export class PlatinumGuava extends Collectible {
+  constructor(scene, position, dropFrom = 26) {
+    super(scene, position, 50, 1.5);
+    const a = getAssets();
+    const body = new THREE.Mesh(a.guavaGeo, a.guavaMat);
+    body.castShadow = true;
+    this.group.add(body);
+    const leaf = new THREE.Mesh(a.guavaLeafGeo, a.guavaLeafMat);
+    leaf.position.set(0.05, 0.38, 0);
+    leaf.rotation.z = -0.4;
+    this.group.add(leaf);
+
+    this.halo = new THREE.Mesh(a.guavaHaloGeo, a.guavaHaloMat);
+    this.halo.rotation.x = Math.PI / 2;
+    this.group.add(this.halo);
+    this.aura = createAuraPoints(44, { radiusBase: 0.6, radiusVar: 0.5, heightBase: -0.25, heightVar: 0.9 });
+    this.aura.material.uniforms.uColor.value.set(0xeaf2ff);
+    this.aura.material.uniforms.uSize.value = 34;
+    this.group.add(this.aura);
+
+    this.baseY = position.y + 0.9;         // resting height once landed
+    this.group.position.y = this.baseY + dropFrom; // start high, up in the sky
+    this.falling = true;
+    this.fallV = 0;
+    this.phase = Math.random() * Math.PI * 2;
+    this.burstColor = 0xeaf2ff;
+  }
+
+  update(dt, time) {
+    if (this.state === 'collecting') {
+      this.updateCollect(dt);
+      return;
+    }
+    if (this.falling) {
+      this.fallV -= 34 * dt;
+      this.group.position.y += this.fallV * dt;
+      if (this.group.position.y <= this.baseY) {
+        this.group.position.y = this.baseY;
+        this.falling = false;
+      }
+    } else {
+      this.group.position.y = this.baseY + Math.sin(time * 1.6 + this.phase) * 0.12;
+    }
+    this.group.rotation.y += dt * 0.8;
+    this.halo.rotation.z += dt * 1.6;
+    this.halo.rotation.y = Math.sin(time * 0.9 + this.phase) * 0.4;
   }
 
   dispose() {

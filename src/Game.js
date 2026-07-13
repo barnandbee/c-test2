@@ -27,6 +27,8 @@ import {
   Launchpad,
   Rocket,
   Goat,
+  PickleStick,
+  PlatinumGuava,
   disposeEntityAssets
 } from './Entities.js';
 import { PuttingGame } from './PuttingGame.js';
@@ -84,6 +86,8 @@ const STORAGE_POLARPEAR = 'mystic-badger.polarpearUnlocked';
 const STORAGE_NIGHTEYE = 'mystic-badger.nightEyeUnlocked';
 const STORAGE_PINEPENGUIN = 'mystic-badger.pinepenguinUnlocked';
 const STORAGE_BILLY = 'mystic-badger.billyUnlocked';
+const STORAGE_PICKLE = 'mystic-badger.pickleStickUnlocked';
+const STORAGE_FRIDGE_CLICKS = 'mystic-badger.fridgeClicks';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -110,6 +114,10 @@ const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Nigh
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const SANDWICH_POINTS = 55.5;
+const PICKLE_VALUE = 8.88;         // Pickle Stick collectible value
+const GUAVA_VALUE = 50;            // Platinum Guava value
+const FRIDGE_CLICKS_REQUIRED = 10; // clicks before the pickle appears
+const PICKLE_UNLOCK_SCORE = 100;   // score needed when grabbing the pickle
 const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
 // cone, cherry, cloud, egg, star, Magna Carta.
@@ -205,6 +213,8 @@ export class Game {
     this.nightEyeUnlocked = readStorage(STORAGE_NIGHTEYE) === '1';
     this.pinepenguinUnlocked = readStorage(STORAGE_PINEPENGUIN) === '1';
     this.billyUnlocked = readStorage(STORAGE_BILLY) === '1';
+    this.pickleStickUnlocked = readStorage(STORAGE_PICKLE) === '1';
+    this.fridgeClicks = parseInt(readStorage(STORAGE_FRIDGE_CLICKS, '0'), 10) || 0;
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -291,6 +301,9 @@ export class Game {
     this.stationsVisited = new Set(); // Mystic Line stops used this run
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
+    this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
+    this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
+    this._guavaDropped = false;
     this.alarmRung = false;
     this.appliancesTouched = new Set();
     this.travelOpen = false;
@@ -436,6 +449,14 @@ export class Game {
     this.spawnedStars = STAR_COUNT;
     this.launchpad = new Launchpad(this.scene, this.world);
 
+    // Once Pickle Stick is a playable hero, its item can turn up in the
+    // wild too — worth +8.88, though there's little point now.
+    if (this.pickleStickUnlocked) {
+      for (let i = 0; i < 3; i++) {
+        this.collectibles.push(new PickleStick(this.scene, this.world.randomGroundPoint(10, 90)));
+      }
+    }
+
     // Turnip Scart the goat, grazing his vegetable patch.
     if (this.world.vegPatchPos) {
       this.goat = new Goat(this.scene, this.world, this.world.vegPatchPos);
@@ -511,8 +532,31 @@ export class Game {
       item.startCollect();
       // Sparkle up — a grander shimmer for the big golden pickups.
       this.audio.play('collect', item.value >= 10 ? 1 : 0);
+      const scoreBefore = this.points;
       this.points += item.value;
       this.ui.setPoints(this.points);
+
+      // Pickle Stick: grab the fridge-summoned pickle on 100+ to unlock it.
+      if (item.value === PICKLE_VALUE) {
+        if (!this.pickleStickUnlocked) {
+          if (scoreBefore >= PICKLE_UNLOCK_SCORE) {
+            this.pickleStickUnlocked = true;
+            writeStorage(STORAGE_PICKLE, '1');
+            this.runUnlockNames.push('Pickle Stick');
+            this.ui.showTimeToast('★ PICKLE STICK UNLOCKED! BOING!');
+          } else {
+            this.ui.showTimeToast('OH, PICKLE STICKS! (COME BACK AT 100+)');
+          }
+        } else {
+          this.ui.showTimeToast('OH, PICKLE STICKS! +8.88');
+        }
+      }
+
+      // Platinum Guava: a rare, hefty windfall.
+      if (item.value === GUAVA_VALUE) {
+        this.ui.showTimeToast('💎 PLATINUM GUAVA! +50');
+        this.audio.play('trophy');
+      }
 
       // The Magna Carta announces itself — and crowns a king, once.
       if (item.value === MAGNA_CARTA_VALUE) {
@@ -575,6 +619,30 @@ export class Game {
         this.collectibles.splice(i, 1);
       }
     }
+  }
+
+  /** Once the fridge has been poked ten times, perch a Pickle Stick atop a
+   *  random tree — one per run, until Pickle Stick is unlocked. */
+  managePickle() {
+    if (this.pickleStickUnlocked || this._pickleSummonedThisRun) return;
+    if (this.fridgeClicks < FRIDGE_CLICKS_REQUIRED) return;
+    const tops = this.world.treeTops;
+    if (!tops || tops.length === 0) return;
+    const top = tops[Math.floor(Math.random() * tops.length)].clone();
+    top.y += 0.5;
+    this.collectibles.push(new PickleStick(this.scene, top));
+    this._pickleSummonedThisRun = true;
+    this.ui.showTimeToast('OH, PICKLE STICKS! — ONE IS UP A TREE');
+  }
+
+  /** The Platinum Guava: falls from the sky onto a random patch of grass,
+   *  once per run, at a random moment inside the final 30 seconds. */
+  dropGuava() {
+    const spot = this.world.randomGroundPoint(12, 96, 0.82);
+    this.collectibles.push(new PlatinumGuava(this.scene, spot));
+    this._guavaDropped = true;
+    this.audio.play('collect', 1);
+    this.ui.showTimeToast('💎 A PLATINUM GUAVA FELL FROM THE SKY!');
   }
 
   handleHazards() {
@@ -726,6 +794,7 @@ export class Game {
     if (name === 'nighteye') return this.nightEyeUnlocked;
     if (name === 'pinepenguin') return this.pinepenguinUnlocked;
     if (name === 'billy') return this.billyUnlocked;
+    if (name === 'pickle') return this.pickleStickUnlocked;
     return name === 'badger';
   }
 
@@ -754,7 +823,8 @@ export class Game {
       polarpear: this.polarpearUnlocked,
       nighteye: this.nightEyeUnlocked,
       pinepenguin: this.pinepenguinUnlocked,
-      billy: this.billyUnlocked
+      billy: this.billyUnlocked,
+      pickle: this.pickleStickUnlocked
     };
   }
 
@@ -1202,7 +1272,17 @@ export class Game {
     } else if (hit === 'stove') {
       this.ui.showTimeToast('THE HOB IS BARELY WARM. PORRIDGE, RECENTLY.');
     } else if (hit === 'fridge') {
-      this.ui.showTimeToast('NOTHING INSIDE BUT ONE PROUD PICKLE');
+      // Ten pokes at the fridge and the message turns — a Pickle Stick is
+      // then summoned to the top of a random tree (see managePickle()).
+      if (!this.pickleStickUnlocked) {
+        this.fridgeClicks += 1;
+        writeStorage(STORAGE_FRIDGE_CLICKS, String(this.fridgeClicks));
+      }
+      if (this.pickleStickUnlocked || this.fridgeClicks >= FRIDGE_CLICKS_REQUIRED) {
+        this.ui.showTimeToast('OH, PICKLE STICKS!');
+      } else {
+        this.ui.showTimeToast(`NOTHING INSIDE BUT ONE PROUD PICKLE (${this.fridgeClicks}/${FRIDGE_CLICKS_REQUIRED})`);
+      }
     } else if (hit === 'trapdoor') {
       if (!this.world._rugSlid) {
         this.world.slideRug();
@@ -1735,6 +1815,9 @@ export class Game {
     this.stationsVisited.clear();
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false;
+    this._pickleSummonedThisRun = false;
+    this._guavaDropAt = Math.random() * 30;
+    this._guavaDropped = false;
     this.alarmRung = false;
     this.appliancesTouched.clear();
     this.closeTravel();
@@ -1886,6 +1969,11 @@ export class Game {
       this.handleRedOctober();
       this.maybeSpawnBalloon();
       this.manageRocket();
+      this.managePickle();
+      // Platinum Guava falls once, at a random moment in the last 30 seconds.
+      if (!this._guavaDropped && this.timeLeft <= this._guavaDropAt && this.timeLeft > 0) {
+        this.dropGuava();
+      }
       this.checkAchievements();
 
       // The mountain summit flag: the 'Peak Bear' trophy for taking Polar
@@ -1930,7 +2018,9 @@ export class Game {
       const pl = this.player;
       const moveKind = pl.marbleMesh
         ? 'roll'
-        : (pl.legs && pl.legs.length === 0 ? 'hover' : 'foot');
+        : pl.isBouncy
+          ? 'foot' // hops land like footfalls
+          : (pl.legs && pl.legs.length === 0 ? 'hover' : 'foot');
       if (moveKind !== this._moveKind) {
         this._moveKind = moveKind;
         this.audio.setMoveBed(moveKind === 'foot' ? null : moveKind);

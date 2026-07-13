@@ -263,6 +263,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   tee), a bubble helmet with a gold visor and a pair of **shades** pushed
   over the front, plus a life-support pack. Unlock it by **collecting every
   star AND riding to all three Mystic Line stations in one run**.
+- **Pickle Stick** — a warty green gherkin with a big pair of googly eyes
+  that **hops** to get around. To unlock it: poke the cottage **fridge 10
+  times** (the message turns to “Oh, Pickle Sticks!”), at which point a
+  Pickle Stick perches on top of a random tree — go **collect it like an
+  item (+8.88) with a score of 100 or more**. Afterwards the Pickle Stick
+  item can still turn up in the wild worth +8.88, though there's little
+  point.
+- **The Platinum Guava (+50)** — once per run, at a random moment inside
+  the **final 30 seconds**, a platinum guava plummets from the sky and
+  lands on a random patch of grass, ringed by a spinning **prism halo** and
+  a shower of sparkles. Worth a hefty **50** — if you can reach it before
+  the bell (no guarantee it lands anywhere near you).
 - **The snow-capped mountain** — out in the far south-east corner,
   diagonally opposite the lake and the sealed Mystic Forest and well clear
   of the pink blossom tree and every other landmark, rises a proper peak: a

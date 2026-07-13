@@ -108,6 +108,7 @@ export class Player {
     this.rockMesh = null;    // Rhombus: the body that waddle-rocks
     this.isGlitchy = false;  // Error #42's intermittent reality problem
     this.isFloaty = false;   // Haunted Sweatshirt's ethereal hover
+    this.isBouncy = false;   // Pickle Stick hops to get around
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -142,6 +143,7 @@ export class Player {
     else if (this.character === 'nighteye') this.root = this.buildNightEye();
     else if (this.character === 'pinepenguin') this.root = this.buildPinePenguin();
     else if (this.character === 'billy') this.root = this.buildBilly();
+    else if (this.character === 'pickle') this.root = this.buildPickle();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -2785,6 +2787,84 @@ export class Player {
   }
 
   /**
+   * Pickle Stick — a warty gherkin with a big pair of googly eyes and a
+   * cheeky grin. No legs: it hops on the spot to move (isBouncy), pupils
+   * rattling all the while.
+   */
+  buildPickle() {
+    const root = new THREE.Group();
+    root.name = 'pickle';
+    this.isBouncy = true;
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const pickleMat = track(createToonMaterial({
+      color: 0x5f8f2e,
+      emissive: 0x1c2f0e,
+      emissiveIntensity: 0.45,
+      rim: { color: 0xc4ec6e, strength: 0.5, threshold: 0.54 }
+    }));
+    const whiteMat = track(createToonMaterial({ color: 0xffffff, rim: { color: 0xdfe8ff, strength: 0.3, threshold: 0.7 } }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const mouthMat = track(createToonMaterial({ color: 0x2a3d16 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- warty gherkin body -------------------------------------------------
+    const pickleGeo = track(new THREE.CapsuleGeometry(0.26, 0.6, 6, 18));
+    {
+      const pos = pickleGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const r = Math.hypot(x, z);
+        if (r > 0.01) {
+          const wart = 1 + Math.sin(x * 16 + y * 7) * Math.sin(z * 15 - y * 5) * 0.1;
+          pos.setX(i, x * wart);
+          pos.setZ(i, z * wart);
+        }
+      }
+      pickleGeo.computeVertexNormals();
+    }
+    const pickle = new THREE.Mesh(pickleGeo, pickleMat);
+    pickle.position.y = 0.18;
+    pickle.castShadow = true;
+    body.add(pickle);
+    this.headGroup = pickle; // so the idle head-bob rig gives it life
+
+    // --- big googly eyes on stalks, wired to the rattling-pupil rig ---------
+    this.googlyEyes = [];
+    const whiteGeo = track(new THREE.SphereGeometry(0.14, 14, 12));
+    const pupilGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(whiteGeo, whiteMat);
+      white.position.set(side * 0.14, 0.48, 0.2);
+      pickle.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.14, 0.46, 0.31);
+      pickle.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.14, baseY: 0.46, seed: Math.random() * 6.28 });
+    }
+
+    // --- a little grin ------------------------------------------------------
+    const mouth = new THREE.Mesh(track(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI)), mouthMat);
+    mouth.position.set(0, 0.28, 0.28);
+    mouth.rotation.z = Math.PI;
+    pickle.add(mouth);
+
+    this.legs = []; // it bounces, no legs required
+    return root;
+  }
+
+  /**
    * Perpendicular Bird — a pencil sketch that got up and walked off the
    * page. A flat plane bearing a hand-drawn bird in profile, facing
    * right, tiny top hat, both wings locked perfectly horizontal, and a
@@ -4274,6 +4354,19 @@ export class Player {
           arm.pivot.rotation.z = Math.sin(t * 1.5 + arm.phase) * 0.14;
         }
       }
+    }
+
+    // Pickle Stick hops: a springy bounce that gets bigger with speed, plus
+    // a jaunty idle jiggle when standing still, and a squash at the bottom.
+    if (this.isBouncy) {
+      const hop = this.grounded
+        ? Math.abs(Math.sin(this.walkCycle)) * (0.1 + speedT * 0.28)
+        : 0;
+      const idle = !hasInput && this.grounded ? Math.abs(Math.sin(t * 3.2)) * 0.05 : 0;
+      this.bodyGroup.position.y = 0.62 + hop + idle;
+      this.bodyGroup.rotation.z = Math.sin(this.walkCycle) * 0.12 * speedT;
+      const squashT = 1 - (hop + idle) * 1.6; // flatten as it lands
+      this.bodyGroup.scale.set(1 + (1 - squashT) * 0.4, squashT, 1 + (1 - squashT) * 0.4);
     }
 
     // Googly eyes: pupils rattle with motion and landings, droop at rest.
