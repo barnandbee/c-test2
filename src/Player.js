@@ -97,6 +97,10 @@ export class Player {
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
     this.facingYaw = 0;
+    // Per-character jump feel (Billy Rocketfingers leaps higher and floatier
+    // to reach the cherries atop the trees). 1 = default.
+    this.jumpScale = 1;
+    this.gravityScale = 1;
 
     // --- animation state -----------------------------------------------
     this.walkCycle = 0;
@@ -144,6 +148,8 @@ export class Player {
     else if (this.character === 'pinepenguin') this.root = this.buildPinePenguin();
     else if (this.character === 'billy') this.root = this.buildBilly();
     else if (this.character === 'pickle') this.root = this.buildPickle();
+    else if (this.character === 'glassbadger') this.root = this.buildGlassBadger();
+    else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -2617,6 +2623,10 @@ export class Player {
   buildBilly() {
     const root = new THREE.Group();
     root.name = 'billy';
+    // Rocket-boosted boots: a much higher, floatier leap that clears the
+    // treetops (and the cherries perched on them).
+    this.jumpScale = 1.55;
+    this.gravityScale = 0.6;
 
     const track = (resource) => {
       this._disposables.push(resource);
@@ -2861,6 +2871,299 @@ export class Player {
     pickle.add(mouth);
 
     this.legs = []; // it bounces, no legs required
+    return root;
+  }
+
+  /**
+   * Glass Badger — the badger cast in translucent glass: a frosted, faintly
+   * blue body you can see the light through, with a glowing core, a frosted
+   * face-stripe hint and glassy limbs.
+   */
+  buildGlassBadger() {
+    const root = new THREE.Group();
+    root.name = 'glassbadger';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const glassMat = track(createToonMaterial({
+      color: 0xbfe2f2,
+      emissive: 0x1c3448,
+      emissiveIntensity: 0.4,
+      rim: { color: 0xffffff, strength: 0.9, threshold: 0.38 }
+    }));
+    glassMat.transparent = true;
+    glassMat.opacity = 0.42;
+    glassMat.side = THREE.DoubleSide;
+    glassMat.depthWrite = false;
+    const frostMat = track(createToonMaterial({
+      color: 0xeaf6ff,
+      rim: { color: 0xffffff, strength: 0.7, threshold: 0.45 }
+    }));
+    frostMat.transparent = true;
+    frostMat.opacity = 0.6;
+    frostMat.depthWrite = false;
+    const smokeMat = track(createToonMaterial({ color: 0x2b3a4a, rim: { color: 0x9fc4e8, strength: 0.6, threshold: 0.5 } }));
+    smokeMat.transparent = true;
+    smokeMat.opacity = 0.55;
+    smokeMat.depthWrite = false;
+    const eyeMat = track(createToonMaterial({ color: 0x0c1620 }));
+    const coreMat = track(createToonMaterial({
+      color: 0xbfe8ff,
+      emissive: 0x8fd0ff,
+      emissiveIntensity: 1.6,
+      pulse: { speed: 2.0, phase: 0 }
+    }));
+    coreMat.transparent = true;
+    coreMat.opacity = 0.7;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- glass torso with a glowing core ------------------------------------
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.34, 0.5, 6, 16));
+    torsoGeo.rotateX(Math.PI / 2);
+    const torso = new THREE.Mesh(torsoGeo, glassMat);
+    torso.scale.set(1.0, 0.95, 1.2);
+    torso.castShadow = true;
+    body.add(torso);
+    const core = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.16, 0)), coreMat);
+    core.position.set(0, 0.02, 0);
+    body.add(core);
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.28, 8)), glassMat);
+    tail.position.set(0, 0.08, -0.5);
+    tail.rotation.x = -1.5;
+    body.add(tail);
+    this.tail = tail;
+
+    // --- head (dips when idle via headGroup) --------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.2, 0.44);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const headGeo = track(new THREE.SphereGeometry(0.27, 18, 14));
+    const head = new THREE.Mesh(headGeo, glassMat);
+    head.scale.set(0.95, 0.9, 1.05);
+    head.castShadow = true;
+    headGroup.add(head);
+    // Frosted snout with the badger's two smoky face stripes over the eyes.
+    const snout = new THREE.Mesh(track(new THREE.ConeGeometry(0.12, 0.3, 12)), frostMat);
+    snout.position.set(0, -0.04, 0.26);
+    snout.rotation.x = Math.PI / 2;
+    headGroup.add(snout);
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), eyeMat);
+    nose.position.set(0, -0.02, 0.42);
+    headGroup.add(nose);
+    for (const side of [-1, 1]) {
+      const stripe = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.26, 0.14)), smokeMat);
+      stripe.position.set(side * 0.12, 0.05, 0.2);
+      stripe.rotation.x = 0.3;
+      headGroup.add(stripe);
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 10, 8)), eyeMat);
+      eye.position.set(side * 0.12, 0.06, 0.28);
+      headGroup.add(eye);
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 10, 8)), glassMat);
+      ear.position.set(side * 0.16, 0.24, 0.02);
+      ear.scale.set(1, 1, 0.6);
+      headGroup.add(ear);
+    }
+
+    // --- four glassy legs with frosted paws ---------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.08, 0.4, 10));
+    legGeo.translate(0, -0.2, 0);
+    const pawGeo = track(new THREE.SphereGeometry(0.1, 10, 8));
+    this.legs = [];
+    const slots = [
+      { x: -0.2, z: 0.26, phase: 0 },
+      { x: 0.2, z: 0.26, phase: Math.PI },
+      { x: -0.22, z: -0.28, phase: Math.PI },
+      { x: 0.22, z: -0.28, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.24, slot.z);
+      const leg = new THREE.Mesh(legGeo, glassMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const paw = new THREE.Mesh(pawGeo, frostMat);
+      paw.position.set(0, -0.4, 0.04);
+      paw.scale.set(1, 0.6, 1.3);
+      pivot.add(paw);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+
+    return root;
+  }
+
+  /**
+   * McDonovan — a film-noir private eye who happens to be a mouse: a grey
+   * mouse in a muted trench coat with a raised collar and belt, a grey
+   * fedora tilted low, big round ears, a pink nose, whiskers and a long
+   * rope tail. Everything desaturated, like an old black-and-white reel.
+   */
+  buildMcDonovan() {
+    const root = new THREE.Group();
+    root.name = 'mcdonovan';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const furMat = track(createToonMaterial({ color: 0x9a9a9c, rim: { color: 0xd8d8dc, strength: 0.35, threshold: 0.64 } }));
+    const coatMat = track(createToonMaterial({ color: 0x8f887c, rim: { color: 0xcfc8ba, strength: 0.4, threshold: 0.6 } }));
+    const coatDarkMat = track(createToonMaterial({ color: 0x5f5a50 }));
+    const hatMat = track(createToonMaterial({ color: 0x6b6862, rim: { color: 0xb8b4ac, strength: 0.35, threshold: 0.62 } }));
+    const noseMat = track(createToonMaterial({ color: 0xc98f96 }));
+    const earInnerMat = track(createToonMaterial({ color: 0xb59aa0 }));
+    const eyeMat = track(createToonMaterial({ color: 0x121014 }));
+    const whiskerMat = track(createToonMaterial({ color: 0xcfcfcf }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- trench coat torso with a belt and collar ---------------------------
+    const coatGeo = track(new THREE.CylinderGeometry(0.24, 0.32, 0.68, 14));
+    const coat = new THREE.Mesh(coatGeo, coatMat);
+    coat.position.y = 0.3;
+    coat.castShadow = true;
+    body.add(coat);
+    const belt = new THREE.Mesh(track(new THREE.CylinderGeometry(0.31, 0.31, 0.08, 14)), coatDarkMat);
+    belt.position.y = 0.2;
+    body.add(belt);
+    const buckle = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.06, 0.04)), hatMat);
+    buckle.position.set(0, 0.2, 0.31);
+    body.add(buckle);
+    // A row of coat buttons and a lapel V.
+    for (let i = 0; i < 3; i++) {
+      const btn = new THREE.Mesh(track(new THREE.SphereGeometry(0.02, 6, 6)), coatDarkMat);
+      btn.position.set(0.05, 0.42 - i * 0.09, 0.29);
+      body.add(btn);
+    }
+    // Raised trench collar.
+    for (const side of [-1, 1]) {
+      const collar = new THREE.Mesh(track(new THREE.BoxGeometry(0.14, 0.16, 0.06)), coatMat);
+      collar.position.set(side * 0.12, 0.58, 0.12);
+      collar.rotation.z = side * 0.5;
+      collar.rotation.x = -0.35;
+      body.add(collar);
+    }
+
+    // --- mouse head with big ears, nose and whiskers ------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.66, 0.04);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const head = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 18, 14)), furMat);
+    head.scale.set(1, 0.95, 1.05);
+    head.castShadow = true;
+    headGroup.add(head);
+    // Tapered snout.
+    const snout = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.24, 12)), furMat);
+    snout.position.set(0, -0.04, 0.22);
+    snout.rotation.x = Math.PI / 2;
+    headGroup.add(snout);
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 10, 8)), noseMat);
+    nose.position.set(0, -0.02, 0.36);
+    headGroup.add(nose);
+    // Big round ears.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 14, 12)), furMat);
+      ear.position.set(side * 0.19, 0.2, -0.02);
+      ear.scale.set(1, 1, 0.4);
+      ear.castShadow = true;
+      headGroup.add(ear);
+      const inner = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 12, 10)), earInnerMat);
+      inner.position.set(side * 0.19, 0.2, 0.02);
+      inner.scale.set(1, 1, 0.3);
+      headGroup.add(inner);
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 10, 8)), eyeMat);
+      eye.position.set(side * 0.08, 0.02, 0.19);
+      headGroup.add(eye);
+      // Three whiskers per side.
+      for (let w = -1; w <= 1; w++) {
+        const whisker = new THREE.Mesh(track(new THREE.CylinderGeometry(0.004, 0.004, 0.22, 4)), whiskerMat);
+        whisker.position.set(side * 0.16, -0.02 + w * 0.03, 0.28);
+        whisker.rotation.z = Math.PI / 2 + side * 0.2;
+        whisker.rotation.y = side * (0.2 + w * 0.12);
+        headGroup.add(whisker);
+      }
+    }
+
+    // --- the fedora, tilted low over the brow -------------------------------
+    const hat = new THREE.Group();
+    hat.position.set(0, 0.24, 0.02);
+    hat.rotation.x = 0.12;
+    hat.rotation.z = -0.1;
+    headGroup.add(hat);
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 20)), hatMat);
+    brim.scale.set(1, 1, 1.15);
+    brim.castShadow = true;
+    hat.add(brim);
+    const crown = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.19, 0.2, 16)), hatMat);
+    crown.position.y = 0.1;
+    crown.castShadow = true;
+    hat.add(crown);
+    const hatBand = new THREE.Mesh(track(new THREE.CylinderGeometry(0.192, 0.192, 0.05, 16)), coatDarkMat);
+    hatBand.position.y = 0.03;
+    hat.add(hatBand);
+
+    // --- coat-sleeve arms with little grey paws -----------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.055, 0.4, 8));
+    armGeo.translate(0, -0.2, 0);
+    const pawGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.28, 0.5, 0);
+      const arm = new THREE.Mesh(armGeo, coatMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const paw = new THREE.Mesh(pawGeo, furMat);
+      paw.position.set(0, -0.42, 0);
+      pivot.add(paw);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- trousered legs with dark shoes -------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.4, 8));
+    legGeo.translate(0, -0.2, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.08, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.12, -0.04, 0);
+      const leg = new THREE.Mesh(legGeo, coatDarkMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, eyeMat);
+      shoe.position.set(0, -0.42, 0.05);
+      shoe.scale.set(1, 0.6, 1.7);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // --- a long rope tail curling out the back ------------------------------
+    const tailGeo = track(new THREE.CylinderGeometry(0.03, 0.015, 0.7, 6));
+    const tail = new THREE.Mesh(tailGeo, noseMat);
+    tail.position.set(0, 0.06, -0.32);
+    tail.rotation.x = -1.1;
+    this.tail = tail;
+    body.add(tail);
+
     return root;
   }
 
@@ -3942,7 +4245,7 @@ export class Player {
     // ---- jump ------------------------------------------------------------
     let jumpedThisFrame = false;
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0 && !steep) {
-      vel.y = T.jumpSpeed;
+      vel.y = T.jumpSpeed * this.jumpScale;
       this.grounded = false;
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
@@ -3953,7 +4256,7 @@ export class Player {
 
     // ---- gravity -----------------------------------------------------------
     if (!this.grounded || jumpedThisFrame) {
-      let g = T.gravity;
+      let g = T.gravity * this.gravityScale;
       if (vel.y < 0) g *= T.fallGravityScale;
       else if (!input.jumpHeld) g *= T.shortHopGravityScale; // short hop
       vel.y = Math.max(vel.y - g * dt, -T.maxFallSpeed);

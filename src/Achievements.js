@@ -72,5 +72,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'nighteye', name: 'Night Eye', how: 'Score an all-time total of 10000 points across every run.' },
   { key: 'pinepenguin', name: 'Pineapple Penguin', how: 'Reach the mountain summit flag with a score over 333.' },
   { key: 'billy', name: 'Billy Rocketfingers', how: 'Collect every star AND visit all three Mystic Line stations in one run.' },
-  { key: 'pickle', name: 'Pickle Stick', how: 'Poke the cottage fridge 10 times, then collect the pickle that appears in a tree with a score of 100+.' }
+  { key: 'pickle', name: 'Pickle Stick', how: 'Poke the cottage fridge 10 times, then collect the pickle that appears in a tree with a score of 100+.' },
+  { key: 'glassbadger', name: 'Glass Badger', how: 'Score an all-time total of 20000 points across every run.' },
+  { key: 'mcdonovan', name: 'McDonovan', how: 'Ride the Mystic Line all the way to Docklands.' }
 ];

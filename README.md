@@ -261,8 +261,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 - **Billy Rocketfingers** — a cool astronaut in a white spacesuit under a
   black **rockstar leather jacket** (raised collar, open lapels over a red
   tee), a bubble helmet with a gold visor and a pair of **shades** pushed
-  over the front, plus a life-support pack. Unlock it by **collecting every
-  star AND riding to all three Mystic Line stations in one run**.
+  over the front, plus a life-support pack. His rocket-boosted boots give
+  him a **much higher, floatier jump** — high enough to bound up and pluck
+  the cherries off the treetops. Unlock it by **collecting every star AND
+  riding to all three Mystic Line stations in one run**.
 - **Pickle Stick** — a warty green gherkin with a big pair of googly eyes
   that **hops** to get around. To unlock it: poke the cottage **fridge 10
   times** (the message turns to “Oh, Pickle Sticks!”), at which point a
@@ -270,6 +272,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   item (+8.88) with a score of 100 or more**. Afterwards the Pickle Stick
   item can still turn up in the wild worth +8.88, though there's little
   point.
+- **Glass Badger** — the badger cast in translucent frosted glass: you can
+  see clean through it to a glowing core, with a frosted muzzle, the two
+  smoky face-stripes and glassy limbs. Unlock it by scoring an **all-time
+  total of 20000 points** across every run.
+- **McDonovan** — a film-noir private eye who happens to be a mouse: big
+  round ears, whiskers and a pink rope tail under a muted trench coat
+  (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
+  **riding the Mystic Line all the way to Docklands** — a private eye's
+  kind of town.
 - **The Platinum Guava (+50)** — once per run, at a random moment inside
   the **final 30 seconds**, a platinum guava plummets from the sky and
   lands on a random patch of grass, ringed by a spinning **prism halo** and

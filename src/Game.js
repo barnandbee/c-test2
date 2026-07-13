@@ -88,6 +88,8 @@ const STORAGE_PINEPENGUIN = 'mystic-badger.pinepenguinUnlocked';
 const STORAGE_BILLY = 'mystic-badger.billyUnlocked';
 const STORAGE_PICKLE = 'mystic-badger.pickleStickUnlocked';
 const STORAGE_FRIDGE_CLICKS = 'mystic-badger.fridgeClicks';
+const STORAGE_GLASSBADGER = 'mystic-badger.glassBadgerUnlocked';
+const STORAGE_MCDONOVAN = 'mystic-badger.mcdonovanUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -111,6 +113,7 @@ const MARBLELLA_APPLIANCES = ['clock', 'stove', 'fridge', 'trapdoor'];
 const MAYO_SCORE = 300;
 const JAM_TOTAL_SCORE = 1000;      // all-time cumulative points to unlock Jam
 const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Night Eye
+const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock Glass Badger
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const SANDWICH_POINTS = 55.5;
@@ -215,6 +218,8 @@ export class Game {
     this.billyUnlocked = readStorage(STORAGE_BILLY) === '1';
     this.pickleStickUnlocked = readStorage(STORAGE_PICKLE) === '1';
     this.fridgeClicks = parseInt(readStorage(STORAGE_FRIDGE_CLICKS, '0'), 10) || 0;
+    this.glassBadgerUnlocked = readStorage(STORAGE_GLASSBADGER) === '1';
+    this.mcdonovanUnlocked = readStorage(STORAGE_MCDONOVAN) === '1';
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -795,6 +800,8 @@ export class Game {
     if (name === 'pinepenguin') return this.pinepenguinUnlocked;
     if (name === 'billy') return this.billyUnlocked;
     if (name === 'pickle') return this.pickleStickUnlocked;
+    if (name === 'glassbadger') return this.glassBadgerUnlocked;
+    if (name === 'mcdonovan') return this.mcdonovanUnlocked;
     return name === 'badger';
   }
 
@@ -824,7 +831,9 @@ export class Game {
       nighteye: this.nightEyeUnlocked,
       pinepenguin: this.pinepenguinUnlocked,
       billy: this.billyUnlocked,
-      pickle: this.pickleStickUnlocked
+      pickle: this.pickleStickUnlocked,
+      glassbadger: this.glassBadgerUnlocked,
+      mcdonovan: this.mcdonovanUnlocked
     };
   }
 
@@ -1433,6 +1442,13 @@ export class Game {
       } else {
         this.ui.showTimeToast('DOCKLANDS');
       }
+      // The rain-slicked Docklands: exactly a private eye's kind of town.
+      if (!this.mcdonovanUnlocked) {
+        this.mcdonovanUnlocked = true;
+        writeStorage(STORAGE_MCDONOVAN, '1');
+        this.runUnlockNames.push('McDonovan');
+        this.ui.showTimeToast('★ McDONOVAN UNLOCKED — “THE CASE IS AFOOT.”');
+      }
     } else {
       target = new THREE.Vector3(w.copsePos.x + 1.4, 0, w.copsePos.z + 0.8);
       this.ui.showTimeToast('MYSTIC FOREST CENTRAL — END OF THE LINE');
@@ -1759,6 +1775,11 @@ export class Game {
       this.nightEyeUnlocked = true;
       writeStorage(STORAGE_NIGHTEYE, '1');
       newlyUnlockedNames.push('Night Eye');
+    }
+    if (!this.glassBadgerUnlocked && this.totalScore >= GLASSBADGER_TOTAL_SCORE) {
+      this.glassBadgerUnlocked = true;
+      writeStorage(STORAGE_GLASSBADGER, '1');
+      newlyUnlockedNames.push('Glass Badger');
     }
 
     // Final-score trophies + any unlock-count milestones from this run's
