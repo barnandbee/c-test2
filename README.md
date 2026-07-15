@@ -289,11 +289,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   perfectly balanced ballot).
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
-  flag, planted out in the open north-west meadows.
-- **WOODOO'S** — a lumberjack's **timber yard** off to the north-west: a
-  big painted sign on posts, a chopping block with an axe buried in it,
-  stacked log piles (pale cut ends and all), a sawhorse and a scatter of
-  standing logs.
+  flag, planted out in the open south-east meadows.
+- **WOODOO'S** — a lumberjack's **timber yard** in the open south of the
+  map: a big painted sign (level board on two even posts), a chopping block
+  with an axe buried in it, stacked log piles (pale cut ends and all), a
+  sawhorse and a scatter of standing logs.
 - **The Platinum Guava (+50)** — once per run, at a random moment inside
   the **final 30 seconds**, a platinum guava plummets from the sky and
   lands on a random patch of grass, ringed by a spinning **prism halo** and

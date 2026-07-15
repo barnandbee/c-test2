@@ -198,17 +198,18 @@ export class World {
     this.vegPatchZ = vegBest.z;
 
     // --- the helter skelter: a striped spiral-slide tower out in the open
-    // north-west quarter, on the gentlest ground clear of the landmarks.
+    // south-east, on the gentlest ground clear of the green, mountain and
+    // cave that share that quarter.
     this.helterRadius = 3.2;
     let helterBest = null;
-    for (const [a, r] of [[1.75, 42], [1.55, 46], [1.95, 44], [1.4, 40], [2.1, 48], [1.7, 37]]) {
+    for (const [a, r] of [[-0.68, 35], [-0.55, 33], [-0.8, 34], [-0.45, 31], [-0.9, 36], [-0.6, 38]]) {
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const near =
-        Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ) < this.lakeRadius + 8 ||
-        Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 8 ||
-        Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 8 ||
-        Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 8;
+        Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 8 ||
+        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 8 ||
+        Math.hypot(x - this.caveX, z - this.caveZ) < 12 ||
+        Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 8;
       const e = 0.8;
       const grad = Math.hypot(
         this.getHeight(x + e, z) - this.getHeight(x - e, z),
@@ -220,18 +221,18 @@ export class World {
     this.helterX = helterBest.x;
     this.helterZ = helterBest.z;
 
-    // --- WOODOO'S: a lumberjack yard over toward the north-west, clear of
-    // the lake and the helter skelter.
+    // --- WOODOO'S: a lumberjack yard in the open south of the map, clear of
+    // the green, cave, mountain and the helter skelter.
     this.woodoosRadius = 7;
     let woodBest = null;
-    for (const [a, r] of [[2.45, 46], [2.65, 50], [2.25, 44], [2.8, 52], [2.1, 42], [2.9, 48]]) {
+    for (const [a, r] of [[-1.45, 46], [-1.55, 44], [-1.3, 48], [-1.6, 42], [-1.2, 50], [-1.7, 40]]) {
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const near =
-        Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ) < this.lakeRadius + 10 ||
-        Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 8 ||
-        Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 12 ||
-        Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 12;
+        Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 10 ||
+        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 9 ||
+        Math.hypot(x - this.caveX, z - this.caveZ) < 14 ||
+        Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 12;
       const e = 0.8;
       const grad = Math.hypot(
         this.getHeight(x + e, z) - this.getHeight(x - e, z),
@@ -1540,42 +1541,47 @@ export class World {
       return this.getHeight(wx, wz) - yard.position.y;
     };
 
-    // --- the WOODOO'S sign, big and proud at the yard's front --------------
+    // --- the WOODOO'S sign: a level board on two even posts ----------------
+    // Aspect (3.4:1) matches the board face, so the text prints undistorted
+    // with comfortable margins.
     const canvas = document.createElement('canvas');
     canvas.width = 512;
-    canvas.height = 200;
+    canvas.height = 150;
     const g = canvas.getContext('2d');
     g.fillStyle = '#7a5a34';
-    g.fillRect(0, 0, 512, 200);
+    g.fillRect(0, 0, 512, 150);
     g.strokeStyle = '#3a2a16';
-    g.lineWidth = 12;
-    g.strokeRect(8, 8, 496, 184);
+    g.lineWidth = 8;
+    g.strokeRect(6, 6, 500, 138);
     g.textAlign = 'center';
     g.fillStyle = '#f4e4b8';
-    g.font = 'bold 92px Georgia, serif';
-    g.fillText("WOODOO'S", 256, 118);
+    g.font = 'bold 60px Georgia, serif';
+    g.fillText("WOODOO'S", 256, 76);
     g.fillStyle = '#d8b878';
-    g.font = 'bold 30px Georgia, serif';
-    g.fillText('· TIMBER YARD ·', 256, 168);
+    g.font = '22px Georgia, serif';
+    g.fillText('· TIMBER YARD ·', 256, 116);
     const signTex = track(new THREE.CanvasTexture(canvas));
     signTex.colorSpace = THREE.SRGBColorSpace;
     const signMat = track(createToonMaterial({ map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.2 }));
 
     const signGroup = new THREE.Group();
     signGroup.position.set(0, 0, 5.5);
-    for (const sx of [-2, 2]) {
-      const post = new THREE.Mesh(track(new THREE.CylinderGeometry(0.14, 0.16, 3.4, 8)), barkMat);
-      post.position.set(sx, 1.7 + groundAt(sx, 5.5), 0);
+    // One ground reference for the whole sign, so both posts stand level and
+    // the board sits square (per-post terrain sampling made it slant before).
+    const signGY = groundAt(0, 5.5);
+    for (const sx of [-1.9, 1.9]) {
+      const post = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.15, 3.4, 8)), barkMat);
+      post.position.set(sx, signGY + 1.5, 0); // bottoms slightly embedded, all even
       post.castShadow = true;
       signGroup.add(post);
-      this.colliders.push({ x: cx + Math.cos(toHeart) * sx + Math.sin(toHeart) * 5.5, z: cz - Math.sin(toHeart) * sx + Math.cos(toHeart) * 5.5, radius: 0.25, top: this.getHeight(cx, cz) + 3 });
+      this.colliders.push({ x: cx + Math.cos(toHeart) * sx + Math.sin(toHeart) * 5.5, z: cz - Math.sin(toHeart) * sx + Math.cos(toHeart) * 5.5, radius: 0.22, top: yard.position.y + signGY + 3.2 });
     }
-    const board = new THREE.Mesh(track(new THREE.BoxGeometry(5.2, 2.0, 0.16)), darkWoodMat);
-    board.position.set(0, 3.0, 0);
+    const board = new THREE.Mesh(track(new THREE.BoxGeometry(4.6, 1.35, 0.16)), darkWoodMat);
+    board.position.set(0, signGY + 2.5, 0);
     board.castShadow = true;
     signGroup.add(board);
-    const face = new THREE.Mesh(track(new THREE.PlaneGeometry(5.0, 1.9)), signMat);
-    face.position.set(0, 3.0, 0.1);
+    const face = new THREE.Mesh(track(new THREE.PlaneGeometry(4.4, 1.25)), signMat);
+    face.position.set(0, signGY + 2.5, 0.1);
     signGroup.add(face);
     yard.add(signGroup);
 
