@@ -90,6 +90,7 @@ const STORAGE_PICKLE = 'mystic-badger.pickleStickUnlocked';
 const STORAGE_FRIDGE_CLICKS = 'mystic-badger.fridgeClicks';
 const STORAGE_GLASSBADGER = 'mystic-badger.glassBadgerUnlocked';
 const STORAGE_MCDONOVAN = 'mystic-badger.mcdonovanUnlocked';
+const STORAGE_PRUNELLA = 'mystic-badger.prunellaUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -220,6 +221,7 @@ export class Game {
     this.fridgeClicks = parseInt(readStorage(STORAGE_FRIDGE_CLICKS, '0'), 10) || 0;
     this.glassBadgerUnlocked = readStorage(STORAGE_GLASSBADGER) === '1';
     this.mcdonovanUnlocked = readStorage(STORAGE_MCDONOVAN) === '1';
+    this.prunellaUnlocked = readStorage(STORAGE_PRUNELLA) === '1';
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -802,6 +804,7 @@ export class Game {
     if (name === 'pickle') return this.pickleStickUnlocked;
     if (name === 'glassbadger') return this.glassBadgerUnlocked;
     if (name === 'mcdonovan') return this.mcdonovanUnlocked;
+    if (name === 'prunella') return this.prunellaUnlocked;
     return name === 'badger';
   }
 
@@ -833,7 +836,8 @@ export class Game {
       billy: this.billyUnlocked,
       pickle: this.pickleStickUnlocked,
       glassbadger: this.glassBadgerUnlocked,
-      mcdonovan: this.mcdonovanUnlocked
+      mcdonovan: this.mcdonovanUnlocked,
+      prunella: this.prunellaUnlocked
     };
   }
 
@@ -1748,6 +1752,17 @@ export class Game {
       this.margaretUnlocked = true;
       writeStorage(STORAGE_MARGARET, '1');
       newlyUnlockedNames.push('Margaret');
+    }
+    // Prunella Registered Voter: a run with an equal (and non-zero) tally of
+    // marshmallow clouds and golden pine cones — a perfectly balanced ballot.
+    if (
+      !this.prunellaUnlocked &&
+      this.cloudsCollected > 0 &&
+      this.cloudsCollected === this.eggsCollected
+    ) {
+      this.prunellaUnlocked = true;
+      writeStorage(STORAGE_PRUNELLA, '1');
+      newlyUnlockedNames.push('Prunella Registered Voter');
     }
     // Dodecahedron the Beret: a 300+ finish while playing as Rhombus.
     if (!this.dodecaUnlocked && this.characterName === 'rhombus' && this.points >= DODECA_SCORE) {

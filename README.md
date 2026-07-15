@@ -281,6 +281,19 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
   **riding the Mystic Line all the way to Docklands** — a private eye's
   kind of town.
+- **Prunella Registered Voter** — a ballot paper come to life: an upright
+  printed sheet (one candidate decisively crossed) with stick arms — the
+  right one clutching a **pencil** — and stick legs in sensible shoes.
+  Unlock her by finishing a run having collected the **same number of
+  marshmallow clouds as golden pine cones** (at least one of each — a
+  perfectly balanced ballot).
+- **The helter skelter** — a tall red-and-white candy-striped fairground
+  tower with a blue **spiral slide** wrapping down it, a pointed cap and a
+  flag, planted out in the open north-west meadows.
+- **WOODOO'S** — a lumberjack's **timber yard** off to the north-west: a
+  big painted sign on posts, a chopping block with an axe buried in it,
+  stacked log piles (pale cut ends and all), a sawhorse and a scatter of
+  standing logs.
 - **The Platinum Guava (+50)** — once per run, at a random moment inside
   the **final 30 seconds**, a platinum guava plummets from the sky and
   lands on a random patch of grass, ringed by a spinning **prism halo** and

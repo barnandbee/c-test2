@@ -1703,6 +1703,42 @@ body {
   border-radius: 3px;
 }
 
+/* Prunella Registered Voter: a ballot sheet with a red cross and a pencil. */
+.prunella-icon {
+  position: relative;
+  border-color: #cfcabb;
+  border-radius: 2px;
+  background:
+    linear-gradient(#2a2a30, #2a2a30) 26% 34% / 8px 2px no-repeat,
+    linear-gradient(#2a2a30, #2a2a30) 26% 54% / 8px 2px no-repeat,
+    linear-gradient(#2a2a30, #2a2a30) 26% 74% / 8px 2px no-repeat,
+    linear-gradient(180deg, #f6f3e8, #e9e4d4);
+}
+
+.prunella-icon::before {
+  /* a decisive red cross in a box */
+  content: "\00d7";
+  position: absolute;
+  top: 42%;
+  left: 62%;
+  transform: translate(-50%, -50%);
+  font: 900 14px/1 Georgia, serif;
+  color: #c02020;
+}
+
+.prunella-icon::after {
+  /* a yellow pencil laid across the corner */
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  right: -2px;
+  width: 15px;
+  height: 3px;
+  transform: rotate(-38deg);
+  background: linear-gradient(90deg, #e89ab0 0 2px, #f0b32a 2px 12px, #e8d8b0 12px 13.5px, #2a2a30 13.5px 15px);
+  border-radius: 1px;
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

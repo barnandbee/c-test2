@@ -197,6 +197,52 @@ export class World {
     this.vegPatchX = vegBest.x;
     this.vegPatchZ = vegBest.z;
 
+    // --- the helter skelter: a striped spiral-slide tower out in the open
+    // north-west quarter, on the gentlest ground clear of the landmarks.
+    this.helterRadius = 3.2;
+    let helterBest = null;
+    for (const [a, r] of [[1.75, 42], [1.55, 46], [1.95, 44], [1.4, 40], [2.1, 48], [1.7, 37]]) {
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const near =
+        Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ) < this.lakeRadius + 8 ||
+        Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 8 ||
+        Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 8 ||
+        Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 8;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!helterBest || grad < helterBest.grad) helterBest = { x, z, grad };
+      if (helterBest.grad < 0.3) break;
+    }
+    this.helterX = helterBest.x;
+    this.helterZ = helterBest.z;
+
+    // --- WOODOO'S: a lumberjack yard over toward the north-west, clear of
+    // the lake and the helter skelter.
+    this.woodoosRadius = 7;
+    let woodBest = null;
+    for (const [a, r] of [[2.45, 46], [2.65, 50], [2.25, 44], [2.8, 52], [2.1, 42], [2.9, 48]]) {
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const near =
+        Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ) < this.lakeRadius + 10 ||
+        Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 8 ||
+        Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 12 ||
+        Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 12;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!woodBest || grad < woodBest.grad) woodBest = { x, z, grad };
+      if (woodBest.grad < 0.3) break;
+    }
+    this.woodoosX = woodBest.x;
+    this.woodoosZ = woodBest.z;
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -207,6 +253,8 @@ export class World {
 
     this._buildAtmosphere(renderer);
     this._buildTerrain();
+    this._buildHelterSkelter();
+    this._buildWoodoos();
     this._buildLake();
     this._buildForest();
     this._buildBlossomTree();
@@ -424,6 +472,9 @@ export class World {
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 5) continue;
       // …or on Turnip Scart's vegetable patch.
       if (this.vegPatchRadius && Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 2) continue;
+      // …or in the helter skelter's plaza or WOODOO'S timber yard.
+      if (this.helterRadius && Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 2) continue;
+      if (this.woodoosRadius && Math.hypot(x - this.woodoosX, z - this.woodoosZ) < this.woodoosRadius + 1.5) continue;
       let blocked = false;
       for (const c of this.colliders) {
         const dx = x - c.x;
@@ -839,6 +890,8 @@ export class World {
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
       if (Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 3) continue;
+      if (Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 4) continue;
+      if (Math.hypot(x - this.woodoosX, z - this.woodoosZ) < this.woodoosRadius + 3) continue;
       // Keep the mountain's snowy cap and rocky collar bare — trees only on
       // its green lower slopes (and everywhere else).
       if (this.mountainRadius && this._mountainBump(x, z) > this.snowLine * 0.7) continue;
@@ -1361,6 +1414,244 @@ export class World {
 
     this.scene.add(group);
     this.colliders.push({ x: this.greenCenterX, z: this.greenCenterZ, radius: 0.12, top: y + 2.3 });
+  }
+
+  /**
+   * The helter skelter: a tall red-and-white candy-striped tower with a
+   * spiral slide chute wrapping around it, a pointed cap and a flag.
+   * Decorative — a fairground landmark, not a functional slide.
+   */
+  _buildHelterSkelter() {
+    const track = (r) => { this._disposables.push(r); return r; };
+    const cx = this.helterX;
+    const cz = this.helterZ;
+    const y = this.getHeight(cx, cz);
+    const group = new THREE.Group();
+    group.position.set(cx, y, cz);
+    this.helterSkelter = group;
+
+    const TOWER_H = 9;
+    const BOT_R = 2.1;
+    const TOP_R = 0.7;
+
+    // Candy-striped tower skin, drawn once.
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    for (let i = 0; i < 16; i++) {
+      g.fillStyle = i % 2 === 0 ? '#e23b34' : '#f4efe6';
+      g.fillRect((i / 16) * 128, 0, (1 / 16) * 128 + 1, 128);
+    }
+    const stripeTex = track(new THREE.CanvasTexture(canvas));
+    stripeTex.colorSpace = THREE.SRGBColorSpace;
+    const towerMat = track(createToonMaterial({ map: stripeTex, rim: { color: 0xffffff, strength: 0.35, threshold: 0.62 } }));
+    const trimMat = track(createToonMaterial({ color: 0xf4efe6, rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 } }));
+    const slideMat = track(createToonMaterial({ color: 0x3aa0e8, emissive: 0x123452, emissiveIntensity: 0.4, rim: { color: 0xbfe4ff, strength: 0.5, threshold: 0.55 } }));
+    const capMat = track(createToonMaterial({ color: 0xe23b34, rim: { color: 0xffd0cc, strength: 0.4, threshold: 0.6 } }));
+
+    // Tower body.
+    const towerGeo = track(new THREE.CylinderGeometry(TOP_R, BOT_R, TOWER_H, 20));
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.y = TOWER_H / 2;
+    tower.castShadow = true;
+    group.add(tower);
+    // Base platform.
+    const base = new THREE.Mesh(track(new THREE.CylinderGeometry(BOT_R + 0.4, BOT_R + 0.6, 0.3, 20)), trimMat);
+    base.position.y = 0.15;
+    group.add(base);
+
+    // Spiral slide chute: a tube along a descending helix around the tower.
+    const TURNS = 3.4;
+    const N = 90;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const ang = t * TURNS * Math.PI * 2 - Math.PI / 2;
+      const rr = TOP_R + (BOT_R - TOP_R) * t + 0.55;
+      const yy = TOWER_H * (1 - t) * 0.92 + 0.6;
+      pts.push(new THREE.Vector3(Math.cos(ang) * rr, yy, Math.sin(ang) * rr));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const slideGeo = track(new THREE.TubeGeometry(curve, 140, 0.34, 8, false));
+    const slide = new THREE.Mesh(slideGeo, slideMat);
+    slide.castShadow = true;
+    group.add(slide);
+    // A run-out lip where the slide meets the ground.
+    const lip = new THREE.Mesh(track(new THREE.BoxGeometry(1.2, 0.12, 1.6)), slideMat);
+    const end = pts[pts.length - 1];
+    lip.position.set(end.x, 0.4, end.z + 0.7);
+    group.add(lip);
+
+    // Pointed cap + flag.
+    const cap = new THREE.Mesh(track(new THREE.ConeGeometry(TOP_R + 0.5, 1.6, 20)), capMat);
+    cap.position.y = TOWER_H + 0.7;
+    cap.castShadow = true;
+    group.add(cap);
+    const poleGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 6));
+    const pole = new THREE.Mesh(poleGeo, trimMat);
+    pole.position.y = TOWER_H + 2.0;
+    group.add(pole);
+    const flagMat = track(createToonMaterial({ color: 0xffcf33, rim: { color: 0xfff0b0, strength: 0.4, threshold: 0.58 }, sway: { strength: 0.14, speed: 3.4 } }));
+    flagMat.side = THREE.DoubleSide;
+    const flagGeo = track(new THREE.BufferGeometry());
+    flagGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, -0.34, 0, 0.6, -0.17, 0]), 3));
+    flagGeo.setAttribute('aSway', new THREE.BufferAttribute(new Float32Array([0, 0, 1]), 1));
+    flagGeo.computeVertexNormals();
+    const flag = new THREE.Mesh(flagGeo, flagMat);
+    flag.position.set(0.03, TOWER_H + 2.55, 0);
+    group.add(flag);
+
+    this.scene.add(group);
+    // Solid tower body (players bump off it) and camera collider so the
+    // spring arm doesn't punch through.
+    this.colliders.push({ x: cx, z: cz, radius: BOT_R * 0.8, top: y + TOWER_H });
+    this.cameraColliders.push({ x: cx, y: y + TOWER_H * 0.5, z: cz, radius: BOT_R });
+  }
+
+  /**
+   * WOODOO'S — a lumberjack's timber yard: a big painted sign on posts, a
+   * chopping block with an axe buried in it, stacked log piles, a sawhorse
+   * and a scatter of standing logs. Decorative; the piles are solid.
+   */
+  _buildWoodoos() {
+    const track = (r) => { this._disposables.push(r); return r; };
+    const cx = this.woodoosX;
+    const cz = this.woodoosZ;
+    const yard = new THREE.Group();
+    this.woodoos = yard;
+
+    const barkMat = track(createToonMaterial({ color: 0x6e5232, rim: { color: 0xb59a6a, strength: 0.3, threshold: 0.64 } }));
+    const woodMat = track(createToonMaterial({ color: 0xc9a35e, rim: { color: 0xf0dca8, strength: 0.35, threshold: 0.6 } }));
+    const logEndMat = track(createToonMaterial({ color: 0xe0c88a, rim: { color: 0xfff0c8, strength: 0.4, threshold: 0.6 } }));
+    const darkWoodMat = track(createToonMaterial({ color: 0x4f3b22 }));
+    const metalMat = track(createToonMaterial({ color: 0x9098a0, rim: { color: 0xffffff, strength: 0.5, threshold: 0.5 } }));
+
+    // Face the yard toward the map's heart.
+    const toHeart = Math.atan2(-cx, -cz);
+    yard.rotation.y = toHeart;
+    yard.position.set(cx, this.getHeight(cx, cz), cz);
+
+    // Local-space placement helper: put a child on the actual terrain
+    // beneath its world position (so pieces sit on sloped ground).
+    const groundAt = (lx, lz) => {
+      const wx = cx + Math.cos(toHeart) * lx + Math.sin(toHeart) * lz;
+      const wz = cz - Math.sin(toHeart) * lx + Math.cos(toHeart) * lz;
+      return this.getHeight(wx, wz) - yard.position.y;
+    };
+
+    // --- the WOODOO'S sign, big and proud at the yard's front --------------
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 200;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#7a5a34';
+    g.fillRect(0, 0, 512, 200);
+    g.strokeStyle = '#3a2a16';
+    g.lineWidth = 12;
+    g.strokeRect(8, 8, 496, 184);
+    g.textAlign = 'center';
+    g.fillStyle = '#f4e4b8';
+    g.font = 'bold 92px Georgia, serif';
+    g.fillText("WOODOO'S", 256, 118);
+    g.fillStyle = '#d8b878';
+    g.font = 'bold 30px Georgia, serif';
+    g.fillText('· TIMBER YARD ·', 256, 168);
+    const signTex = track(new THREE.CanvasTexture(canvas));
+    signTex.colorSpace = THREE.SRGBColorSpace;
+    const signMat = track(createToonMaterial({ map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.2 }));
+
+    const signGroup = new THREE.Group();
+    signGroup.position.set(0, 0, 5.5);
+    for (const sx of [-2, 2]) {
+      const post = new THREE.Mesh(track(new THREE.CylinderGeometry(0.14, 0.16, 3.4, 8)), barkMat);
+      post.position.set(sx, 1.7 + groundAt(sx, 5.5), 0);
+      post.castShadow = true;
+      signGroup.add(post);
+      this.colliders.push({ x: cx + Math.cos(toHeart) * sx + Math.sin(toHeart) * 5.5, z: cz - Math.sin(toHeart) * sx + Math.cos(toHeart) * 5.5, radius: 0.25, top: this.getHeight(cx, cz) + 3 });
+    }
+    const board = new THREE.Mesh(track(new THREE.BoxGeometry(5.2, 2.0, 0.16)), darkWoodMat);
+    board.position.set(0, 3.0, 0);
+    board.castShadow = true;
+    signGroup.add(board);
+    const face = new THREE.Mesh(track(new THREE.PlaneGeometry(5.0, 1.9)), signMat);
+    face.position.set(0, 3.0, 0.1);
+    signGroup.add(face);
+    yard.add(signGroup);
+
+    // --- log piles: stacked horizontal timber, cut ends facing out --------
+    const logGeo = track(new THREE.CylinderGeometry(0.32, 0.32, 3.0, 12));
+    logGeo.rotateZ(Math.PI / 2); // lie along local X
+    const makePile = (px, pz, rows) => {
+      const gy = groundAt(px, pz);
+      let placed = 0;
+      for (let row = 0; row < rows; row++) {
+        const count = rows - row;
+        for (let cI = 0; cI < count; cI++) {
+          const log = new THREE.Mesh(logGeo, woodMat);
+          log.position.set(px + (cI - (count - 1) / 2) * 0.66, gy + 0.32 + row * 0.58, pz);
+          log.castShadow = true;
+          yard.add(log);
+          // Pale cut ends.
+          for (const ex of [-1.5, 1.5]) {
+            const cap = new THREE.Mesh(track(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 12)), logEndMat);
+            cap.rotation.z = Math.PI / 2;
+            cap.position.set(px + (cI - (count - 1) / 2) * 0.66 + ex, gy + 0.32 + row * 0.58, pz);
+            yard.add(cap);
+          }
+          placed++;
+        }
+      }
+      this.colliders.push({ x: cx + Math.cos(toHeart) * px + Math.sin(toHeart) * pz, z: cz - Math.sin(toHeart) * px + Math.cos(toHeart) * pz, radius: 1.6, top: this.getHeight(cx, cz) + rows * 0.6 });
+      return placed;
+    };
+    makePile(-3.2, -1.5, 3);
+    makePile(3.0, -2.5, 4);
+
+    // --- chopping block with an axe buried in it --------------------------
+    const blockGy = groundAt(0, -1.0);
+    const block = new THREE.Mesh(track(new THREE.CylinderGeometry(0.55, 0.6, 0.9, 14)), barkMat);
+    block.position.set(0, blockGy + 0.45, -1.0);
+    block.castShadow = true;
+    yard.add(block);
+    const blockTop = new THREE.Mesh(track(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 14)), logEndMat);
+    blockTop.position.set(0, blockGy + 0.9, -1.0);
+    yard.add(blockTop);
+    const handle = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.06, 1.0, 8)), woodMat);
+    handle.position.set(0.15, blockGy + 1.35, -1.0);
+    handle.rotation.z = 0.5;
+    handle.castShadow = true;
+    yard.add(handle);
+    const axeHead = new THREE.Mesh(track(new THREE.BoxGeometry(0.34, 0.28, 0.1)), metalMat);
+    axeHead.position.set(0.4, blockGy + 0.98, -1.0);
+    axeHead.rotation.z = 0.5;
+    yard.add(axeHead);
+    this.colliders.push({ x: cx + Math.sin(toHeart) * -1.0, z: cz + Math.cos(toHeart) * -1.0, radius: 0.7, top: this.getHeight(cx, cz) + 1 });
+
+    // --- a sawhorse and a couple of standing logs -------------------------
+    const sawGy = groundAt(-2.0, 1.6);
+    const beam = new THREE.Mesh(track(new THREE.BoxGeometry(2.0, 0.16, 0.16)), woodMat);
+    beam.position.set(-2.0, sawGy + 0.9, 1.6);
+    yard.add(beam);
+    for (const [lx2, lz2] of [[-2.7, 1.3], [-1.3, 1.3], [-2.7, 1.9], [-1.3, 1.9]]) {
+      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.06, 0.95, 6)), darkWoodMat);
+      leg.position.set(lx2, sawGy + 0.45, lz2);
+      leg.rotation.x = (lz2 > 1.6 ? 1 : -1) * 0.25;
+      leg.rotation.z = (lx2 < -2.0 ? 1 : -1) * 0.2;
+      yard.add(leg);
+    }
+    for (const [lx2, lz2, hh] of [[2.6, 2.2, 1.3], [3.4, 1.4, 0.9]]) {
+      const gy = groundAt(lx2, lz2);
+      const stand = new THREE.Mesh(track(new THREE.CylinderGeometry(0.28, 0.3, hh, 12)), barkMat);
+      stand.position.set(lx2, gy + hh / 2, lz2);
+      stand.castShadow = true;
+      yard.add(stand);
+      const capTop = new THREE.Mesh(track(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 12)), logEndMat);
+      capTop.position.set(lx2, gy + hh, lz2);
+      yard.add(capTop);
+    }
+
+    this.scene.add(yard);
   }
 
   /**

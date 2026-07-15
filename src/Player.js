@@ -150,6 +150,7 @@ export class Player {
     else if (this.character === 'pickle') this.root = this.buildPickle();
     else if (this.character === 'glassbadger') this.root = this.buildGlassBadger();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
+    else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -3163,6 +3164,163 @@ export class Player {
     tail.rotation.x = -1.1;
     this.tail = tail;
     body.add(tail);
+
+    return root;
+  }
+
+  /**
+   * Prunella Registered Voter — a ballot paper come to life: an upright
+   * sheet printed with candidates and one big cross, a pair of stick arms
+   * (the right one clutching a pencil) and stick legs in sensible shoes.
+   */
+  buildPrunella() {
+    const root = new THREE.Group();
+    root.name = 'prunella';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Print the ballot face once onto a canvas.
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 340;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#f6f3e8';
+    g.fillRect(0, 0, 256, 340);
+    g.strokeStyle = '#2a2a30';
+    g.lineWidth = 6;
+    g.strokeRect(8, 8, 240, 324);
+    g.fillStyle = '#2a2a30';
+    g.textAlign = 'center';
+    g.font = 'bold 30px Georgia, serif';
+    g.fillText('★ BALLOT ★', 128, 46);
+    g.textAlign = 'left';
+    g.font = '22px Georgia, serif';
+    const rows = ['Badger', 'The Goat', 'A Pickle', 'Write-in'];
+    for (let i = 0; i < rows.length; i++) {
+      const y = 96 + i * 56;
+      g.strokeStyle = '#2a2a30';
+      g.lineWidth = 3;
+      g.strokeRect(28, y - 22, 30, 30);
+      g.fillStyle = '#2a2a30';
+      g.fillText(rows[i], 74, y);
+      // A decisive cross in the second box.
+      if (i === 1) {
+        g.strokeStyle = '#c02020';
+        g.lineWidth = 6;
+        g.beginPath();
+        g.moveTo(32, y - 18); g.lineTo(54, y + 4);
+        g.moveTo(54, y - 18); g.lineTo(32, y + 4);
+        g.stroke();
+      }
+    }
+    const ballotTex = track(new THREE.CanvasTexture(canvas));
+    ballotTex.colorSpace = THREE.SRGBColorSpace;
+
+    const paperMat = track(createToonMaterial({ color: 0xf2efe4, rim: { color: 0xffffff, strength: 0.3, threshold: 0.7 } }));
+    const faceMat = track(createToonMaterial({ map: ballotTex, rim: { color: 0xffffff, strength: 0.25, threshold: 0.72 } }));
+    const limbMat = track(createToonMaterial({ color: 0x3a3a42 }));
+    const shoeMat = track(createToonMaterial({ color: 0x1a1a1e }));
+    const eyeMat = track(createToonMaterial({ color: 0x141018 }));
+    const pencilMat = track(createToonMaterial({ color: 0xf0b32a, rim: { color: 0xfff0c0, strength: 0.4, threshold: 0.58 } }));
+    const graphiteMat = track(createToonMaterial({ color: 0x2a2a30 }));
+    const eraserMat = track(createToonMaterial({ color: 0xe89ab0 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the sheet of paper, with a slight curl at the top ------------------
+    const paperGeo = track(new THREE.BoxGeometry(0.62, 0.86, 0.05, 6, 8, 1));
+    {
+      const pos = paperGeo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.z += Math.max(0, v.y) * Math.max(0, v.y) * 0.4; // curl the top forward
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      paperGeo.computeVertexNormals();
+    }
+    const paper = new THREE.Mesh(paperGeo, paperMat);
+    paper.position.y = 0.36;
+    paper.castShadow = true;
+    body.add(paper);
+    const face = new THREE.Mesh(track(new THREE.PlaneGeometry(0.56, 0.8)), faceMat);
+    face.position.set(0, 0.36, 0.031);
+    body.add(face);
+
+    // --- little eyes peering over the top -----------------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 12, 10)), paperMat);
+      white.position.set(side * 0.13, 0.82, 0.08);
+      body.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), eyeMat);
+      pupil.position.set(side * 0.13, 0.82, 0.13);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.13, baseY: 0.82, seed: Math.random() * 6.28 });
+    }
+
+    // --- stick arms; the right hand grips a pencil --------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.024, 0.024, 0.36, 8));
+    armGeo.translate(0, -0.18, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.045, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.32, 0.5, 0.02);
+      pivot.rotation.z = -side * 0.5;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, limbMat);
+      hand.position.set(0, -0.38, 0);
+      pivot.add(hand);
+      // The right arm holds a pencil across its little fist.
+      if (side === 1) {
+        const pencil = new THREE.Group();
+        pencil.position.set(0, -0.38, 0.02);
+        pencil.rotation.set(0.5, 0, -0.7);
+        const shaft = new THREE.Mesh(track(new THREE.CylinderGeometry(0.028, 0.028, 0.5, 6)), pencilMat);
+        pencil.add(shaft);
+        const tip = new THREE.Mesh(track(new THREE.ConeGeometry(0.028, 0.08, 6)), track(createToonMaterial({ color: 0xe8d8b0 })));
+        tip.position.y = -0.29;
+        pencil.add(tip);
+        const lead = new THREE.Mesh(track(new THREE.ConeGeometry(0.012, 0.03, 6)), graphiteMat);
+        lead.position.y = -0.34;
+        pencil.add(lead);
+        const eraser = new THREE.Mesh(track(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 6)), eraserMat);
+        eraser.position.y = 0.27;
+        pencil.add(eraser);
+        pivot.add(pencil);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- stick legs with sensible shoes -------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.4, 8));
+    legGeo.translate(0, -0.2, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.14, 0.0, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.4, 0.05);
+      shoe.scale.set(1.1, 0.55, 1.7);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
 
     return root;
   }

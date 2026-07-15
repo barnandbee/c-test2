@@ -74,5 +74,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'billy', name: 'Billy Rocketfingers', how: 'Collect every star AND visit all three Mystic Line stations in one run.' },
   { key: 'pickle', name: 'Pickle Stick', how: 'Poke the cottage fridge 10 times, then collect the pickle that appears in a tree with a score of 100+.' },
   { key: 'glassbadger', name: 'Glass Badger', how: 'Score an all-time total of 20000 points across every run.' },
-  { key: 'mcdonovan', name: 'McDonovan', how: 'Ride the Mystic Line all the way to Docklands.' }
+  { key: 'mcdonovan', name: 'McDonovan', how: 'Ride the Mystic Line all the way to Docklands.' },
+  { key: 'prunella', name: 'Prunella Registered Voter', how: 'Finish a run having collected the same number of clouds as golden pine cones (at least one of each).' }
 ];
