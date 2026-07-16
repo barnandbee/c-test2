@@ -289,7 +289,8 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   perfectly balanced ballot).
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
-  flag, planted out in the open south-east meadows.
+  flag, planted way out on the **empty southern rim** of the map — past the
+  mountain, along the edge toward the Mystic Forest.
 - **WOODOO'S** — a lumberjack's **timber yard** in the open south of the
   map: a big painted sign (level board on two even posts), a chopping block
   with an axe buried in it, stacked log piles (pale cut ends and all), a

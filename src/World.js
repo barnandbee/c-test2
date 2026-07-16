@@ -18,9 +18,9 @@ import { smoothstep, lerp, clamp } from './utils/MathUtils.js';
 import { createToonMaterial, createSkyMaterial, createWaterMaterial, SharedUniforms } from './Shaders.js';
 import { createAuraPoints } from './Particles.js';
 
-const TERRAIN_SIZE = 260;
-const TERRAIN_SEGMENTS = 200;
-const PLAYABLE_RADIUS = 104;
+const TERRAIN_SIZE = 312;       // +20% — a roomier map on all sides
+const TERRAIN_SEGMENTS = 240;   // scaled up to keep the same detail density
+const PLAYABLE_RADIUS = 125;    // +20% — the walkable boundary pushed out
 const SHADOW_EXTENT = 30;
 const SHADOW_MAP_SIZE = 2048;
 
@@ -197,19 +197,19 @@ export class World {
     this.vegPatchX = vegBest.x;
     this.vegPatchZ = vegBest.z;
 
-    // --- the helter skelter: a striped spiral-slide tower out in the open
-    // south-east, on the gentlest ground clear of the green, mountain and
-    // cave that share that quarter.
+    // --- the helter skelter: a striped spiral-slide tower way out on the
+    // empty southern rim — beyond the mountain, along the map edge toward
+    // the Mystic Forest — on the gentlest ground clear of every landmark.
     this.helterRadius = 3.2;
     let helterBest = null;
-    for (const [a, r] of [[-0.68, 35], [-0.55, 33], [-0.8, 34], [-0.45, 31], [-0.9, 36], [-0.6, 38]]) {
+    for (const [a, r] of [[-1.75, 84], [-1.55, 82], [-1.95, 86], [-1.4, 80], [-2.1, 88], [-1.65, 90]]) {
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       const near =
         Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 8 ||
-        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 8 ||
-        Math.hypot(x - this.caveX, z - this.caveZ) < 12 ||
-        Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 8;
+        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 9 ||
+        Math.hypot(x - this.caveX, z - this.caveZ) < 14 ||
+        Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 12;
       const e = 0.8;
       const grad = Math.hypot(
         this.getHeight(x + e, z) - this.getHeight(x - e, z),
