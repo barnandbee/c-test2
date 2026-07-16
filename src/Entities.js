@@ -615,13 +615,13 @@ export class MagnaCarta extends Collectible {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Pickle Stick (+8.88)                                               */
+/*  Pickle Stick (+8.8)                                                */
 /* ------------------------------------------------------------------ */
 
 /** A warty gherkin with a pair of googly eyes that bounces on the spot. */
 export class PickleStick extends Collectible {
   constructor(scene, position) {
-    super(scene, position, 8.88, 1.0);
+    super(scene, position, 8.8, 1.0);
     const a = getAssets();
     const body = new THREE.Mesh(a.pickleGeo, a.pickleMat);
     body.castShadow = true;

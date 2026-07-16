@@ -269,8 +269,8 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   that **hops** to get around. To unlock it: poke the cottage **fridge 10
   times** (the message turns to “Oh, Pickle Sticks!”), at which point a
   Pickle Stick perches on top of a random tree — go **collect it like an
-  item (+8.88) with a score of 100 or more**. Afterwards the Pickle Stick
-  item can still turn up in the wild worth +8.88, though there's little
+  item (+8.8) with a score of 100 or more**. Afterwards the Pickle Stick
+  item can still turn up in the wild worth +8.8, though there's little
   point.
 - **Glass Badger** — the badger cast in translucent frosted glass: you can
   see clean through it to a glowing core, with a frosted muzzle, the two

@@ -118,7 +118,7 @@ const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock G
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const SANDWICH_POINTS = 55.5;
-const PICKLE_VALUE = 8.88;         // Pickle Stick collectible value
+const PICKLE_VALUE = 8.8;          // Pickle Stick collectible value
 const GUAVA_VALUE = 50;            // Platinum Guava value
 const FRIDGE_CLICKS_REQUIRED = 10; // clicks before the pickle appears
 const PICKLE_UNLOCK_SCORE = 100;   // score needed when grabbing the pickle
@@ -459,7 +459,7 @@ export class Game {
     this.launchpad = new Launchpad(this.scene, this.world);
 
     // Once Pickle Stick is a playable hero, its item can turn up in the
-    // wild too — worth +8.88, though there's little point now.
+    // wild too — worth +8.8, though there's little point now.
     if (this.pickleStickUnlocked) {
       for (let i = 0; i < 3; i++) {
         this.collectibles.push(new PickleStick(this.scene, this.world.randomGroundPoint(10, 90)));
@@ -558,7 +558,7 @@ export class Game {
             this.ui.showTimeToast('OH, PICKLE STICKS! (COME BACK AT 100+)');
           }
         } else {
-          this.ui.showTimeToast('OH, PICKLE STICKS! +8.88');
+          this.ui.showTimeToast('OH, PICKLE STICKS! +8.8');
         }
       }
 
