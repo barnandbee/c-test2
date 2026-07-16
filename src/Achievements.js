@@ -42,7 +42,13 @@ export const TROPHIES = [
   { id: 'firforest', medal: '🌲', title: 'Homecoming', desc: 'Take President Fir Tree into the Mystic Forest.' },
   { id: 'polarsummit', medal: '🐻‍❄️', title: 'Peak Bear', desc: 'Take Polar Pear to the mountain summit flag.' },
   { id: 'turnipwin', medal: '🐐', title: 'Kid vs Goat', desc: 'Beat Turnip Scart at Veggie Tac Toe while playing as Turnip Scart.' },
-  { id: 'snooker', medal: '🎱', title: 'Snooker', desc: 'Score exactly 147 in a run, having collected one of every item type.' }
+  { id: 'snooker', medal: '🎱', title: 'Snooker', desc: 'Score exactly 147 in a run, having collected one of every item type.' },
+  { id: 'inapickle', medal: '🥒', title: 'In a Pickle', desc: 'Collect three pickles and score 303 or more in one run as Pickle Stick.' },
+  { id: 'birdfeather', medal: '🐦', title: 'Bird of a Feather', desc: 'Clear every cherry and score over 250 as Perpendicular Bird.' },
+  { id: 'woodlie', medal: '🪵', title: 'Wood I Lie To You', desc: 'Take Margaret or President Fir Tree to WOODOO’S with 50 health or less.' },
+  { id: 'guava', medal: '🥝', title: 'Gather Guava, Wouldn’t You Rather', desc: 'Collect the Platinum Guava in a run.' },
+  { id: 'hastings', medal: '🏹', title: 'Hastings Is A Place On Earth', desc: 'Grab both Magna Cartas as William the Conqueror and score exactly 106.6.' },
+  { id: 'blisters', medal: '🎸', title: 'I’ve Got Blisters On My Fingers', desc: 'Reach the helter skelter with a score of 300 or more.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

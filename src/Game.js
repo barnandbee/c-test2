@@ -323,6 +323,8 @@ export class Game {
     this.cloudsCollected = 0;
     this.eggsCollected = 0;
     this.frogHits = 0;
+    this.picklesCollected = 0;      // Pickle Sticks grabbed this run ("In a Pickle")
+    this.magnaCartasCollected = 0;  // Magna Cartas grabbed this run ("Hastings")
     // Spawned counts this run, for the "clear them all" trophies.
     this.spawnedStars = 0;
     this.spawnedClouds = 0;
@@ -545,6 +547,7 @@ export class Game {
 
       // Pickle Stick: grab the fridge-summoned pickle on 100+ to unlock it.
       if (item.value === PICKLE_VALUE) {
+        this.picklesCollected += 1;
         if (!this.pickleStickUnlocked) {
           if (scoreBefore >= PICKLE_UNLOCK_SCORE) {
             this.pickleStickUnlocked = true;
@@ -559,14 +562,16 @@ export class Game {
         }
       }
 
-      // Platinum Guava: a rare, hefty windfall.
+      // Platinum Guava: a rare, hefty windfall — and its own trophy.
       if (item.value === GUAVA_VALUE) {
         this.ui.showTimeToast('💎 PLATINUM GUAVA! +50');
         this.audio.play('trophy');
+        this.awardAchievement('guava');
       }
 
       // The Magna Carta announces itself — and crowns a king, once.
       if (item.value === MAGNA_CARTA_VALUE) {
+        this.magnaCartasCollected += 1;
         this.ui.showTimeToast('YOU GOT THE MAGNA CARTA, BABY!');
         this.audio.play('bugle');
         if (!this.williamUnlocked) {
@@ -962,6 +967,49 @@ export class Game {
       writeStorage(STORAGE_BILLY, '1');
       this.runUnlockNames.push('Billy Rocketfingers');
       this.ui.showTimeToast('★ BILLY ROCKETFINGERS UNLOCKED! 🎸');
+    }
+
+    // In a Pickle: as Pickle Stick, grab three pickles and score 303+.
+    if (this.characterName === 'pickle' && this.picklesCollected >= 3 && p >= 303) {
+      this.awardAchievement('inapickle');
+    }
+
+    // Bird of a Feather: as Perpendicular Bird, sweep the cherries past 250.
+    if (this.characterName === 'perpbird' && allCherries && p > 250) {
+      this.awardAchievement('birdfeather');
+    }
+
+    // Wood I Lie To You: bring Margaret or President Fir Tree to WOODOO's
+    // timber yard on 50 health or less.
+    if (
+      (this.characterName === 'margaret' || this.characterName === 'fir') &&
+      this.health <= 50 &&
+      Math.hypot(
+        this.player.position.x - this.world.woodoosX,
+        this.player.position.z - this.world.woodoosZ
+      ) <= this.world.woodoosRadius + 3
+    ) {
+      this.awardAchievement('woodlie');
+    }
+
+    // Hastings Is A Place On Earth: William, both Magna Cartas, exactly 106.6.
+    if (
+      this.characterName === 'william' &&
+      this.magnaCartasCollected >= 2 &&
+      Math.abs(p - 106.6) < 1e-6
+    ) {
+      this.awardAchievement('hastings');
+    }
+
+    // I've Got Blisters On My Fingers: reach the helter skelter on 300+.
+    if (
+      p >= 300 &&
+      Math.hypot(
+        this.player.position.x - this.world.helterX,
+        this.player.position.z - this.world.helterZ
+      ) <= this.world.helterRadius + 4
+    ) {
+      this.awardAchievement('blisters');
     }
 
     // Yo-Yo: the score bouncing across 100 — up, down, up, down, up.
@@ -1865,6 +1913,8 @@ export class Game {
     this.cloudsCollected = 0;
     this.eggsCollected = 0;
     this.frogHits = 0;
+    this.picklesCollected = 0;
+    this.magnaCartasCollected = 0;
     this._yoyoCrossings = 0;
     this._over100 = false;
     this.vehiclesDismounted.clear();

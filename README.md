@@ -346,7 +346,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Tree home to the Mystic Forest, taking Polar Pear to the summit flag,
   beating Turnip Scart at Veggie Tac Toe *while playing as Turnip Scart*,
   and **Snooker 🎱** — landing on exactly 147 in a run having collected one
-  of every item type. Earned trophies are saved locally
+  of every item type. Six more reward the connoisseurs: **In a Pickle 🥒**
+  (three pickles and 303+ in a run as Pickle Stick), **Bird of a Feather 🐦**
+  (clear every cherry and score over 250 as Perpendicular Bird),
+  **Wood I Lie To You 🪵** (bring Margaret or President Fir Tree to WOODOO’S
+  on 50 health or less), **Gather Guava, Wouldn’t You Rather 🥝** (collect
+  the Platinum Guava in a run), **Hastings Is A Place On Earth 🏹** (grab
+  both Magna Cartas as William the Conqueror and finish on exactly 106.6),
+  and **I’ve Got Blisters On My Fingers 🎸** (reach the helter skelter on
+  300+). Earned trophies are saved locally
   and announced with a 🏆 toast the moment you earn them. Two lifetime stats
   sit up top: your **all-time points** (summed across every run) and your
   **favourite hero** (the character you've played the most, with its run
