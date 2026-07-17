@@ -1739,6 +1739,44 @@ body {
   border-radius: 1px;
 }
 
+/* Gary Mountain: a snow-capped grey crag with a Picasso eye. */
+.gary-icon {
+  position: relative;
+  border-color: #6d6862;
+  border-radius: 4px 8px 4px 6px;
+  background:
+    /* snow cap across the top */
+    linear-gradient(180deg, #f3f7ff 0 34%, transparent 34%),
+    /* craggy grey stone body */
+    linear-gradient(160deg, #a39d95, #8f8a83 55%, #6d6862);
+}
+
+.gary-icon::before {
+  /* the lone cubist eye, shoved to one side */
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 30%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f4f2ea;
+  box-shadow: 0 0 0 1.5px #14121a inset, 7px 3px 0 -1px #14121a;
+}
+
+.gary-icon::after {
+  /* a glossy red high heel at the base */
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  right: 3px;
+  width: 12px;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: #c21a3a;
+  box-shadow: -1px 4px 0 -1px #c21a3a;
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

@@ -287,6 +287,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Unlock her by finishing a run having collected the **same number of
   marshmallow clouds as golden pine cones** (at least one of each — a
   perfectly balanced ballot).
+- **Gary Mountain** — a craggy little chap hewn from faceted grey stone
+  with a **snow-capped head**, a **Picasso-cubist face** (two mismatched
+  eyes crowded onto one side, an angular nose jutting sideways in profile,
+  a crooked red mouth), and a pair of glossy **red high heels**. Unlock
+  him once your **all-time tally of mountain-summit arrivals reaches 100**
+  — every trip to the summit flag counts, and reaching it several times in
+  the same run all adds up.
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
   flag, planted way out on the **empty southern rim** of the map — past the

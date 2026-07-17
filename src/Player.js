@@ -151,6 +151,7 @@ export class Player {
     else if (this.character === 'glassbadger') this.root = this.buildGlassBadger();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
+    else if (this.character === 'gary') this.root = this.buildGaryMountain();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -3317,6 +3318,176 @@ export class Player {
       const shoe = new THREE.Mesh(shoeGeo, shoeMat);
       shoe.position.set(0, -0.4, 0.05);
       shoe.scale.set(1.1, 0.55, 1.7);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Gary Mountain — a craggy little fellow hewn from grey stone, with a
+   * snow-capped head, a Picasso-cubist face (two mismatched eyes shoved
+   * onto the same side, an angular nose jutting sideways, a crooked red
+   * mouth), and — because why not — a pair of glossy red high heels.
+   */
+  buildGaryMountain() {
+    const root = new THREE.Group();
+    root.name = 'gary';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+    const stone = (color) => {
+      const m = createToonMaterial({ color, rim: { color: 0xffffff, strength: 0.22, threshold: 0.74 } });
+      m.flatShading = true; // faceted, quarried look
+      return track(m);
+    };
+
+    const rockMat = stone(0x8f8a83);
+    const rockDarkMat = stone(0x6d6862);
+    const rockLightMat = stone(0xa39d95);
+    const snowMat = track(createToonMaterial({ color: 0xf3f7ff, rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 } }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xf4f2ea }));
+    const pupilMat = track(createToonMaterial({ color: 0x14121a }));
+    const lipMat = track(createToonMaterial({ color: 0xba2b48, rim: { color: 0xff9aac, strength: 0.3, threshold: 0.6 } }));
+    const heelMat = track(createToonMaterial({ color: 0xc21a3a, rim: { color: 0xff8098, strength: 0.5, threshold: 0.5 } }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.6;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- craggy stone torso: a faceted core plus a few boulder lumps --------
+    const core = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.44, 0)), rockMat);
+    core.scale.set(1.05, 1.25, 0.95);
+    core.position.y = 0.32;
+    core.castShadow = true;
+    body.add(core);
+    const lumps = [
+      [0.34, 0.14, 0.12, 0.2, rockDarkMat],
+      [-0.3, 0.5, 0.06, 0.22, rockLightMat],
+      [0.16, 0.66, -0.1, 0.18, rockDarkMat],
+      [-0.18, 0.1, 0.2, 0.16, rockLightMat]
+    ];
+    for (const [lx, ly, lz, r, mat] of lumps) {
+      const lump = new THREE.Mesh(track(new THREE.IcosahedronGeometry(r, 0)), mat);
+      lump.position.set(lx, ly, lz);
+      lump.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      lump.castShadow = true;
+      body.add(lump);
+    }
+
+    // --- head: a rocky peak crowned with snow --------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.98;
+    body.add(head);
+    this.headGroup = head;
+
+    const skull = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.36, 0)), rockMat);
+    skull.scale.set(1, 1.12, 0.98);
+    skull.castShadow = true;
+    head.add(skull);
+
+    // A snow cap sitting over the crown, with a couple of drifts.
+    const cap = new THREE.Mesh(track(new THREE.SphereGeometry(0.33, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55)), snowMat);
+    cap.position.y = 0.14;
+    cap.scale.set(1.06, 1, 1.02);
+    cap.castShadow = true;
+    head.add(cap);
+    for (const [dx, dy, dz, s] of [[0.16, 0.02, 0.2, 0.13], [-0.2, 0.06, 0.12, 0.1], [0.05, 0.05, -0.24, 0.11]]) {
+      const drift = new THREE.Mesh(track(new THREE.IcosahedronGeometry(s, 0)), snowMat);
+      drift.position.set(dx, dy, dz);
+      head.add(drift);
+    }
+
+    // --- Picasso face: both eyes crowded onto the left, mismatched ----------
+    this.googlyEyes = [];
+    // Eye one: a round eye, higher up.
+    {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 14, 12)), eyeWhiteMat);
+      white.position.set(-0.02, 0.12, 0.3);
+      white.scale.set(1, 1, 0.55);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 10, 8)), pupilMat);
+      pupil.position.set(-0.02, 0.12, 0.36);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: -0.02, baseY: 0.12, seed: Math.random() * 6.28 });
+    }
+    // Eye two: a square eye, lower and shoved beside the first (cubist).
+    {
+      const white = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.13, 0.06)), eyeWhiteMat);
+      white.position.set(-0.19, -0.04, 0.28);
+      white.rotation.z = 0.35;
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.06, 0.05)), pupilMat);
+      pupil.position.set(-0.19, -0.04, 0.33);
+      pupil.rotation.z = 0.35;
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: -0.19, baseY: -0.04, seed: Math.random() * 6.28 });
+    }
+    // An angular nose jutting sideways in profile.
+    const nose = new THREE.Mesh(track(new THREE.ConeGeometry(0.09, 0.34, 4)), rockLightMat);
+    nose.position.set(0.14, 0.0, 0.28);
+    nose.rotation.set(Math.PI / 2, 0, -0.9);
+    nose.castShadow = true;
+    head.add(nose);
+    // A crooked red mouth, off to one side.
+    const mouth = new THREE.Mesh(track(new THREE.BoxGeometry(0.2, 0.05, 0.04)), lipMat);
+    mouth.position.set(-0.06, -0.2, 0.31);
+    mouth.rotation.z = -0.4;
+    head.add(mouth);
+
+    // --- stubby rock arms ----------------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.09, 0.07, 0.4, 6));
+    armGeo.translate(0, -0.2, 0);
+    const fistGeo = track(new THREE.IcosahedronGeometry(0.1, 0));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.42, 0.56, 0.02);
+      pivot.rotation.z = -side * 0.35;
+      const arm = new THREE.Mesh(armGeo, side === -1 ? rockDarkMat : rockLightMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const fist = new THREE.Mesh(fistGeo, rockMat);
+      fist.position.set(0, -0.42, 0);
+      fist.castShadow = true;
+      pivot.add(fist);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- rock legs in glossy red high heels ---------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.1, 0.08, 0.44, 6));
+    legGeo.translate(0, -0.22, 0);
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.18, 0.02, 0);
+      const leg = new THREE.Mesh(legGeo, rockMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      // A high heel: a slim sole, a pointed toe, and a tall stiletto.
+      const shoe = new THREE.Group();
+      shoe.position.set(0, -0.46, 0.03);
+      const sole = new THREE.Mesh(track(new THREE.BoxGeometry(0.14, 0.04, 0.26)), heelMat);
+      sole.position.set(0, 0, 0.04);
+      sole.castShadow = true;
+      shoe.add(sole);
+      const toe = new THREE.Mesh(track(new THREE.ConeGeometry(0.07, 0.12, 8)), heelMat);
+      toe.rotation.x = -Math.PI / 2;
+      toe.position.set(0, 0, 0.22);
+      shoe.add(toe);
+      const arch = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.09, 0.12)), heelMat);
+      arch.position.set(0, 0.05, -0.02);
+      shoe.add(arch);
+      const stiletto = new THREE.Mesh(track(new THREE.CylinderGeometry(0.018, 0.012, 0.2, 6)), heelMat);
+      stiletto.position.set(0, -0.1, -0.09);
+      shoe.add(stiletto);
       pivot.add(shoe);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });

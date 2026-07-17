@@ -91,6 +91,8 @@ const STORAGE_FRIDGE_CLICKS = 'mystic-badger.fridgeClicks';
 const STORAGE_GLASSBADGER = 'mystic-badger.glassBadgerUnlocked';
 const STORAGE_MCDONOVAN = 'mystic-badger.mcdonovanUnlocked';
 const STORAGE_PRUNELLA = 'mystic-badger.prunellaUnlocked';
+const STORAGE_GARY = 'mystic-badger.garyUnlocked';
+const STORAGE_SUMMIT_VISITS = 'mystic-badger.summitVisits';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -117,6 +119,7 @@ const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Nigh
 const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock Glass Badger
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
+const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
 const SANDWICH_POINTS = 55.5;
 const PICKLE_VALUE = 8.8;          // Pickle Stick collectible value
 const GUAVA_VALUE = 50;            // Platinum Guava value
@@ -222,6 +225,9 @@ export class Game {
     this.glassBadgerUnlocked = readStorage(STORAGE_GLASSBADGER) === '1';
     this.mcdonovanUnlocked = readStorage(STORAGE_MCDONOVAN) === '1';
     this.prunellaUnlocked = readStorage(STORAGE_PRUNELLA) === '1';
+    this.garyUnlocked = readStorage(STORAGE_GARY) === '1';
+    // All-time count of mountain-summit arrivals (across every run).
+    this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -308,6 +314,7 @@ export class Game {
     this.stationsVisited = new Set(); // Mystic Line stops used this run
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
+    this._onSummit = false;          // edge flag for counting summit arrivals
     this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
@@ -810,6 +817,7 @@ export class Game {
     if (name === 'glassbadger') return this.glassBadgerUnlocked;
     if (name === 'mcdonovan') return this.mcdonovanUnlocked;
     if (name === 'prunella') return this.prunellaUnlocked;
+    if (name === 'gary') return this.garyUnlocked;
     return name === 'badger';
   }
 
@@ -842,7 +850,8 @@ export class Game {
       pickle: this.pickleStickUnlocked,
       glassbadger: this.glassBadgerUnlocked,
       mcdonovan: this.mcdonovanUnlocked,
-      prunella: this.prunellaUnlocked
+      prunella: this.prunellaUnlocked,
+      gary: this.garyUnlocked
     };
   }
 
@@ -1899,6 +1908,7 @@ export class Game {
     this.stationsVisited.clear();
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false;
+    this._onSummit = false;
     this._pickleSummonedThisRun = false;
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -2068,23 +2078,37 @@ export class Game {
       if (this.world.mountainRadius) {
         const mdx = this.player.position.x - this.world.mountainX;
         const mdz = this.player.position.z - this.world.mountainZ;
-        if (mdx * mdx + mdz * mdz < 4 * 4) {
-          const summitY = this.world.getHeight(this.world.mountainX, this.world.mountainZ);
-          if (Math.abs(this.player.position.y - summitY) < 3) {
-            if (this.characterName === 'polarpear') this.awardAchievement('polarsummit');
-            if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH) {
-              this.reachedSummitLowHP = true;
-              this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
-            }
-            // Pineapple Penguin: summit the flag with a score over 333.
-            if (!this.pinepenguinUnlocked && this.points > 333) {
-              this.pinepenguinUnlocked = true;
-              writeStorage(STORAGE_PINEPENGUIN, '1');
-              this.runUnlockNames.push('Pineapple Penguin');
-              this.ui.showTimeToast('★ PINEAPPLE PENGUIN UNLOCKED!');
-            }
+        const summitY = this.world.getHeight(this.world.mountainX, this.world.mountainZ);
+        const onSummit =
+          mdx * mdx + mdz * mdz < 4 * 4 &&
+          Math.abs(this.player.position.y - summitY) < 3;
+        if (onSummit) {
+          if (this.characterName === 'polarpear') this.awardAchievement('polarsummit');
+          if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH) {
+            this.reachedSummitLowHP = true;
+            this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
+          }
+          // Pineapple Penguin: summit the flag with a score over 333.
+          if (!this.pinepenguinUnlocked && this.points > 333) {
+            this.pinepenguinUnlocked = true;
+            writeStorage(STORAGE_PINEPENGUIN, '1');
+            this.runUnlockNames.push('Pineapple Penguin');
+            this.ui.showTimeToast('★ PINEAPPLE PENGUIN UNLOCKED!');
           }
         }
+        // Count each fresh arrival at the summit (leaving and returning
+        // counts again). At 100 lifetime arrivals, Gary Mountain wakes.
+        if (onSummit && !this._onSummit) {
+          this.summitVisits += 1;
+          writeStorage(STORAGE_SUMMIT_VISITS, String(this.summitVisits));
+          if (!this.garyUnlocked && this.summitVisits >= GARY_SUMMIT_VISITS) {
+            this.garyUnlocked = true;
+            writeStorage(STORAGE_GARY, '1');
+            this.runUnlockNames.push('Gary Mountain');
+            this.ui.showTimeToast('★ GARY MOUNTAIN UNLOCKED! 🏔️');
+          }
+        }
+        this._onSummit = onSummit;
       }
 
       // Engine beds follow whatever the player is currently riding.
