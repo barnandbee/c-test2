@@ -93,6 +93,8 @@ const STORAGE_MCDONOVAN = 'mystic-badger.mcdonovanUnlocked';
 const STORAGE_PRUNELLA = 'mystic-badger.prunellaUnlocked';
 const STORAGE_GARY = 'mystic-badger.garyUnlocked';
 const STORAGE_SUMMIT_VISITS = 'mystic-badger.summitVisits';
+const STORAGE_CANDY = 'mystic-badger.candyUnlocked';
+const STORAGE_HELTER_VISITS = 'mystic-badger.helterVisits';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -120,6 +122,15 @@ const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock G
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
+const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
+const CANDY_LAUNCH_SPEED = 30;     // Candy Florence's sky-high fling off the helter skelter
+// Score milestones: a run (or the all-time high score) at or above each
+// threshold earns the matching trophy. Kept in one place so past runs can
+// retroactively credit any milestone added here later.
+const SCORE_MILESTONES = [
+  [50, 'score50'], [100, 'score100'], [200, 'score200'], [300, 'score300'],
+  [400, 'score400'], [500, 'score500'], [600, 'score600']
+];
 const SANDWICH_POINTS = 55.5;
 const PICKLE_VALUE = 8.8;          // Pickle Stick collectible value
 const GUAVA_VALUE = 50;            // Platinum Guava value
@@ -226,8 +237,11 @@ export class Game {
     this.mcdonovanUnlocked = readStorage(STORAGE_MCDONOVAN) === '1';
     this.prunellaUnlocked = readStorage(STORAGE_PRUNELLA) === '1';
     this.garyUnlocked = readStorage(STORAGE_GARY) === '1';
+    this.candyUnlocked = readStorage(STORAGE_CANDY) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
+    // All-time count of helter-skelter visits (across every run).
+    this.helterVisits = parseInt(readStorage(STORAGE_HELTER_VISITS, '0'), 10) || 0;
     this.totalScore = parseFloat(readStorage(STORAGE_TOTAL_SCORE, '0')) || 0;
     // Per-character run tally, for the "favourite hero" stat.
     this.charUsage = {};
@@ -240,6 +254,9 @@ export class Game {
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
+    // Retroactively credit every score milestone the stored high score
+    // already clears — so newly added score trophies count past runs too.
+    this.creditHighScoreMilestones();
     const storedCharacter = readStorage(STORAGE_CHARACTER, 'badger');
     this.characterName = this.isCharacterAllowed(storedCharacter) ? storedCharacter : 'badger';
 
@@ -315,6 +332,7 @@ export class Game {
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
     this._onSummit = false;          // edge flag for counting summit arrivals
+    this._onHelter = false;          // edge flag for counting helter-skelter visits
     this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
@@ -818,6 +836,7 @@ export class Game {
     if (name === 'mcdonovan') return this.mcdonovanUnlocked;
     if (name === 'prunella') return this.prunellaUnlocked;
     if (name === 'gary') return this.garyUnlocked;
+    if (name === 'candy') return this.candyUnlocked;
     return name === 'badger';
   }
 
@@ -851,7 +870,8 @@ export class Game {
       glassbadger: this.glassBadgerUnlocked,
       mcdonovan: this.mcdonovanUnlocked,
       prunella: this.prunellaUnlocked,
-      gary: this.garyUnlocked
+      gary: this.garyUnlocked,
+      candy: this.candyUnlocked
     };
   }
 
@@ -885,6 +905,22 @@ export class Game {
   }
 
   /** Grant a trophy once, persist it, and announce it. */
+  /**
+   * Silently mark every score milestone the all-time high score already
+   * clears. Runs at load so retroactive credit doesn't spam toasts, and so
+   * milestones added in a later update still count the player's past best.
+   */
+  creditHighScoreMilestones() {
+    let changed = false;
+    for (const [need, id] of SCORE_MILESTONES) {
+      if (this.highScore >= need && !this.achievements.has(id)) {
+        this.achievements.add(id);
+        changed = true;
+      }
+    }
+    if (changed) writeStorage(STORAGE_ACHIEVEMENTS, [...this.achievements].join(','));
+  }
+
   awardAchievement(id) {
     if (this.achievements.has(id)) return;
     this.achievements.add(id);
@@ -901,12 +937,9 @@ export class Game {
    */
   checkAchievements() {
     const p = this.points;
-    if (p >= 50) this.awardAchievement('score50');
-    if (p >= 100) this.awardAchievement('score100');
-    if (p >= 200) this.awardAchievement('score200');
-    if (p >= 300) this.awardAchievement('score300');
-    if (p >= 400) this.awardAchievement('score400');
-    if (p >= 500) this.awardAchievement('score500');
+    for (const [need, id] of SCORE_MILESTONES) {
+      if (p >= need) this.awardAchievement(id);
+    }
     if (!Number.isInteger(p)) this.awardAchievement('decimal');
 
     // C-series: score 100 / 200 / 300 with 10 / 20 / 30 different characters
@@ -1909,6 +1942,7 @@ export class Game {
     this.sandwichClaimed = false;
     this.reachedSummitLowHP = false;
     this._onSummit = false;
+    this._onHelter = false;
     this._pickleSummonedThisRun = false;
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -2109,6 +2143,34 @@ export class Game {
           }
         }
         this._onSummit = onSummit;
+      }
+
+      // The helter skelter: tally all-time visits (unlocking Candy Florence
+      // at 100), and give Candy her sky-high fling whenever she stands beside
+      // it — the slide flings her up like a rocket.
+      if (this.world.helterRadius) {
+        const hdx = this.player.position.x - this.world.helterX;
+        const hdz = this.player.position.z - this.world.helterZ;
+        const zone = this.world.helterRadius + 3;
+        const nearHelter = hdx * hdx + hdz * hdz < zone * zone;
+        if (nearHelter && !this._onHelter) {
+          this.helterVisits += 1;
+          writeStorage(STORAGE_HELTER_VISITS, String(this.helterVisits));
+          if (!this.candyUnlocked && this.helterVisits >= CANDY_HELTER_VISITS) {
+            this.candyUnlocked = true;
+            writeStorage(STORAGE_CANDY, '1');
+            this.runUnlockNames.push('Candy Florence');
+            this.ui.showTimeToast('★ CANDY FLORENCE UNLOCKED! ☁️');
+          }
+        }
+        this._onHelter = nearHelter;
+        // Candy Florence: the helter skelter launches her skyward each time
+        // she comes back down to earth beside it.
+        if (nearHelter && this.characterName === 'candy' && this.player.grounded) {
+          this.player.velocity.y = CANDY_LAUNCH_SPEED;
+          this.player.grounded = false;
+          this.audio.play('jump');
+        }
       }
 
       // Engine beds follow whatever the player is currently riding.

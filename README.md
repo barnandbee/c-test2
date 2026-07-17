@@ -294,6 +294,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   him once your **all-time tally of mountain-summit arrivals reaches 100**
   — every trip to the summit flag counts, and reaching it several times in
   the same run all adds up.
+- **Candy Florence** — a stick of candy floss come alive: a slim cream
+  paper cone crowned with a big fluffy cloud of spun pink sugar, two dot
+  eyes and little sugar-nub arms. She has **no legs — she hovers just off
+  the ground** like a tiny rocket, and stepping up to the **helter skelter
+  flings her sky-high**, a massive rocket-jump each time she touches down
+  beside it. Unlock her once your **all-time tally of helter-skelter visits
+  reaches 100** (multiple visits in a single run all count).
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
   flag, planted way out on the **empty southern rim** of the map — past the
@@ -338,7 +345,7 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   trophy — but anything you **haven't unlocked yet keeps its how-to
   hidden** (shown as `???`), so nothing spoils the way to earn it; the
   description is revealed only once you've earned it. It lists score
-  milestones (50 / 100 / 200 / 300 / 400 / 500), a decimal score,
+  milestones (50 / 100 / 200 / 300 / 400 / 500 / 600), a decimal score,
   three and ten clock-tower visits in a run, a Puttmost hole-in-one,
   reaching the tube station, riding the Mystic Line, diving to the lake
   bed as Marblella, collecting a star or a cloud, clearing every star /
@@ -362,7 +369,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   both Magna Cartas as William the Conqueror and finish on exactly 106.6),
   and **I’ve Got Blisters On My Fingers 🎸** (reach the helter skelter on
   300+). Earned trophies are saved locally
-  and announced with a 🏆 toast the moment you earn them. Two lifetime stats
+  and announced with a 🏆 toast the moment you earn them. The **score
+  milestones are credited retroactively against your saved high score** —
+  so if a new milestone (like the 600 **Sextuple Ton 💎**) is added in a
+  later update, your best past run counts toward it automatically, no
+  replay needed. Two lifetime stats
   sit up top: your **all-time points** (summed across every run) and your
   **favourite hero** (the character you've played the most, with its run
   count).

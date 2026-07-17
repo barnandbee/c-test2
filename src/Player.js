@@ -113,6 +113,7 @@ export class Player {
     this.isGlitchy = false;  // Error #42's intermittent reality problem
     this.isFloaty = false;   // Haunted Sweatshirt's ethereal hover
     this.isBouncy = false;   // Pickle Stick hops to get around
+    this.hoverHeight = 0;    // Candy Florence rests this far above the ground
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -152,6 +153,7 @@ export class Player {
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
+    else if (this.character === 'candy') this.root = this.buildCandyFlorence();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -3497,6 +3499,109 @@ export class Player {
   }
 
   /**
+   * Candy Florence — a stick of candy floss come alive: a slim paper cone
+   * for a body, crowned with a big fluffy cloud of spun pink sugar, with
+   * two dot eyes and stubby sugar-nub arms. She has no legs — she hovers
+   * just off the ground like a little rocket (see hoverHeight), and the
+   * helter skelter flings her sky-high.
+   */
+  buildCandyFlorence() {
+    const root = new THREE.Group();
+    root.name = 'candy';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const flossMat = track(createToonMaterial({ color: 0xf79ac8, rim: { color: 0xffd6ec, strength: 0.5, threshold: 0.5 } }));
+    const flossPaleMat = track(createToonMaterial({ color: 0xffc2e0, rim: { color: 0xffffff, strength: 0.4, threshold: 0.55 } }));
+    const flossDeepMat = track(createToonMaterial({ color: 0xe86fb0, rim: { color: 0xffb0da, strength: 0.4, threshold: 0.55 } }));
+    const coneMat = track(createToonMaterial({ color: 0xf2ede0, rim: { color: 0xffffff, strength: 0.25, threshold: 0.72 } }));
+    const stripeMat = track(createToonMaterial({ color: 0xdc6ba6 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14121a }));
+
+    // She floats just off the turf with a gentle drifting bob.
+    this.hoverHeight = 0.55;
+    this.isFloaty = true;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.5;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the paper cone handle, tip down ------------------------------------
+    const cone = new THREE.Mesh(track(new THREE.ConeGeometry(0.16, 0.62, 12)), coneMat);
+    cone.position.y = 0.0;
+    cone.rotation.x = Math.PI; // point the tip downward
+    cone.castShadow = true;
+    body.add(cone);
+    // A candy-stripe band around the cone.
+    const band = new THREE.Mesh(track(new THREE.CylinderGeometry(0.135, 0.115, 0.08, 12)), stripeMat);
+    band.position.y = 0.02;
+    body.add(band);
+
+    // --- the fluffy spun-sugar head -----------------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.5;
+    body.add(head);
+    this.headGroup = head;
+
+    const puffs = [
+      [0, 0.06, 0, 0.28, flossMat],
+      [0.22, 0.0, 0.04, 0.2, flossPaleMat],
+      [-0.21, 0.02, -0.02, 0.2, flossDeepMat],
+      [0.08, 0.2, -0.08, 0.19, flossPaleMat],
+      [-0.1, 0.22, 0.08, 0.18, flossMat],
+      [0.02, 0.05, 0.22, 0.18, flossDeepMat],
+      [0.04, -0.02, -0.22, 0.17, flossPaleMat]
+    ];
+    for (const [px, py, pz, r, mat] of puffs) {
+      const puff = new THREE.Mesh(track(new THREE.IcosahedronGeometry(r, 1)), mat);
+      puff.position.set(px, py, pz);
+      puff.castShadow = true;
+      head.add(puff);
+    }
+
+    // --- two dot eyes peering out of the floss ------------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 12, 10)), coneMat);
+      white.position.set(side * 0.11, 0.02, 0.26);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.11, 0.02, 0.32);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.11, baseY: 0.02, seed: Math.random() * 6.28 });
+    }
+
+    // --- stubby sugar-nub arms ----------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.035, 0.03, 0.24, 8));
+    armGeo.translate(0, -0.12, 0);
+    const nubGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.16, 0.24, 0.0);
+      pivot.rotation.z = -side * 0.8;
+      const arm = new THREE.Mesh(armGeo, flossMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const nub = new THREE.Mesh(nubGeo, flossPaleMat);
+      nub.position.set(0, -0.26, 0);
+      pivot.add(nub);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // No legs: she hovers, so movement reads as a soft rocket hover.
+    this.legs = [];
+
+    return root;
+  }
+
+  /**
    * Perpendicular Bird — a pencil sketch that got up and walked off the
    * page. A flat plane bearing a hand-drawn bird in profile, facing
    * right, tiny top hat, both wings locked perfectly horizontal, and a
@@ -4619,7 +4724,8 @@ export class Player {
     // ---- ground resolution ---------------------------------------------------
     // Terrain, or a stair/platform top when one is underfoot and in reach.
     const terrainH = this.world.getHeight(pos.x, pos.z);
-    const groundH = this.world.getGroundHeight(pos.x, pos.z, pos.y, terrainH);
+    // Candy Florence hovers: her resting floor sits a little above the turf.
+    const groundH = this.world.getGroundHeight(pos.x, pos.z, pos.y, terrainH) + this.hoverHeight;
     if (groundH > terrainH + 1e-3) {
       this.groundNormal.set(0, 1, 0); // platforms are dead level
     } else {

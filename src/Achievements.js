@@ -13,6 +13,7 @@ export const TROPHIES = [
   { id: 'score300', medal: '🥇', title: 'Triple Ton', desc: 'Score 300 or more in a run.' },
   { id: 'score400', medal: '🏆', title: 'Quadruple Ton', desc: 'Score 400 or more in a run.' },
   { id: 'score500', medal: '👑', title: 'Quintuple Ton', desc: 'Score 500 or more in a run.' },
+  { id: 'score600', medal: '💎', title: 'Sextuple Ton', desc: 'Score 600 or more in a run.' },
   { id: 'decimal', medal: '🔢', title: 'Irrational', desc: 'Score a decimal (fractional) score.' },
   { id: 'tower3', medal: '⏰', title: 'Timekeeper', desc: 'Visit the clock tower 3 times in one run.' },
   { id: 'tower10', medal: '🕰️', title: 'Horologist', desc: 'Visit the clock tower 10 times in one run.' },
@@ -82,5 +83,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'glassbadger', name: 'Glass Badger', how: 'Score an all-time total of 20000 points across every run.' },
   { key: 'mcdonovan', name: 'McDonovan', how: 'Ride the Mystic Line all the way to Docklands.' },
   { key: 'prunella', name: 'Prunella Registered Voter', how: 'Finish a run having collected the same number of clouds as golden pine cones (at least one of each).' },
-  { key: 'gary', name: 'Gary Mountain', how: 'Reach the mountain summit 100 times across all your runs (multiple summits in one run all count).' }
+  { key: 'gary', name: 'Gary Mountain', how: 'Reach the mountain summit 100 times across all your runs (multiple summits in one run all count).' },
+  { key: 'candy', name: 'Candy Florence', how: 'Visit the helter skelter 100 times across all your runs (multiple visits in one run all count).' }
 ];
