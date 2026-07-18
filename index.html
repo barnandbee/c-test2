@@ -169,7 +169,10 @@
           </button>
         </div>
       </div>
-      <button id="start-btn" type="button">Enter the Forest</button>
+      <div class="menu-start-row">
+        <button id="start-btn" type="button">Enter the Forest Alone</button>
+        <button id="start-vs-btn" type="button">Enter the Forest Against</button>
+      </div>
       <p class="menu-controls">
         <b>WASD</b> move &nbsp;&middot;&nbsp; <b>Space</b> jump &nbsp;&middot;&nbsp;
         <b>Mouse</b> camera &nbsp;&middot;&nbsp; <b>2&times;click</b> ride
@@ -195,6 +198,12 @@
     <div id="points-panel" class="hud-card">
       <span class="hud-icon cone-icon" aria-hidden="true"></span>
       <span id="points-value">0</span>
+    </div>
+
+    <div id="vs-panel" class="hud-card hidden">
+      <span id="vs-badge" aria-hidden="true">🤖</span>
+      <span id="vs-name">CPU</span>
+      <span id="vs-score">0</span>
     </div>
 
     <button id="mute-btn" class="hud-card" type="button" aria-label="Toggle sound">
@@ -278,6 +287,7 @@
         <span id="high-score">0</span>
         <span id="new-high-badge" class="hidden">NEW!</span>
       </div>
+      <p id="vs-result" class="hidden"></p>
       <div id="character-select" class="hidden">
         <p id="unlock-note" class="hidden">&#9733; Badgerette unlocked!</p>
         <p class="select-label">Choose your hero</p>

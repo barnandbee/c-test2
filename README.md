@@ -62,6 +62,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 
 ## Gameplay
 
+- **Two ways in** — the menu offers **Enter the Forest Alone** (the classic
+  solo run) or **Enter the Forest Against**: a head-to-head race against a
+  **CPU rival** who roams the same map, hunting the same items. The rival's
+  hero is drawn at random from the **full roster — locked characters
+  included** (consider it a teaser of who's still out there). It's a greedy
+  forager: it weighs every ground-reachable item by value-per-metre and
+  beelines for the best one, hopping obstacles and leaving the treetop
+  cherries and sky-high stars to you. Whatever it grabs first is **gone for
+  good** — its running score sits in a chip at the top right, and the
+  game-over card declares the winner. Restarting a versus run summons a
+  fresh, freshly-drawn rival. (The CPU can't be hurt by hazards and doesn't
+  earn achievements — it's purely there to out-collect you.)
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -395,6 +407,8 @@ src/
   PuttingGame.js    'Puttmost Respect' putting minigame (ball physics,
                     power meter, slope break, club + aim arrow)
   VeggieTacToe.js   'Veggie Tac Toe' — tic-tac-toe vs Turnip Scart
+  Bot.js            the versus-mode CPU rival (greedy-collector brain
+                    feeding a synthetic input into a second Player)
   Particles.js      GPU burst pool, gold aura, poison cloud point systems
   Shaders.js        toon/rim/sway/pulse material patches, exponential
                     height fog, sky gradient, all particle GLSL

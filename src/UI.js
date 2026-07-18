@@ -49,6 +49,11 @@ export class UI {
     this.menuBestRow = document.getElementById('menu-best-row');
     this.menuBestValue = document.getElementById('menu-best');
     this.startBtn = document.getElementById('start-btn');
+    this.startVsBtn = document.getElementById('start-vs-btn');
+    this.vsPanel = document.getElementById('vs-panel');
+    this.vsName = document.getElementById('vs-name');
+    this.vsScore = document.getElementById('vs-score');
+    this.vsResult = document.getElementById('vs-result');
 
     this._flashTimeout = 0;
     this._popTimeout = 0;
@@ -148,6 +153,22 @@ export class UI {
     this.finalScore.textContent = formatScore(opts.score);
     this.highScoreValue.textContent = formatScore(opts.highScore);
     this.newHighBadge.classList.toggle('hidden', !opts.isNewHigh);
+
+    // Versus verdict: who out-foraged whom.
+    if (this.vsResult) {
+      const vs = opts.versus;
+      this.vsResult.classList.toggle('hidden', !vs);
+      if (vs) {
+        const you = opts.score;
+        const cpu = vs.cpuScore;
+        this.vsResult.textContent =
+          you > cpu
+            ? `🏆 You beat ${vs.cpuName} ${formatScore(you)} – ${formatScore(cpu)}!`
+            : you < cpu
+              ? `🤖 ${vs.cpuName} wins ${formatScore(cpu)} – ${formatScore(you)}.`
+              : `🤝 Dead heat — ${formatScore(you)} apiece.`;
+      }
+    }
 
     const newly = opts.newlyUnlockedNames || [];
     this.unlockNote.classList.toggle('hidden', newly.length === 0);
@@ -352,6 +373,24 @@ export class UI {
 
   bindStart(callback) {
     if (this.startBtn) this.startBtn.addEventListener('click', callback);
+  }
+
+  bindStartVersus(callback) {
+    if (this.startVsBtn) this.startVsBtn.addEventListener('click', callback);
+  }
+
+  /** Show/hide the versus HUD chip and set the rival's name. */
+  setVersus(active, name = '') {
+    if (!this.vsPanel) return;
+    this.vsPanel.classList.toggle('hidden', !active);
+    if (active) {
+      this.vsName.textContent = name;
+      this.vsScore.textContent = '0';
+    }
+  }
+
+  setCpuScore(value) {
+    if (this.vsScore) this.vsScore.textContent = formatScore(value);
   }
 
   hideGameOver() {

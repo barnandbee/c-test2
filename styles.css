@@ -196,13 +196,21 @@ body {
   margin-bottom: 12px;
 }
 
-#start-btn {
+.menu-start-row {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#start-btn,
+#start-vs-btn {
   font-family: inherit;
   font-size: 17px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  padding: 15px 52px;
+  padding: 15px 34px;
   color: #1c1233;
   background: linear-gradient(90deg, var(--accent-warm), var(--accent-gold));
   border: none;
@@ -212,11 +220,18 @@ body {
   animation: start-pulse 2.4s ease-in-out infinite;
 }
 
-#start-btn:hover {
+/* The versus door glows a cooler colour — something is waiting in there. */
+#start-vs-btn {
+  background: linear-gradient(90deg, #c58cff, #7fd0ff);
+}
+
+#start-btn:hover,
+#start-vs-btn:hover {
   transform: translateY(-2px) scale(1.04);
 }
 
-#start-btn:active {
+#start-btn:active,
+#start-vs-btn:active {
   transform: scale(0.97);
 }
 
@@ -320,6 +335,40 @@ body {
 
 #mute-btn.muted {
   opacity: 0.55;
+}
+
+/* Versus mode: the CPU rival's running score, tucked under the mute pill. */
+#vs-panel {
+  position: fixed;
+  top: 122px;
+  right: 20px;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+#vs-panel #vs-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(243, 239, 255, 0.65);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#vs-panel #vs-score {
+  color: #c58cff;
+}
+
+#vs-result {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #c58cff;
 }
 
 #mute-btn:active {

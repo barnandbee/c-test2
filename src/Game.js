@@ -31,6 +31,7 @@ import {
   PlatinumGuava,
   disposeEntityAssets
 } from './Entities.js';
+import { CpuRival } from './Bot.js';
 import { PuttingGame } from './PuttingGame.js';
 import { VeggieTacToe } from './VeggieTacToe.js';
 import { SoundFX } from './Audio.js';
@@ -398,10 +399,14 @@ export class Game {
     // The run doesn't begin until ENTER THE FOREST; meanwhile the camera
     // drifts cinematically around the hero.
     this.inMenu = true;
+    this.versus = false;   // head-to-head against the CPU rival?
+    this.cpu = null;       // the CpuRival, when versus is on
+    this._cpuCenter = new THREE.Vector3();
     this.ui.setRoster(this.getUnlockedMap(), this.characterName);
     this.ui.setMenuBest(this.highScore);
     this.ui.showMenu();
-    this.ui.bindStart(() => this.beginRun());
+    this.ui.bindStart(() => this.beginRun(false));
+    this.ui.bindStartVersus(() => this.beginRun(true));
 
     // --- loop ---------------------------------------------------------------------
     this.clock = new THREE.Clock();
@@ -647,6 +652,30 @@ export class Game {
         size: isEgg ? 52 : 38,
         life: isEgg ? 1.0 : 0.7
       });
+    }
+
+    // The CPU rival races for the same pool: whatever it reaches first is
+    // gone for good — points on its board, no toasts, no achievements.
+    if (this.cpu) {
+      const cc = this.cpu.player.getColliderCenter(this._cpuCenter);
+      const cr = this.cpu.player.colliderRadius;
+      for (const item of this.collectibles) {
+        if (item.state !== 'idle') continue;
+        const dx = cc.x - item.group.position.x;
+        const dy = cc.y - item.group.position.y;
+        const dz = cc.z - item.group.position.z;
+        const reach = cr + item.pickupRadius;
+        if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
+        item.startCollect();
+        this.cpu.points += item.value;
+        this.ui.setCpuScore(this.cpu.points);
+        this.particles.spawnBurst(item.group.position, item.burstColor, {
+          count: 14,
+          speed: 3.2,
+          size: 32,
+          life: 0.5
+        });
+      }
     }
 
     // Reap finished pickups and release their GPU resources.
@@ -1124,7 +1153,7 @@ export class Game {
   }
 
   /** Leave the welcome menu and start the clock. */
-  beginRun() {
+  beginRun(versus = false) {
     if (!this.inMenu) return;
     this.audio.resume(); // the "Enter the Forest" click unlocks audio
     const chosen = this.ui.getSelectedCharacter() || this.characterName;
@@ -1132,9 +1161,33 @@ export class Game {
       this.setCharacter(chosen);
     }
     this.recordCharacterUse(); // tally this run against the chosen hero
+    this.versus = versus;
+    if (versus) this.spawnCpu();
+    this.ui.setVersus(versus, versus ? this.characterDisplayName(this.cpu.player.character) : '');
     this.inMenu = false;
     this.clock.getDelta(); // flush menu time so the countdown starts clean
     this.ui.hideMenu();
+  }
+
+  /**
+   * Versus mode: summon the CPU rival — a second, bot-driven Player with
+   * a hero drawn from the FULL roster, locked ones included (consider it
+   * a teaser of what's still out there).
+   */
+  spawnCpu() {
+    this.disposeCpu();
+    const pool = CHARACTER_UNLOCKS.map((c) => c.key);
+    const key = pool[Math.floor(Math.random() * pool.length)];
+    const spawn = new THREE.Vector3(3, this.world.getHeight(3, -3), -3);
+    const rival = new Player(this.world, spawn, key);
+    this.scene.add(rival.root);
+    this.cpu = new CpuRival(this, rival);
+  }
+
+  disposeCpu() {
+    if (!this.cpu) return;
+    this.cpu.player.dispose();
+    this.cpu = null;
   }
 
   /**
@@ -1904,7 +1957,13 @@ export class Game {
       reason,
       unlocked: this.getUnlockedMap(),
       newlyUnlockedNames,
-      currentCharacter: this.characterName
+      currentCharacter: this.characterName,
+      versus: this.versus && this.cpu
+        ? {
+            cpuName: this.characterDisplayName(this.cpu.player.character),
+            cpuScore: this.cpu.points
+          }
+        : null
     });
   }
 
@@ -1925,6 +1984,11 @@ export class Game {
     this.clearEntities();
     this.spawnEntities();
     this.player.reset();
+    // Versus rematch: a fresh rival, freshly drawn from the full roster.
+    if (this.versus) {
+      this.spawnCpu();
+      this.ui.setVersus(true, this.characterDisplayName(this.cpu.player.character));
+    }
     this.cameraRig.snapTo(this.player.position);
     this.health = 100;
     this.points = 0;
@@ -2093,6 +2157,7 @@ export class Game {
 
       this.handleDoubleTap();
       this.player.update(dt, this.input, this.cameraRig.yaw);
+      if (this.cpu) this.cpu.update(dt);
       this.handlePickups();
       this.handleHazards();
       this.handleClockTower();
@@ -2325,6 +2390,7 @@ export class Game {
     this.clearEntities();
     disposeEntityAssets();
     this.particles.dispose();
+    this.disposeCpu();
     this.player.dispose();
     this.world.dispose();
     this.input.dispose();
