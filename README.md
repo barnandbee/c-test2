@@ -73,7 +73,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   good** — its running score sits in a chip at the top right, and the
   game-over card declares the winner. Restarting a versus run summons a
   fresh, freshly-drawn rival. (The CPU can't be hurt by hazards and doesn't
-  earn achievements — it's purely there to out-collect you.)
+  earn achievements — it's purely there to out-collect you.) Picking a
+  versus door reveals **two rivals to choose from**: **🌱 Simple Seeds**,
+  the mild forager, and **🥜 Nefarious Nuts** — who thinks faster, prizes
+  the big-ticket items harder, hustles a little quicker, wears little 😈
+  horns on the scoreboard, and **rides the Mystic Line** between the cave,
+  Docklands and the copse when the good stuff is a long haul away. Either
+  way the rival now keeps a grudge list: any prize it can't actually get
+  to (walls happen) is abandoned and left off the menu for a while, so it
+  never stands around grinding its nose against the cottage.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.

@@ -384,7 +384,7 @@ export class Game {
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
     this.ui.bindRestart(() => this.restart(false));
-    this.ui.bindRestartVersus(() => this.restart(true));
+    this.ui.bindRestartVersus((difficulty) => this.restart(true, difficulty));
     this.ui.bindTravel(
       (dest) => this.travelTo(dest),
       () => this.closeTravel()
@@ -402,12 +402,14 @@ export class Game {
     this.inMenu = true;
     this.versus = false;   // head-to-head against the CPU rival?
     this.cpu = null;       // the CpuRival, when versus is on
+    this.cpuDifficulty = 'easy'; // 'easy' = Simple Seeds, 'hard' = Nefarious Nuts
     this._cpuCenter = new THREE.Vector3();
+    this._lineStops = null;
     this.ui.setRoster(this.getUnlockedMap(), this.characterName);
     this.ui.setMenuBest(this.highScore);
     this.ui.showMenu();
     this.ui.bindStart(() => this.beginRun(false));
-    this.ui.bindStartVersus(() => this.beginRun(true));
+    this.ui.bindStartVersus((difficulty) => this.beginRun(true, difficulty));
 
     // --- loop ---------------------------------------------------------------------
     this.clock = new THREE.Clock();
@@ -1154,7 +1156,7 @@ export class Game {
   }
 
   /** Leave the welcome menu and start the clock. */
-  beginRun(versus = false) {
+  beginRun(versus = false, difficulty = 'easy') {
     if (!this.inMenu) return;
     this.audio.resume(); // the "Enter the Forest" click unlocks audio
     const chosen = this.ui.getSelectedCharacter() || this.characterName;
@@ -1163,11 +1165,39 @@ export class Game {
     }
     this.recordCharacterUse(); // tally this run against the chosen hero
     this.versus = versus;
+    this.cpuDifficulty = difficulty;
     if (versus) this.spawnCpu();
-    this.ui.setVersus(versus, versus ? this.characterDisplayName(this.cpu.player.character) : '');
+    this.ui.setVersus(versus, versus ? this.cpuDisplayName() : '');
     this.inMenu = false;
     this.clock.getDelta(); // flush menu time so the countdown starts clean
     this.ui.hideMenu();
+  }
+
+  /** The rival's HUD name — horned when it's playing Nefarious Nuts. */
+  cpuDisplayName() {
+    if (!this.cpu) return '';
+    const name = this.characterDisplayName(this.cpu.player.character);
+    return this.cpuDifficulty === 'hard' ? `😈 ${name}` : name;
+  }
+
+  /**
+   * The three surface stops of the Mystic Line, for the nefarious rival:
+   * the cave mouth, the Docklands lakeshore, and the forest copse. Same
+   * landing spots the player's rides use.
+   */
+  getLineStops() {
+    if (this._lineStops) return this._lineStops;
+    const w = this.world;
+    const len = Math.hypot(w.lakeCenterX, w.lakeCenterZ) || 1;
+    this._lineStops = [
+      { x: w.caveX - w.caveDirX * 5, z: w.caveZ - w.caveDirZ * 5 },
+      {
+        x: w.lakeCenterX - (w.lakeCenterX / len) * (w.lakeRadius + 3.5),
+        z: w.lakeCenterZ - (w.lakeCenterZ / len) * (w.lakeRadius + 3.5)
+      },
+      { x: w.copsePos.x + 1.4, z: w.copsePos.z + 0.8 }
+    ];
+    return this._lineStops;
   }
 
   /**
@@ -1182,7 +1212,7 @@ export class Game {
     const spawn = new THREE.Vector3(3, this.world.getHeight(3, -3), -3);
     const rival = new Player(this.world, spawn, key);
     this.scene.add(rival.root);
-    this.cpu = new CpuRival(this, rival);
+    this.cpu = new CpuRival(this, rival, this.cpuDifficulty);
   }
 
   disposeCpu() {
@@ -1961,15 +1991,16 @@ export class Game {
       currentCharacter: this.characterName,
       versus: this.versus && this.cpu
         ? {
-            cpuName: this.characterDisplayName(this.cpu.player.character),
+            cpuName: this.cpuDisplayName(),
             cpuScore: this.cpu.points
           }
         : null
     });
   }
 
-  restart(versus = this.versus) {
+  restart(versus = this.versus, difficulty = this.cpuDifficulty) {
     this.versus = versus;
+    this.cpuDifficulty = difficulty;
     this.audio.resume(); // the restart click is a fresh user gesture
     this.audio.stopAll();
     this._vehicleSound = null;
@@ -1990,7 +2021,7 @@ export class Game {
     // Going solo instead? The old rival packs up and leaves.
     if (this.versus) {
       this.spawnCpu();
-      this.ui.setVersus(true, this.characterDisplayName(this.cpu.player.character));
+      this.ui.setVersus(true, this.cpuDisplayName());
     } else {
       this.disposeCpu();
       this.ui.setVersus(false);

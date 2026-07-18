@@ -51,6 +51,12 @@ export class UI {
     this.menuBestValue = document.getElementById('menu-best');
     this.startBtn = document.getElementById('start-btn');
     this.startVsBtn = document.getElementById('start-vs-btn');
+    this.vsDiffRow = document.getElementById('vs-difficulty-row');
+    this.vsEasyBtn = document.getElementById('vs-easy-btn');
+    this.vsHardBtn = document.getElementById('vs-hard-btn');
+    this.restartDiffRow = document.getElementById('restart-difficulty-row');
+    this.restartEasyBtn = document.getElementById('restart-easy-btn');
+    this.restartHardBtn = document.getElementById('restart-hard-btn');
     this.vsPanel = document.getElementById('vs-panel');
     this.vsName = document.getElementById('vs-name');
     this.vsScore = document.getElementById('vs-score');
@@ -178,6 +184,7 @@ export class UI {
     }
 
     this.setRoster(opts.unlocked, opts.currentCharacter);
+    if (this.restartDiffRow) this.restartDiffRow.classList.add('hidden');
     this.gameOver.classList.add('visible');
   }
 
@@ -376,8 +383,19 @@ export class UI {
     if (this.startBtn) this.startBtn.addEventListener('click', callback);
   }
 
+  /**
+   * The versus doors open onto a difficulty choice: 'Against' reveals the
+   * Simple Seeds / Nefarious Nuts row, and the pick starts the run.
+   * `callback` receives 'easy' or 'hard'.
+   */
   bindStartVersus(callback) {
-    if (this.startVsBtn) this.startVsBtn.addEventListener('click', callback);
+    if (this.startVsBtn && this.vsDiffRow) {
+      this.startVsBtn.addEventListener('click', () => {
+        this.vsDiffRow.classList.toggle('hidden');
+      });
+    }
+    if (this.vsEasyBtn) this.vsEasyBtn.addEventListener('click', () => callback('easy'));
+    if (this.vsHardBtn) this.vsHardBtn.addEventListener('click', () => callback('hard'));
   }
 
   /** Show/hide the versus HUD chip and set the rival's name. */
@@ -408,8 +426,15 @@ export class UI {
     this.restartBtn.addEventListener('click', callback);
   }
 
+  /** Same difficulty choice, at the game-over card. */
   bindRestartVersus(callback) {
-    if (this.restartVsBtn) this.restartVsBtn.addEventListener('click', callback);
+    if (this.restartVsBtn && this.restartDiffRow) {
+      this.restartVsBtn.addEventListener('click', () => {
+        this.restartDiffRow.classList.toggle('hidden');
+      });
+    }
+    if (this.restartEasyBtn) this.restartEasyBtn.addEventListener('click', () => callback('easy'));
+    if (this.restartHardBtn) this.restartHardBtn.addEventListener('click', () => callback('hard'));
   }
 
   dispose() {

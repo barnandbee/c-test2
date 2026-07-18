@@ -225,6 +225,50 @@ body {
   background: linear-gradient(90deg, #c58cff, #7fd0ff);
 }
 
+/* Versus difficulty picker: revealed by the 'Against' doors. */
+.difficulty-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.diff-easy,
+.diff-hard {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 11px 22px;
+  color: #1c1233;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.diff-easy {
+  background: linear-gradient(90deg, #9fe6a0, #d9f7a8);
+  box-shadow: 0 6px 20px rgba(140, 220, 150, 0.3);
+}
+
+.diff-hard {
+  background: linear-gradient(90deg, #ff9a76, #ff6b9d);
+  box-shadow: 0 6px 20px rgba(255, 120, 130, 0.35);
+}
+
+.diff-easy:hover,
+.diff-hard:hover {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.diff-easy:active,
+.diff-hard:active {
+  transform: scale(0.97);
+}
+
 #start-btn:hover,
 #start-vs-btn:hover {
   transform: translateY(-2px) scale(1.04);

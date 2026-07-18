@@ -114,6 +114,7 @@ export class Player {
     this.isFloaty = false;   // Haunted Sweatshirt's ethereal hover
     this.isBouncy = false;   // Pickle Stick hops to get around
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
+    this.moveScale = 1;      // per-instance top-speed multiplier (CPU rival tuning)
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -4644,8 +4645,8 @@ export class Player {
     if (this.grounded && !steep) {
       // Accelerate toward the wish velocity; decelerate via friction when
       // idle. moveToward never overshoots, so there is no oscillation.
-      const targetX = wish.x * T.maxSpeed;
-      const targetZ = wish.z * T.maxSpeed;
+      const targetX = wish.x * T.maxSpeed * this.moveScale;
+      const targetZ = wish.z * T.maxSpeed * this.moveScale;
       const rate = hasInput ? T.groundAccel : T.groundFriction;
       vel.x = moveToward(vel.x, targetX, rate * dt);
       vel.z = moveToward(vel.z, targetZ, rate * dt);
@@ -4657,7 +4658,7 @@ export class Player {
         const preSpeed = Math.hypot(vel.x, vel.z);
         vel.x += wish.x * T.airAccel * dt;
         vel.z += wish.z * T.airAccel * dt;
-        const cap = Math.max(T.maxSpeed, preSpeed);
+        const cap = Math.max(T.maxSpeed * this.moveScale, preSpeed);
         const speed = Math.hypot(vel.x, vel.z);
         if (speed > cap) {
           const s = cap / speed;
