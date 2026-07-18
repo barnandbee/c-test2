@@ -383,7 +383,8 @@ export class Game {
     this.ui.setHealth(this.health);
     this.ui.setPointsSilent(0);
     this.ui.setTimer(this.timeLeft);
-    this.ui.bindRestart(() => this.restart());
+    this.ui.bindRestart(() => this.restart(false));
+    this.ui.bindRestartVersus(() => this.restart(true));
     this.ui.bindTravel(
       (dest) => this.travelTo(dest),
       () => this.closeTravel()
@@ -1967,7 +1968,8 @@ export class Game {
     });
   }
 
-  restart() {
+  restart(versus = this.versus) {
+    this.versus = versus;
     this.audio.resume(); // the restart click is a fresh user gesture
     this.audio.stopAll();
     this._vehicleSound = null;
@@ -1985,9 +1987,13 @@ export class Game {
     this.spawnEntities();
     this.player.reset();
     // Versus rematch: a fresh rival, freshly drawn from the full roster.
+    // Going solo instead? The old rival packs up and leaves.
     if (this.versus) {
       this.spawnCpu();
       this.ui.setVersus(true, this.characterDisplayName(this.cpu.player.character));
+    } else {
+      this.disposeCpu();
+      this.ui.setVersus(false);
     }
     this.cameraRig.snapTo(this.player.position);
     this.health = 100;

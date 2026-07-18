@@ -2194,12 +2194,20 @@ body {
   text-shadow: 0 4px 18px rgba(255, 212, 79, 0.4);
 }
 
-#restart-btn {
+.restart-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#restart-btn,
+#restart-vs-btn {
   font-family: inherit;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  padding: 14px 44px;
+  padding: 14px 28px;
   color: #1c1233;
   background: linear-gradient(90deg, var(--accent-warm), var(--accent-gold));
   border: none;
@@ -2209,11 +2217,23 @@ body {
   box-shadow: 0 8px 26px rgba(255, 178, 110, 0.35);
 }
 
-#restart-btn:hover {
+/* The versus door keeps its cooler glow here too. */
+#restart-vs-btn {
+  background: linear-gradient(90deg, #c58cff, #7fd0ff);
+  box-shadow: 0 8px 26px rgba(150, 140, 255, 0.35);
+}
+
+#restart-btn:hover,
+#restart-vs-btn:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 12px 34px rgba(255, 178, 110, 0.5);
 }
 
-#restart-btn:active {
+#restart-vs-btn:hover {
+  box-shadow: 0 12px 34px rgba(150, 140, 255, 0.5);
+}
+
+#restart-btn:active,
+#restart-vs-btn:active {
   transform: translateY(0) scale(0.98);
 }

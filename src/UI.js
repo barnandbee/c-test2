@@ -29,6 +29,7 @@ export class UI {
     this.characterSelect = document.getElementById('character-select');
     this.unlockNote = document.getElementById('unlock-note');
     this.restartBtn = document.getElementById('restart-btn');
+    this.restartVsBtn = document.getElementById('restart-vs-btn');
     this.hint = document.getElementById('hint');
     this.puttPanel = document.getElementById('putt-panel');
     this.puttStrokes = document.getElementById('putt-strokes');
@@ -405,6 +406,10 @@ export class UI {
 
   bindRestart(callback) {
     this.restartBtn.addEventListener('click', callback);
+  }
+
+  bindRestartVersus(callback) {
+    if (this.restartVsBtn) this.restartVsBtn.addEventListener('click', callback);
   }
 
   dispose() {
