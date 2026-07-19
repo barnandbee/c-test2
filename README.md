@@ -212,10 +212,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 - **The Mystic Line** — the ticket machine operates only during the
   **morning rush (06:00–09:00 on YOUR clock)** — or for a customer
   presenting **exactly 281 points**. Exact change only. When it hums
-  into life it offers three destinations (tap, or press 1/2/3):
+  into life it offers four destinations (tap, or press 1/2/3/4):
   **A) Upper Cottage Lane** — emerges at the cave mouth, where a
   roundel sign appears, **+55.5**; **B) Docklands** — the lake shore,
   new roundel, worth the same **+63.14159** as Red October herself;
+  **D) Cactus Junction** — the desert's secret stop, listed only on
+  the machine itself: ride there and its roundel appears among the
+  saguaros, worth **+33.1010** once per run (the three-station
+  trophies still mean the three *original* stops);
   **C) Mystic Forest Central** — end of the line: a copse of leafy,
   twinkling trees on the floor of a hidden dell, **sealed under a
   stone dome** — the ring wall is a slide, the sky is closed, and no
@@ -321,6 +325,19 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   flings her sky-high**, a massive rocket-jump each time she touches down
   beside it. Unlock her once your **all-time tally of helter-skelter visits
   reaches 100** (multiple visits in a single run all count).
+- **Cactus Balloon** — a plump ribbed cactus that floats like a party
+  balloon on a trailing string, in a **backwards baseball cap**. Unlock it
+  by **riding the hovercraft, the rocket AND the balloon in one run, then
+  taking the Mystic Line to Cactus Junction**.
+- **Negative Nelly** — a small blue elephant having a genuinely bad day:
+  drooping trunk, floppy ears, heavy-lidded sorrowful eyes and a
+  downturned mouth. Unlocked by **finishing a run with a negative score**
+  (the whirlpool can arrange that).
+- **Triangle the Fedora** — the third dapper polygon: a crisp golden
+  triangle under a properly pinched felt **fedora**, on stick legs.
+  Unlocked by **beating Turnip Scart at Veggie Tac Toe AND sinking a
+  hole-in-one in the same run, while playing as Rhombus the Hat or
+  Dodecahedron the Beret**.
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
   flag, planted way out on the **empty southern rim** of the map — past the

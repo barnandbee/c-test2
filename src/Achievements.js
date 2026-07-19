@@ -84,5 +84,8 @@ export const CHARACTER_UNLOCKS = [
   { key: 'mcdonovan', name: 'McDonovan', how: 'Ride the Mystic Line all the way to Docklands.' },
   { key: 'prunella', name: 'Prunella Registered Voter', how: 'Finish a run having collected the same number of clouds as golden pine cones (at least one of each).' },
   { key: 'gary', name: 'Gary Mountain', how: 'Reach the mountain summit 100 times across all your runs (multiple summits in one run all count).' },
-  { key: 'candy', name: 'Candy Florence', how: 'Visit the helter skelter 100 times across all your runs (multiple visits in one run all count).' }
+  { key: 'candy', name: 'Candy Florence', how: 'Visit the helter skelter 100 times across all your runs (multiple visits in one run all count).' },
+  { key: 'cactusballoon', name: 'Cactus Balloon', how: 'Ride the hovercraft, the rocket AND the balloon in one run, then take the Mystic Line to Cactus Junction.' },
+  { key: 'nelly', name: 'Negative Nelly', how: 'Finish a run with a negative score.' },
+  { key: 'trifedora', name: 'Triangle the Fedora', how: 'As Rhombus the Hat or Dodecahedron the Beret: beat Turnip Scart at Veggie Tac Toe AND sink a hole-in-one in the same run.' }
 ];

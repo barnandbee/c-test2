@@ -2939,6 +2939,17 @@ export class World {
       dirZ
     );
 
+    // Out in the desert: CACTUS JUNCTION, the secret stop. Hidden until
+    // someone actually rides there.
+    const dLen = Math.hypot(this.desertX, this.desertZ) || 1;
+    this.tubeSigns.cactus = makeSign(
+      'CACTUS JUNCTION',
+      this.desertX - (this.desertX / dLen) * (this.desertRadius * 0.45) + 3,
+      this.desertZ - (this.desertZ / dLen) * (this.desertRadius * 0.45) - 2,
+      -this.desertX,
+      -this.desertZ
+    );
+
     // Inside the sealed copse: the platform sign — and the only way
     // home. Always visible; nobody outside can see it anyway.
     const copseSign = makeSign(

@@ -155,6 +155,9 @@ export class Player {
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
     else if (this.character === 'candy') this.root = this.buildCandyFlorence();
+    else if (this.character === 'cactusballoon') this.root = this.buildCactusBalloon();
+    else if (this.character === 'nelly') this.root = this.buildNegativeNelly();
+    else if (this.character === 'trifedora') this.root = this.buildTriangleFedora();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -3598,6 +3601,352 @@ export class Player {
 
     // No legs: she hovers, so movement reads as a soft rocket hover.
     this.legs = [];
+
+    return root;
+  }
+
+  /**
+   * Cactus Balloon — a plump ribbed cactus that floats like a party
+   * balloon, trailing a string, in a backwards baseball cap. No legs;
+   * it bobs above the turf the way Candy Florence does.
+   */
+  buildCactusBalloon() {
+    const root = new THREE.Group();
+    root.name = 'cactusballoon';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const cactusMat = track(createToonMaterial({ color: 0x4e9c56, rim: { color: 0xcfffd0, strength: 0.35, threshold: 0.6 } }));
+    const cactusDarkMat = track(createToonMaterial({ color: 0x3f7f4a }));
+    const capMat = track(createToonMaterial({ color: 0xd8503c, rim: { color: 0xffb0a0, strength: 0.4, threshold: 0.55 } }));
+    const capBtnMat = track(createToonMaterial({ color: 0xf2e9d8 }));
+    const stringMat = track(createToonMaterial({ color: 0xe8e2d0 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14121a }));
+    const whiteMat = track(createToonMaterial({ color: 0xf4f2ea }));
+
+    // Floats like a balloon: airborne bob plus the floaty idle sway.
+    this.hoverHeight = 0.8;
+    this.isFloaty = true;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.55;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the balloon-body: a plump ribbed barrel ----------------------------
+    const barrel = new THREE.Mesh(track(new THREE.SphereGeometry(0.42, 14, 12)), cactusMat);
+    barrel.position.y = 0.42;
+    barrel.scale.set(1, 1.25, 1);
+    barrel.castShadow = true;
+    body.add(barrel);
+    // Ribs: slim darker bands wrapped vertically around the barrel.
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI;
+      const rib = new THREE.Mesh(track(new THREE.TorusGeometry(0.42, 0.022, 6, 24)), cactusDarkMat);
+      rib.position.y = 0.42;
+      rib.scale.set(1, 1.25, 1);
+      rib.rotation.y = a;
+      body.add(rib);
+    }
+    // A pair of nub arms.
+    for (const side of [-1, 1]) {
+      const nub = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 10, 8)), cactusMat);
+      nub.position.set(side * 0.45, 0.55, 0.02);
+      nub.scale.set(1, 1.5, 1);
+      nub.castShadow = true;
+      body.add(nub);
+    }
+    this.arms = [];
+
+    // --- the backwards baseball cap ----------------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.95;
+    body.add(head);
+    this.headGroup = head;
+    const crown = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
+    crown.position.y = 0.02;
+    crown.castShadow = true;
+    head.add(crown);
+    const button = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 8, 6)), capBtnMat);
+    button.position.y = 0.3;
+    head.add(button);
+    // Backwards: the brim juts out BEHIND.
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.17, 0.035, 12, 1, false, 0, Math.PI)), capMat);
+    brim.position.set(0, 0.03, -0.28);
+    brim.rotation.y = Math.PI / 2;
+    brim.scale.set(1.5, 1, 1);
+    head.add(brim);
+
+    // --- face on the barrel -------------------------------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 12, 10)), whiteMat);
+      white.position.set(side * 0.15, 0.62, 0.36);
+      body.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.038, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.15, 0.62, 0.42);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.15, baseY: 0.62, seed: Math.random() * 6.28 });
+    }
+
+    // --- the balloon string dangling below ----------------------------------
+    const string = new THREE.Mesh(track(new THREE.CylinderGeometry(0.012, 0.012, 0.7, 6)), stringMat);
+    string.position.y = -0.32;
+    string.rotation.z = 0.12;
+    body.add(string);
+    const knot = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), stringMat);
+    knot.position.set(0.08, -0.66, 0);
+    body.add(knot);
+
+    this.legs = []; // it floats — the string is all that hangs down
+
+    return root;
+  }
+
+  /**
+   * Negative Nelly — a small blue elephant having a genuinely bad day:
+   * drooping trunk, floppy ears, sorrowful half-lidded eyes and a
+   * downturned mouth. Finishing in the red summons her.
+   */
+  buildNegativeNelly() {
+    const root = new THREE.Group();
+    root.name = 'nelly';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const blueMat = track(createToonMaterial({ color: 0x5b7fc4, rim: { color: 0xbcd2ff, strength: 0.35, threshold: 0.62 } }));
+    const blueDarkMat = track(createToonMaterial({ color: 0x47649e }));
+    const earInnerMat = track(createToonMaterial({ color: 0x8fa8d8 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14121a }));
+    const whiteMat = track(createToonMaterial({ color: 0xeef2fa }));
+    const nailMat = track(createToonMaterial({ color: 0xd8dde8 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.5;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- round slumped torso ------------------------------------------------
+    const torso = new THREE.Mesh(track(new THREE.SphereGeometry(0.42, 14, 12)), blueMat);
+    torso.position.y = 0.34;
+    torso.scale.set(1, 1.05, 0.95);
+    torso.castShadow = true;
+    body.add(torso);
+
+    // --- big sad head -------------------------------------------------------
+    const head = new THREE.Group();
+    head.position.set(0, 0.92, 0.08);
+    head.rotation.x = 0.14; // hung a little low
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.32, 14, 12)), blueMat);
+    skull.castShadow = true;
+    head.add(skull);
+
+    // Floppy ears, drooping at half-mast.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 10, 8)), blueDarkMat);
+      ear.position.set(side * 0.33, -0.02, -0.04);
+      ear.scale.set(0.28, 1.15, 0.85);
+      ear.rotation.z = side * 0.5; // drooped outward-down
+      ear.castShadow = true;
+      head.add(ear);
+      const inner = new THREE.Mesh(track(new THREE.SphereGeometry(0.15, 8, 7)), earInnerMat);
+      inner.position.set(side * 0.34, -0.03, 0.02);
+      inner.scale.set(0.18, 0.95, 0.65);
+      inner.rotation.z = side * 0.5;
+      head.add(inner);
+    }
+
+    // The trunk: segments curving down and inward — utterly deflated.
+    let tx = 0, ty = -0.08, tz = 0.3;
+    for (let i = 0; i < 5; i++) {
+      const r = 0.085 - i * 0.012;
+      const seg = new THREE.Mesh(track(new THREE.SphereGeometry(r, 10, 8)), blueMat);
+      seg.position.set(tx, ty, tz);
+      seg.castShadow = true;
+      head.add(seg);
+      ty -= 0.1 + i * 0.008;
+      tz += 0.045 - i * 0.008;
+    }
+
+    // Sorrowful eyes: whites, low pupils, and heavy slanted lids.
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 12, 10)), whiteMat);
+      white.position.set(side * 0.14, 0.08, 0.27);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.14, 0.055, 0.33); // gazing down
+      head.add(pupil);
+      const lid = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.45)), blueMat);
+      lid.position.set(side * 0.14, 0.1, 0.27);
+      lid.rotation.z = side * -0.45; // inner corners raised: classic sorrow
+      head.add(lid);
+    }
+    // A downturned mouth.
+    const mouth = new THREE.Mesh(track(new THREE.TorusGeometry(0.07, 0.016, 6, 12, Math.PI * 0.7)), eyeMat);
+    mouth.position.set(0, -0.14, 0.28);
+    mouth.rotation.z = Math.PI * 0.15 + Math.PI; // arc frowning downward
+    head.add(mouth);
+
+    // --- stumpy arms and legs with toenails --------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.09, 0.1, 0.3, 8));
+    armGeo.translate(0, -0.15, 0);
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.42, 0.5, 0);
+      pivot.rotation.z = -side * 0.25;
+      const arm = new THREE.Mesh(armGeo, blueMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+    const legGeo = track(new THREE.CylinderGeometry(0.12, 0.13, 0.4, 8));
+    legGeo.translate(0, -0.2, 0);
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.19, 0.06, 0);
+      const leg = new THREE.Mesh(legGeo, blueMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      for (let n = -1; n <= 1; n++) {
+        const nail = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), nailMat);
+        nail.position.set(n * 0.07, -0.38, 0.1);
+        pivot.add(nail);
+      }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // A little rope tail.
+    const tail = new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 0.015, 0.3, 6)), blueDarkMat);
+    tail.position.set(0, 0.25, -0.42);
+    tail.rotation.x = 0.7;
+    body.add(tail);
+
+    return root;
+  }
+
+  /**
+   * Triangle the Fedora — the third dapper polygon: a crisp triangular
+   * prism in a proper felt fedora (pinched crown, wide brim, dark band),
+   * with stick limbs. Completes the set with Rhombus and Dodecahedron.
+   */
+  buildTriangleFedora() {
+    const root = new THREE.Group();
+    root.name = 'trifedora';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const bodyMat = track(createToonMaterial({ color: 0xe8b84a, rim: { color: 0xfff0c0, strength: 0.4, threshold: 0.58 } }));
+    const fedoraMat = track(createToonMaterial({ color: 0x5a4632, rim: { color: 0xcbb99a, strength: 0.3, threshold: 0.65 } }));
+    const bandMat = track(createToonMaterial({ color: 0x2a2018 }));
+    const limbMat = track(createToonMaterial({ color: 0x3a3a42 }));
+    const shoeMat = track(createToonMaterial({ color: 0x1a1a1e }));
+    const eyeMat = track(createToonMaterial({ color: 0x14121a }));
+    const whiteMat = track(createToonMaterial({ color: 0xf4f2ea }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.6;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the triangle: a 3-sided prism standing on a corner-down edge -------
+    // A cylinder with 3 radial segments IS a triangular prism.
+    const triGeo = track(new THREE.CylinderGeometry(0.52, 0.52, 0.22, 3, 1));
+    const tri = new THREE.Mesh(triGeo, bodyMat);
+    tri.position.y = 0.42;
+    tri.rotation.x = Math.PI / 2; // flat face forward
+    tri.rotation.z = Math.PI;     // point-down? no — point UP for the hat
+    tri.castShadow = true;
+    body.add(tri);
+
+    // --- the face on the front flat --------------------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), whiteMat);
+      white.position.set(side * 0.13, 0.5, 0.13);
+      body.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.033, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.13, 0.5, 0.18);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.13, baseY: 0.5, seed: Math.random() * 6.28 });
+    }
+    const smile = new THREE.Mesh(track(new THREE.TorusGeometry(0.07, 0.015, 6, 12, Math.PI * 0.8)), eyeMat);
+    smile.position.set(0, 0.36, 0.13);
+    smile.rotation.z = Math.PI + Math.PI * 0.1;
+    body.add(smile);
+
+    // --- the fedora, perched on the apex ------------------------------------
+    const hat = new THREE.Group();
+    hat.position.y = 0.78;
+    hat.rotation.z = -0.12; // a rakish tilt
+    body.add(hat);
+    this.headGroup = hat;
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.34, 0.36, 0.035, 16)), fedoraMat);
+    brim.castShadow = true;
+    hat.add(brim);
+    const crown = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.22, 0.26, 12)), fedoraMat);
+    crown.position.y = 0.14;
+    crown.castShadow = true;
+    crown.scale.set(1, 1, 0.85); // the classic pinch
+    hat.add(crown);
+    const band = new THREE.Mesh(track(new THREE.CylinderGeometry(0.225, 0.23, 0.07, 12)), bandMat);
+    band.position.y = 0.05;
+    band.scale.set(1, 1, 0.85);
+    hat.add(band);
+
+    // --- stick arms and legs ------------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.026, 0.026, 0.34, 8));
+    armGeo.translate(0, -0.17, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.045, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.4, 0.5, 0);
+      pivot.rotation.z = -side * 0.5;
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, limbMat);
+      hand.position.set(0, -0.36, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+    const legGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.38, 8));
+    legGeo.translate(0, -0.19, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.16, 0.06, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.38, 0.05);
+      shoe.scale.set(1.1, 0.55, 1.7);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
 
     return root;
   }

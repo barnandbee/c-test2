@@ -1919,6 +1919,118 @@ body {
   box-shadow: 5px 0 0 0 #14121a;
 }
 
+/* Cactus Balloon: a ribbed green balloon on a string, cap backwards. */
+.cactusballoon-icon {
+  position: relative;
+  border-color: #4e9c56;
+  border-radius: 50% 50% 46% 46%;
+  background:
+    /* the red backwards cap across the top */
+    linear-gradient(180deg, #d8503c 0 26%, transparent 26%),
+    /* ribbed cactus body */
+    repeating-linear-gradient(90deg, #4e9c56 0 4px, #3f7f4a 4px 6px);
+}
+
+.cactusballoon-icon::before {
+  /* two dot eyes */
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 32%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #14121a;
+  box-shadow: 8px 0 0 0 #14121a;
+}
+
+.cactusballoon-icon::after {
+  /* the balloon string trailing below */
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 1.5px;
+  height: 8px;
+  background: #e8e2d0;
+  transform: rotate(10deg);
+}
+
+/* Negative Nelly: a sad blue elephant, trunk down. */
+.nelly-icon {
+  position: relative;
+  border-color: #47649e;
+  border-radius: 50%;
+  background:
+    /* floppy ears at the sides */
+    radial-gradient(circle at 12% 42%, #47649e 0 22%, transparent 23%),
+    radial-gradient(circle at 88% 42%, #47649e 0 22%, transparent 23%),
+    linear-gradient(180deg, #6b8cc9, #5b7fc4);
+}
+
+.nelly-icon::before {
+  /* sorrowful downcast eyes */
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 33%;
+  width: 4px;
+  height: 5px;
+  border-radius: 50%;
+  background: #14121a;
+  box-shadow: 8px 0 0 0 #14121a;
+}
+
+.nelly-icon::after {
+  /* the drooping trunk */
+  content: "";
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 11px;
+  border-radius: 2px 2px 3px 3px;
+  background: #5b7fc4;
+  box-shadow: 0 1px 0 0 #47649e;
+}
+
+/* Triangle the Fedora: a golden triangle under a brown fedora. */
+.trifedora-icon {
+  position: relative;
+  border-color: #e8b84a;
+  background:
+    /* the golden triangle */
+    conic-gradient(from -55deg at 50% 82%, transparent 0deg, #e8b84a 0deg 110deg, transparent 110deg);
+}
+
+.trifedora-icon::before {
+  /* the fedora: brim + pinched crown */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background: #5a4632;
+  box-shadow: -3px 4px 0 -1px #5a4632, 3px 4px 0 -1px #5a4632, 0 4px 0 0 #2a2018;
+}
+
+.trifedora-icon::after {
+  /* two dot eyes on the triangle */
+  content: "";
+  position: absolute;
+  top: 58%;
+  left: 36%;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #14121a;
+  box-shadow: 7px 0 0 0 #14121a;
+}
+
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */
 .perpbird-icon {
   border-radius: 6px;

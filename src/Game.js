@@ -96,6 +96,9 @@ const STORAGE_GARY = 'mystic-badger.garyUnlocked';
 const STORAGE_SUMMIT_VISITS = 'mystic-badger.summitVisits';
 const STORAGE_CANDY = 'mystic-badger.candyUnlocked';
 const STORAGE_HELTER_VISITS = 'mystic-badger.helterVisits';
+const STORAGE_CACTUSBALLOON = 'mystic-badger.cactusBalloonUnlocked';
+const STORAGE_NELLY = 'mystic-badger.nellyUnlocked';
+const STORAGE_TRIFEDORA = 'mystic-badger.triFedoraUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -124,6 +127,11 @@ const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedr
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
 const WHIRLPOOL_MAX = 45.45;       // whirlpool fortune: uniform in [-45.45, +45.45]
+const CACTUS_JUNCTION_POINTS = 33.101; // the secret stop's fare rebate (+33.1010)
+// The three original Mystic Line stops — the 'End of the Line' trophy and
+// Billy's unlock mean THESE three; Cactus Junction is a bonus secret stop.
+const CORE_STATIONS = ['cave', 'lake', 'copse'];
+const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
 const CANDY_LAUNCH_SPEED = 30;     // Candy Florence's sky-high fling off the helter skelter
 // Score milestones: a run (or the all-time high score) at or above each
@@ -240,6 +248,9 @@ export class Game {
     this.prunellaUnlocked = readStorage(STORAGE_PRUNELLA) === '1';
     this.garyUnlocked = readStorage(STORAGE_GARY) === '1';
     this.candyUnlocked = readStorage(STORAGE_CANDY) === '1';
+    this.cactusBalloonUnlocked = readStorage(STORAGE_CACTUSBALLOON) === '1';
+    this.nellyUnlocked = readStorage(STORAGE_NELLY) === '1';
+    this.triFedoraUnlocked = readStorage(STORAGE_TRIFEDORA) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -344,6 +355,10 @@ export class Game {
     this.travelOpen = false;
     this.tubeCaveClaimed = false;
     this.tubeLakeClaimed = false;
+    this.tubeCactusClaimed = false;
+    this.vehiclesRidden = new Set(); // rides this run (Cactus Balloon)
+    this.wonVeggieThisRun = false;   // Triangle the Fedora's two feats
+    this.holeInOneThisRun = false;
     this.dellJumps = 0;
     this._inDell = false;
     // Margaret's tally: cherries (+3), clouds (+5) and frog hits.
@@ -871,6 +886,9 @@ export class Game {
     if (name === 'prunella') return this.prunellaUnlocked;
     if (name === 'gary') return this.garyUnlocked;
     if (name === 'candy') return this.candyUnlocked;
+    if (name === 'cactusballoon') return this.cactusBalloonUnlocked;
+    if (name === 'nelly') return this.nellyUnlocked;
+    if (name === 'trifedora') return this.triFedoraUnlocked;
     return name === 'badger';
   }
 
@@ -905,7 +923,10 @@ export class Game {
       mcdonovan: this.mcdonovanUnlocked,
       prunella: this.prunellaUnlocked,
       gary: this.garyUnlocked,
-      candy: this.candyUnlocked
+      candy: this.candyUnlocked,
+      cactusballoon: this.cactusBalloonUnlocked,
+      nelly: this.nellyUnlocked,
+      trifedora: this.triFedoraUnlocked
     };
   }
 
@@ -953,6 +974,25 @@ export class Game {
       }
     }
     if (changed) writeStorage(STORAGE_ACHIEVEMENTS, [...this.achievements].join(','));
+  }
+
+  /**
+   * Triangle the Fedora: beat Turnip Scart at Veggie Tac Toe AND sink a
+   * hole-in-one in the same run — while playing as one of the other two
+   * dapper polygons (Rhombus the Hat or Dodecahedron the Beret).
+   */
+  checkTriangleFedora() {
+    if (
+      !this.triFedoraUnlocked &&
+      this.wonVeggieThisRun &&
+      this.holeInOneThisRun &&
+      (this.characterName === 'rhombus' || this.characterName === 'dodeca')
+    ) {
+      this.triFedoraUnlocked = true;
+      writeStorage(STORAGE_TRIFEDORA, '1');
+      this.runUnlockNames.push('Triangle the Fedora');
+      this.ui.showTimeToast('★ TRIANGLE THE FEDORA UNLOCKED! 📐');
+    }
   }
 
   awardAchievement(id) {
@@ -1038,7 +1078,7 @@ export class Game {
 
     // Billy Rocketfingers: clear every star AND ride to all three stations
     // in the same run.
-    if (!this.billyUnlocked && allStars && this.stationsVisited.size >= 3) {
+    if (!this.billyUnlocked && allStars && CORE_STATIONS.every((s) => this.stationsVisited.has(s))) {
       this.billyUnlocked = true;
       writeStorage(STORAGE_BILLY, '1');
       this.runUnlockNames.push('Billy Rocketfingers');
@@ -1577,7 +1617,11 @@ export class Game {
     this.closeTravel();
     this.awardAchievement('train'); // rode the Mystic Line
     this.stationsVisited.add(dest);
-    if (this.stationsVisited.size >= 3) this.awardAchievement('allstations');
+    // 'All three stations' means the three ORIGINAL stops — Cactus
+    // Junction is a bonus secret and doesn't count toward the sweep.
+    if (CORE_STATIONS.every((s) => this.stationsVisited.has(s))) {
+      this.awardAchievement('allstations');
+    }
     this.audio.play('train');
     const w = this.world;
 
@@ -1628,6 +1672,35 @@ export class Game {
         writeStorage(STORAGE_MCDONOVAN, '1');
         this.runUnlockNames.push('McDonovan');
         this.ui.showTimeToast('★ McDONOVAN UNLOCKED — “THE CASE IS AFOOT.”');
+      }
+    } else if (dest === 'cactus') {
+      // The secret stop: out among the saguaros. Land on the map-centre
+      // side of the desert, beside the (now-revealed) roundel.
+      const dLen = Math.hypot(w.desertX, w.desertZ) || 1;
+      target = new THREE.Vector3(
+        w.desertX - (w.desertX / dLen) * (w.desertRadius * 0.45),
+        0,
+        w.desertZ - (w.desertZ / dLen) * (w.desertRadius * 0.45)
+      );
+      w.revealTubeSign('cactus');
+      if (!this.tubeCactusClaimed) {
+        this.tubeCactusClaimed = true;
+        this.points += CACTUS_JUNCTION_POINTS;
+        this.ui.setPoints(this.points);
+        this.ui.showTimeToast('CACTUS JUNCTION! +33.1010');
+      } else {
+        this.ui.showTimeToast('CACTUS JUNCTION');
+      }
+      // Cactus Balloon: arrive here by train having ridden all three
+      // vehicles this run, and something floats free among the saguaros.
+      if (
+        !this.cactusBalloonUnlocked &&
+        ALL_VEHICLES.every((k) => this.vehiclesRidden.has(k))
+      ) {
+        this.cactusBalloonUnlocked = true;
+        writeStorage(STORAGE_CACTUSBALLOON, '1');
+        this.runUnlockNames.push('Cactus Balloon');
+        this.ui.showTimeToast('★ CACTUS BALLOON UNLOCKED! 🎈');
       }
     } else {
       target = new THREE.Vector3(w.copsePos.x + 1.4, 0, w.copsePos.z + 0.8);
@@ -1736,7 +1809,11 @@ export class Game {
     this.minigame = null;
     if (success) {
       const holeInOne = strokes === 1;
-      if (holeInOne) this.awardAchievement('holeinone');
+      if (holeInOne) {
+        this.awardAchievement('holeinone');
+        this.holeInOneThisRun = true;
+        this.checkTriangleFedora();
+      }
       const reward = holeInOne ? 33 : 18;
       this.points += reward;
       this.ui.setPoints(this.points);
@@ -1805,6 +1882,8 @@ export class Game {
       this.audio.play('win');
       // Beating Turnip Scart while playing AS Turnip Scart — a civil war.
       if (this.characterName === 'turnip') this.awardAchievement('turnipwin');
+      this.wonVeggieThisRun = true;
+      this.checkTriangleFedora();
       if (!this.turnipUnlocked) {
         this.turnipUnlocked = true;
         writeStorage(STORAGE_TURNIP, '1');
@@ -1972,6 +2051,12 @@ export class Game {
       writeStorage(STORAGE_GLASSBADGER, '1');
       newlyUnlockedNames.push('Glass Badger');
     }
+    // Negative Nelly: finishing in the red summons the blue elephant.
+    if (!this.nellyUnlocked && this.points < 0) {
+      this.nellyUnlocked = true;
+      writeStorage(STORAGE_NELLY, '1');
+      newlyUnlockedNames.push('Negative Nelly');
+    }
 
     // Final-score trophies + any unlock-count milestones from this run's
     // end-of-bell unlocks (score/decimal/50…500, unlock 1/5/10).
@@ -2055,6 +2140,10 @@ export class Game {
     this.closeTravel();
     this.tubeCaveClaimed = false;
     this.tubeLakeClaimed = false;
+    this.tubeCactusClaimed = false;
+    this.vehiclesRidden.clear();
+    this.wonVeggieThisRun = false;
+    this.holeInOneThisRun = false;
     this.dellJumps = 0;
     this._inDell = false;
     this.cherriesCollected = 0;
@@ -2190,6 +2279,7 @@ export class Game {
         if (this.input.keys.has('Digit1')) this.travelTo('cave');
         else if (this.input.keys.has('Digit2')) this.travelTo('lake');
         else if (this.input.keys.has('Digit3')) this.travelTo('copse');
+        else if (this.input.keys.has('Digit4')) this.travelTo('cactus');
         else {
           const t = this.world.station.ticket;
           const dx = this.player.position.x - t.x;
@@ -2313,6 +2403,7 @@ export class Game {
       if (vk !== this._vehicleSound) {
         this._vehicleSound = vk;
         this.audio.setVehicle(vk);
+        if (vk) this.vehiclesRidden.add(vk); // Cactus Balloon keeps count
       }
       // Any fresh mid-run character unlock earns a slide-whistle.
       if (this.runUnlockNames.length > this._announcedUnlocks) {
