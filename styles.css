@@ -13,6 +13,7 @@
   --font-stack: "Lilita One", "Trebuchet MS", sans-serif;
   --font-logo: "Titan One", "Arial Black", sans-serif;
   --font-notes: "Boogaloo", "Comic Sans MS", cursive;
+  --font-announce: "Josefin Slab", Georgia, serif;
 }
 
 * {
@@ -174,6 +175,15 @@ body {
 
 #menu-roster {
   margin-bottom: 18px;
+}
+
+/* With 30+ heroes the roster must scroll INSIDE its own box — otherwise
+   the whole menu overflows the screen and the page itself scrolls. */
+#menu-roster .char-row {
+  max-height: 30vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
 }
 
 /* Compact cards on the menu so seven heroes + the CTA fit on one screen. */
@@ -498,9 +508,9 @@ body {
   left: 50%;
   top: 26%;
   transform: translateX(-50%);
-  font-family: var(--font-notes);
+  font-family: var(--font-announce);
   font-size: 32px;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: #bfe0ff;
   text-shadow: 0 0 18px rgba(122, 183, 255, 0.8), 0 2px 6px rgba(0, 0, 0, 0.5);
@@ -1277,9 +1287,9 @@ body {
 }
 
 #unlock-note {
-  font-family: var(--font-notes);
+  font-family: var(--font-announce);
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--accent-gold);
   margin-bottom: 12px;

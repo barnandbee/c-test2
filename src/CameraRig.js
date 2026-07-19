@@ -97,8 +97,8 @@ export class CameraRig {
 
     // If the focus itself is underwater (Marblella on the lake bed), the
     // camera is allowed to dive after it instead of hovering topside.
-    const focusUnderwater =
-      this.world.waterLevel !== undefined && this.focus.y < this.world.waterLevel + 0.2;
+    const focusWl = this.world.waterAt ? this.world.waterAt(this.focus.x, this.focus.z) : this.world.waterLevel;
+    const focusUnderwater = focusWl !== undefined && this.focus.y < focusWl + 0.2;
     // And if the focus is deep below grade (the underground station), the
     // surface height field stops being the camera's floor — the station is.
     const focusUnderground =
@@ -116,13 +116,11 @@ export class CameraRig {
         ground = this.world.station.trackFloorY;
       } else {
         ground = this.world.getHeight(this._samplePoint.x, this._samplePoint.z);
-        if (
-          !focusUnderwater &&
-          this.world.waterLevel !== undefined &&
-          ground < this.world.waterLevel &&
-          this.world.isNearLake(this._samplePoint.x, this._samplePoint.z)
-        ) {
-          ground = this.world.waterLevel; // the camera stays out of the lake
+        const sampleWl = this.world.waterAt
+          ? this.world.waterAt(this._samplePoint.x, this._samplePoint.z)
+          : undefined;
+        if (!focusUnderwater && sampleWl !== undefined && ground < sampleWl) {
+          ground = sampleWl; // the camera stays out of either lake
         }
       }
       let blocked = this._samplePoint.y < ground + TERRAIN_CLEARANCE;
@@ -158,13 +156,11 @@ export class CameraRig {
       camGround = this.world.station.trackFloorY;
     } else {
       camGround = this.world.getHeight(this.desiredPosition.x, this.desiredPosition.z);
-      if (
-        !focusUnderwater &&
-        this.world.waterLevel !== undefined &&
-        camGround < this.world.waterLevel &&
-        this.world.isNearLake(this.desiredPosition.x, this.desiredPosition.z)
-      ) {
-        camGround = this.world.waterLevel;
+      const camWl = this.world.waterAt
+        ? this.world.waterAt(this.desiredPosition.x, this.desiredPosition.z)
+        : undefined;
+      if (!focusUnderwater && camWl !== undefined && camGround < camWl) {
+        camGround = camWl;
       }
     }
     if (this.desiredPosition.y < camGround + TERRAIN_CLEARANCE) {

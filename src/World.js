@@ -244,6 +244,66 @@ export class World {
     this.woodoosX = woodBest.x;
     this.woodoosZ = woodBest.z;
 
+    // --- the whirlpool lake: the far south-east reaches -------------------
+    // Past the helter skelter, heading AWAY from the Mystic Forest: a second
+    // carved basin with a spinning throat at its heart. Sited on gentle
+    // ground clear of the mountain's foot and the fairground; defined before
+    // geometry exists because getHeight() carves the basin and funnel.
+    let whirlBest = null;
+    for (const [a, r] of [[-1.15, 95], [-1.25, 92], [-1.05, 98], [-1.3, 90], [-0.95, 100], [-1.2, 100]]) {
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const near =
+        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 19 ||
+        Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 17 ||
+        Math.hypot(x - this.woodoosX, z - this.woodoosZ) < this.woodoosRadius + 15 ||
+        Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 20;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!whirlBest || grad < whirlBest.grad) whirlBest = { x, z, grad };
+      if (whirlBest.grad < 0.3) break;
+    }
+    this.whirlX = whirlBest.x;
+    this.whirlZ = whirlBest.z;
+    this.whirlRadius = 13; // setting this arms the carve in getHeight()
+    // Water sits a little below the average rim height, like the main lake.
+    let whirlRim = 0;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      whirlRim += this.getHeight(
+        this.whirlX + Math.cos(a) * this.whirlRadius * 1.15,
+        this.whirlZ + Math.sin(a) * this.whirlRadius * 1.15
+      );
+    }
+    this.whirlWaterLevel = whirlRim / 8 - 1.1;
+
+    // --- the desert: a sun-baked sandy stretch beside the whirlpool lake --
+    // Purely cosmetic terrain tinting plus cacti and succulents; sited in
+    // the same far-south-east reach, clear of the lake and the mountain.
+    this.desertRadius = 14;
+    let desertBest = null;
+    for (const [a, r] of [[-0.85, 92], [-0.72, 95], [-0.95, 86], [-0.65, 88], [-0.9, 100], [-0.78, 82]]) {
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const near =
+        Math.hypot(x - this.whirlX, z - this.whirlZ) < this.whirlRadius + this.desertRadius + 2 ||
+        Math.hypot(x - this.mountainX, z - this.mountainZ) < this.mountainRadius + 10 ||
+        Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 12 ||
+        Math.hypot(x - this.woodoosX, z - this.woodoosZ) < this.woodoosRadius + 10;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!desertBest || grad < desertBest.grad) desertBest = { x, z, grad };
+      if (desertBest.grad < 0.3) break;
+    }
+    this.desertX = desertBest.x;
+    this.desertZ = desertBest.z;
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -257,6 +317,8 @@ export class World {
     this._buildHelterSkelter();
     this._buildWoodoos();
     this._buildLake();
+    this._buildWhirlLake();
+    this._buildDesert();
     this._buildForest();
     this._buildBlossomTree();
     this._buildRocks();
@@ -304,6 +366,15 @@ export class World {
       const ld = Math.hypot(x - this.lakeCenterX, z - this.lakeCenterZ);
       if (ld < this.lakeRadius) {
         h -= (1 - smoothstep(this.lakeRadius * 0.45, this.lakeRadius, ld)) * 7;
+      }
+    }
+    // Carve the whirlpool lake: the same basin, plus a deeper funnel at
+    // the very middle — the whirlpool's throat.
+    if (this.whirlRadius) {
+      const wd = Math.hypot(x - this.whirlX, z - this.whirlZ);
+      if (wd < this.whirlRadius) {
+        h -= (1 - smoothstep(this.whirlRadius * 0.45, this.whirlRadius, wd)) * 7;
+        h -= (1 - smoothstep(0, this.whirlRadius * 0.3, wd)) * 4;
       }
     }
     // Mow the golf green dead flat, and scoop the bunker.
@@ -409,6 +480,22 @@ export class World {
     return dx * dx + dz * dz < this.lakeRadius * this.lakeRadius;
   }
 
+  /** True only inside the whirlpool lake's carved footprint. */
+  isNearWhirlLake(x, z) {
+    if (!this.whirlRadius) return false;
+    const dx = x - this.whirlX;
+    const dz = z - this.whirlZ;
+    return dx * dx + dz * dz < this.whirlRadius * this.whirlRadius;
+  }
+
+  /** The water level covering (x,z) — main lake or whirlpool lake — or
+   *  undefined on dry land. The one water query physics should use. */
+  waterAt(x, z) {
+    if (this.waterLevel !== undefined && this.isNearLake(x, z)) return this.waterLevel;
+    if (this.whirlWaterLevel !== undefined && this.isNearWhirlLake(x, z)) return this.whirlWaterLevel;
+    return undefined;
+  }
+
   /**
    * Walkable surface height: the terrain, or any platform top whose
    * footprint contains (x,z) — but only when `refY` is within step-up
@@ -463,6 +550,7 @@ export class World {
       z = Math.sin(angle) * r;
       if (this.getNormal(x, z, this._n).y < maxSlopeNormalY) continue;
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.25) continue;
+      if (this.isNearWhirlLake(x, z) && this.getHeight(x, z) < this.whirlWaterLevel + 0.25) continue;
       // Nothing spawns on the green — golf etiquette.
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 1.5) continue;
       // …and nothing spawns in the cave dig or its doorway.
@@ -705,6 +793,27 @@ export class World {
         c.lerp(new THREE.Color(0x27423f), deepBlend);
       }
 
+      // The whirlpool lake bed: the same sandy shore, banding into a
+      // colder blue-teal where the funnel drops away.
+      const whirlDx = x - this.whirlX;
+      const whirlDz = z - this.whirlZ;
+      const inWhirlZone = whirlDx * whirlDx + whirlDz * whirlDz < (this.whirlRadius * 1.08) ** 2;
+      const whirlSand = inWhirlZone
+        ? 1 - smoothstep(this.whirlWaterLevel - 0.7, this.whirlWaterLevel + 0.6, h)
+        : 0;
+      if (whirlSand > 0) {
+        c.lerp(new THREE.Color(0xa08e5c), whirlSand * 0.85);
+        const deepBlend = 1 - smoothstep(this.whirlWaterLevel - 5.5, this.whirlWaterLevel - 1.2, h);
+        c.lerp(new THREE.Color(0x1e3a48), deepBlend);
+      }
+
+      // The desert: warm sun-baked sand fading in from the grass.
+      if (this.desertRadius) {
+        const dd = Math.hypot(x - this.desertX, z - this.desertZ);
+        const desertT = 1 - smoothstep(this.desertRadius * 0.55, this.desertRadius, dd);
+        if (desertT > 0) c.lerp(new THREE.Color(0xd7b46a), desertT * 0.82);
+      }
+
       // The mountain: a bare rocky collar rising into a bright snow cap,
       // the snow faintly blue where the slope falls into shade.
       const mtn = this._mountainBump(x, z);
@@ -734,6 +843,181 @@ export class World {
   /* ================================================================ */
   /*  Lake & signage                                                  */
   /* ================================================================ */
+
+  /**
+   * The whirlpool lake: a second water disc out in the far south-east,
+   * with a spinning spiral decal at its heart. The spiral mesh is stored
+   * as this.whirlpool so the game loop can keep it turning.
+   */
+  _buildWhirlLake() {
+    const waterGeo = new THREE.CircleGeometry(this.whirlRadius * 0.99, 48);
+    waterGeo.rotateX(-Math.PI / 2);
+    const waterMat = createWaterMaterial();
+    this.whirlWater = new THREE.Mesh(waterGeo, waterMat);
+    this.whirlWater.position.set(this.whirlX, this.whirlWaterLevel, this.whirlZ);
+    this.scene.add(this.whirlWater);
+    this._disposables.push(waterGeo, waterMat);
+
+    // The spiral: painted once onto a canvas, spun forever by Game.tick.
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const g = canvas.getContext('2d');
+    g.clearRect(0, 0, 256, 256);
+    g.translate(128, 128);
+    for (const [width, alpha] of [[10, 0.85], [5, 0.5]]) {
+      g.lineWidth = width;
+      g.strokeStyle = `rgba(225, 242, 255, ${alpha})`;
+      for (let arm = 0; arm < 3; arm++) {
+        g.beginPath();
+        for (let t = 0; t <= 1; t += 0.02) {
+          const ang = arm * ((Math.PI * 2) / 3) + t * Math.PI * 3.2;
+          const rad = 6 + t * 116;
+          const px = Math.cos(ang) * rad;
+          const py = Math.sin(ang) * rad;
+          if (t === 0) g.moveTo(px, py);
+          else g.lineTo(px, py);
+        }
+        g.stroke();
+      }
+    }
+    const spiralTex = new THREE.CanvasTexture(canvas);
+    spiralTex.colorSpace = THREE.SRGBColorSpace;
+    const spiralGeo = new THREE.CircleGeometry(this.whirlRadius * 0.55, 40);
+    spiralGeo.rotateX(-Math.PI / 2);
+    const spiralMat = new THREE.MeshBasicMaterial({
+      map: spiralTex,
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.9
+    });
+    this.whirlpool = new THREE.Mesh(spiralGeo, spiralMat);
+    this.whirlpool.position.set(this.whirlX, this.whirlWaterLevel + 0.04, this.whirlZ);
+    this.scene.add(this.whirlpool);
+    this._disposables.push(spiralGeo, spiralMat, spiralTex);
+  }
+
+  /**
+   * The desert: cacti (saguaro and barrel) and aloe-style succulents
+   * scattered over the sand-tinted stretch beside the whirlpool lake.
+   * Big saguaros get colliders; everything else is soft scenery.
+   */
+  _buildDesert() {
+    const trunkMat = createToonMaterial({ color: 0x4e9c56, rim: { color: 0xcfffd0, strength: 0.3, threshold: 0.65 } });
+    const barrelMat = createToonMaterial({ color: 0x3f7f4a, rim: { color: 0xbfe8c0, strength: 0.3, threshold: 0.65 } });
+    const aloeMat = createToonMaterial({ color: 0x7fb89a, rim: { color: 0xe0ffe8, strength: 0.35, threshold: 0.6 } });
+    const aloeTipMat = createToonMaterial({ color: 0xc98a9a });
+    const bloomMat = createToonMaterial({ color: 0xf2b3c8, rim: { color: 0xffffff, strength: 0.4, threshold: 0.55 } });
+    this._disposables.push(trunkMat, barrelMat, aloeMat, aloeTipMat, bloomMat);
+
+    const placements = [];
+    const placeAt = (minGap) => {
+      for (let attempt = 0; attempt < 24; attempt++) {
+        const a = this.rng.range(0, Math.PI * 2);
+        const r = Math.sqrt(this.rng.range(0.04, 1)) * this.desertRadius * 0.85;
+        const x = this.desertX + Math.cos(a) * r;
+        const z = this.desertZ + Math.sin(a) * r;
+        if (this.getNormal(x, z, this._n).y < 0.8) continue;
+        let clash = false;
+        for (const p of placements) {
+          if (Math.hypot(x - p.x, z - p.z) < minGap) { clash = true; break; }
+        }
+        if (clash) continue;
+        placements.push({ x, z });
+        return { x, z, y: this.getHeight(x, z) };
+      }
+      return null;
+    };
+
+    // --- saguaros: tall ribbed trunks with a pair of up-bent arms ---------
+    for (let i = 0; i < 7; i++) {
+      const spot = placeAt(4.5);
+      if (!spot) continue;
+      const s = this.rng.range(0.8, 1.25);
+      const trunkH = 3.0 * s;
+      const group = new THREE.Group();
+      group.position.set(spot.x, spot.y, spot.z);
+      group.rotation.y = this.rng.range(0, Math.PI * 2);
+
+      const trunkGeo = new THREE.CylinderGeometry(0.3 * s, 0.38 * s, trunkH, 9);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = trunkH / 2;
+      trunk.castShadow = true;
+      group.add(trunk);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.3 * s, 9, 8), trunkMat);
+      cap.position.y = trunkH;
+      group.add(cap);
+      this._disposables.push(trunkGeo, cap.geometry);
+
+      for (const side of [-1, 1]) {
+        const armY = trunkH * this.rng.range(0.45, 0.65);
+        const elbowGeo = new THREE.CylinderGeometry(0.16 * s, 0.18 * s, 0.7 * s, 8);
+        const elbow = new THREE.Mesh(elbowGeo, trunkMat);
+        elbow.position.set(side * (0.42 * s + 0.3 * s), armY, 0);
+        elbow.rotation.z = side * Math.PI / 2;
+        elbow.castShadow = true;
+        group.add(elbow);
+        const upH = this.rng.range(0.9, 1.5) * s;
+        const upGeo = new THREE.CylinderGeometry(0.15 * s, 0.17 * s, upH, 8);
+        const up = new THREE.Mesh(upGeo, trunkMat);
+        up.position.set(side * (0.42 * s + 0.62 * s), armY + upH / 2, 0);
+        up.castShadow = true;
+        group.add(up);
+        const knuckle = new THREE.Mesh(new THREE.SphereGeometry(0.15 * s, 8, 7), trunkMat);
+        knuckle.position.set(side * (0.42 * s + 0.62 * s), armY + upH, 0);
+        group.add(knuckle);
+        this._disposables.push(elbowGeo, upGeo, knuckle.geometry);
+      }
+      this.scene.add(group);
+      this.colliders.push({ x: spot.x, z: spot.z, radius: 0.55 * s, top: spot.y + trunkH });
+    }
+
+    // --- barrel cacti: squat ribbed barrels, some with a pink bloom -------
+    for (let i = 0; i < 8; i++) {
+      const spot = placeAt(2.2);
+      if (!spot) continue;
+      const s = this.rng.range(0.45, 0.8);
+      const barrelGeo = new THREE.SphereGeometry(s, 10, 8);
+      const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+      barrel.position.set(spot.x, spot.y + s * 0.7, spot.z);
+      barrel.scale.set(1, 0.85, 1);
+      barrel.castShadow = true;
+      this.scene.add(barrel);
+      this._disposables.push(barrelGeo);
+      if (this.rng.range(0, 1) < 0.4) {
+        const bloomGeo = new THREE.SphereGeometry(s * 0.28, 8, 7);
+        const bloom = new THREE.Mesh(bloomGeo, bloomMat);
+        bloom.position.set(spot.x, spot.y + s * 1.55, spot.z);
+        this.scene.add(bloom);
+        this._disposables.push(bloomGeo);
+      }
+    }
+
+    // --- succulents: aloe rosettes of upward-curving fleshy leaves --------
+    for (let i = 0; i < 10; i++) {
+      const spot = placeAt(1.8);
+      if (!spot) continue;
+      const s = this.rng.range(0.5, 0.9);
+      const group = new THREE.Group();
+      group.position.set(spot.x, spot.y, spot.z);
+      group.rotation.y = this.rng.range(0, Math.PI * 2);
+      const leaves = 7 + Math.floor(this.rng.range(0, 3));
+      const leafGeo = new THREE.ConeGeometry(0.1 * s, 0.85 * s, 6);
+      this._disposables.push(leafGeo);
+      for (let l = 0; l < leaves; l++) {
+        const a = (l / leaves) * Math.PI * 2;
+        const leaf = new THREE.Mesh(leafGeo, aloeMat);
+        leaf.position.set(Math.cos(a) * 0.16 * s, 0.3 * s, Math.sin(a) * 0.16 * s);
+        leaf.rotation.set(Math.sin(a) * 0.55, 0, -Math.cos(a) * 0.55);
+        leaf.castShadow = true;
+        group.add(leaf);
+      }
+      const heart = new THREE.Mesh(new THREE.ConeGeometry(0.09 * s, 0.6 * s, 6), aloeTipMat);
+      heart.position.y = 0.36 * s;
+      group.add(heart);
+      this._disposables.push(heart.geometry);
+      this.scene.add(group);
+    }
+  }
 
   _buildLake() {
     const waterGeo = new THREE.CircleGeometry(this.lakeRadius * 0.99, 48);
@@ -885,6 +1169,9 @@ export class World {
       const z = Math.sin(angle) * r;
       if (this.getNormal(x, z, normal).y < 0.74) continue;
       if (this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.3) continue;
+      if (this.isNearWhirlLake(x, z) && this.getHeight(x, z) < this.whirlWaterLevel + 0.3) continue;
+      // The desert is cactus country — no forest.
+      if (Math.hypot(x - this.desertX, z - this.desertZ) < this.desertRadius + 2) continue;
       if (Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) < this.greenRadius + 2) continue;
       // Trees near the cave mouth would wall off the camera's sightline.
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
@@ -1137,6 +1424,7 @@ export class World {
         if (
           this.getNormal(x, z, normal).y > 0.7 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.2) &&
+          !(this.isNearWhirlLake(x, z) && this.getHeight(x, z) < this.whirlWaterLevel + 0.2) &&
           Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 1.5 &&
           Math.hypot(x - this.caveX, z - this.caveZ) > 7 &&
           Math.hypot(x - this.cottageX, z - this.cottageZ) > this.cottageRadius &&
@@ -1207,6 +1495,8 @@ export class World {
         if (
           this.getNormal(x, z, normal).y > 0.82 &&
           !(this.isNearLake(x, z) && this.getHeight(x, z) < this.waterLevel + 0.15) &&
+          !(this.isNearWhirlLake(x, z) && this.getHeight(x, z) < this.whirlWaterLevel + 0.15) &&
+          Math.hypot(x - this.desertX, z - this.desertZ) > this.desertRadius &&
           Math.hypot(x - this.greenCenterX, z - this.greenCenterZ) > this.greenRadius + 0.5 &&
           this._caveDig(x, z) === 0 &&
           Math.hypot(x - this.cottageX, z - this.cottageZ) > 4.5

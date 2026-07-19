@@ -123,6 +123,7 @@ const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock G
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
+const WHIRLPOOL_MAX = 45.45;       // whirlpool fortune: uniform in [-45.45, +45.45]
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
 const CANDY_LAUNCH_SPEED = 30;     // Candy Florence's sky-high fling off the helter skelter
 // Score milestones: a run (or the all-time high score) at or above each
@@ -334,6 +335,7 @@ export class Game {
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
     this._onSummit = false;          // edge flag for counting summit arrivals
     this._onHelter = false;          // edge flag for counting helter-skelter visits
+    this._inWhirl = false;           // edge flag for whirlpool dips (hysteresis)
     this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
@@ -2044,6 +2046,7 @@ export class Game {
     this.reachedSummitLowHP = false;
     this._onSummit = false;
     this._onHelter = false;
+    this._inWhirl = false;
     this._pickleSummonedThisRun = false;
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -2115,6 +2118,9 @@ export class Game {
     const dt = clamp(this.clock.getDelta(), 0, 1 / 20);
     updateSharedTime(dt);
     const time = SharedUniforms.uTime.value;
+
+    // The whirlpool never stops turning.
+    if (this.world.whirlpool) this.world.whirlpool.rotation.y -= dt * 1.4;
 
     if (this.inMenu) {
       // Welcome menu: the forest breathes, the camera drifts, no clock.
@@ -2272,6 +2278,33 @@ export class Game {
           this.player.velocity.y = CANDY_LAUNCH_SPEED;
           this.player.grounded = false;
           this.audio.play('jump');
+        }
+      }
+
+      // The whirlpool: dip into its spinning throat (hovercraft recommended
+      // — on foot the deep water bounces you out first) and fortune decides:
+      // anywhere from -45.45 to +45.45, once per dip. Hysteresis on the
+      // radius so bobbing at the rim can't re-roll every frame.
+      if (this.world.whirlRadius) {
+        const wdx = this.player.position.x - this.world.whirlX;
+        const wdz = this.player.position.z - this.world.whirlZ;
+        const wd = Math.hypot(wdx, wdz);
+        const nearSurface =
+          Math.abs(this.player.position.y - this.world.whirlWaterLevel) < 3;
+        if (wd < 4 && nearSurface && !this._inWhirl) {
+          this._inWhirl = true;
+          const spin = Math.round((Math.random() * 2 - 1) * WHIRLPOOL_MAX * 100) / 100;
+          this.points += spin;
+          this.ui.setPoints(this.points);
+          if (spin >= 0) {
+            this.ui.showTimeToast(`YOU SURFED THE WHIRLPOOL LIKE A PRO! +${spin}`);
+            this.audio.play('win');
+          } else {
+            this.ui.showTimeToast(`THE WHIRLPOOL SUCKED YOU IN AND DAMAGED YOUR AURA ${spin}`);
+            this.audio.play('sonar');
+          }
+        } else if (wd > 7) {
+          this._inWhirl = false; // clear of the throat — the next dip counts
         }
       }
 

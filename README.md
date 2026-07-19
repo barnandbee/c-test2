@@ -325,6 +325,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
   flag, planted way out on the **empty southern rim** of the map — past the
   mountain, along the edge toward the Mystic Forest.
+- **The whirlpool lake** — a second lake out past the helter skelter in
+  the far south-east (heading *away* from the Mystic Forest), with a
+  spinning **whirlpool** at its heart and a funnel-deep throat beneath it.
+  The **hovercraft** skims it happily; dip into the whirlpool and fortune
+  decides — anywhere from **−45.45 to +45.45 points**, once per dip.
+  Come up lucky and *"You surfed the whirlpool like a pro!"*; come up
+  short and *"The whirlpool sucked you in and damaged your aura."*
+- **The desert** — a sun-baked sandy stretch beside the whirlpool lake,
+  home to **saguaro cacti** (climbable-looking, but solid — mind the
+  arms), **barrel cacti** (some in pink bloom) and **aloe-style
+  succulents**, with the sand blending naturally into the surrounding
+  grass and down to the lake's shore.
 - **WOODOO'S** — a lumberjack's **timber yard** in the open south of the
   map: a big painted sign (level board on two even posts), a chopping block
   with an axe buried in it, stacked log piles (pale cut ends and all), a

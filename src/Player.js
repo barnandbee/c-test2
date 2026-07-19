@@ -4764,8 +4764,8 @@ export class Player {
     // Only actual lake water counts — low valleys elsewhere are just valleys.
     // Marblella is the exception: TOO DENSE to bounce, she simply sinks
     // and trundles along the lake bed.
-    const wl = this.world.waterLevel;
-    const inLake = wl !== undefined && this.world.isNearLake(pos.x, pos.z);
+    const wl = this.world.waterAt(pos.x, pos.z); // main lake or whirlpool lake
+    const inLake = wl !== undefined;
     const sinks = this.character === 'marblella';
     if (inLake && pos.y < wl - 0.4 && !sinks) {
       // Too deep — bounce back to the last dry footing with a splash.
@@ -4865,10 +4865,11 @@ export class Player {
       }
     }
 
-    // Floor is turf or lake water, whichever is higher (lake only).
+    // Floor is turf or lake water, whichever is higher (either lake).
     const terrainH = this.world.getHeight(pos.x, pos.z);
-    const overLake = this.world.waterLevel !== undefined && this.world.isNearLake(pos.x, pos.z);
-    const wetFloor = overLake ? this.world.waterLevel : -Infinity;
+    const vehicleWl = this.world.waterAt(pos.x, pos.z);
+    const overLake = vehicleWl !== undefined;
+    const wetFloor = overLake ? vehicleWl : -Infinity;
     const surface = Math.max(terrainH, wetFloor);
 
     if (flies) {
@@ -4889,7 +4890,7 @@ export class Player {
     }
     this.grounded = true;
 
-    if (!overLake || terrainH > this.world.waterLevel + 0.05) {
+    if (!overLake || terrainH > vehicleWl + 0.05) {
       this._lastDryPos.set(pos.x, terrainH, pos.z);
     }
 
