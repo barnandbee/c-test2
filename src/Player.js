@@ -151,6 +151,7 @@ export class Player {
     else if (this.character === 'billy') this.root = this.buildBilly();
     else if (this.character === 'pickle') this.root = this.buildPickle();
     else if (this.character === 'glassbadger') this.root = this.buildGlassBadger();
+    else if (this.character === 'vapour') this.root = this.buildVapourBadger();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
@@ -3012,6 +3013,129 @@ export class Player {
   }
 
   /**
+   * Vapour Badger — the badger silhouette rendered entirely in drifting
+   * water vapour: soft, near-translucent blue-white body with a misty rim
+   * glow and a cloud of billowing puffs that slowly swirl around it. No
+   * solid surfaces — it's a badger-shaped cloud with two glowing eyes.
+   */
+  buildVapourBadger() {
+    const root = new THREE.Group();
+    root.name = 'vapour';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Soft, translucent vapour. Low opacity, no depth-write so the puffs
+    // layer up into a haze instead of z-fighting.
+    const mist = (color, opacity, rimStrength) => {
+      const m = createToonMaterial({
+        color,
+        emissive: 0x223a4a,
+        emissiveIntensity: 0.3,
+        rim: { color: 0xffffff, strength: rimStrength, threshold: 0.32 }
+      });
+      m.transparent = true;
+      m.opacity = opacity;
+      m.depthWrite = false;
+      m.side = THREE.DoubleSide;
+      return track(m);
+    };
+    const vaporMat = mist(0xd6ecf7, 0.4, 0.9);
+    const vaporSoftMat = mist(0xeaf6ff, 0.26, 0.7);
+    const eyeMat = track(createToonMaterial({
+      color: 0xcdf1ff,
+      emissive: 0x8fd8ff,
+      emissiveIntensity: 1.7,
+      pulse: { speed: 2.2, phase: 0 }
+    }));
+    eyeMat.transparent = true;
+    eyeMat.opacity = 0.9;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- misty torso --------------------------------------------------------
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.34, 0.5, 6, 16));
+    torsoGeo.rotateX(Math.PI / 2);
+    const torso = new THREE.Mesh(torsoGeo, vaporMat);
+    torso.scale.set(1.0, 0.95, 1.2);
+    body.add(torso);
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.11, 0.3, 8)), vaporSoftMat);
+    tail.position.set(0, 0.08, -0.5);
+    tail.rotation.x = -1.5;
+    body.add(tail);
+    this.tail = tail;
+
+    // --- head ---------------------------------------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.2, 0.44);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const head = new THREE.Mesh(track(new THREE.SphereGeometry(0.27, 18, 14)), vaporMat);
+    head.scale.set(0.95, 0.9, 1.05);
+    headGroup.add(head);
+    const snout = new THREE.Mesh(track(new THREE.ConeGeometry(0.12, 0.3, 12)), vaporSoftMat);
+    snout.position.set(0, -0.04, 0.26);
+    snout.rotation.x = Math.PI / 2;
+    headGroup.add(snout);
+    // Two glowing vapour eyes.
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), eyeMat);
+      eye.position.set(side * 0.12, 0.06, 0.28);
+      headGroup.add(eye);
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 10, 8)), vaporSoftMat);
+      ear.position.set(side * 0.16, 0.24, 0.02);
+      ear.scale.set(1, 1, 0.6);
+      headGroup.add(ear);
+    }
+
+    // --- four wispy legs ----------------------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.1, 0.07, 0.4, 10));
+    legGeo.translate(0, -0.2, 0);
+    this.legs = [];
+    const slots = [
+      { x: -0.2, z: 0.26, phase: 0 },
+      { x: 0.2, z: 0.26, phase: Math.PI },
+      { x: -0.22, z: -0.28, phase: Math.PI },
+      { x: 0.22, z: -0.28, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.24, slot.z);
+      const leg = new THREE.Mesh(legGeo, vaporSoftMat);
+      pivot.add(leg);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+
+    // --- billowing vapour puffs that slowly swirl around the body -----------
+    this.vaporPuffs = [];
+    const puffGeo = track(new THREE.SphereGeometry(1, 10, 8));
+    const puffSlots = [
+      [0.0, 0.5, 0.1, 0.26], [0.28, 0.34, -0.1, 0.2], [-0.28, 0.3, 0.06, 0.22],
+      [0.1, 0.62, -0.2, 0.18], [-0.12, 0.16, 0.3, 0.19], [0.2, 0.12, -0.32, 0.17],
+      [-0.22, 0.55, -0.16, 0.16], [0.0, 0.28, -0.48, 0.18]
+    ];
+    for (const [px, py, pz, r] of puffSlots) {
+      const puff = new THREE.Mesh(puffGeo, vaporSoftMat);
+      puff.position.set(px, py, pz);
+      puff.scale.setScalar(r);
+      body.add(puff);
+      this.vaporPuffs.push({
+        mesh: puff, baseX: px, baseY: py, baseZ: pz, baseR: r, seed: Math.random() * 6.28
+      });
+    }
+
+    return root;
+  }
+
+  /**
    * McDonovan — a film-noir private eye who happens to be a mouse: a grey
    * mouse in a muted trench coat with a raised collar and belt, a grey
    * fedora tilted low, big round ears, a pink nose, whiskers and a long
@@ -5605,6 +5729,17 @@ export class Player {
           eye.baseX + Math.sin(t * 9.2 + eye.seed) * 0.032 * Math.min(rattle, 1.4);
         eye.pupil.position.y =
           eye.baseY - 0.02 + Math.cos(t * 8.1 + eye.seed * 2.3) * 0.03 * Math.min(rattle, 1.4);
+      }
+    }
+
+    // Vapour Badger: the puffs billow and swirl, breathing in and out so
+    // the whole body reads as drifting gas rather than solid mesh.
+    if (this.vaporPuffs) {
+      for (const puff of this.vaporPuffs) {
+        puff.mesh.position.x = puff.baseX + Math.sin(t * 0.9 + puff.seed) * 0.06;
+        puff.mesh.position.y = puff.baseY + Math.sin(t * 1.1 + puff.seed * 1.7) * 0.05;
+        puff.mesh.position.z = puff.baseZ + Math.cos(t * 0.8 + puff.seed) * 0.06;
+        puff.mesh.scale.setScalar(puff.baseR * (1 + Math.sin(t * 1.4 + puff.seed * 2.1) * 0.12));
       }
     }
   }

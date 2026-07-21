@@ -100,6 +100,7 @@ const STORAGE_CACTUSBALLOON = 'mystic-badger.cactusBalloonUnlocked';
 const STORAGE_NELLY = 'mystic-badger.nellyUnlocked';
 const STORAGE_TRIFEDORA = 'mystic-badger.triFedoraUnlocked';
 const STORAGE_PARSLEY = 'mystic-badger.parsleyUnlocked';
+const STORAGE_VAPOUR = 'mystic-badger.vapourBadgerUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -124,6 +125,7 @@ const MAYO_SCORE = 300;
 const JAM_TOTAL_SCORE = 1000;      // all-time cumulative points to unlock Jam
 const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Night Eye
 const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock Glass Badger
+const VAPOUR_TOTAL_SCORE = 40000;  // all-time cumulative points to unlock Vapour Badger
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
@@ -254,6 +256,7 @@ export class Game {
     this.nellyUnlocked = readStorage(STORAGE_NELLY) === '1';
     this.triFedoraUnlocked = readStorage(STORAGE_TRIFEDORA) === '1';
     this.parsleyUnlocked = readStorage(STORAGE_PARSLEY) === '1';
+    this.vapourBadgerUnlocked = readStorage(STORAGE_VAPOUR) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -893,6 +896,7 @@ export class Game {
     if (name === 'nelly') return this.nellyUnlocked;
     if (name === 'trifedora') return this.triFedoraUnlocked;
     if (name === 'parsley') return this.parsleyUnlocked;
+    if (name === 'vapour') return this.vapourBadgerUnlocked;
     return name === 'badger';
   }
 
@@ -931,7 +935,8 @@ export class Game {
       cactusballoon: this.cactusBalloonUnlocked,
       nelly: this.nellyUnlocked,
       trifedora: this.triFedoraUnlocked,
-      parsley: this.parsleyUnlocked
+      parsley: this.parsleyUnlocked,
+      vapour: this.vapourBadgerUnlocked
     };
   }
 
@@ -2055,6 +2060,11 @@ export class Game {
       this.glassBadgerUnlocked = true;
       writeStorage(STORAGE_GLASSBADGER, '1');
       newlyUnlockedNames.push('Glass Badger');
+    }
+    if (!this.vapourBadgerUnlocked && this.totalScore >= VAPOUR_TOTAL_SCORE) {
+      this.vapourBadgerUnlocked = true;
+      writeStorage(STORAGE_VAPOUR, '1');
+      newlyUnlockedNames.push('Vapour Badger');
     }
     // Negative Nelly: finishing in the red summons the blue elephant.
     if (!this.nellyUnlocked && this.points < 0) {

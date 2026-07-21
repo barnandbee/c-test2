@@ -88,5 +88,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'cactusballoon', name: 'Cactus Balloon', how: 'Ride the hovercraft, the rocket AND the balloon in one run, then take the Mystic Line to Cactus Junction.' },
   { key: 'nelly', name: 'Negative Nelly', how: 'Finish a run with a negative score.' },
   { key: 'trifedora', name: 'Triangle the Fedora', how: 'As Rhombus the Hat or Dodecahedron the Beret: beat Turnip Scart at Veggie Tac Toe AND sink a hole-in-one in the same run.' },
-  { key: 'parsley', name: "Parsley O'Riley", how: "Reach the cave's BLT with 300+ points, having used the balloon as your ONLY transport that run (no hovercraft, rocket or train)." }
+  { key: 'parsley', name: "Parsley O'Riley", how: "Reach the cave's BLT with 300+ points, having used the balloon as your ONLY transport that run (no hovercraft, rocket or train)." },
+  { key: 'vapour', name: 'Vapour Badger', how: 'Score an all-time total of 40,000 points across every run.' }
 ];

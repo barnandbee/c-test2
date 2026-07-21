@@ -307,6 +307,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   see clean through it to a glowing core, with a frosted muzzle, the two
   smoky face-stripes and glassy limbs. Unlock it by scoring an **all-time
   total of 20000 points** across every run.
+- **Vapour Badger** — the badger rendered entirely in drifting water
+  vapour: a soft, near-translucent blue-white body with a misty rim glow,
+  two faintly pulsing eyes, and a cloud of puffs that slowly billow and
+  swirl around it. Unlock it by scoring an **all-time total of 40,000
+  points** across every run.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
