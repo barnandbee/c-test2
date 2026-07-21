@@ -74,6 +74,127 @@ body {
   pointer-events: none;
 }
 
+/* The tiny about button, tucked into the menu's corner. */
+#about-btn {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 28px;
+  color: rgba(243, 239, 255, 0.55);
+  background: rgba(16, 12, 34, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+#about-btn:hover {
+  color: var(--accent-gold);
+  transform: scale(1.12);
+}
+
+/* The about / how-to-play modal. */
+#about-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 4, 18, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+#about-card {
+  position: relative;
+  max-width: 520px;
+  width: calc(100% - 48px);
+  max-height: 80vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 26px 30px;
+  text-align: left;
+  background: rgba(24, 17, 48, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+#about-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 30px;
+  color: rgba(243, 239, 255, 0.6);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+#about-close:hover {
+  color: var(--accent-gold);
+}
+
+#about-title {
+  font-family: var(--font-logo);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  color: var(--accent-gold);
+  margin-bottom: 6px;
+}
+
+#about-credit {
+  font-family: var(--font-announce);
+  font-weight: 600;
+  font-size: 14px;
+  color: rgba(243, 239, 255, 0.75);
+  margin-bottom: 16px;
+}
+
+#about-how h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(243, 239, 255, 0.55);
+  margin-bottom: 10px;
+}
+
+#about-how ul {
+  list-style: none;
+}
+
+#about-how li {
+  position: relative;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(243, 239, 255, 0.82);
+  padding-left: 18px;
+  margin-bottom: 10px;
+}
+
+#about-how li::before {
+  content: "🌲";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  font-size: 10px;
+}
+
+#about-how b {
+  color: var(--accent-warm);
+}
+
 #menu-content {
   position: relative;
   z-index: 2;
@@ -2029,6 +2150,46 @@ body {
   border-radius: 50%;
   background: #14121a;
   box-shadow: 7px 0 0 0 #14121a;
+}
+
+/* Parsley O'Riley: a leafy green crown over a navy suit and red tie. */
+.parsley-icon {
+  position: relative;
+  border-color: #3e8a3c;
+  border-radius: 8px 8px 3px 3px;
+  background:
+    /* curly parsley crown */
+    radial-gradient(circle at 28% 22%, #55a850 0 16%, transparent 17%),
+    radial-gradient(circle at 68% 18%, #3e8a3c 0 17%, transparent 18%),
+    radial-gradient(circle at 48% 30%, #4a9a46 0 20%, transparent 21%),
+    /* navy suit below */
+    linear-gradient(180deg, transparent 0 46%, #2b3a5e 46%);
+}
+
+.parsley-icon::before {
+  /* the white shirt V */
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 11px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: #f2efe6;
+}
+
+.parsley-icon::after {
+  /* the red tie */
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 9px;
+  background: #b8283a;
+  border-radius: 1px;
 }
 
 /* Perpendicular Bird: pencil on paper, wings at a certified 180°. */

@@ -99,6 +99,7 @@ const STORAGE_HELTER_VISITS = 'mystic-badger.helterVisits';
 const STORAGE_CACTUSBALLOON = 'mystic-badger.cactusBalloonUnlocked';
 const STORAGE_NELLY = 'mystic-badger.nellyUnlocked';
 const STORAGE_TRIFEDORA = 'mystic-badger.triFedoraUnlocked';
+const STORAGE_PARSLEY = 'mystic-badger.parsleyUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -132,6 +133,7 @@ const CACTUS_JUNCTION_POINTS = 33.101; // the secret stop's fare rebate (+33.101
 // Billy's unlock mean THESE three; Cactus Junction is a bonus secret stop.
 const CORE_STATIONS = ['cave', 'lake', 'copse'];
 const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
+const PARSLEY_SCORE = 300;         // Parsley O'Riley's garnish threshold
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
 const CANDY_LAUNCH_SPEED = 30;     // Candy Florence's sky-high fling off the helter skelter
 // Score milestones: a run (or the all-time high score) at or above each
@@ -251,6 +253,7 @@ export class Game {
     this.cactusBalloonUnlocked = readStorage(STORAGE_CACTUSBALLOON) === '1';
     this.nellyUnlocked = readStorage(STORAGE_NELLY) === '1';
     this.triFedoraUnlocked = readStorage(STORAGE_TRIFEDORA) === '1';
+    this.parsleyUnlocked = readStorage(STORAGE_PARSLEY) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -889,6 +892,7 @@ export class Game {
     if (name === 'cactusballoon') return this.cactusBalloonUnlocked;
     if (name === 'nelly') return this.nellyUnlocked;
     if (name === 'trifedora') return this.triFedoraUnlocked;
+    if (name === 'parsley') return this.parsleyUnlocked;
     return name === 'badger';
   }
 
@@ -926,7 +930,8 @@ export class Game {
       candy: this.candyUnlocked,
       cactusballoon: this.cactusBalloonUnlocked,
       nelly: this.nellyUnlocked,
-      trifedora: this.triFedoraUnlocked
+      trifedora: this.triFedoraUnlocked,
+      parsley: this.parsleyUnlocked
     };
   }
 
@@ -2395,6 +2400,29 @@ export class Game {
           }
         } else if (wd > 7) {
           this._inWhirl = false; // clear of the throat — the next dip counts
+        }
+      }
+
+      // Parsley O'Riley: arrive at the cave's BLT garnish-ready — 300+ on
+      // the board, with the balloon your ONLY transport this run (no
+      // hovercraft, no rocket, no train).
+      if (
+        !this.parsleyUnlocked &&
+        this.points >= PARSLEY_SCORE &&
+        this.vehiclesRidden.has('balloon') &&
+        this.vehiclesRidden.size === 1 &&
+        this.stationsVisited.size === 0 &&
+        this.world.sandwichPos
+      ) {
+        const sp = this.world.sandwichPos;
+        const sdx = this.player.position.x - sp.x;
+        const sdz = this.player.position.z - sp.z;
+        const sdy = this.player.position.y - sp.y;
+        if (sdx * sdx + sdz * sdz < 4 * 4 && Math.abs(sdy) < 3) {
+          this.parsleyUnlocked = true;
+          writeStorage(STORAGE_PARSLEY, '1');
+          this.runUnlockNames.push("Parsley O'Riley");
+          this.ui.showTimeToast("★ PARSLEY O'RILEY UNLOCKED! 🌿");
         }
       }
 

@@ -62,6 +62,21 @@ export class UI {
     this.vsScore = document.getElementById('vs-score');
     this.vsResult = document.getElementById('vs-result');
 
+    // The about / how-to-play modal is self-contained: wire it here.
+    this.aboutBtn = document.getElementById('about-btn');
+    this.aboutPanel = document.getElementById('about-panel');
+    this.aboutClose = document.getElementById('about-close');
+    if (this.aboutBtn && this.aboutPanel) {
+      this.aboutBtn.addEventListener('click', () => this.aboutPanel.classList.remove('hidden'));
+      if (this.aboutClose) {
+        this.aboutClose.addEventListener('click', () => this.aboutPanel.classList.add('hidden'));
+      }
+      // Clicking the dimmed backdrop closes it too.
+      this.aboutPanel.addEventListener('click', (e) => {
+        if (e.target === this.aboutPanel) this.aboutPanel.classList.add('hidden');
+      });
+    }
+
     this._flashTimeout = 0;
     this._popTimeout = 0;
     this._toastTimeout = 0;

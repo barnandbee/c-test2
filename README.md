@@ -18,6 +18,13 @@ Then open <http://localhost:8080>.
 Three.js r160 is vendored at `vendor/three.module.js` and wired through an
 import map — no npm install, no bundler.
 
+## About
+
+A tiny **ⓘ** button in the corner of the start screen opens the about
+modal — game credit (barnaby@futurereferenced.com) and a compact
+how-to-play guide covering the goal, controls, health, landmarks,
+character unlocks and versus mode.
+
 ## Controls
 
 | Input  | Action                                  |
@@ -338,6 +345,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Unlocked by **beating Turnip Scart at Veggie Tac Toe AND sinking a
   hole-in-one in the same run, while playing as Rhombus the Hat or
   Dodecahedron the Beret**.
+- **Parsley O'Riley** — a fresh bunch of curly parsley in a sharply cut
+  navy suit: white shirt, red tie, proper lapels, and a leafy green ruff
+  where a head ought to be. Unlock him by **reaching the cave's BLT with
+  300+ points, having used the balloon as your ONLY transport that run**
+  (no hovercraft, no rocket, no train — pure ballooning).
 - **The helter skelter** — a tall red-and-white candy-striped fairground
   tower with a blue **spiral slide** wrapping down it, a pointed cap and a
   flag, planted way out on the **empty southern rim** of the map — past the

@@ -158,6 +158,7 @@ export class Player {
     else if (this.character === 'cactusballoon') this.root = this.buildCactusBalloon();
     else if (this.character === 'nelly') this.root = this.buildNegativeNelly();
     else if (this.character === 'trifedora') this.root = this.buildTriangleFedora();
+    else if (this.character === 'parsley') this.root = this.buildParsleyORiley();
     else if (this.character === 'perpbird') this.root = this.buildPerpBird();
     else if (this.character === 'marblella') this.root = this.buildMarblella();
     else if (this.character === 'fir') this.root = this.buildFir();
@@ -3943,6 +3944,144 @@ export class Player {
       const shoe = new THREE.Mesh(shoeGeo, shoeMat);
       shoe.position.set(0, -0.38, 0.05);
       shoe.scale.set(1.1, 0.55, 1.7);
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Parsley O'Riley — a fresh bunch of curly parsley in a sharply cut
+   * navy suit: white shirt, red tie, proper lapels, and a leafy green
+   * ruff of sprigs where a head ought to be. Impeccable garnish energy.
+   */
+  buildParsleyORiley() {
+    const root = new THREE.Group();
+    root.name = 'parsley';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const suitMat = track(createToonMaterial({ color: 0x2b3a5e, rim: { color: 0xaebfe8, strength: 0.3, threshold: 0.65 } }));
+    const shirtMat = track(createToonMaterial({ color: 0xf2efe6 }));
+    const tieMat = track(createToonMaterial({ color: 0xb8283a }));
+    const leafMat = track(createToonMaterial({ color: 0x3e8a3c, rim: { color: 0xc8f0b0, strength: 0.4, threshold: 0.58 } }));
+    const leafLightMat = track(createToonMaterial({ color: 0x55a850, rim: { color: 0xd8ffc0, strength: 0.4, threshold: 0.58 } }));
+    const stemMat = track(createToonMaterial({ color: 0x67a05a }));
+    const shoeMat = track(createToonMaterial({ color: 0x1a1a1e }));
+    const eyeMat = track(createToonMaterial({ color: 0x14121a }));
+    const whiteMat = track(createToonMaterial({ color: 0xf4f2ea }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.55;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the suit: a tailored jacket torso ---------------------------------
+    const jacket = new THREE.Mesh(track(new THREE.CylinderGeometry(0.24, 0.3, 0.62, 10)), suitMat);
+    jacket.position.y = 0.31;
+    jacket.castShadow = true;
+    body.add(jacket);
+    // The white shirt showing in the jacket's V.
+    const shirt = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.3, 0.05)), shirtMat);
+    shirt.position.set(0, 0.44, 0.24);
+    body.add(shirt);
+    // A red tie down the shirt front.
+    const tieKnot = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.06, 0.05)), tieMat);
+    tieKnot.position.set(0, 0.55, 0.27);
+    body.add(tieKnot);
+    const tie = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.26, 0.04)), tieMat);
+    tie.position.set(0, 0.39, 0.27);
+    tie.rotation.x = 0.06;
+    body.add(tie);
+    // Lapels: two thin slabs angling out from the collar.
+    for (const side of [-1, 1]) {
+      const lapel = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.26, 0.03)), suitMat);
+      lapel.position.set(side * 0.11, 0.47, 0.26);
+      lapel.rotation.z = side * 0.4;
+      body.add(lapel);
+    }
+
+    // --- the parsley: a leafy ruff of curly sprigs -------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.78;
+    body.add(head);
+    this.headGroup = head;
+    // A short stem bundle rising from the collar.
+    const stems = new THREE.Mesh(track(new THREE.CylinderGeometry(0.09, 0.12, 0.18, 8)), stemMat);
+    stems.position.y = 0.02;
+    head.add(stems);
+    // The bouquet: ruffled blobs clustered into a curly crown.
+    const sprigs = [
+      [0, 0.3, 0, 0.24, leafMat],
+      [0.2, 0.24, 0.06, 0.17, leafLightMat],
+      [-0.2, 0.26, -0.04, 0.18, leafMat],
+      [0.1, 0.4, -0.12, 0.16, leafLightMat],
+      [-0.09, 0.42, 0.1, 0.16, leafMat],
+      [0.02, 0.24, 0.2, 0.16, leafLightMat],
+      [-0.02, 0.28, -0.21, 0.15, leafMat],
+      [0.24, 0.38, -0.02, 0.13, leafMat],
+      [-0.24, 0.36, 0.05, 0.13, leafLightMat],
+      [0.0, 0.52, 0.02, 0.14, leafLightMat]
+    ];
+    for (const [px, py, pz, r, mat] of sprigs) {
+      const sprig = new THREE.Mesh(track(new THREE.IcosahedronGeometry(r, 1)), mat);
+      sprig.position.set(px, py, pz);
+      sprig.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      sprig.castShadow = true;
+      head.add(sprig);
+    }
+
+    // --- a pair of eyes peeking out of the greenery ------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), whiteMat);
+      white.position.set(side * 0.12, 0.28, 0.22);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.033, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.12, 0.28, 0.28);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.12, baseY: 0.28, seed: Math.random() * 6.28 });
+    }
+
+    // --- suit-sleeve arms with shirt-cuff hands ----------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.05, 0.045, 0.36, 8));
+    armGeo.translate(0, -0.18, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.27, 0.56, 0);
+      pivot.rotation.z = -side * 0.35;
+      const arm = new THREE.Mesh(armGeo, suitMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, shirtMat);
+      hand.position.set(0, -0.38, 0);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- trousered legs with polished shoes --------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.055, 0.05, 0.4, 8));
+    legGeo.translate(0, -0.2, 0);
+    const shoeGeo = track(new THREE.SphereGeometry(0.06, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.12, 0.02, 0);
+      const leg = new THREE.Mesh(legGeo, suitMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.4, 0.05);
+      shoe.scale.set(1.1, 0.55, 1.8);
       pivot.add(shoe);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
