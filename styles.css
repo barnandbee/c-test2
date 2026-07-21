@@ -718,7 +718,7 @@ body {
   transform: translateX(-50%);
   text-align: center;
   font-family: var(--font-notes);
-  padding: 14px 30px;
+  padding: 14px 40px;
   background: var(--hud-bg);
   border: 1px solid rgba(255, 212, 79, 0.4);
   border-radius: 18px;
@@ -732,6 +732,32 @@ body {
   letter-spacing: 0.06em;
   color: var(--accent-gold);
   text-shadow: 0 2px 12px rgba(255, 212, 79, 0.4);
+}
+
+#putt-min {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: rgba(243, 239, 255, 0.7);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-stack);
+}
+
+/* Minimised: only the title bar shows; the button flips to a maximise ▴. */
+#putt-panel.minimised {
+  padding: 8px 40px;
+}
+
+#putt-panel.minimised #putt-body {
+  display: none;
+}
+
+#putt-panel.minimised #putt-min {
+  transform: rotate(180deg);
 }
 
 /* ---------- Veggie Tac Toe ---------- */

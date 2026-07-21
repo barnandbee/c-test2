@@ -225,7 +225,13 @@ export class UI {
   /* ---------------- 'Puttmost Respect' ---------------- */
 
   showPutt() {
-    this.puttPanel.classList.remove('hidden');
+    this.puttPanel.classList.remove('hidden', 'minimised');
+    // Wire the minimise/maximise toggle once.
+    if (!this._puttMinWired) {
+      this._puttMinWired = true;
+      const btn = document.getElementById('putt-min');
+      if (btn) btn.addEventListener('click', () => this.puttPanel.classList.toggle('minimised'));
+    }
   }
 
   hidePutt() {
