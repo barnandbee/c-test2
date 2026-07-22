@@ -894,6 +894,126 @@ export class World {
     this.whirlpool.position.set(this.whirlX, this.whirlWaterLevel + 0.04, this.whirlZ);
     this.scene.add(this.whirlpool);
     this._disposables.push(spiralGeo, spiralMat, spiralTex);
+
+    this._buildWhirlCroc();
+  }
+
+  /**
+   * A dapper crocodile circling the whirlpool lake in a top hat with a
+   * working clock face. Half-submerged, swum around by Game.tick; the
+   * minute hand is stored so the loop can keep it ticking.
+   */
+  _buildWhirlCroc() {
+    const track = (r) => { this._disposables.push(r); return r; };
+    const croc = new THREE.Group();
+    const scaleMat = track(createToonMaterial({ color: 0x3f7d4a, rim: { color: 0xa8e0a0, strength: 0.35, threshold: 0.6 } }));
+    const bellyMat = track(createToonMaterial({ color: 0xcfc78a }));
+    const jawMat = track(createToonMaterial({ color: 0x356a40 }));
+    const toothMat = track(createToonMaterial({ color: 0xf4f0e6 }));
+    const eyeMat = track(createToonMaterial({ color: 0x141014 }));
+    const hatMat = track(createToonMaterial({ color: 0x241f18, rim: { color: 0x6b6152, strength: 0.3, threshold: 0.66 } }));
+
+    // Long low body (the waterline sits about here).
+    const bodyGeo = track(new THREE.CapsuleGeometry(0.42, 1.5, 6, 12));
+    bodyGeo.rotateZ(Math.PI / 2);
+    const bodyMesh = new THREE.Mesh(bodyGeo, scaleMat);
+    bodyMesh.scale.set(1, 0.72, 0.9);
+    bodyMesh.castShadow = true;
+    croc.add(bodyMesh);
+
+    // Snout: an upper and lower jaw jutting forward (+X is forward).
+    const upperJaw = new THREE.Mesh(track(new THREE.BoxGeometry(0.9, 0.24, 0.5)), jawMat);
+    upperJaw.position.set(1.35, 0.06, 0);
+    upperJaw.castShadow = true;
+    croc.add(upperJaw);
+    const lowerJaw = new THREE.Mesh(track(new THREE.BoxGeometry(0.82, 0.14, 0.44)), jawMat);
+    lowerJaw.position.set(1.32, -0.12, 0);
+    croc.add(lowerJaw);
+    for (let i = 0; i < 5; i++) {
+      const tooth = new THREE.Mesh(track(new THREE.ConeGeometry(0.03, 0.12, 4)), toothMat);
+      tooth.position.set(1.02 + i * 0.16, -0.04, 0.2);
+      tooth.rotation.x = Math.PI;
+      croc.add(tooth);
+      const tooth2 = tooth.clone();
+      tooth2.position.z = -0.2;
+      croc.add(tooth2);
+    }
+    // Nostrils + eyes riding just above the waterline.
+    for (const side of [-1, 1]) {
+      const eyeBump = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 10, 8)), scaleMat);
+      eyeBump.position.set(0.6, 0.34, side * 0.22);
+      croc.add(eyeBump);
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 8, 6)), eyeMat);
+      eye.position.set(0.66, 0.42, side * 0.22);
+      croc.add(eye);
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 8, 6)), eyeMat);
+      nostril.position.set(1.7, 0.14, side * 0.08);
+      croc.add(nostril);
+    }
+    // A ridge of scutes down the back, and a tapering tail.
+    for (let i = 0; i < 7; i++) {
+      const scute = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.18, 4)), scaleMat);
+      scute.position.set(0.3 - i * 0.28, 0.28 - i * 0.012, 0);
+      croc.add(scute);
+    }
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.34, 1.4, 8)), scaleMat);
+    tail.position.set(-1.5, 0, 0);
+    tail.rotation.z = Math.PI / 2;
+    tail.scale.set(1, 1, 0.7);
+    croc.add(tail);
+
+    // --- the top hat with a clock face -------------------------------------
+    const hat = new THREE.Group();
+    hat.position.set(0.2, 0.5, 0);
+    croc.add(hat);
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 16)), hatMat);
+    brim.castShadow = true;
+    hat.add(brim);
+    const crown = new THREE.Mesh(track(new THREE.CylinderGeometry(0.3, 0.3, 0.5, 16)), hatMat);
+    crown.position.y = 0.27;
+    crown.castShadow = true;
+    hat.add(crown);
+
+    // A clock face painted on a disc, mounted on the front of the crown.
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#f4efe0';
+    g.beginPath();
+    g.arc(64, 64, 60, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#241f18';
+    g.lineWidth = 6;
+    g.stroke();
+    g.fillStyle = '#241f18';
+    for (let h = 0; h < 12; h++) {
+      const a = (h / 12) * Math.PI * 2;
+      g.beginPath();
+      g.arc(64 + Math.sin(a) * 48, 64 - Math.cos(a) * 48, 4, 0, Math.PI * 2);
+      g.fill();
+    }
+    const clockTex = track(new THREE.CanvasTexture(canvas));
+    clockTex.colorSpace = THREE.SRGBColorSpace;
+    const faceMat = track(createToonMaterial({ map: clockTex, emissive: 0x2a2418, emissiveIntensity: 0.3 }));
+    const face = new THREE.Mesh(track(new THREE.CircleGeometry(0.26, 24)), faceMat);
+    face.position.set(0, 0.27, 0.301);
+    hat.add(face);
+    // Two ticking hands (rotated by Game.tick).
+    const handMat = track(createToonMaterial({ color: 0x241f18 }));
+    const hourHand = new THREE.Mesh(track(new THREE.BoxGeometry(0.03, 0.14, 0.01)), handMat);
+    hourHand.geometry.translate(0, 0.07, 0);
+    hourHand.position.set(0, 0.27, 0.31);
+    hat.add(hourHand);
+    const minHand = new THREE.Mesh(track(new THREE.BoxGeometry(0.022, 0.2, 0.01)), handMat);
+    minHand.geometry.translate(0, 0.1, 0);
+    minHand.position.set(0, 0.27, 0.315);
+    hat.add(minHand);
+    this.whirlCrocHands = { hour: hourHand, minute: minHand };
+
+    croc.position.set(this.whirlX, this.whirlWaterLevel, this.whirlZ);
+    this.scene.add(croc);
+    this.whirlCroc = croc;
+    this.whirlCrocRadius = this.whirlRadius * 0.62;
   }
 
   /**

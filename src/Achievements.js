@@ -49,7 +49,10 @@ export const TROPHIES = [
   { id: 'woodlie', medal: '🪵', title: 'Wood I Lie To You', desc: 'Take Margaret or President Fir Tree to WOODOO’S with 50 health or less.' },
   { id: 'guava', medal: '🥝', title: 'Gather Guava, Wouldn’t You Rather', desc: 'Collect the Platinum Guava in a run.' },
   { id: 'hastings', medal: '🏹', title: 'Hastings Is A Place On Earth', desc: 'Grab both Magna Cartas as William the Conqueror and score exactly 106.6.' },
-  { id: 'blisters', medal: '🎸', title: 'I’ve Got Blisters On My Fingers', desc: 'Reach the helter skelter with a score of 300 or more.' }
+  { id: 'blisters', medal: '🎸', title: 'I’ve Got Blisters On My Fingers', desc: 'Reach the helter skelter with a score of 300 or more.' },
+  { id: 'whirlylucky', medal: '🍀', title: 'Whirly Lucky', desc: 'Get three positive whirlpool scores in a row in one run.' },
+  { id: 'inaspin', medal: '😵‍💫', title: 'In A Spin', desc: 'Get three negative whirlpool scores in a row in one run.' },
+  { id: 'chimptactoe', medal: '🍌', title: 'Chimp Tac Toe', desc: 'Beat Turnip Scart at Veggie Tac Toe as Chimpy Henderson and finish on a multiple of 7.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

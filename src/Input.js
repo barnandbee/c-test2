@@ -57,7 +57,13 @@ export class Input {
     this.suppressPointerLock = false;
     this.onMouseDown = (e) => {
       if (e.button !== 0) return;
-      if (this.suppressPointerLock) return;
+      if (this.suppressPointerLock) {
+        // Minigames keep the cursor visible (so their overlay buttons stay
+        // clickable), but dragging on the playfield still steers the camera
+        // via the drag fallback — no pointer lock requested.
+        this.dragging = true;
+        return;
+      }
       if (!this.pointerLocked) {
         this.domElement.requestPointerLock();
         this.dragging = true;

@@ -358,6 +358,8 @@ export class Game {
     this._onSummit = false;          // edge flag for counting summit arrivals
     this._onHelter = false;          // edge flag for counting helter-skelter visits
     this._inWhirl = false;           // edge flag for whirlpool dips (hysteresis)
+    this._whirlPosStreak = 0;        // consecutive positive whirlpool dips (Whirly Lucky)
+    this._whirlNegStreak = 0;        // consecutive negative whirlpool dips (In A Spin)
     this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
@@ -1413,7 +1415,7 @@ export class Game {
             } else if (isJam) {
               this.ui.showTimeToast("IT'S FUNKY, BUT IT WORKS! +55.5");
             } else if (isChimpy) {
-              this.ui.showTimeToast('OOK! BANANA IN A BLT?! +55.5');
+              this.ui.showTimeToast('BBLT: Banana? You might not be ready, but your kids are going to love it. Maybe.');
             } else {
               this.ui.showTimeToast('MUCH BETTER! +55.5');
             }
@@ -1821,6 +1823,10 @@ export class Game {
     this.hovercraft.rider = null;
     this.hovercraft.parkAt(this.player.position);
     this.puttPlayed = true;
+    // Keep the cursor visible so the panel's minimise button is clickable;
+    // drag-to-aim still works through the drag fallback.
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.input.suppressPointerLock = true;
     this.ui.showTimeToast('PUTTMOST RESPECT!');
     this.minigame = new PuttingGame(this.scene, this.world, this.ui, (success, strokes) =>
       this.endPutting(success, strokes)
@@ -1831,6 +1837,7 @@ export class Game {
     if (!this.minigame) return;
     this.minigame.dispose();
     this.minigame = null;
+    this.input.suppressPointerLock = false;
     if (success) {
       const holeInOne = strokes === 1;
       if (holeInOne) {
@@ -1959,13 +1966,16 @@ export class Game {
   /**
    * Chimpy Henderson: a nautical monkey for a nautical feat — claim Red
    * October (strike the submarine) AND take the Mystic Line to Docklands
-   * in the same run. Order doesn't matter; checked from both events.
+   * in the same run, all WITHOUT touching the hovercraft (so the sub must
+   * be reached by rocket, balloon, or a very lucky leap). Order doesn't
+   * matter; checked from both events.
    */
   checkChimpy() {
     if (
       !this.chimpyUnlocked &&
       this.redOctoberClaimed &&
-      this.stationsVisited.has('lake')
+      this.stationsVisited.has('lake') &&
+      !this.vehiclesRidden.has('hovercraft')
     ) {
       this.chimpyUnlocked = true;
       writeStorage(STORAGE_CHIMPY, '1');
@@ -2115,6 +2125,18 @@ export class Game {
     // end-of-bell unlocks (score/decimal/50…500, unlock 1/5/10).
     this.checkAchievements();
 
+    // Chimp Tac Toe: beat Turnip Scart as Chimpy Henderson and finish the
+    // run on a (whole, positive) multiple of 7.
+    if (
+      this.characterName === 'chimpy' &&
+      this.wonVeggieThisRun &&
+      Number.isInteger(this.points) &&
+      this.points > 0 &&
+      this.points % 7 === 0
+    ) {
+      this.awardAchievement('chimptactoe');
+    }
+
     // Slide-whistle any heroes judged and unlocked here at the bell (the
     // mid-run ones already sang out when they were earned).
     if (newlyUnlockedNames.length > this.runUnlockNames.length) {
@@ -2185,6 +2207,8 @@ export class Game {
     this._onSummit = false;
     this._onHelter = false;
     this._inWhirl = false;
+    this._whirlPosStreak = 0;
+    this._whirlNegStreak = 0;
     this._pickleSummonedThisRun = false;
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -2215,6 +2239,7 @@ export class Game {
     if (this.minigame) {
       this.minigame.dispose();
       this.minigame = null;
+      this.input.suppressPointerLock = false;
     }
     if (this.veggieGame) {
       this.veggieGame.dispose();
@@ -2263,6 +2288,25 @@ export class Game {
 
     // The whirlpool never stops turning.
     if (this.world.whirlpool) this.world.whirlpool.rotation.y -= dt * 1.4;
+
+    // The hatted crocodile circles the whirlpool lake, half-submerged, its
+    // clock hands ticking as it goes.
+    if (this.world.whirlCroc) {
+      const w = this.world;
+      const ang = time * 0.32;
+      const r = w.whirlCrocRadius;
+      const cx = w.whirlX + Math.cos(ang) * r;
+      const cz = w.whirlZ + Math.sin(ang) * r;
+      const croc = this.world.whirlCroc;
+      croc.position.set(cx, w.whirlWaterLevel - 0.18 + Math.sin(time * 1.3) * 0.05, cz);
+      // Face along the direction of travel (tangent to the circle).
+      croc.rotation.y = -ang + Math.PI / 2;
+      croc.rotation.z = Math.sin(time * 1.1) * 0.04; // gentle roll
+      if (w.whirlCrocHands) {
+        w.whirlCrocHands.minute.rotation.z = -time * 0.9;
+        w.whirlCrocHands.hour.rotation.z = -time * 0.075;
+      }
+    }
 
     if (this.inMenu) {
       // Welcome menu: the forest breathes, the camera drifts, no clock.
@@ -2442,9 +2486,15 @@ export class Game {
           if (spin >= 0) {
             this.ui.showTimeToast(`YOU SURFED THE WHIRLPOOL LIKE A PRO! +${spin}`);
             this.audio.play('win');
+            this._whirlPosStreak += 1;
+            this._whirlNegStreak = 0;
+            if (this._whirlPosStreak >= 3) this.awardAchievement('whirlylucky');
           } else {
             this.ui.showTimeToast(`THE WHIRLPOOL SUCKED YOU IN AND DAMAGED YOUR AURA ${spin}`);
             this.audio.play('sonar');
+            this._whirlNegStreak += 1;
+            this._whirlPosStreak = 0;
+            if (this._whirlNegStreak >= 3) this.awardAchievement('inaspin');
           }
         } else if (wd > 7) {
           this._inWhirl = false; // clear of the throat — the next dip counts

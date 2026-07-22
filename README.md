@@ -322,7 +322,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   red feather**, gripping a ripe **banana in each hand**. Like Jam and
   Mayonnaise, he'll dress the cave's BLT for **+55.5**. Unlock him with a
   nautical double feat in one run: **claim Red October (strike the
-  submarine) AND take the Mystic Line to Docklands**.
+  submarine) AND take the Mystic Line to Docklands — all without ever
+  touching the hovercraft** (so the sub has to be reached by rocket,
+  balloon, or a very lucky leap).
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
@@ -376,7 +378,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   The **hovercraft** skims it happily; dip into the whirlpool and fortune
   decides — anywhere from **−45.45 to +45.45 points**, once per dip.
   Come up lucky and *"You surfed the whirlpool like a pro!"*; come up
-  short and *"The whirlpool sucked you in and damaged your aura."*
+  short and *"The whirlpool sucked you in and damaged your aura."* Three
+  positive dips in a row earns **Whirly Lucky 🍀**; three negative in a
+  row, **In A Spin 😵‍💫**. A dapper **crocodile in a clock-faced top hat**
+  swims perpetual laps of this lake, half-submerged, its little hands
+  ticking as it goes.
 - **The desert** — a sun-baked sandy stretch beside the whirlpool lake,
   home to **saguaro cacti** (climbable-looking, but solid — mind the
   arms), **barrel cacti** (some in pink bloom) and **aloe-style
@@ -445,7 +451,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   the Platinum Guava in a run), **Hastings Is A Place On Earth 🏹** (grab
   both Magna Cartas as William the Conqueror and finish on exactly 106.6),
   and **I’ve Got Blisters On My Fingers 🎸** (reach the helter skelter on
-  300+). Earned trophies are saved locally
+  300+). Three more come from the far corners: **Whirly Lucky 🍀** and
+  **In A Spin 😵‍💫** (three positive / three negative whirlpool dips in a
+  row in one run), and **Chimp Tac Toe 🍌** (beat Turnip Scart at Veggie
+  Tac Toe as Chimpy Henderson and finish on a multiple of 7). Earned
+  trophies are saved locally
   and announced with a 🏆 toast the moment you earn them. The **score
   milestones are credited retroactively against your saved high score** —
   so if a new milestone (like the 600 **Sextuple Ton 💎**) is added in a
