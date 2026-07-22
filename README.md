@@ -312,6 +312,17 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   two faintly pulsing eyes, and a cloud of puffs that slowly billow and
   swirl around it. Unlock it by scoring an **all-time total of 40,000
   points** across every run.
+- **Spirit of the Forest Badger** — a walking woodland: the badger form
+  grown over entirely with moss, sprouting leaves, wildflowers, berries,
+  toadstools and a little branch-antler crown, with glowing amber eyes.
+  It moves at **twice** a badger's pace, leaps **three times** as high,
+  and is light enough to **walk across water**. Unlock it by scoring an
+  **all-time total of 100,000 points** across every run.
+- **Chimpy Henderson** — a brown monkey in a black **tricorne hat with a
+  red feather**, gripping a ripe **banana in each hand**. Like Jam and
+  Mayonnaise, he'll dress the cave's BLT for **+55.5**. Unlock him with a
+  nautical double feat in one run: **claim Red October (strike the
+  submarine) AND take the Mystic Line to Docklands**.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

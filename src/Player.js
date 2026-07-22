@@ -115,6 +115,7 @@ export class Player {
     this.isBouncy = false;   // Pickle Stick hops to get around
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
     this.moveScale = 1;      // per-instance top-speed multiplier (CPU rival tuning)
+    this.walksOnWater = false; // Spirit of the Forest Badger treads the lakes
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -152,6 +153,8 @@ export class Player {
     else if (this.character === 'pickle') this.root = this.buildPickle();
     else if (this.character === 'glassbadger') this.root = this.buildGlassBadger();
     else if (this.character === 'vapour') this.root = this.buildVapourBadger();
+    else if (this.character === 'spirit') this.root = this.buildSpiritBadger();
+    else if (this.character === 'chimpy') this.root = this.buildChimpy();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
@@ -3136,6 +3139,426 @@ export class Player {
   }
 
   /**
+   * Spirit of the Forest Badger — a walking woodland: the badger form
+   * grown over entirely with moss, sprouting leaves, wildflowers, berries,
+   * toadstools and a little branch-antler crown, with glowing amber eyes.
+   * Twice a badger's pace, a triple-height leap, and light enough on its
+   * feet to walk across water. Densely detailed botanical scatter.
+   */
+  buildSpiritBadger() {
+    const root = new THREE.Group();
+    root.name = 'spirit';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Powers: 2x speed, ~3x jump apex, and it treads on water.
+    this.moveScale = 2;
+    this.jumpScale = 1.73;   // apex ∝ jumpScale² ⇒ ~3× a normal leap
+    this.gravityScale = 1;
+    this.walksOnWater = true;
+
+    const mossMat = track(createToonMaterial({ color: 0x3f6b3a, rim: { color: 0xbfe89a, strength: 0.4, threshold: 0.58 } }));
+    const mossDarkMat = track(createToonMaterial({ color: 0x2c5230 }));
+    const leafMats = [
+      track(createToonMaterial({ color: 0x4e8a3c, rim: { color: 0xcaf0a0, strength: 0.35, threshold: 0.6 } })),
+      track(createToonMaterial({ color: 0x6aa84a })),
+      track(createToonMaterial({ color: 0x2f6b46 })),
+      track(createToonMaterial({ color: 0x88bd54 }))
+    ];
+    const petalMats = [
+      track(createToonMaterial({ color: 0xf2a6c8, rim: { color: 0xffe0ef, strength: 0.4, threshold: 0.55 } })),
+      track(createToonMaterial({ color: 0xf2d24a })),
+      track(createToonMaterial({ color: 0xf4f0e6 })),
+      track(createToonMaterial({ color: 0xb488e0 })),
+      track(createToonMaterial({ color: 0xf29a4a }))
+    ];
+    const flowerCoreMat = track(createToonMaterial({ color: 0xf2d24a, emissive: 0x6b5810, emissiveIntensity: 0.4 }));
+    const berryMats = [
+      track(createToonMaterial({ color: 0xc0304a, rim: { color: 0xff9aac, strength: 0.4, threshold: 0.5 } })),
+      track(createToonMaterial({ color: 0x5a6cc0 }))
+    ];
+    const barkMat = track(createToonMaterial({ color: 0x6b5236 }));
+    const capMat = track(createToonMaterial({ color: 0xd0503c, rim: { color: 0xffb0a0, strength: 0.4, threshold: 0.55 } }));
+    const dotMat = track(createToonMaterial({ color: 0xf4f0e6 }));
+    const stemMat = track(createToonMaterial({ color: 0xe8e0d0 }));
+    const eyeMat = track(createToonMaterial({ color: 0xffcf7a, emissive: 0xffb43a, emissiveIntensity: 1.6, pulse: { speed: 1.6, phase: 0 } }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- mossy badger torso -------------------------------------------------
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.34, 0.5, 6, 16));
+    torsoGeo.rotateX(Math.PI / 2);
+    const torso = new THREE.Mesh(torsoGeo, mossMat);
+    torso.scale.set(1.0, 0.95, 1.2);
+    torso.castShadow = true;
+    body.add(torso);
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.12, 0.32, 8)), mossDarkMat);
+    tail.position.set(0, 0.08, -0.5);
+    tail.rotation.x = -1.5;
+    body.add(tail);
+    this.tail = tail;
+
+    // --- head ---------------------------------------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.2, 0.44);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+    const head = new THREE.Mesh(track(new THREE.SphereGeometry(0.27, 18, 14)), mossMat);
+    head.scale.set(0.95, 0.9, 1.05);
+    head.castShadow = true;
+    headGroup.add(head);
+    const snout = new THREE.Mesh(track(new THREE.ConeGeometry(0.12, 0.3, 12)), mossDarkMat);
+    snout.position.set(0, -0.04, 0.26);
+    snout.rotation.x = Math.PI / 2;
+    headGroup.add(snout);
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), barkMat);
+    nose.position.set(0, -0.02, 0.42);
+    headGroup.add(nose);
+    // Glowing amber eyes.
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), eyeMat);
+      eye.position.set(side * 0.12, 0.06, 0.28);
+      headGroup.add(eye);
+      // Leafy ears.
+      const ear = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.24, 6)), leafMats[0]);
+      ear.position.set(side * 0.17, 0.24, 0.0);
+      ear.rotation.set(-0.3, 0, side * 0.4);
+      headGroup.add(ear);
+    }
+    // A little branch-antler crown.
+    for (const side of [-1, 1]) {
+      const antler = new THREE.Group();
+      antler.position.set(side * 0.1, 0.24, 0.05);
+      antler.rotation.z = side * 0.5;
+      const main = new THREE.Mesh(track(new THREE.CylinderGeometry(0.018, 0.028, 0.34, 5)), barkMat);
+      main.position.y = 0.17;
+      antler.add(main);
+      for (const t of [0.12, 0.24]) {
+        const twig = new THREE.Mesh(track(new THREE.CylinderGeometry(0.012, 0.016, 0.16, 5)), barkMat);
+        twig.position.set(side * 0.05, t, 0);
+        twig.rotation.z = side * -0.7;
+        antler.add(twig);
+      }
+      headGroup.add(antler);
+    }
+
+    // --- shared decoration geometries (reused across the whole scatter) -----
+    const leafGeo = track(new THREE.ConeGeometry(0.06, 0.2, 5));
+    const petalGeo = track(new THREE.SphereGeometry(0.045, 8, 6));
+    const berryGeo = track(new THREE.SphereGeometry(0.035, 8, 6));
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    // Sprout a leaf pointing outward from a point on the body/head surface.
+    const sproutLeaf = (parent, x, y, z, nx, ny, nz, scale = 1) => {
+      const leaf = new THREE.Mesh(leafGeo, pick(leafMats));
+      leaf.position.set(x + nx * 0.04, y + ny * 0.04, z + nz * 0.04);
+      leaf.scale.setScalar(scale);
+      // Orient the cone's +Y along the surface normal.
+      leaf.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(nx, ny, nz).normalize());
+      leaf.castShadow = true;
+      parent.add(leaf);
+    };
+    // A little flower: a ring of petals around a glowing core.
+    const bloom = (parent, x, y, z, nx, ny, nz, scale = 1) => {
+      const g = new THREE.Group();
+      g.position.set(x + nx * 0.05, y + ny * 0.05, z + nz * 0.05);
+      g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(nx, ny, nz).normalize());
+      g.scale.setScalar(scale);
+      const petalMat = pick(petalMats);
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const petal = new THREE.Mesh(petalGeo, petalMat);
+        petal.position.set(Math.cos(a) * 0.06, 0, Math.sin(a) * 0.06);
+        petal.scale.set(1, 0.5, 1.4);
+        g.add(petal);
+      }
+      const core = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), flowerCoreMat);
+      core.position.y = 0.02;
+      g.add(core);
+      parent.add(g);
+    };
+
+    // Scatter leaves + flowers + berries thickly over the torso ellipsoid.
+    const torsoR = { x: 0.4, y: 0.42, z: 0.62 };
+    for (let i = 0; i < 46; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.cos(phi) * 0.8 + 0.35; // bias sprouts toward the top
+      const nz = Math.sin(phi) * Math.sin(theta);
+      const len = Math.hypot(nx, ny, nz);
+      const ux = nx / len, uy = ny / len, uz = nz / len;
+      const x = ux * torsoR.x;
+      const y = 0.16 + uy * torsoR.y;
+      const z = uz * torsoR.z;
+      const roll = Math.random();
+      if (roll < 0.55) sproutLeaf(body, x, y, z, ux, uy, uz, 0.7 + Math.random() * 0.6);
+      else if (roll < 0.82) bloom(body, x, y, z, ux, uy, uz, 0.7 + Math.random() * 0.5);
+      else {
+        const berry = new THREE.Mesh(berryGeo, pick(berryMats));
+        berry.position.set(x + ux * 0.04, y + uy * 0.04, z + uz * 0.04);
+        body.add(berry);
+      }
+    }
+    // A few leaves crowning the head too.
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const up = 0.5 + Math.random() * 0.5;
+      const nx = Math.cos(a) * (1 - up), ny = up, nz = Math.sin(a) * (1 - up);
+      sproutLeaf(headGroup, nx * 0.24, 0.12 + ny * 0.2, nz * 0.24 + 0.04, nx, ny, nz, 0.6);
+    }
+
+    // Two toadstools perched on the back.
+    for (const [mx, mz] of [[-0.14, -0.18], [0.16, -0.06]]) {
+      const shroom = new THREE.Group();
+      shroom.position.set(mx, 0.52, mz);
+      const stem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.03, 0.04, 0.16, 8)), stemMat);
+      stem.position.y = 0.08;
+      shroom.add(stem);
+      const cap = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
+      cap.position.y = 0.16;
+      cap.scale.set(1, 0.7, 1);
+      shroom.add(cap);
+      for (let d = 0; d < 4; d++) {
+        const dot = new THREE.Mesh(track(new THREE.SphereGeometry(0.012, 6, 5)), dotMat);
+        const da = (d / 4) * Math.PI * 2;
+        dot.position.set(Math.cos(da) * 0.05, 0.18, Math.sin(da) * 0.05);
+        shroom.add(dot);
+      }
+      shroom.castShadow = true;
+      body.add(shroom);
+    }
+
+    // --- four mossy legs with rooty paws ------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.08, 0.4, 10));
+    legGeo.translate(0, -0.2, 0);
+    const pawGeo = track(new THREE.SphereGeometry(0.1, 10, 8));
+    this.legs = [];
+    const slots = [
+      { x: -0.2, z: 0.26, phase: 0 },
+      { x: 0.2, z: 0.26, phase: Math.PI },
+      { x: -0.22, z: -0.28, phase: Math.PI },
+      { x: 0.22, z: -0.28, phase: 0 }
+    ];
+    for (const slot of slots) {
+      const pivot = new THREE.Group();
+      pivot.position.set(slot.x, -0.24, slot.z);
+      const leg = new THREE.Mesh(legGeo, mossMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const paw = new THREE.Mesh(pawGeo, mossDarkMat);
+      paw.position.set(0, -0.4, 0.04);
+      paw.scale.set(1, 0.6, 1.3);
+      pivot.add(paw);
+      // a sprig on each ankle
+      sproutLeaf(pivot, 0, -0.16, 0.06, 0.2, 0.9, 0.3, 0.5);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: slot.phase });
+    }
+
+    return root;
+  }
+
+  /**
+   * Chimpy Henderson — a brown monkey in a black tricorne hat with a red
+   * feather, gripping a ripe banana in each hand. Like Jam, he'll dress
+   * the cave's BLT. A long curling tail and a pale heart-shaped face.
+   */
+  buildChimpy() {
+    const root = new THREE.Group();
+    root.name = 'chimpy';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const furMat = track(createToonMaterial({ color: 0x7a5230, rim: { color: 0xc7a274, strength: 0.35, threshold: 0.62 } }));
+    const furDarkMat = track(createToonMaterial({ color: 0x5e3d22 }));
+    const faceMat = track(createToonMaterial({ color: 0xe6c39a }));
+    const hatMat = track(createToonMaterial({ color: 0x241f18, rim: { color: 0x6b6152, strength: 0.3, threshold: 0.66 } }));
+    const featherMat = track(createToonMaterial({ color: 0xc21a3a, rim: { color: 0xff9aac, strength: 0.4, threshold: 0.55 } }));
+    const bananaMat = track(createToonMaterial({ color: 0xf2d24a, rim: { color: 0xfff0b0, strength: 0.4, threshold: 0.55 } }));
+    const bananaTipMat = track(createToonMaterial({ color: 0x6b5230 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14100c }));
+    const noseMat = track(createToonMaterial({ color: 0x3a2a1e }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.55;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso with a paler belly ------------------------------------------
+    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.26, 0.34, 6, 14)), furMat);
+    torso.position.y = 0.32;
+    torso.castShadow = true;
+    body.add(torso);
+    const belly = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 12, 10)), faceMat);
+    belly.position.set(0, 0.28, 0.14);
+    belly.scale.set(0.8, 1.05, 0.6);
+    body.add(belly);
+
+    // --- head ---------------------------------------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.86;
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 14)), furMat);
+    skull.castShadow = true;
+    head.add(skull);
+    // Pale heart-shaped face.
+    const face = new THREE.Mesh(track(new THREE.SphereGeometry(0.24, 16, 14)), faceMat);
+    face.position.set(0, -0.02, 0.12);
+    face.scale.set(1, 1.05, 0.6);
+    head.add(face);
+    const muzzle = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 12, 10)), faceMat);
+    muzzle.position.set(0, -0.12, 0.2);
+    muzzle.scale.set(1.1, 0.7, 0.8);
+    head.add(muzzle);
+    // Big round ears.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), furMat);
+      ear.position.set(side * 0.3, 0.02, 0);
+      ear.scale.set(0.7, 1, 0.5);
+      head.add(ear);
+      const inner = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 8, 7)), faceMat);
+      inner.position.set(side * 0.32, 0.02, 0.03);
+      inner.scale.set(0.6, 1, 0.4);
+      head.add(inner);
+    }
+    // Eyes + nostrils + a cheeky smile.
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 10, 8)), track(createToonMaterial({ color: 0xf4f0e6 })));
+      white.position.set(side * 0.1, 0.03, 0.22);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), eyeMat);
+      pupil.position.set(side * 0.1, 0.03, 0.27);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.1, baseY: 0.03, seed: Math.random() * 6.28 });
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.014, 6, 5)), noseMat);
+      nostril.position.set(side * 0.035, -0.12, 0.32);
+      head.add(nostril);
+    }
+    const smile = new THREE.Mesh(track(new THREE.TorusGeometry(0.07, 0.014, 6, 12, Math.PI)), noseMat);
+    smile.position.set(0, -0.16, 0.3);
+    smile.rotation.x = Math.PI;
+    head.add(smile);
+
+    // --- the tricorne hat with a red feather -------------------------------
+    const hat = new THREE.Group();
+    hat.position.y = 0.24;
+    hat.rotation.z = 0.06;
+    head.add(hat);
+    const crown = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55)), hatMat);
+    crown.scale.set(1, 0.9, 1);
+    crown.castShadow = true;
+    hat.add(crown);
+    // Three upturned corners: flat triangular flaps set at 120°.
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + Math.PI / 2;
+      const flap = new THREE.Mesh(track(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 3)), hatMat);
+      flap.position.set(Math.cos(a) * 0.12, 0.0, Math.sin(a) * 0.12);
+      flap.rotation.y = -a;
+      flap.rotation.x = 0.32; // corners cocked up
+      flap.castShadow = true;
+      hat.add(flap);
+    }
+    // The feather, tucked into the front-left corner.
+    const feather = new THREE.Group();
+    feather.position.set(-0.16, 0.06, 0.16);
+    feather.rotation.set(-0.5, 0, 0.5);
+    const quill = new THREE.Mesh(track(new THREE.CylinderGeometry(0.008, 0.012, 0.4, 5)), featherMat);
+    quill.position.y = 0.2;
+    feather.add(quill);
+    const plume = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 8, 8)), featherMat);
+    plume.position.y = 0.34;
+    plume.scale.set(0.5, 1.6, 0.3);
+    feather.add(plume);
+    hat.add(feather);
+
+    // --- a banana in each hand ---------------------------------------------
+    const bananaGeo = track(new THREE.TorusGeometry(0.12, 0.032, 8, 14, Math.PI * 1.1));
+    const makeBanana = () => {
+      const g = new THREE.Group();
+      const b = new THREE.Mesh(bananaGeo, bananaMat);
+      g.add(b);
+      for (const end of [0, Math.PI * 1.1]) {
+        const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.032, 6, 5)), bananaTipMat);
+        tip.position.set(Math.cos(end) * 0.12, Math.sin(end) * 0.12, 0);
+        g.add(tip);
+      }
+      return g;
+    };
+
+    // --- arms (each raised, gripping a banana) ------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.055, 0.34, 8));
+    armGeo.translate(0, -0.17, 0);
+    const handGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.28, 0.55, 0.04);
+      pivot.rotation.z = side * 0.9; // arms up, brandishing
+      const arm = new THREE.Mesh(armGeo, furMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, faceMat);
+      hand.position.set(0, -0.36, 0);
+      pivot.add(hand);
+      const banana = makeBanana();
+      banana.position.set(0, -0.4, 0.04);
+      banana.rotation.z = -side * 0.9 + Math.PI / 2;
+      pivot.add(banana);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- short legs with pale feet -----------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.32, 8));
+    legGeo.translate(0, -0.16, 0);
+    const footGeo = track(new THREE.SphereGeometry(0.07, 10, 8));
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, 0.08, 0);
+      const leg = new THREE.Mesh(legGeo, furMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const foot = new THREE.Mesh(footGeo, faceMat);
+      foot.position.set(0, -0.32, 0.05);
+      foot.scale.set(1, 0.6, 1.5);
+      pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // --- a long curling tail ------------------------------------------------
+    const tailCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.28, -0.24),
+      new THREE.Vector3(0, 0.2, -0.5),
+      new THREE.Vector3(0.18, 0.34, -0.6),
+      new THREE.Vector3(0.3, 0.54, -0.48),
+      new THREE.Vector3(0.22, 0.66, -0.3)
+    ]);
+    const tailGeo = track(new THREE.TubeGeometry(tailCurve, 20, 0.035, 6, false));
+    const tail = new THREE.Mesh(tailGeo, furMat);
+    tail.castShadow = true;
+    body.add(tail);
+    this.tail = tail;
+
+    return root;
+  }
+
+  /**
    * McDonovan — a film-noir private eye who happens to be a mouse: a grey
    * mouse in a muted trench coat with a raised collar and belt, a grey
    * fedora tilted low, big round ears, a pink nose, whiskers and a long
@@ -5338,7 +5761,13 @@ export class Player {
     // Terrain, or a stair/platform top when one is underfoot and in reach.
     const terrainH = this.world.getHeight(pos.x, pos.z);
     // Candy Florence hovers: her resting floor sits a little above the turf.
-    const groundH = this.world.getGroundHeight(pos.x, pos.z, pos.y, terrainH) + this.hoverHeight;
+    let groundH = this.world.getGroundHeight(pos.x, pos.z, pos.y, terrainH) + this.hoverHeight;
+    // Spirit of the Forest Badger treads the water's surface: over either
+    // lake the water level itself becomes the floor.
+    if (this.walksOnWater) {
+      const surfaceWl = this.world.waterAt(pos.x, pos.z);
+      if (surfaceWl !== undefined) groundH = Math.max(groundH, surfaceWl);
+    }
     if (groundH > terrainH + 1e-3) {
       this.groundNormal.set(0, 1, 0); // platforms are dead level
     } else {

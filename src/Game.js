@@ -101,6 +101,8 @@ const STORAGE_NELLY = 'mystic-badger.nellyUnlocked';
 const STORAGE_TRIFEDORA = 'mystic-badger.triFedoraUnlocked';
 const STORAGE_PARSLEY = 'mystic-badger.parsleyUnlocked';
 const STORAGE_VAPOUR = 'mystic-badger.vapourBadgerUnlocked';
+const STORAGE_SPIRIT = 'mystic-badger.spiritBadgerUnlocked';
+const STORAGE_CHIMPY = 'mystic-badger.chimpyUnlocked';
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -126,6 +128,7 @@ const JAM_TOTAL_SCORE = 1000;      // all-time cumulative points to unlock Jam
 const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Night Eye
 const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock Glass Badger
 const VAPOUR_TOTAL_SCORE = 40000;  // all-time cumulative points to unlock Vapour Badger
+const SPIRIT_TOTAL_SCORE = 100000; // all-time cumulative points to unlock Spirit of the Forest Badger
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
@@ -257,6 +260,8 @@ export class Game {
     this.triFedoraUnlocked = readStorage(STORAGE_TRIFEDORA) === '1';
     this.parsleyUnlocked = readStorage(STORAGE_PARSLEY) === '1';
     this.vapourBadgerUnlocked = readStorage(STORAGE_VAPOUR) === '1';
+    this.spiritBadgerUnlocked = readStorage(STORAGE_SPIRIT) === '1';
+    this.chimpyUnlocked = readStorage(STORAGE_CHIMPY) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -897,6 +902,8 @@ export class Game {
     if (name === 'trifedora') return this.triFedoraUnlocked;
     if (name === 'parsley') return this.parsleyUnlocked;
     if (name === 'vapour') return this.vapourBadgerUnlocked;
+    if (name === 'spirit') return this.spiritBadgerUnlocked;
+    if (name === 'chimpy') return this.chimpyUnlocked;
     return name === 'badger';
   }
 
@@ -936,7 +943,9 @@ export class Game {
       nelly: this.nellyUnlocked,
       trifedora: this.triFedoraUnlocked,
       parsley: this.parsleyUnlocked,
-      vapour: this.vapourBadgerUnlocked
+      vapour: this.vapourBadgerUnlocked,
+      spirit: this.spiritBadgerUnlocked,
+      chimpy: this.chimpyUnlocked
     };
   }
 
@@ -1382,7 +1391,8 @@ export class Game {
       if (dx * dx + dz * dz < SANDWICH_RANGE * SANDWICH_RANGE && Math.abs(dy) < 3) {
         const isMayo = this.characterName === 'mayo';
         const isJam = this.characterName === 'jam';
-        if (isMayo || isJam) {
+        const isChimpy = this.characterName === 'chimpy';
+        if (isMayo || isJam || isChimpy) {
           if (!this.sandwichClaimed) {
             this.sandwichClaimed = true;
             this.points += SANDWICH_POINTS;
@@ -1390,10 +1400,11 @@ export class Game {
             this.audio.play('squelch'); // spread onto the sandwich
             this.particles.spawnBurst(
               this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
-              isJam ? 0x9b2d5e : 0xf2eed8,
+              isJam ? 0x9b2d5e : isChimpy ? 0xf2d24a : 0xf2eed8,
               { count: 36, speed: 4.2, size: 46, upBias: 0.7, life: 0.9 }
             );
-            // Mayo's dressing summons the Perpendicular Bird; Jam just… works.
+            // Mayo's dressing summons the Perpendicular Bird; Jam and
+            // Chimpy's banana just… work.
             if (isMayo && !this.perpbirdUnlocked) {
               this.perpbirdUnlocked = true;
               writeStorage(STORAGE_PERPBIRD, '1');
@@ -1401,6 +1412,8 @@ export class Game {
               this.ui.showTimeToast('★ PERPENDICULAR BIRD UNLOCKED! +55.5');
             } else if (isJam) {
               this.ui.showTimeToast("IT'S FUNKY, BUT IT WORKS! +55.5");
+            } else if (isChimpy) {
+              this.ui.showTimeToast('OOK! BANANA IN A BLT?! +55.5');
             } else {
               this.ui.showTimeToast('MUCH BETTER! +55.5');
             }
@@ -1683,6 +1696,7 @@ export class Game {
         this.runUnlockNames.push('McDonovan');
         this.ui.showTimeToast('★ McDONOVAN UNLOCKED — “THE CASE IS AFOOT.”');
       }
+      this.checkChimpy(); // harbour reached — pairs with a Red October strike
     } else if (dest === 'cactus') {
       // The secret stop: out among the saguaros. Land on the map-centre
       // side of the desert, beside the (now-revealed) roundel.
@@ -1934,11 +1948,30 @@ export class Game {
     this.ui.setPoints(this.points);
     this.audio.play('sonar'); // striking the submarine
     this.ui.showTimeToast('RED OCTOBER! +63.14159');
+    this.checkChimpy();
     this.particles.spawnBurst(
       this._playerCenter.set(sub.x, sub.y + 1.5, sub.z),
       0xff6a5a,
       { count: 46, speed: 5.5, size: 50, upBias: 0.75, life: 1.0 }
     );
+  }
+
+  /**
+   * Chimpy Henderson: a nautical monkey for a nautical feat — claim Red
+   * October (strike the submarine) AND take the Mystic Line to Docklands
+   * in the same run. Order doesn't matter; checked from both events.
+   */
+  checkChimpy() {
+    if (
+      !this.chimpyUnlocked &&
+      this.redOctoberClaimed &&
+      this.stationsVisited.has('lake')
+    ) {
+      this.chimpyUnlocked = true;
+      writeStorage(STORAGE_CHIMPY, '1');
+      this.runUnlockNames.push('Chimpy Henderson');
+      this.ui.showTimeToast('★ CHIMPY HENDERSON UNLOCKED! OOK OOK! 🐒');
+    }
   }
 
   gameOver(reason) {
@@ -2065,6 +2098,11 @@ export class Game {
       this.vapourBadgerUnlocked = true;
       writeStorage(STORAGE_VAPOUR, '1');
       newlyUnlockedNames.push('Vapour Badger');
+    }
+    if (!this.spiritBadgerUnlocked && this.totalScore >= SPIRIT_TOTAL_SCORE) {
+      this.spiritBadgerUnlocked = true;
+      writeStorage(STORAGE_SPIRIT, '1');
+      newlyUnlockedNames.push('Spirit of the Forest Badger');
     }
     // Negative Nelly: finishing in the red summons the blue elephant.
     if (!this.nellyUnlocked && this.points < 0) {
