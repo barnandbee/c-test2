@@ -94,5 +94,5 @@ export const CHARACTER_UNLOCKS = [
   { key: 'parsley', name: "Parsley O'Riley", how: "Reach the cave's BLT with 300+ points, having used the balloon as your ONLY transport that run (no hovercraft, rocket or train)." },
   { key: 'vapour', name: 'Vapour Badger', how: 'Score an all-time total of 40,000 points across every run.' },
   { key: 'spirit', name: 'Spirit of the Forest Badger', how: 'Score an all-time total of 100,000 points across every run.' },
-  { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands.' }
+  { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all without using the hovercraft.' }
 ];

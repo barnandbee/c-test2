@@ -724,7 +724,8 @@ body {
   border-radius: 18px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 14;
+  /* Above the touch overlays (15) so the minimise button stays tappable. */
+  z-index: 30;
 }
 
 #putt-title {
@@ -737,14 +738,26 @@ body {
 #putt-min {
   position: absolute;
   top: 6px;
-  right: 10px;
-  background: none;
-  border: none;
-  color: rgba(243, 239, 255, 0.7);
-  font-size: 18px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: rgba(243, 239, 255, 0.85);
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  pointer-events: auto;
   font-family: var(--font-stack);
+  z-index: 1;
+}
+
+#putt-min:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Minimised: only the title bar shows; the button flips to a maximise ▴. */

@@ -2299,8 +2299,9 @@ export class Game {
       const cz = w.whirlZ + Math.sin(ang) * r;
       const croc = this.world.whirlCroc;
       croc.position.set(cx, w.whirlWaterLevel - 0.18 + Math.sin(time * 1.3) * 0.05, cz);
-      // Face along the direction of travel (tangent to the circle).
-      croc.rotation.y = -ang + Math.PI / 2;
+      // Face along the direction of travel (tangent to the circle). The
+      // body's snout points +X, so this keeps it swimming nose-first.
+      croc.rotation.y = -ang - Math.PI / 2;
       croc.rotation.z = Math.sin(time * 1.1) * 0.04; // gentle roll
       if (w.whirlCrocHands) {
         w.whirlCrocHands.minute.rotation.z = -time * 0.9;
