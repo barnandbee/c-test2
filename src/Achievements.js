@@ -52,7 +52,11 @@ export const TROPHIES = [
   { id: 'blisters', medal: '🎸', title: 'I’ve Got Blisters On My Fingers', desc: 'Reach the helter skelter with a score of 300 or more.' },
   { id: 'whirlylucky', medal: '🍀', title: 'Whirly Lucky', desc: 'Get three positive whirlpool scores in a row in one run.' },
   { id: 'inaspin', medal: '😵‍💫', title: 'In A Spin', desc: 'Get three negative whirlpool scores in a row in one run.' },
-  { id: 'chimptactoe', medal: '🍌', title: 'Chimp Tac Toe', desc: 'Beat Turnip Scart at Veggie Tac Toe as Chimpy Henderson and finish on a multiple of 7.' }
+  { id: 'chimptactoe', medal: '🍌', title: 'Chimp Tac Toe', desc: 'Beat Turnip Scart at Veggie Tac Toe as Chimpy Henderson and finish on a multiple of 7.' },
+  { id: 'owlin4u', medal: '🦉', title: 'Owlin’ 4 U', desc: 'Score 400 or more as Pastry Owl between 21:00 and 23:59 (local time).' },
+  { id: 'afk', medal: '💤', title: 'AFK?', desc: 'Finish a run above zero without collecting a single item.' },
+  { id: 'plattytubes', medal: '🥝', title: 'Platty Tubes', desc: 'Ride the Mystic Line to a station and collect the Platinum Guava in the same run.' },
+  { id: 'lifeaquatic', medal: '🌊', title: 'Life Aquatic', desc: 'Finish a run out on the water of one of the lakes.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -94,5 +98,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'parsley', name: "Parsley O'Riley", how: "Reach the cave's BLT with 300+ points, having used the balloon as your ONLY transport that run (no hovercraft, rocket or train)." },
   { key: 'vapour', name: 'Vapour Badger', how: 'Score an all-time total of 40,000 points across every run.' },
   { key: 'spirit', name: 'Spirit of the Forest Badger', how: 'Score an all-time total of 100,000 points across every run.' },
-  { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all without using the hovercraft.' }
+  { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all without using the hovercraft.' },
+  { key: 'owl', name: 'Pastry Owl', how: 'Score 300+ with at least five clouds collected, between 21:00 and 23:59 (local time).' }
 ];

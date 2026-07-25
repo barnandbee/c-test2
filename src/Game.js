@@ -103,6 +103,10 @@ const STORAGE_PARSLEY = 'mystic-badger.parsleyUnlocked';
 const STORAGE_VAPOUR = 'mystic-badger.vapourBadgerUnlocked';
 const STORAGE_SPIRIT = 'mystic-badger.spiritBadgerUnlocked';
 const STORAGE_CHIMPY = 'mystic-badger.chimpyUnlocked';
+const STORAGE_OWL = 'mystic-badger.pastryOwlUnlocked';
+// Pastry Owl's witching hours: 21:00–23:59 on the player's local clock.
+const OWL_HOUR_START = 21;
+const OWL_HOUR_END = 23;
 const STORAGE_TOTAL_SCORE = 'mystic-badger.totalScore';
 const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
@@ -262,6 +266,7 @@ export class Game {
     this.vapourBadgerUnlocked = readStorage(STORAGE_VAPOUR) === '1';
     this.spiritBadgerUnlocked = readStorage(STORAGE_SPIRIT) === '1';
     this.chimpyUnlocked = readStorage(STORAGE_CHIMPY) === '1';
+    this.pastryOwlUnlocked = readStorage(STORAGE_OWL) === '1';
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -906,6 +911,7 @@ export class Game {
     if (name === 'vapour') return this.vapourBadgerUnlocked;
     if (name === 'spirit') return this.spiritBadgerUnlocked;
     if (name === 'chimpy') return this.chimpyUnlocked;
+    if (name === 'owl') return this.pastryOwlUnlocked;
     return name === 'badger';
   }
 
@@ -947,7 +953,8 @@ export class Game {
       parsley: this.parsleyUnlocked,
       vapour: this.vapourBadgerUnlocked,
       spirit: this.spiritBadgerUnlocked,
-      chimpy: this.chimpyUnlocked
+      chimpy: this.chimpyUnlocked,
+      owl: this.pastryOwlUnlocked
     };
   }
 
@@ -1147,6 +1154,12 @@ export class Game {
       ) <= this.world.helterRadius + 4
     ) {
       this.awardAchievement('blisters');
+    }
+
+    // Platty Tubes: ride the Mystic Line to any station AND grab the
+    // Platinum Guava in the same run.
+    if (this.stationsVisited.size >= 1 && this.itemTypesCollected.has(GUAVA_VALUE)) {
+      this.awardAchievement('plattytubes');
     }
 
     // Yo-Yo: the score bouncing across 100 — up, down, up, down, up.
@@ -1621,6 +1634,12 @@ export class Game {
   isTicketMachineOn() {
     const hour = new Date().getHours();
     return (hour >= 6 && hour < 9) || this.points === TICKET_EXACT_CHANGE;
+  }
+
+  /** True during Pastry Owl's window: 21:00–23:59 on the local clock. */
+  isOwlHour() {
+    const hour = new Date().getHours();
+    return hour >= OWL_HOUR_START && hour <= OWL_HOUR_END;
   }
 
   openTravel() {
@@ -2120,6 +2139,18 @@ export class Game {
       writeStorage(STORAGE_NELLY, '1');
       newlyUnlockedNames.push('Negative Nelly');
     }
+    // Pastry Owl: a late-night bird. Score 300+ with at least five clouds
+    // collected, between 21:00 and 23:59 on the local clock.
+    if (
+      !this.pastryOwlUnlocked &&
+      this.points >= 300 &&
+      this.cloudsCollected >= 5 &&
+      this.isOwlHour()
+    ) {
+      this.pastryOwlUnlocked = true;
+      writeStorage(STORAGE_OWL, '1');
+      newlyUnlockedNames.push('Pastry Owl');
+    }
 
     // Final-score trophies + any unlock-count milestones from this run's
     // end-of-bell unlocks (score/decimal/50…500, unlock 1/5/10).
@@ -2135,6 +2166,23 @@ export class Game {
       this.points % 7 === 0
     ) {
       this.awardAchievement('chimptactoe');
+    }
+
+    // Owlin' 4 U: 400+ as Pastry Owl, in the same 21:00–23:59 window.
+    if (this.characterName === 'owl' && this.points >= 400 && this.isOwlHour()) {
+      this.awardAchievement('owlin4u');
+    }
+
+    // AFK?: finish above zero without collecting a single item — points
+    // must have come from Red October, the sandwich, the whirlpool, etc.
+    if (this.points > 0 && this.itemTypesCollected.size === 0) {
+      this.awardAchievement('afk');
+    }
+
+    // Life Aquatic: end the run out on the water of either lake.
+    const finishWl = this.world.waterAt(this.player.position.x, this.player.position.z);
+    if (finishWl !== undefined && this.player.position.y <= finishWl + 3) {
+      this.awardAchievement('lifeaquatic');
     }
 
     // Slide-whistle any heroes judged and unlocked here at the bell (the

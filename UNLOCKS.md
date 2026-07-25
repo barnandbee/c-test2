@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (38)
+## Characters (39)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -53,6 +53,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 36 | **Vapour Badger** | Score an all-time total of **40,000** points across every run. |
 | 37 | **Spirit of the Forest Badger** | Score an all-time total of **100,000** points across every run. |
 | 38 | **Chimpy Henderson** | In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all **without using the hovercraft**. |
+| 39 | **Pastry Owl** | Score 300+ with **at least 5 clouds** collected, **between 21:00 and 23:59** (your local time). |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -61,9 +62,12 @@ each one is earned. This is the single source of truth for unlock conditions
 > **Sandwich dressers** (all give the cave BLT +55.5): Mayonnaise, Jam,
 > and Chimpy Henderson.
 
+> **Time-gated:** Pastry Owl and the *Owlin' 4 U* trophy are only earnable
+> between **21:00 and 23:59** on your device's local clock.
+
 ---
 
-## Trophies (46)
+## Trophies (50)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -137,6 +141,10 @@ milestone counts your best past run automatically.
 | 🏹 **Hastings Is A Place On Earth** | Grab both Magna Cartas as William the Conqueror and score exactly 106.6. |
 | 🎸 **I've Got Blisters On My Fingers** | Reach the helter skelter with a score of 300 or more. |
 | 🍌 **Chimp Tac Toe** | Beat Turnip Scart at Veggie Tac Toe as Chimpy Henderson and finish on a multiple of 7. |
+| 🦉 **Owlin' 4 U** | Score 400 or more as Pastry Owl, between 21:00 and 23:59 (local time). |
+| 💤 **AFK?** | Finish a run above zero **without collecting a single item** (points from Red October / the sandwich / the whirlpool still count). |
+| 🥝 **Platty Tubes** | Ride the Mystic Line to a station AND collect the Platinum Guava in the same run. |
+| 🌊 **Life Aquatic** | Finish a run out on the water of one of the lakes. |
 
 ---
 

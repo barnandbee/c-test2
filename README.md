@@ -325,6 +325,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   submarine) AND take the Mystic Line to Docklands — all without ever
   touching the hovercraft** (so the sub has to be reached by rocket,
   balloon, or a very lucky leap).
+- **Pastry Owl** — an owl baked from golden buttery pastry: a laminated,
+  egg-washed body, **croissant-crescent wings and ear-tufts**, a little
+  pastry beak, and two dark chocolate-drop eyes on baked-in rounds. A
+  strictly nocturnal bird — unlock it only by **scoring 300+ with at least
+  five clouds collected, between 21:00 and 23:59** on your local clock.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
@@ -454,8 +459,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   300+). Three more come from the far corners: **Whirly Lucky 🍀** and
   **In A Spin 😵‍💫** (three positive / three negative whirlpool dips in a
   row in one run), and **Chimp Tac Toe 🍌** (beat Turnip Scart at Veggie
-  Tac Toe as Chimpy Henderson and finish on a multiple of 7). Earned
-  trophies are saved locally
+  Tac Toe as Chimpy Henderson and finish on a multiple of 7). And four
+  more oddities: **Owlin’ 4 U 🦉** (400+ as Pastry Owl in the 21:00–23:59
+  window), **AFK? 💤** (finish above zero having collected *no* items —
+  points from Red October, the sandwich or the whirlpool only), **Platty
+  Tubes 🥝** (ride the Mystic Line to a station and grab the Platinum Guava
+  in one run), and **Life Aquatic 🌊** (finish a run out on the water).
+  Earned trophies are saved locally
   and announced with a 🏆 toast the moment you earn them. The **score
   milestones are credited retroactively against your saved high score** —
   so if a new milestone (like the 600 **Sextuple Ton 💎**) is added in a

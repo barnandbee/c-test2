@@ -2031,6 +2031,50 @@ body {
   border-radius: 0 0 10px 10px;
 }
 
+/* Pastry Owl: a golden pastry face with two big baked eyes and a beak. */
+.owl-icon {
+  position: relative;
+  border-color: #b87a2e;
+  background:
+    /* two cream eye-rounds with chocolate pupils */
+    radial-gradient(circle at 34% 42%, #3a2415 0 2px, transparent 2.5px),
+    radial-gradient(circle at 66% 42%, #3a2415 0 2px, transparent 2.5px),
+    radial-gradient(circle at 34% 42%, #f2e6c8 0 20%, transparent 24%),
+    radial-gradient(circle at 66% 42%, #f2e6c8 0 20%, transparent 24%),
+    /* golden glazed body */
+    linear-gradient(160deg, #e8b866, #d9a24e 60%, #b87a2e);
+  box-shadow: inset 0 0 6px rgba(255, 224, 160, 0.6);
+}
+
+.owl-icon::before {
+  /* the little pastry beak */
+  content: "";
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 6px solid #e0902c;
+}
+
+.owl-icon::after {
+  /* a croissant ear-tuft curling off the top */
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #d9a24e;
+  border-bottom: none;
+  border-left: none;
+  border-radius: 0 8px 0 0;
+  transform: rotate(20deg);
+}
+
 /* McDonovan: a grey fedora over a mouse face with big round ears. */
 .mcdonovan-icon {
   position: relative;

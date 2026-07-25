@@ -155,6 +155,7 @@ export class Player {
     else if (this.character === 'vapour') this.root = this.buildVapourBadger();
     else if (this.character === 'spirit') this.root = this.buildSpiritBadger();
     else if (this.character === 'chimpy') this.root = this.buildChimpy();
+    else if (this.character === 'owl') this.root = this.buildPastryOwl();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
@@ -3554,6 +3555,137 @@ export class Player {
     tail.castShadow = true;
     body.add(tail);
     this.tail = tail;
+
+    return root;
+  }
+
+  /**
+   * Pastry Owl — an owl baked from golden buttery pastry: a plump laminated
+   * body, croissant-crescent wings and ear-tufts, a flaky egg-washed sheen,
+   * a little pastry beak, and two dark chocolate-drop eyes on baked-in
+   * rounds. Crumbly, warm and nocturnal.
+   */
+  buildPastryOwl() {
+    const root = new THREE.Group();
+    root.name = 'owl';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const pastryMat = track(createToonMaterial({ color: 0xd9a24e, rim: { color: 0xffe3ab, strength: 0.4, threshold: 0.58 } }));
+    const pastryDarkMat = track(createToonMaterial({ color: 0xb87a2e }));
+    const glazeMat = track(createToonMaterial({ color: 0xe8b866, emissive: 0x5a3a12, emissiveIntensity: 0.25, rim: { color: 0xfff0c8, strength: 0.5, threshold: 0.5 } }));
+    const creamMat = track(createToonMaterial({ color: 0xf2e6c8 }));
+    const beakMat = track(createToonMaterial({ color: 0xe0902c }));
+    const eyeMat = track(createToonMaterial({ color: 0x3a2415 }));
+    const footMat = track(createToonMaterial({ color: 0xc98a3a }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.58;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- laminated, egg-washed body ----------------------------------------
+    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.36, 0.42, 6, 16)), glazeMat);
+    torso.position.y = 0.34;
+    torso.scale.set(1, 1.05, 0.95);
+    torso.castShadow = true;
+    body.add(torso);
+    // Rows of scored pastry layers across the belly.
+    for (let i = 0; i < 4; i++) {
+      const layer = new THREE.Mesh(track(new THREE.TorusGeometry(0.3 - i * 0.015, 0.02, 6, 20, Math.PI)), pastryDarkMat);
+      layer.position.set(0, 0.2 + i * 0.14, 0.24);
+      layer.rotation.x = Math.PI;
+      body.add(layer);
+    }
+
+    // --- head with a flaky brow --------------------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.86;
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.34, 16, 14)), glazeMat);
+    skull.scale.set(1.1, 0.95, 0.95);
+    skull.castShadow = true;
+    head.add(skull);
+
+    // Two big baked eye-rounds with chocolate-drop pupils.
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const disc = new THREE.Mesh(track(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16)), pastryMat);
+      disc.position.set(side * 0.15, 0.04, 0.28);
+      disc.rotation.x = Math.PI / 2;
+      head.add(disc);
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.11, 12, 10)), creamMat);
+      white.position.set(side * 0.15, 0.04, 0.3);
+      white.scale.set(1, 1, 0.5);
+      head.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.055, 10, 8)), eyeMat);
+      pupil.position.set(side * 0.15, 0.04, 0.36);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.15, baseY: 0.04, seed: Math.random() * 6.28 });
+    }
+    // A little pastry beak between the eyes.
+    const beak = new THREE.Mesh(track(new THREE.ConeGeometry(0.06, 0.16, 6)), beakMat);
+    beak.position.set(0, -0.04, 0.34);
+    beak.rotation.x = Math.PI / 2;
+    head.add(beak);
+
+    // Croissant ear-tufts: little crescents curling up off the head.
+    const crescentGeo = track(new THREE.TorusGeometry(0.11, 0.05, 8, 14, Math.PI * 1.15));
+    for (const side of [-1, 1]) {
+      const tuft = new THREE.Mesh(crescentGeo, pastryMat);
+      tuft.position.set(side * 0.22, 0.3, 0);
+      tuft.rotation.set(0.2, 0, side * 0.6);
+      tuft.castShadow = true;
+      head.add(tuft);
+    }
+
+    // --- croissant wings (crescents) as the arms ---------------------------
+    const wingGeo = track(new THREE.TorusGeometry(0.2, 0.08, 8, 16, Math.PI * 1.2));
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.36, 0.42, 0);
+      const wing = new THREE.Mesh(wingGeo, pastryMat);
+      wing.rotation.set(0, side * 0.3, side * -1.2);
+      wing.castShadow = true;
+      pivot.add(wing);
+      // flaky ridges on the wing
+      for (let i = 0; i < 3; i++) {
+        const ridge = new THREE.Mesh(track(new THREE.TorusGeometry(0.2, 0.012, 5, 14, Math.PI * 1.2)), pastryDarkMat);
+        ridge.rotation.set(0, side * 0.3, side * -1.2);
+        ridge.position.z = 0.05 - i * 0.05;
+        pivot.add(ridge);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- little baked talon feet -------------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.05, 0.045, 0.2, 8));
+    legGeo.translate(0, -0.1, 0);
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.14, 0.06, 0);
+      const leg = new THREE.Mesh(legGeo, footMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      // three splayed toes
+      for (const toe of [-1, 0, 1]) {
+        const t = new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 0.015, 0.12, 5)), footMat);
+        t.position.set(toe * 0.05, -0.22, 0.05);
+        t.rotation.x = 1.4;
+        t.rotation.z = toe * 0.3;
+        pivot.add(t);
+      }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
 
     return root;
   }
