@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (39)
+## Characters (40)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -54,6 +54,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 37 | **Spirit of the Forest Badger** | Score an all-time total of **100,000** points across every run. |
 | 38 | **Chimpy Henderson** | In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all **without using the hovercraft**. |
 | 39 | **Pastry Owl** | Score 300+ with **at least 5 clouds** collected, **between 21:00 and 23:59** (your local time). |
+| 40 | **Top Hat Snappy** | Enter the whirlpool **100 times** across all your runs (multiple dips in one run all count). Slides rather than walks, can swim in the lakes, and has a limited jump. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -67,7 +68,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (50)
+## Trophies (51)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -145,6 +146,7 @@ milestone counts your best past run automatically.
 | 💤 **AFK?** | Finish a run above zero **without collecting a single item** (points from Red October / the sandwich / the whirlpool still count). |
 | 🥝 **Platty Tubes** | Ride the Mystic Line to a station AND collect the Platinum Guava in the same run. |
 | 🌊 **Life Aquatic** | Finish a run out on the water of one of the lakes. |
+| 😴 **AFKC** | Finish a run on **100 or more** without collecting a single item (like *AFK?*, but past a century). |
 
 ---
 

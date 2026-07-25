@@ -2075,6 +2075,47 @@ body {
   transform: rotate(20deg);
 }
 
+/* Top Hat Snappy: a green croc face under a black clock-face top hat. */
+.snappy-icon {
+  position: relative;
+  border-color: #356a40;
+  background:
+    /* two eyes */
+    radial-gradient(circle at 36% 56%, #141014 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at 64% 56%, #141014 0 1.6px, transparent 2.2px),
+    /* green scaly snout */
+    linear-gradient(160deg, #4a8a54, #3f7d4a 60%, #356a40);
+}
+
+.snappy-icon::before {
+  /* the black top hat with a pale clock face */
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 12px;
+  border-radius: 2px 2px 0 0;
+  background:
+    radial-gradient(circle at 50% 55%, #f4efe0 0 3px, transparent 3.5px),
+    #241f18;
+  box-shadow: -4px 10px 0 -8px #241f18, 4px 10px 0 -8px #241f18, 0 10px 0 -9px #241f18;
+}
+
+.snappy-icon::after {
+  /* white teeth along the jaw */
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 3px;
+  background: linear-gradient(90deg, #f4f0e6 0 2px, transparent 2px 3px) repeat-x;
+  background-size: 3px 3px;
+}
+
 /* McDonovan: a grey fedora over a mouse face with big round ears. */
 .mcdonovan-icon {
   position: relative;

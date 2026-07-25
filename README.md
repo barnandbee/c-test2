@@ -330,6 +330,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   pastry beak, and two dark chocolate-drop eyes on baked-in rounds. A
   strictly nocturnal bird — unlock it only by **scoring 300+ with at least
   five clouds collected, between 21:00 and 23:59** on your local clock.
+- **Top Hat Snappy** — the dapper **crocodile** from the whirlpool lake,
+  now playable: a low green gator in a clock-faced **top hat**, all snout,
+  scutes and tail. He **slides** around rather than walks (low friction, so
+  he glides on when you let go), takes to the water happily (**swims
+  half-submerged** in either lake), and his stubby legs manage only a
+  **limited jump**. Unlock him by **entering the whirlpool 100 times**
+  across all your runs.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
@@ -464,8 +471,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   window), **AFK? 💤** (finish above zero having collected *no* items —
   points from Red October, the sandwich or the whirlpool only), **Platty
   Tubes 🥝** (ride the Mystic Line to a station and grab the Platinum Guava
-  in one run), and **Life Aquatic 🌊** (finish a run out on the water).
-  Earned trophies are saved locally
+  in one run), **Life Aquatic 🌊** (finish a run out on the water), and
+  **AFKC 😴** (finish on 100+ having collected no items at all). Earned
+  trophies are saved locally
   and announced with a 🏆 toast the moment you earn them. The **score
   milestones are credited retroactively against your saved high score** —
   so if a new milestone (like the 600 **Sextuple Ton 💎**) is added in a

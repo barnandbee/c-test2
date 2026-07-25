@@ -104,6 +104,9 @@ const STORAGE_VAPOUR = 'mystic-badger.vapourBadgerUnlocked';
 const STORAGE_SPIRIT = 'mystic-badger.spiritBadgerUnlocked';
 const STORAGE_CHIMPY = 'mystic-badger.chimpyUnlocked';
 const STORAGE_OWL = 'mystic-badger.pastryOwlUnlocked';
+const STORAGE_SNAPPY = 'mystic-badger.snappyUnlocked';
+const STORAGE_WHIRL_ENTRIES = 'mystic-badger.whirlEntries';
+const SNAPPY_WHIRL_ENTRIES = 100; // all-time whirlpool dips to unlock Top Hat Snappy
 // Pastry Owl's witching hours: 21:00–23:59 on the player's local clock.
 const OWL_HOUR_START = 21;
 const OWL_HOUR_END = 23;
@@ -267,6 +270,9 @@ export class Game {
     this.spiritBadgerUnlocked = readStorage(STORAGE_SPIRIT) === '1';
     this.chimpyUnlocked = readStorage(STORAGE_CHIMPY) === '1';
     this.pastryOwlUnlocked = readStorage(STORAGE_OWL) === '1';
+    this.snappyUnlocked = readStorage(STORAGE_SNAPPY) === '1';
+    // All-time count of whirlpool dips (across every run).
+    this.whirlEntries = parseInt(readStorage(STORAGE_WHIRL_ENTRIES, '0'), 10) || 0;
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -912,6 +918,7 @@ export class Game {
     if (name === 'spirit') return this.spiritBadgerUnlocked;
     if (name === 'chimpy') return this.chimpyUnlocked;
     if (name === 'owl') return this.pastryOwlUnlocked;
+    if (name === 'snappy') return this.snappyUnlocked;
     return name === 'badger';
   }
 
@@ -954,7 +961,8 @@ export class Game {
       vapour: this.vapourBadgerUnlocked,
       spirit: this.spiritBadgerUnlocked,
       chimpy: this.chimpyUnlocked,
-      owl: this.pastryOwlUnlocked
+      owl: this.pastryOwlUnlocked,
+      snappy: this.snappyUnlocked
     };
   }
 
@@ -2175,8 +2183,10 @@ export class Game {
 
     // AFK?: finish above zero without collecting a single item — points
     // must have come from Red October, the sandwich, the whirlpool, etc.
+    // AFKC is the same feat pushed to 100+.
     if (this.points > 0 && this.itemTypesCollected.size === 0) {
       this.awardAchievement('afk');
+      if (this.points >= 100) this.awardAchievement('afkc');
     }
 
     // Life Aquatic: end the run out on the water of either lake.
@@ -2529,6 +2539,15 @@ export class Game {
           Math.abs(this.player.position.y - this.world.whirlWaterLevel) < 3;
         if (wd < 4 && nearSurface && !this._inWhirl) {
           this._inWhirl = true;
+          // Tally this dip against the all-time count; 100 wakes Snappy.
+          this.whirlEntries += 1;
+          writeStorage(STORAGE_WHIRL_ENTRIES, String(this.whirlEntries));
+          if (!this.snappyUnlocked && this.whirlEntries >= SNAPPY_WHIRL_ENTRIES) {
+            this.snappyUnlocked = true;
+            writeStorage(STORAGE_SNAPPY, '1');
+            this.runUnlockNames.push('Top Hat Snappy');
+            this.ui.showTimeToast('★ TOP HAT SNAPPY UNLOCKED! SNAP SNAP! 🐊');
+          }
           const spin = Math.round((Math.random() * 2 - 1) * WHIRLPOOL_MAX * 100) / 100;
           this.points += spin;
           this.ui.setPoints(this.points);

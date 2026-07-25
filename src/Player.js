@@ -116,6 +116,9 @@ export class Player {
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
     this.moveScale = 1;      // per-instance top-speed multiplier (CPU rival tuning)
     this.walksOnWater = false; // Spirit of the Forest Badger treads the lakes
+    this.waterSink = 0;      // Top Hat Snappy rides this far below the surface
+    this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
+    this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
     this.tail = null;
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
@@ -156,6 +159,7 @@ export class Player {
     else if (this.character === 'spirit') this.root = this.buildSpiritBadger();
     else if (this.character === 'chimpy') this.root = this.buildChimpy();
     else if (this.character === 'owl') this.root = this.buildPastryOwl();
+    else if (this.character === 'snappy') this.root = this.buildTopHatSnappy();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
@@ -3691,6 +3695,155 @@ export class Player {
   }
 
   /**
+   * Top Hat Snappy — the dapper crocodile from the whirlpool lake, now
+   * playable: a low green gator in a clock-faced top hat, all snout and
+   * scutes and tail. He glides more than he walks (low ground friction),
+   * takes to the water happily (rides half-submerged), and his stubby legs
+   * only manage a limited hop.
+   */
+  buildTopHatSnappy() {
+    const root = new THREE.Group();
+    root.name = 'snappy';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Powers: slides around (low friction, gentle accel), rides the water
+    // half-submerged, and can only manage a modest jump.
+    this.frictionScale = 0.14;
+    this.accelScale = 0.55;
+    this.walksOnWater = true;
+    this.waterSink = 0.42;
+    this.jumpScale = 0.55;
+    this.legs = []; // he slides — no trotting feet
+
+    const scaleMat = track(createToonMaterial({ color: 0x3f7d4a, rim: { color: 0xa8e0a0, strength: 0.35, threshold: 0.6 } }));
+    const scaleDarkMat = track(createToonMaterial({ color: 0x356a40 }));
+    const bellyMat = track(createToonMaterial({ color: 0xcfc78a }));
+    const toothMat = track(createToonMaterial({ color: 0xf4f0e6 }));
+    const eyeMat = track(createToonMaterial({ color: 0x141014 }));
+    const hatMat = track(createToonMaterial({ color: 0x241f18, rim: { color: 0x6b6152, strength: 0.3, threshold: 0.66 } }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.42;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // Low, long body lying along +Z (the forward axis). Snout at +Z.
+    const bodyGeo = track(new THREE.CapsuleGeometry(0.28, 0.7, 6, 12));
+    bodyGeo.rotateX(Math.PI / 2);
+    const trunk = new THREE.Mesh(bodyGeo, scaleMat);
+    trunk.scale.set(1, 0.72, 1);
+    trunk.castShadow = true;
+    body.add(trunk);
+    const belly = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.2, 0.6, 4, 10)), bellyMat);
+    belly.rotation.x = Math.PI / 2;
+    belly.position.y = -0.12;
+    belly.scale.set(1, 0.5, 0.9);
+    body.add(belly);
+
+    // Jaws jutting forward (+Z): a longer upper and a shorter lower.
+    const upperJaw = new THREE.Mesh(track(new THREE.BoxGeometry(0.34, 0.16, 0.6)), scaleDarkMat);
+    upperJaw.position.set(0, 0.04, 0.66);
+    upperJaw.castShadow = true;
+    body.add(upperJaw);
+    const lowerJaw = new THREE.Mesh(track(new THREE.BoxGeometry(0.3, 0.1, 0.54)), scaleDarkMat);
+    lowerJaw.position.set(0, -0.08, 0.62);
+    body.add(lowerJaw);
+    const nostrilBump = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 8, 6)), scaleMat);
+    nostrilBump.position.set(0, 0.12, 0.92);
+    body.add(nostrilBump);
+    for (let i = 0; i < 4; i++) {
+      for (const side of [-1, 1]) {
+        const tooth = new THREE.Mesh(track(new THREE.ConeGeometry(0.022, 0.09, 4)), toothMat);
+        tooth.position.set(side * 0.13, -0.02, 0.5 + i * 0.12);
+        tooth.rotation.x = Math.PI;
+        body.add(tooth);
+      }
+    }
+
+    // Eye bumps riding on top, just behind the snout.
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const bump = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), scaleMat);
+      bump.position.set(side * 0.16, 0.22, 0.28);
+      body.add(bump);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), eyeMat);
+      pupil.position.set(side * 0.16, 0.28, 0.32);
+      body.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.16, baseY: 0.28, seed: Math.random() * 6.28 });
+    }
+
+    // A ridge of scutes down the spine, and a tapering tail out the back.
+    for (let i = 0; i < 6; i++) {
+      const scute = new THREE.Mesh(track(new THREE.ConeGeometry(0.08, 0.14, 4)), scaleDarkMat);
+      scute.position.set(0, 0.22 - i * 0.006, 0.08 - i * 0.18);
+      body.add(scute);
+    }
+    const tail = new THREE.Mesh(track(new THREE.ConeGeometry(0.24, 1.0, 8)), scaleMat);
+    tail.position.set(0, 0, -0.9);
+    tail.rotation.x = -Math.PI / 2;
+    tail.scale.set(1, 0.7, 1);
+    body.add(tail);
+    this.tail = tail;
+
+    // Four stubby splayed legs (kept for grounding, not animated).
+    for (const [lx, lz] of [[-0.28, 0.24], [0.28, 0.24], [-0.3, -0.28], [0.3, -0.28]]) {
+      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.06, 0.05, 0.22, 6)), scaleDarkMat);
+      leg.position.set(lx, -0.18, lz);
+      leg.rotation.z = lx < 0 ? 0.5 : -0.5;
+      body.add(leg);
+    }
+
+    // --- the trademark top hat with a ticking clock face -------------------
+    const hat = new THREE.Group();
+    hat.position.set(0, 0.34, 0.2);
+    body.add(hat);
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 16)), hatMat);
+    brim.castShadow = true;
+    hat.add(brim);
+    const crown = new THREE.Mesh(track(new THREE.CylinderGeometry(0.2, 0.2, 0.36, 16)), hatMat);
+    crown.position.y = 0.2;
+    crown.castShadow = true;
+    hat.add(crown);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#f4efe0';
+    g.beginPath();
+    g.arc(64, 64, 60, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#241f18';
+    g.lineWidth = 6;
+    g.stroke();
+    g.fillStyle = '#241f18';
+    for (let h = 0; h < 12; h++) {
+      const a = (h / 12) * Math.PI * 2;
+      g.beginPath();
+      g.arc(64 + Math.sin(a) * 48, 64 - Math.cos(a) * 48, 4, 0, Math.PI * 2);
+      g.fill();
+    }
+    // static hands (a jaunty ten-to-two)
+    g.strokeStyle = '#241f18';
+    g.lineWidth = 5;
+    g.beginPath(); g.moveTo(64, 64); g.lineTo(64 - 26, 64 - 20); g.stroke();
+    g.lineWidth = 3.5;
+    g.beginPath(); g.moveTo(64, 64); g.lineTo(64 + 24, 64 - 24); g.stroke();
+    const clockTex = track(new THREE.CanvasTexture(canvas));
+    clockTex.colorSpace = THREE.SRGBColorSpace;
+    const faceMat = track(createToonMaterial({ map: clockTex, emissive: 0x2a2418, emissiveIntensity: 0.3 }));
+    const face = new THREE.Mesh(track(new THREE.CircleGeometry(0.17, 24)), faceMat);
+    face.position.set(0, 0.2, 0.201);
+    hat.add(face);
+
+    return root;
+  }
+
+  /**
    * McDonovan — a film-noir private eye who happens to be a mouse: a grey
    * mouse in a muted trench coat with a raised collar and belt, a grey
    * fedora tilted low, big round ears, a pink nose, whiskers and a long
@@ -5814,7 +5967,9 @@ export class Player {
       // idle. moveToward never overshoots, so there is no oscillation.
       const targetX = wish.x * T.maxSpeed * this.moveScale;
       const targetZ = wish.z * T.maxSpeed * this.moveScale;
-      const rate = hasInput ? T.groundAccel : T.groundFriction;
+      const rate = hasInput
+        ? T.groundAccel * this.accelScale
+        : T.groundFriction * this.frictionScale;
       vel.x = moveToward(vel.x, targetX, rate * dt);
       vel.z = moveToward(vel.z, targetZ, rate * dt);
     } else {
@@ -5898,7 +6053,7 @@ export class Player {
     // lake the water level itself becomes the floor.
     if (this.walksOnWater) {
       const surfaceWl = this.world.waterAt(pos.x, pos.z);
-      if (surfaceWl !== undefined) groundH = Math.max(groundH, surfaceWl);
+      if (surfaceWl !== undefined) groundH = Math.max(groundH, surfaceWl - this.waterSink);
     }
     if (groundH > terrainH + 1e-3) {
       this.groundNormal.set(0, 1, 0); // platforms are dead level
@@ -5940,7 +6095,7 @@ export class Player {
     const wl = this.world.waterAt(pos.x, pos.z); // main lake or whirlpool lake
     const inLake = wl !== undefined;
     const sinks = this.character === 'marblella';
-    if (inLake && pos.y < wl - 0.4 && !sinks) {
+    if (inLake && pos.y < wl - 0.4 && !sinks && !this.walksOnWater) {
       // Too deep — bounce back to the last dry footing with a splash.
       pos.copy(this._lastDryPos);
       vel.x *= -0.35;

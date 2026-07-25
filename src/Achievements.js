@@ -56,7 +56,8 @@ export const TROPHIES = [
   { id: 'owlin4u', medal: '🦉', title: 'Owlin’ 4 U', desc: 'Score 400 or more as Pastry Owl between 21:00 and 23:59 (local time).' },
   { id: 'afk', medal: '💤', title: 'AFK?', desc: 'Finish a run above zero without collecting a single item.' },
   { id: 'plattytubes', medal: '🥝', title: 'Platty Tubes', desc: 'Ride the Mystic Line to a station and collect the Platinum Guava in the same run.' },
-  { id: 'lifeaquatic', medal: '🌊', title: 'Life Aquatic', desc: 'Finish a run out on the water of one of the lakes.' }
+  { id: 'lifeaquatic', medal: '🌊', title: 'Life Aquatic', desc: 'Finish a run out on the water of one of the lakes.' },
+  { id: 'afkc', medal: '😴', title: 'AFKC', desc: 'Finish a run on 100 or more without collecting a single item.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -99,5 +100,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'vapour', name: 'Vapour Badger', how: 'Score an all-time total of 40,000 points across every run.' },
   { key: 'spirit', name: 'Spirit of the Forest Badger', how: 'Score an all-time total of 100,000 points across every run.' },
   { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all without using the hovercraft.' },
-  { key: 'owl', name: 'Pastry Owl', how: 'Score 300+ with at least five clouds collected, between 21:00 and 23:59 (local time).' }
+  { key: 'owl', name: 'Pastry Owl', how: 'Score 300+ with at least five clouds collected, between 21:00 and 23:59 (local time).' },
+  { key: 'snappy', name: 'Top Hat Snappy', how: 'Enter the whirlpool 100 times across all your runs (multiple dips in one run all count).' }
 ];
