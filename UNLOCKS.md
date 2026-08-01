@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (40)
+## Characters (42)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -55,13 +55,16 @@ each one is earned. This is the single source of truth for unlock conditions
 | 38 | **Chimpy Henderson** | In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all **without using the hovercraft**. |
 | 39 | **Pastry Owl** | Score 300+ with **at least 5 clouds** collected, **between 21:00 and 23:59** (your local time). |
 | 40 | **Top Hat Snappy** | Enter the whirlpool **100 times** across all your runs (multiple dips in one run all count). Slides rather than walks, can swim in the lakes, and has a limited jump. |
+| 41 | **Bacon** | Dress the cave BLT with **every** sandwich hero — Mayonnaise, Jam **and** Chimpy Henderson — across any runs. |
+| 42 | **Robo-Farmer** | In one run: **reach 231 points AND beat Turnip Scart** at Veggie Tac Toe. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
 > Spirit of the Forest Badger (100,000).
 
 > **Sandwich dressers** (all give the cave BLT +55.5): Mayonnaise, Jam,
-> and Chimpy Henderson.
+> and Chimpy Henderson. Do it with all three (across any runs) to unlock
+> **Bacon**.
 
 > **Time-gated:** Pastry Owl and the *Owlin' 4 U* trophy are only earnable
 > between **21:00 and 23:59** on your device's local clock.

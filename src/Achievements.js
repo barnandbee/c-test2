@@ -101,5 +101,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'spirit', name: 'Spirit of the Forest Badger', how: 'Score an all-time total of 100,000 points across every run.' },
   { key: 'chimpy', name: 'Chimpy Henderson', how: 'In one run: claim Red October (strike the submarine) AND take the Mystic Line to Docklands — all without using the hovercraft.' },
   { key: 'owl', name: 'Pastry Owl', how: 'Score 300+ with at least five clouds collected, between 21:00 and 23:59 (local time).' },
-  { key: 'snappy', name: 'Top Hat Snappy', how: 'Enter the whirlpool 100 times across all your runs (multiple dips in one run all count).' }
+  { key: 'snappy', name: 'Top Hat Snappy', how: 'Enter the whirlpool 100 times across all your runs (multiple dips in one run all count).' },
+  { key: 'bacon', name: 'Bacon', how: 'Dress the cave BLT with every sandwich hero (Mayonnaise, Jam and Chimpy Henderson) — across any runs.' },
+  { key: 'robofarmer', name: 'Robo-Farmer', how: 'In one run: reach 231 points AND beat Turnip Scart at Veggie Tac Toe.' }
 ];

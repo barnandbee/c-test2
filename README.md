@@ -337,6 +337,16 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   half-submerged** in either lake), and his stubby legs manage only a
   **limited jump**. Unlock him by **entering the whirlpool 100 times**
   across all your runs.
+- **Bacon** — a big, chubby, front-facing cartoon pig: a round pink
+  head-body with floppy triangular ears, two large blue-irised eyes and a
+  wide snout with two nostrils. Unlock him by **dressing the cave BLT with
+  every sandwich hero** — Mayonnaise, Jam *and* Chimpy Henderson — across
+  any runs.
+- **Robo-Farmer** — a farmer whose face is half flesh, half machine: a
+  grey metal side with mechanical seams and a glowing **red cybernetic
+  eye**, a human side with a **blue eye**, white hair under a tan ball cap,
+  over dungaree overalls. Unlock him in one run by **reaching 231 points
+  AND beating Turnip Scart** at Veggie Tac Toe.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

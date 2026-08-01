@@ -106,6 +106,13 @@ const STORAGE_CHIMPY = 'mystic-badger.chimpyUnlocked';
 const STORAGE_OWL = 'mystic-badger.pastryOwlUnlocked';
 const STORAGE_SNAPPY = 'mystic-badger.snappyUnlocked';
 const STORAGE_WHIRL_ENTRIES = 'mystic-badger.whirlEntries';
+const STORAGE_BACON = 'mystic-badger.baconUnlocked';
+const STORAGE_ROBOFARMER = 'mystic-badger.roboFarmerUnlocked';
+const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
+// Every hero who can dress the cave BLT for +55.5. Do it with all of them
+// (across any runs) to unlock Bacon.
+const SANDWICH_DRESSERS = ['mayo', 'jam', 'chimpy'];
+const ROBOFARMER_SCORE = 231;     // reach this AND beat Turnip in one run
 const SNAPPY_WHIRL_ENTRIES = 100; // all-time whirlpool dips to unlock Top Hat Snappy
 // Pastry Owl's witching hours: 21:00–23:59 on the player's local clock.
 const OWL_HOUR_START = 21;
@@ -273,6 +280,12 @@ export class Game {
     this.snappyUnlocked = readStorage(STORAGE_SNAPPY) === '1';
     // All-time count of whirlpool dips (across every run).
     this.whirlEntries = parseInt(readStorage(STORAGE_WHIRL_ENTRIES, '0'), 10) || 0;
+    this.baconUnlocked = readStorage(STORAGE_BACON) === '1';
+    this.roboFarmerUnlocked = readStorage(STORAGE_ROBOFARMER) === '1';
+    // All-time set of which sandwich-dressers have actually dressed the BLT.
+    this.sandwichDressers = new Set(
+      (readStorage(STORAGE_SANDWICH_DRESSERS, '') || '').split(',').filter(Boolean)
+    );
     // All-time count of mountain-summit arrivals (across every run).
     this.summitVisits = parseInt(readStorage(STORAGE_SUMMIT_VISITS, '0'), 10) || 0;
     // All-time count of helter-skelter visits (across every run).
@@ -382,6 +395,7 @@ export class Game {
     this.tubeCactusClaimed = false;
     this.vehiclesRidden = new Set(); // rides this run (Cactus Balloon)
     this.wonVeggieThisRun = false;   // Triangle the Fedora's two feats
+    this.veggieWinScore = -1;        // score at the moment veggie was won (Robo-Farmer)
     this.holeInOneThisRun = false;
     this.dellJumps = 0;
     this._inDell = false;
@@ -919,6 +933,8 @@ export class Game {
     if (name === 'chimpy') return this.chimpyUnlocked;
     if (name === 'owl') return this.pastryOwlUnlocked;
     if (name === 'snappy') return this.snappyUnlocked;
+    if (name === 'bacon') return this.baconUnlocked;
+    if (name === 'robofarmer') return this.roboFarmerUnlocked;
     return name === 'badger';
   }
 
@@ -962,7 +978,9 @@ export class Game {
       spirit: this.spiritBadgerUnlocked,
       chimpy: this.chimpyUnlocked,
       owl: this.pastryOwlUnlocked,
-      snappy: this.snappyUnlocked
+      snappy: this.snappyUnlocked,
+      bacon: this.baconUnlocked,
+      robofarmer: this.roboFarmerUnlocked
     };
   }
 
@@ -1421,6 +1439,17 @@ export class Game {
             this.points += SANDWICH_POINTS;
             this.ui.setPoints(this.points);
             this.audio.play('squelch'); // spread onto the sandwich
+            // Note this dresser; once all of them have done it, Bacon wakes.
+            if (!this.sandwichDressers.has(this.characterName)) {
+              this.sandwichDressers.add(this.characterName);
+              writeStorage(STORAGE_SANDWICH_DRESSERS, [...this.sandwichDressers].join(','));
+            }
+            if (!this.baconUnlocked && SANDWICH_DRESSERS.every((k) => this.sandwichDressers.has(k))) {
+              this.baconUnlocked = true;
+              writeStorage(STORAGE_BACON, '1');
+              this.runUnlockNames.push('Bacon');
+              this.ui.showTimeToast('★ BACON UNLOCKED! OINK!');
+            }
             this.particles.spawnBurst(
               this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
               isJam ? 0x9b2d5e : isChimpy ? 0xf2d24a : 0xf2eed8,
@@ -1941,7 +1970,15 @@ export class Game {
       // Beating Turnip Scart while playing AS Turnip Scart — a civil war.
       if (this.characterName === 'turnip') this.awardAchievement('turnipwin');
       this.wonVeggieThisRun = true;
+      this.veggieWinScore = this.points; // score at the moment of victory
       this.checkTriangleFedora();
+      // Robo-Farmer: beat Turnip having already reached 231 this run.
+      if (!this.roboFarmerUnlocked && this.points >= ROBOFARMER_SCORE) {
+        this.roboFarmerUnlocked = true;
+        writeStorage(STORAGE_ROBOFARMER, '1');
+        this.runUnlockNames.push('Robo-Farmer');
+        this.ui.showTimeToast('★ ROBO-FARMER UNLOCKED! BEEP-MOO.');
+      }
       if (!this.turnipUnlocked) {
         this.turnipUnlocked = true;
         writeStorage(STORAGE_TURNIP, '1');
@@ -2278,6 +2315,7 @@ export class Game {
     this.tubeCactusClaimed = false;
     this.vehiclesRidden.clear();
     this.wonVeggieThisRun = false;
+    this.veggieWinScore = -1;
     this.holeInOneThisRun = false;
     this.dellJumps = 0;
     this._inDell = false;

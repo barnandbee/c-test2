@@ -2116,6 +2116,83 @@ body {
   background-size: 3px 3px;
 }
 
+/* Bacon: a round pink pig face with a big snout and blue eyes. */
+.bacon-icon {
+  position: relative;
+  border-color: #cf7e8c;
+  background:
+    /* blue-irised eyes */
+    radial-gradient(circle at 36% 40%, #141018 0 1.4px, transparent 1.8px),
+    radial-gradient(circle at 64% 40%, #141018 0 1.4px, transparent 1.8px),
+    radial-gradient(circle at 36% 40%, #9fd2e6 0 12%, transparent 15%),
+    radial-gradient(circle at 64% 40%, #9fd2e6 0 12%, transparent 15%),
+    /* pink face */
+    linear-gradient(160deg, #eba2ae, #e89aa6 60%, #d88692);
+}
+
+.bacon-icon::before {
+  /* the big pink snout */
+  content: "";
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 13px;
+  border-radius: 50%;
+  background: #f0aab0;
+  box-shadow: inset 0 0 0 1px #cf7e8c;
+}
+
+.bacon-icon::after {
+  /* two nostril slits */
+  content: "";
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 5px;
+  background: linear-gradient(90deg, #9a5560 0 2px, transparent 2px 4px, #9a5560 4px 6px);
+}
+
+/* Robo-Farmer: a split face — grey metal + red eye | skin + blue eye — under a cap. */
+.robofarmer-icon {
+  position: relative;
+  border-color: #5c6268;
+  background:
+    /* red cyber-eye (left) + blue human eye (right) */
+    radial-gradient(circle at 32% 52%, #ff2a1a 0 2.4px, transparent 3px),
+    radial-gradient(circle at 66% 52%, #141018 0 1.4px, transparent 1.8px),
+    radial-gradient(circle at 66% 52%, #3f76c4 0 11%, transparent 14%),
+    /* left half grey metal, right half skin */
+    linear-gradient(90deg, #9aa0a6 0 50%, #d7a074 50% 100%);
+}
+
+.robofarmer-icon::before {
+  /* the tan cap across the top */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38%;
+  background: #b79463;
+  border-radius: 4px 4px 40% 40%;
+}
+
+.robofarmer-icon::after {
+  /* the seam down the middle of the face */
+  content: "";
+  position: absolute;
+  top: 38%;
+  bottom: 0;
+  left: 50%;
+  width: 1.5px;
+  transform: translateX(-50%);
+  background: #3a3f44;
+}
+
 /* McDonovan: a grey fedora over a mouse face with big round ears. */
 .mcdonovan-icon {
   position: relative;
