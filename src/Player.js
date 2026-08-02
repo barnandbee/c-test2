@@ -3869,15 +3869,16 @@ export class Player {
     const mouthMat = track(createToonMaterial({ color: 0x8a4a54 }));
     const hoofMat = track(createToonMaterial({ color: 0xc07a86 }));
 
-    // A flat crescent-moon pupil: a filled circle with an offset circular
-    // bite taken out of it.
+    // A flat half-moon pupil: a filled circle with a slightly larger,
+    // offset circle bitten out so a fat crescent (close to a half circle)
+    // remains — the concave edge on the +X side of the shape.
     const crescentGeo = (() => {
       const shape = new THREE.Shape();
-      shape.absarc(0, 0, 0.05, 0, Math.PI * 2, false);
+      shape.absarc(0, 0, 0.062, 0, Math.PI * 2, false);
       const hole = new THREE.Path();
-      hole.absarc(0.028, 0.012, 0.045, 0, Math.PI * 2, true);
+      hole.absarc(0.084, 0, 0.08, 0, Math.PI * 2, true);
       shape.holes.push(hole);
-      return track(new THREE.ShapeGeometry(shape, 20));
+      return track(new THREE.ShapeGeometry(shape, 24));
     })();
 
     const body = new THREE.Group();
@@ -3938,7 +3939,9 @@ export class Player {
       head.add(iris);
       const pupil = new THREE.Mesh(crescentGeo, pupilMat);
       pupil.position.set(side * 0.15, 0.05, 0.37);
-      pupil.rotation.z = side * 0.4; // crescents curve outward
+      // Both crescents point the same way: concave edge facing down toward
+      // the south-east of the viewer.
+      pupil.rotation.z = -Math.PI / 4;
       head.add(pupil);
       this.googlyEyes.push({ pupil, baseX: side * 0.15, baseY: 0.05, seed: Math.random() * 6.28 });
     }
@@ -4116,6 +4119,17 @@ export class Player {
     pupil.position.set(0.13, 0.05, 0.36);
     head.add(pupil);
     this.googlyEyes.push({ pupil, baseX: 0.13, baseY: 0.05, seed: Math.random() * 6.28 });
+    // --- stern eyebrows, angled down toward the centre (a hard frown) ------
+    const browGeo = track(new THREE.BoxGeometry(0.15, 0.035, 0.03));
+    const browMat = track(createToonMaterial({ color: 0x5a544a }));
+    const browL = new THREE.Mesh(browGeo, metalDarkMat); // metal brow ridge
+    browL.position.set(-0.13, 0.17, 0.28);
+    browL.rotation.z = -0.5; // inner end dips down
+    head.add(browL);
+    const browR = new THREE.Mesh(browGeo, browMat); // bushy grey brow
+    browR.position.set(0.13, 0.17, 0.27);
+    browR.rotation.z = 0.5;
+    head.add(browR);
     // Nose above a set of gritted teeth.
     const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), skinMat);
     nose.position.set(0.02, -0.06, 0.32);
@@ -4168,18 +4182,22 @@ export class Player {
       nape.scale.set(1, 1.1, 0.8);
       head.add(nape);
     }
-    const capDome = new THREE.Mesh(track(new THREE.SphereGeometry(0.32, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
-    capDome.position.y = 0.14;
-    capDome.scale.set(1, 0.85, 1);
+    // A flat cap: a low, wide crown pulled forward, with a short stiff peak.
+    const capDome = new THREE.Mesh(track(new THREE.SphereGeometry(0.34, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
+    capDome.position.set(0, 0.12, -0.03);
+    capDome.scale.set(1.08, 0.52, 1.2); // low & wide
     capDome.castShadow = true;
     head.add(capDome);
-    const button = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), capMat);
-    button.position.y = 0.4;
-    head.add(button);
-    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.28, 0.28, 0.03, 16, 1, false, 0, Math.PI)), capMat);
-    brim.position.set(0, 0.14, 0.26);
+    // The front of the crown flops forward over the peak.
+    const capFront = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
+    capFront.position.set(0, 0.11, 0.16);
+    capFront.scale.set(1.5, 0.4, 0.9);
+    head.add(capFront);
+    // The short, flat peak.
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.26, 0.26, 0.028, 20, 1, false, 0, Math.PI)), capMat);
+    brim.position.set(0, 0.07, 0.28);
     brim.rotation.y = Math.PI / 2;
-    brim.scale.set(1.2, 1, 1);
+    brim.scale.set(1.3, 1, 1.1);
     brim.castShadow = true;
     head.add(brim);
 

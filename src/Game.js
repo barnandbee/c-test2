@@ -1439,16 +1439,12 @@ export class Game {
             this.points += SANDWICH_POINTS;
             this.ui.setPoints(this.points);
             this.audio.play('squelch'); // spread onto the sandwich
-            // Note this dresser; once all of them have done it, Bacon wakes.
+            // Note this dresser (all-time). Once every dresser has done it,
+            // Bacon wakes — the actual unlock/toast happens LAST, below, so
+            // it's the message that stays on screen.
             if (!this.sandwichDressers.has(this.characterName)) {
               this.sandwichDressers.add(this.characterName);
               writeStorage(STORAGE_SANDWICH_DRESSERS, [...this.sandwichDressers].join(','));
-            }
-            if (!this.baconUnlocked && SANDWICH_DRESSERS.every((k) => this.sandwichDressers.has(k))) {
-              this.baconUnlocked = true;
-              writeStorage(STORAGE_BACON, '1');
-              this.runUnlockNames.push('Bacon');
-              this.ui.showTimeToast('★ BACON UNLOCKED! OINK!');
             }
             this.particles.spawnBurst(
               this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
@@ -1468,6 +1464,19 @@ export class Game {
               this.ui.showTimeToast('BBLT: Banana? You might not be ready, but your kids are going to love it. Maybe.');
             } else {
               this.ui.showTimeToast('MUCH BETTER! +55.5');
+            }
+            // Bacon: unlocked once every dresser has been used; otherwise
+            // show how many of the trio remain so progress is visible.
+            if (!this.baconUnlocked) {
+              const done = SANDWICH_DRESSERS.filter((k) => this.sandwichDressers.has(k)).length;
+              if (done >= SANDWICH_DRESSERS.length) {
+                this.baconUnlocked = true;
+                writeStorage(STORAGE_BACON, '1');
+                this.runUnlockNames.push('Bacon');
+                this.ui.showTimeToast('★ BACON UNLOCKED! OINK!');
+              } else {
+                this.ui.showTimeToast(`BLT DRESSED — ${done}/${SANDWICH_DRESSERS.length} SANDWICH CHEFS FOR BACON`);
+              }
             }
           } else {
             this.ui.showTimeToast('ALREADY PERFECTLY DRESSED');
