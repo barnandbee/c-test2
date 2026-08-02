@@ -740,6 +740,17 @@ export class World {
       this.neptuneRoof.visible = !inside;
     }
 
+    // The lit stove flickers — flames jitter in height, the glow pulses.
+    if (this.stoveFlames && this.stoveFlames.visible) {
+      this._flameTime = (this._flameTime || 0) + dt;
+      const t = this._flameTime;
+      for (let i = 0; i < this.stoveFlames.children.length; i++) {
+        const f = this.stoveFlames.children[i];
+        if (f.isMesh) f.scale.y = 0.8 + Math.abs(Math.sin(t * 9 + i * 1.7)) * 0.5;
+      }
+      if (this.stoveFlameLight) this.stoveFlameLight.intensity = 2.4 + Math.sin(t * 11) * 0.6;
+    }
+
     // Chimney smoke: puffs rise, wander a little, swell and thin out.
     if (this._smokePuffs) {
       this._smokeTime += dt;
@@ -2516,6 +2527,26 @@ export class World {
       hob.position.set(1.1 + hx, 1.125, -2.05 + hz);
       cottage.add(hob);
     }
+    // Roaring flames over every hob — hidden until the fritter is fried, then
+    // blazing for the rest of the run (see igniteStove / the update flicker).
+    const flames = new THREE.Group();
+    flames.visible = false;
+    cottage.add(flames);
+    this.stoveFlames = flames;
+    const flameOuterMat = track(createToonMaterial({ color: 0xff7a1a, emissive: 0xff5a10, emissiveIntensity: 1.6 }));
+    const flameInnerMat = track(createToonMaterial({ color: 0xffd24a, emissive: 0xffb020, emissiveIntensity: 2.0 }));
+    for (const [hx, hz] of [[-0.24, -0.2], [0.24, -0.2], [-0.24, 0.2], [0.24, 0.2]]) {
+      const outer = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.34, 10)), flameOuterMat);
+      outer.position.set(1.1 + hx, 1.31, -2.05 + hz);
+      flames.add(outer);
+      const inner = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.2, 8)), flameInnerMat);
+      inner.position.set(1.1 + hx, 1.26, -2.05 + hz);
+      flames.add(inner);
+    }
+    const flameLight = new THREE.PointLight(0xff8a30, 0, 4, 2);
+    flameLight.position.set(1.1, 1.5, -2.05);
+    flames.add(flameLight);
+    this.stoveFlameLight = flameLight;
     addBox(0.8, 0.5, 0.05, darkWoodMat, 1.1, 0.5, -1.6);   // oven door
     addBox(0.55, 0.05, 0.05, brassMat, 1.1, 0.68, -1.56);  // its handle
 
@@ -2679,10 +2710,18 @@ export class World {
     sg.fillStyle = '#24406a';
     sg.fillRect(0, 0, 512, 128);
     sg.fillStyle = '#cfe2f4';
-    sg.font = 'bold 62px Georgia, serif';
     sg.textAlign = 'center';
     sg.textBaseline = 'middle';
-    sg.fillText("NEPTUNE'S NOOK", 256, 70);
+    // Shrink the lettering until the whole name fits inside the board with a
+    // comfortable margin, so neither the N nor the K gets clipped.
+    const signText = "NEPTUNE'S NOOK";
+    let signSize = 62;
+    do {
+      sg.font = `bold ${signSize}px Georgia, serif`;
+      if (sg.measureText(signText).width <= 464) break;
+      signSize -= 2;
+    } while (signSize > 20);
+    sg.fillText(signText, 256, 70);
     const signTex = track(new THREE.CanvasTexture(signCanvas));
     signTex.colorSpace = THREE.SRGBColorSpace;
     const signMat = track(createToonMaterial({ map: signTex, emissive: 0x1a2a44, emissiveIntensity: 0.3 }));
@@ -2790,6 +2829,8 @@ export class World {
     this.neptune = {
       cupboard: toWorld(2.55, 0.9, -1.9),
       desk: toWorld(-1.9, 0.9, -1.95),
+      armchair: toWorld(1.9, 0.6, 1.0),
+      plant: toWorld(-2.5, 0.5, 1.9),
       door: toWorld(0, 1.0, 2.6)
     };
     const pushWall = (lx, lz) => {
@@ -2808,6 +2849,18 @@ export class World {
   /** Show/hide the pickle resting in the pan. */
   setPanPickle(on) {
     if (this._panPickle) this._panPickle.visible = on;
+  }
+
+  /** Light the cottage stove — flames blaze for the rest of the run. */
+  igniteStove() {
+    if (this.stoveFlames) this.stoveFlames.visible = true;
+    if (this.stoveFlameLight) this.stoveFlameLight.intensity = 2.4;
+  }
+
+  /** Douse the stove (called on restart). */
+  douseStove() {
+    if (this.stoveFlames) this.stoveFlames.visible = false;
+    if (this.stoveFlameLight) this.stoveFlameLight.intensity = 0;
   }
 
   /** The rug slides aside (first pull), revealing the trap door. */

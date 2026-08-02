@@ -1587,8 +1587,9 @@ export class Game {
       this.points += FRITTER_POINTS;
       this.ui.setPoints(this.points);
       this.audio.play('squelch');
+      this.world.igniteStove();
       this.awardAchievement('charredmeander');
-      this.ui.showTimeToast('A TASTY CHARRED PICKLE FRITTER! +88.8');
+      this.ui.showTimeToast('WOAH! THIS STOVE IS ON FIRE!');
       this.particles.spawnBurst(
         this._playerCenter.set(w.cottage.stove.x, w.cottage.stove.y + 0.6, w.cottage.stove.z),
         0xffb24a,
@@ -1619,6 +1620,38 @@ export class Game {
       return true;
     }
     return false;
+  }
+
+  /**
+   * A gentle proximity "note" as you brush past each of Neptune's Nook's
+   * furnishings. The desk, armchair and pot plant do nothing — they just
+   * describe themselves — while the pan hints that it can be pried free.
+   * Each note fires once on approach and re-arms after you step away, so
+   * loitering doesn't machine-gun the toast.
+   */
+  _updateNookNotes() {
+    const n = this.world.neptune;
+    if (!n) return;
+    const px = this.player.position.x;
+    const pz = this.player.position.z;
+    const notes = [
+      ['pan', n.cupboard, "There's a pan here that you might be able to pry free"],
+      ['desk', n.desk, 'A cluttered writing desk — the ink has long since dried.'],
+      ['armchair', n.armchair, 'A deep blue armchair. It has seen better tides.'],
+      ['plant', n.plant, 'A leafy pot plant, quietly minding its own business.']
+    ];
+    let hit = null;
+    for (const [key, p, msg] of notes) {
+      if (!p) continue;
+      const r = key === 'pan' ? 2.4 : 1.9;
+      if ((px - p.x) ** 2 + (pz - p.z) ** 2 < r * r) { hit = { key, msg }; break; }
+    }
+    if (!hit) { this._nookNoteKey = null; return; }
+    if (this._nookNoteKey === hit.key) return; // already announced this one
+    this._nookNoteKey = hit.key;
+    // The pan only teases "pry it free" while it's still in the cupboard.
+    if (hit.key === 'pan' && (this.holdingPan || this.fritterCooked)) return;
+    this.ui.showTimeToast(hit.msg);
   }
 
   handleCottage() {
@@ -2403,6 +2436,8 @@ export class Game {
       this.world.panMesh.position.copy(this.world.panHome);
       this.world.setPanPickle(false);
     }
+    this.world.douseStove();
+    this._nookNoteKey = null;
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -2712,6 +2747,10 @@ export class Game {
         this.world.panMesh.position.set(p.x, p.y + 0.95, p.z);
         this.world.panMesh.rotation.y = this.player.facingYaw || 0;
       }
+
+      // Little notes as you wander Neptune's Nook — most items are just
+      // for atmosphere; the pan is the one you can actually do something with.
+      this._updateNookNotes();
 
       // Parsley O'Riley: arrive at the cave's BLT garnish-ready — 300+ on
       // the board, with the balloon your ONLY transport this run (no

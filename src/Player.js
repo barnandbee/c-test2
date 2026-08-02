@@ -4051,6 +4051,16 @@ export class Player {
     const teethMat = track(createToonMaterial({ color: 0xf2ede0 }));
     const hayMat = track(createToonMaterial({ color: 0xd8c060, rim: { color: 0xfff0b0, strength: 0.35, threshold: 0.6 } }));
 
+    // A 2D-comic ink line: a black BackSide shell grown slightly around a
+    // mesh reads as a hand-drawn outline (same trick as Bacon).
+    const outlineMat = track(new THREE.MeshBasicMaterial({ color: 0x120a10, side: THREE.BackSide }));
+    const outline = (mesh, s = 1.08) => {
+      const o = new THREE.Mesh(mesh.geometry, outlineMat);
+      o.scale.setScalar(s);
+      mesh.add(o);
+      return mesh;
+    };
+
     const body = new THREE.Group();
     body.name = 'body';
     body.position.y = 0.52;
@@ -4061,6 +4071,7 @@ export class Player {
     const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.29, 0.4, 6, 14)), jumperMat);
     torso.position.y = 0.3;
     torso.castShadow = true;
+    outline(torso, 1.05);
     body.add(torso);
     // ribbed collar and hem
     const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.17, 0.045, 8, 20)), jumperDarkMat);
@@ -4082,10 +4093,12 @@ export class Player {
     const skullR = new THREE.Mesh(track(new THREE.SphereGeometry(0.31, 16, 14, 0, Math.PI)), skinMat);
     skullR.rotation.y = Math.PI / 2; // skin over the +X (blue-eye) half
     skullR.castShadow = true;
+    outline(skullR, 1.05);
     head.add(skullR);
     const skullL = new THREE.Mesh(track(new THREE.SphereGeometry(0.31, 16, 14, Math.PI, Math.PI)), metalMat);
     skullL.rotation.y = Math.PI / 2; // metal over the −X (red-eye) half
     skullL.castShadow = true;
+    outline(skullL, 1.05);
     head.add(skullL);
     const seam = new THREE.Mesh(track(new THREE.CylinderGeometry(0.012, 0.012, 0.62, 6)), metalDarkMat);
     seam.position.z = 0.02;
@@ -4202,6 +4215,7 @@ export class Player {
     capDome.position.set(0, 0.12, -0.03);
     capDome.scale.set(1.08, 0.52, 1.2); // low & wide
     capDome.castShadow = true;
+    outline(capDome, 1.06);
     head.add(capDome);
     // The front of the crown flops forward over the peak.
     const capFront = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
@@ -4230,9 +4244,11 @@ export class Player {
       const handMat = side === -1 ? metalMat : skinMat;
       const arm = new THREE.Mesh(armGeo, sleeveMat);
       arm.castShadow = true;
+      outline(arm, 1.1);
       pivot.add(arm);
       const hand = new THREE.Mesh(handGeo, handMat);
       hand.position.y = -0.4;
+      outline(hand, 1.12);
       pivot.add(hand);
       body.add(pivot);
       this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
@@ -4247,10 +4263,12 @@ export class Player {
       pivot.position.set(side * 0.14, 0.06, 0);
       const leg = new THREE.Mesh(legGeo, trouserMat);
       leg.castShadow = true;
+      outline(leg, 1.1);
       pivot.add(leg);
       const boot = new THREE.Mesh(bootGeo, bootMat);
       boot.position.set(0, -0.4, 0.05);
       boot.scale.set(1, 0.7, 1.5);
+      outline(boot, 1.12);
       pivot.add(boot);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
