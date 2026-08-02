@@ -206,6 +206,15 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   October even while the boat lurks submerged**. While you're down
   there: a fan of coral glows on the lake bed, because someone should
   see it.
+- **Neptune's Nook** — a second cottage, this one in every tone of blue,
+  sitting beside the whirlpool. Its roof lifts away just like the first.
+  Inside: a desk, an armchair, a pot plant, and a cupboard holding a
+  frying **pan**. Double-tap to lift the pan out — but *only* with a
+  score **between 0 and 50** — then catch a **pickle** while carrying it
+  (*"The pickle's in the pan!"*) and take it to the **cottage stove**.
+  Double-tap there and the stove fires up for **a tasty charred pickle
+  fritter (+88.8)**, once per run — the **Charred Meander** trophy.
+  (Entering the whirlpool now also plays a mysterious spiralling sound.)
 - **Cottage Lane** — the trap door's lock only respects a **perfectly
   square score** (1, 4, 9, 16, 25…). Arrive square, double-tap, and it
   swings open — down the stairs to a London Underground platform 14m

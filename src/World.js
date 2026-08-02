@@ -304,6 +304,38 @@ export class World {
     this.desertX = desertBest.x;
     this.desertZ = desertBest.z;
 
+    // --- Neptune's Nook: a second cottage beside the whirlpool lake -------
+    // Sited on the gentlest ground a short stroll from the whirlpool, clear
+    // of the water and the desert. Defined before geometry so getHeight()
+    // can level its yard, just like the cottage.
+    let nookBest = null;
+    for (const [da, r] of [[0.5, 20], [-0.5, 20], [0.8, 22], [-0.8, 22], [0.3, 24], [1.1, 20]]) {
+      const a = Math.atan2(this.whirlZ, this.whirlX) + da;
+      const x = this.whirlX + Math.cos(a) * r;
+      const z = this.whirlZ + Math.sin(a) * r;
+      const wallDist = PLAYABLE_RADIUS - Math.hypot(x, z);
+      const near =
+        this.isNearWhirlLake(x, z) ||
+        Math.hypot(x - this.whirlX, z - this.whirlZ) < this.whirlRadius + 6 ||
+        Math.hypot(x - this.desertX, z - this.desertZ) < this.desertRadius + 6 ||
+        wallDist < 10;
+      const e = 0.8;
+      const grad = Math.hypot(
+        this.getHeight(x + e, z) - this.getHeight(x - e, z),
+        this.getHeight(x, z + e) - this.getHeight(x, z - e)
+      ) / (2 * e) + (near ? 5 : 0);
+      if (!nookBest || grad < nookBest.grad) nookBest = { x, z, grad };
+      if (nookBest.grad < 0.3) break;
+    }
+    this.neptuneX = nookBest.x;
+    this.neptuneZ = nookBest.z;
+    // The door faces the whirlpool.
+    const nookToWhirl = new THREE.Vector2(this.whirlX - this.neptuneX, this.whirlZ - this.neptuneZ).normalize();
+    this.neptuneDoorX = nookToWhirl.x;
+    this.neptuneDoorZ = nookToWhirl.y;
+    this.neptuneLevel = this.getHeight(this.neptuneX, this.neptuneZ);
+    this.neptuneRadius = 7.0; // arms the yard-levelling in getHeight()
+
     // Scratch objects for allocation-free queries.
     this._n = new THREE.Vector3();
     this._shadowBasisX = new THREE.Vector3();
@@ -327,6 +359,7 @@ export class World {
     this._buildCave();
     this._buildGolfFlag();
     this._buildCottage();
+    this._buildNeptunesNook();
     this._buildStation();
     this._buildCopse();
     this._buildTubeSigns();
@@ -397,6 +430,13 @@ export class World {
       const cd = Math.hypot(x - this.cottageX, z - this.cottageZ);
       if (cd < this.cottageRadius) {
         h = lerp(this.cottageLevel, h, smoothstep(this.cottageRadius * 0.45, this.cottageRadius, cd));
+      }
+    }
+    // …and Neptune's Nook, beside the whirlpool.
+    if (this.neptuneRadius) {
+      const nd = Math.hypot(x - this.neptuneX, z - this.neptuneZ);
+      if (nd < this.neptuneRadius) {
+        h = lerp(this.neptuneLevel, h, smoothstep(this.neptuneRadius * 0.45, this.neptuneRadius, nd));
       }
     }
     // The hidden dell: an unclimbable ring wall around a level bowl.
@@ -557,6 +597,8 @@ export class World {
       if (Math.hypot(x - this.caveX, z - this.caveZ) < this.caveRadius + 2.5) continue;
       // …or in the cottage's yard.
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 1.5) continue;
+      // …or in Neptune's Nook's yard.
+      if (this.neptuneRadius && Math.hypot(x - this.neptuneX, z - this.neptuneZ) < this.neptuneRadius + 1.5) continue;
       // …or inside (or on the wall of) the hidden dell.
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 5) continue;
       // …or on Turnip Scart's vegetable patch.
@@ -687,6 +729,15 @@ export class World {
         lz < 3.4 &&
         focus.y < this.cottageLevel + 3;
       this.cottageRoof.visible = !inside;
+    }
+    if (this.neptuneRoof) {
+      const dx = focus.x - this.neptuneX;
+      const dz = focus.z - this.neptuneZ;
+      const lx = dx * this.neptuneDoorZ - dz * this.neptuneDoorX;
+      const lz = dx * this.neptuneDoorX + dz * this.neptuneDoorZ;
+      const inside =
+        Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && focus.y < this.neptuneLevel + 3;
+      this.neptuneRoof.visible = !inside;
     }
 
     // Chimney smoke: puffs rise, wander a little, swell and thin out.
@@ -1296,6 +1347,7 @@ export class World {
       // Trees near the cave mouth would wall off the camera's sightline.
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
+      if (this.neptuneRadius && Math.hypot(x - this.neptuneX, z - this.neptuneZ) < this.neptuneRadius + 2) continue;
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
       if (Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 3) continue;
       if (Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 4) continue;
@@ -2535,6 +2587,227 @@ export class World {
     this.colliders.push({ x: fridgeP.x, z: fridgeP.z, radius: 0.5, top: spot.y + 1.8 });
     const tableP = toWorld(-2.35, 0, -1.9);
     this.colliders.push({ x: tableP.x, z: tableP.z, radius: 0.42, top: spot.y + 1.1 });
+  }
+
+  /**
+   * Neptune's Nook — a second cottage beside the whirlpool lake, the same
+   * shape as the first but rendered entirely in tones of blue. Inside: a
+   * desk, an armchair, a pot plant, and a cupboard holding a frying pan.
+   * The roof lifts away (dollhouse-style) while someone is inside.
+   */
+  _buildNeptunesNook() {
+    const spot = new THREE.Vector3(this.neptuneX, this.neptuneLevel, this.neptuneZ);
+    this.neptunePos = spot.clone();
+    const yaw = Math.atan2(this.neptuneDoorX, this.neptuneDoorZ);
+
+    const track = (r) => { this._disposables.push(r); return r; };
+    const wallMat = track(createToonMaterial({ color: 0xaec6e0, rim: { color: 0xdcebff, strength: 0.3, threshold: 0.68 } }));
+    wallMat.side = THREE.DoubleSide;
+    const trimMat = track(createToonMaterial({ color: 0x2f4a72 }));
+    const roofMat = track(createToonMaterial({ color: 0x2d5a8a, rim: { color: 0x6a9fd0, strength: 0.35, threshold: 0.64 } }));
+    roofMat.side = THREE.DoubleSide;
+    const floorMat = track(createToonMaterial({ color: 0x3f6a92 }));
+    const deepMat = track(createToonMaterial({ color: 0x24406a }));
+    const cabinetMat = track(createToonMaterial({ color: 0x35608e, rim: { color: 0x7fb0dc, strength: 0.3, threshold: 0.64 } }));
+    const paleMat = track(createToonMaterial({ color: 0xcfe2f4 }));
+    const paneMat = track(createToonMaterial({ color: 0xbfe8ff, emissive: 0x3f9ad0, emissiveIntensity: 0.6 }));
+    const chairMat = track(createToonMaterial({ color: 0x3a6fa8, rim: { color: 0x8fbde8, strength: 0.3, threshold: 0.64 } }));
+    const leafMat = track(createToonMaterial({ color: 0x2f7a6a, rim: { color: 0x9fe8d0, strength: 0.35, threshold: 0.6 } }));
+    const potMat = track(createToonMaterial({ color: 0x5a86b4 }));
+    const panMat = track(createToonMaterial({ color: 0x2a2c30, rim: { color: 0x8a90a0, strength: 0.4, threshold: 0.55 } }));
+    const brassMat = track(createToonMaterial({ color: 0x9fb8d8 }));
+
+    const nook = new THREE.Group();
+    nook.position.copy(spot);
+    nook.rotation.y = yaw;
+    this.neptuneMeshes = nook;
+
+    const addBox = (w, h, d, mat, x, y, z, group = nook) => {
+      const geo = track(new THREE.BoxGeometry(w, h, d));
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      return mesh;
+    };
+
+    // --- shell: same footprint as the cottage ------------------------------
+    addBox(6.4, 0.1, 5.4, floorMat, 0, 0, 0);
+    addBox(6.4, 2.5, 0.2, wallMat, 0, 1.3, -2.6);
+    addBox(0.2, 2.5, 5.0, wallMat, -3.1, 1.3, 0);
+    addBox(0.2, 2.5, 5.0, wallMat, 3.1, 1.3, 0);
+    addBox(2.1, 2.5, 0.2, wallMat, -2.15, 1.3, 2.6);
+    addBox(2.1, 2.5, 0.2, wallMat, 2.15, 1.3, 2.6);
+    addBox(2.2, 0.45, 0.2, trimMat, 0, 2.325, 2.6);
+    addBox(0.3, 0.9, 1.1, paneMat, -3.1, 1.55, 0.6);
+    addBox(0.3, 0.9, 1.1, paneMat, 3.1, 1.55, 0.6);
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(-1.1, 1.15, 2.66);
+    doorPivot.rotation.y = -2.1;
+    nook.add(doorPivot);
+    addBox(1.0, 2.0, 0.08, deepMat, 0.5, 0, 0, doorPivot);
+
+    // --- roof (lifts away) -------------------------------------------------
+    const roof = new THREE.Group();
+    nook.add(roof);
+    this.neptuneRoof = roof;
+    const slope = Math.atan2(1.65, 3.5);
+    for (const side of [-1, 1]) {
+      const slab = addBox(3.95, 0.16, 6.3, roofMat, side * 1.75, 3.33, 0, roof);
+      slab.rotation.z = -side * slope;
+    }
+    const gableShape = new THREE.Shape([
+      new THREE.Vector2(-3.2, 2.5),
+      new THREE.Vector2(3.2, 2.5),
+      new THREE.Vector2(0, 4.15)
+    ]);
+    const gableGeo = track(new THREE.ShapeGeometry(gableShape));
+    for (const z of [-2.5, 2.5]) {
+      const gable = new THREE.Mesh(gableGeo, wallMat);
+      gable.position.z = z;
+      gable.castShadow = true;
+      roof.add(gable);
+    }
+    addBox(0.55, 1.6, 0.55, wallMat, 1.9, 3.6, -1.2, roof);
+    addBox(0.7, 0.12, 0.7, deepMat, 1.9, 4.46, -1.2, roof);
+
+    // --- a hand-lettered "NEPTUNE'S NOOK" sign over the door ---------------
+    const signCanvas = document.createElement('canvas');
+    signCanvas.width = 512; signCanvas.height = 128;
+    const sg = signCanvas.getContext('2d');
+    sg.fillStyle = '#24406a';
+    sg.fillRect(0, 0, 512, 128);
+    sg.fillStyle = '#cfe2f4';
+    sg.font = 'bold 62px Georgia, serif';
+    sg.textAlign = 'center';
+    sg.textBaseline = 'middle';
+    sg.fillText("NEPTUNE'S NOOK", 256, 70);
+    const signTex = track(new THREE.CanvasTexture(signCanvas));
+    signTex.colorSpace = THREE.SRGBColorSpace;
+    const signMat = track(createToonMaterial({ map: signTex, emissive: 0x1a2a44, emissiveIntensity: 0.3 }));
+    const sign = new THREE.Mesh(track(new THREE.PlaneGeometry(2.0, 0.5)), signMat);
+    sign.position.set(0, 2.72, 2.72);
+    nook.add(sign);
+
+    // --- a writing desk against the back wall ------------------------------
+    const desk = new THREE.Group();
+    desk.position.set(-1.9, 0, -1.95);
+    nook.add(desk);
+    addBox(1.5, 0.08, 0.7, deepMat, 0, 0.86, 0, desk);
+    for (const [lx, lz] of [[-0.65, -0.28], [0.65, -0.28], [-0.65, 0.28], [0.65, 0.28]]) {
+      addBox(0.08, 0.86, 0.08, deepMat, lx, 0.43, lz, desk);
+    }
+    addBox(0.55, 0.3, 0.55, cabinetMat, 0.42, 0.72, 0, desk); // a drawer stack
+    addBox(0.3, 0.02, 0.4, paleMat, -0.3, 0.91, 0.05, desk);  // some papers
+    const inkwell = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.06, 0.1, 10)), trimMat);
+    inkwell.position.set(-0.55, 0.95, -0.15);
+    desk.add(inkwell);
+
+    // --- an armchair by the window -----------------------------------------
+    const chair = new THREE.Group();
+    chair.position.set(1.9, 0, 1.0);
+    chair.rotation.y = -0.7;
+    nook.add(chair);
+    addBox(0.9, 0.35, 0.9, chairMat, 0, 0.45, 0, chair);        // seat block
+    addBox(0.9, 0.7, 0.2, chairMat, 0, 0.85, -0.35, chair);     // back
+    addBox(0.2, 0.5, 0.9, chairMat, -0.55, 0.6, 0, chair);      // arm L
+    addBox(0.2, 0.5, 0.9, chairMat, 0.55, 0.6, 0, chair);       // arm R
+    const cushion = new THREE.Mesh(track(new THREE.SphereGeometry(0.35, 12, 8)), paleMat);
+    cushion.position.set(0, 0.66, 0.05);
+    cushion.scale.set(1.1, 0.4, 1.1);
+    chair.add(cushion);
+
+    // --- a leafy pot plant in the corner -----------------------------------
+    const plant = new THREE.Group();
+    plant.position.set(-2.5, 0, 1.9);
+    nook.add(plant);
+    const pot = new THREE.Mesh(track(new THREE.CylinderGeometry(0.24, 0.18, 0.4, 14)), potMat);
+    pot.position.y = 0.2;
+    pot.castShadow = true;
+    plant.add(pot);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const up = 0.5 + Math.random() * 0.5;
+      const frond = new THREE.Mesh(track(new THREE.ConeGeometry(0.06, 0.6 + up * 0.3, 5)), leafMat);
+      frond.position.set(Math.cos(a) * 0.12, 0.55 + up * 0.25, Math.sin(a) * 0.12);
+      frond.rotation.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5);
+      frond.castShadow = true;
+      plant.add(frond);
+    }
+
+    // --- a cupboard with a frying pan inside --------------------------------
+    const cupboard = new THREE.Group();
+    cupboard.position.set(2.55, 0, -1.9);
+    nook.add(cupboard);
+    addBox(0.9, 1.5, 0.7, cabinetMat, 0, 0.75, 0, cupboard);   // carcass
+    // Two doors, slightly ajar so the pan peeks out.
+    const doorL = new THREE.Group(); doorL.position.set(-0.44, 0.85, 0.36); cupboard.add(doorL);
+    addBox(0.42, 1.1, 0.05, deepMat, 0.21, 0, 0, doorL); doorL.rotation.y = 0.5;
+    const doorR = new THREE.Group(); doorR.position.set(0.44, 0.85, 0.36); cupboard.add(doorR);
+    addBox(0.42, 1.1, 0.05, deepMat, -0.21, 0, 0, doorR); doorR.rotation.y = -0.5;
+    addBox(0.02, 0.2, 0.04, brassMat, -0.03, 0, 0.05, doorL);  // handles
+    addBox(0.02, 0.2, 0.04, brassMat, 0.03, 0, 0.05, doorR);
+
+    // The pan itself — a scene-level mesh so Game can carry it around.
+    const pan = new THREE.Group();
+    const panBody = new THREE.Mesh(track(new THREE.CylinderGeometry(0.22, 0.18, 0.08, 18)), panMat);
+    panBody.castShadow = true;
+    pan.add(panBody);
+    const panRim = new THREE.Mesh(track(new THREE.TorusGeometry(0.22, 0.02, 8, 20)), panMat);
+    panRim.rotation.x = Math.PI / 2;
+    panRim.position.y = 0.04;
+    pan.add(panRim);
+    const handleGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.4, 8));
+    handleGeo.rotateZ(Math.PI / 2);
+    const handle = new THREE.Mesh(handleGeo, panMat);
+    handle.position.set(0.4, 0.02, 0);
+    pan.add(handle);
+    // A pickle that appears in the pan once caught (hidden until then).
+    const panPickle = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.05, 0.16, 4, 8)), track(createToonMaterial({ color: 0x5a8a3a, rim: { color: 0xbfe89a, strength: 0.4, threshold: 0.6 } })));
+    panPickle.rotation.z = Math.PI / 2;
+    panPickle.position.y = 0.06;
+    panPickle.visible = false;
+    pan.add(panPickle);
+    this._panPickle = panPickle;
+    this.panMesh = pan;
+    this.scene.add(pan);
+    // Home position (resting in the cupboard), in world space.
+    const panHomeLocal = new THREE.Vector3(2.55, 0.95, -1.6);
+    this.panHome = panHomeLocal.clone().applyQuaternion(nook.quaternion).add(spot);
+    this.panMesh.position.copy(this.panHome);
+
+    // Warm blue hearth-light.
+    const lamp = new THREE.PointLight(0x9fd0ff, 2.2, 10, 2);
+    lamp.position.set(0, 2.1, 0);
+    nook.add(lamp);
+
+    this.scene.add(nook);
+
+    // --- interaction points + colliders ------------------------------------
+    const toWorld = (lx, ly, lz) =>
+      new THREE.Vector3(lx, ly, lz).applyQuaternion(nook.quaternion).add(spot);
+    this.neptune = {
+      cupboard: toWorld(2.55, 0.9, -1.9),
+      desk: toWorld(-1.9, 0.9, -1.95),
+      door: toWorld(0, 1.0, 2.6)
+    };
+    const pushWall = (lx, lz) => {
+      const p = toWorld(lx, 0, lz);
+      this.colliders.push({ x: p.x, z: p.z, radius: 0.35, top: spot.y + 2.6 });
+    };
+    for (let x = -2.8; x <= 2.81; x += 0.7) pushWall(x, -2.6);
+    for (let z = -2.4; z <= 2.41; z += 0.685) { pushWall(-3.1, z); pushWall(3.1, z); }
+    for (const s of [-1, 1]) { pushWall(s * 1.5, 2.6); pushWall(s * 2.2, 2.6); pushWall(s * 2.9, 2.6); }
+    const cupP = toWorld(2.55, 0, -1.9);
+    this.colliders.push({ x: cupP.x, z: cupP.z, radius: 0.5, top: spot.y + 1.5 });
+    const deskP = toWorld(-1.9, 0, -1.95);
+    this.colliders.push({ x: deskP.x, z: deskP.z, radius: 0.55, top: spot.y + 0.9 });
+  }
+
+  /** Show/hide the pickle resting in the pan. */
+  setPanPickle(on) {
+    if (this._panPickle) this._panPickle.visible = on;
   }
 
   /** The rug slides aside (first pull), revealing the trap door. */

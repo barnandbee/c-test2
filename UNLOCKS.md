@@ -150,6 +150,27 @@ milestone counts your best past run automatically.
 | 🥝 **Platty Tubes** | Ride the Mystic Line to a station AND collect the Platinum Guava in the same run. |
 | 🌊 **Life Aquatic** | Finish a run out on the water of one of the lakes. |
 | 😴 **AFKC** | Finish a run on **100 or more** without collecting a single item (like *AFK?*, but past a century). |
+| 🍳 **Charred Meander** | Carry the pan from **Neptune's Nook**, catch a pickle in it, and fry it on the **cottage stove** for a charred pickle fritter (see below). |
+| 🐖 **Farmer vs Pig** | Complete a full run as **Robo-Farmer** *and* a full run as **Bacon** (once both are unlocked). |
+
+---
+
+## Neptune's Nook & the charred pickle fritter
+
+A second, all-blue cottage — **Neptune's Nook** — sits beside the whirlpool.
+Inside is a desk, an armchair, a pot plant, and a cupboard holding a frying
+pan. The pan is the start of a little cooking quest:
+
+1. **Lift the pan** from the cupboard with a **double-tap** — but *only*
+   while your score is **between 0 and 50**. (Double-tap again anywhere to
+   set it back down.)
+2. **Catch a pickle** while carrying the pan and it drops straight in —
+   *"The pickle's in the pan!"*
+3. **Carry it to the cottage stove** and double-tap: the stove fires up and
+   cooks **a tasty charred pickle fritter (+88.8)** — **once per run** — and
+   earns the **Charred Meander** trophy.
+
+Entering the whirlpool now also plays a mysterious spiralling sound.
 
 ---
 

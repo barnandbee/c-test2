@@ -57,7 +57,9 @@ export const TROPHIES = [
   { id: 'afk', medal: '💤', title: 'AFK?', desc: 'Finish a run above zero without collecting a single item.' },
   { id: 'plattytubes', medal: '🥝', title: 'Platty Tubes', desc: 'Ride the Mystic Line to a station and collect the Platinum Guava in the same run.' },
   { id: 'lifeaquatic', medal: '🌊', title: 'Life Aquatic', desc: 'Finish a run out on the water of one of the lakes.' },
-  { id: 'afkc', medal: '😴', title: 'AFKC', desc: 'Finish a run on 100 or more without collecting a single item.' }
+  { id: 'afkc', medal: '😴', title: 'AFKC', desc: 'Finish a run on 100 or more without collecting a single item.' },
+  { id: 'charredmeander', medal: '🍳', title: 'Charred Meander', desc: 'Cook a charred pickle fritter: carry the pan from Neptune’s Nook, catch a pickle in it, and fry it on the cottage stove.' },
+  { id: 'farmervspig', medal: '🐖', title: 'Farmer vs Pig', desc: 'Complete a run as both Robo-Farmer and Bacon.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

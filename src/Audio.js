@@ -114,6 +114,7 @@ export class SoundFX {
       case 'squelch': return this._squelch();
       case 'train': return this._train();
       case 'win': return this._win();
+      case 'whirl': return this._whirl();
       case 'ribbit': return this._ribbit();
       case 'carthorn': return this._carthorn();
       case 'select': return this._select();
@@ -323,6 +324,50 @@ export class SoundFX {
     // A sparkle flourish on top.
     this._blip('triangle', 1568, 1568, t + 0.44, 0.3, 0.16);
     this._blip('sine', 2093, 2093, t + 0.5, 0.3, 0.1);
+  }
+
+  /** A mysterious spiralling whoosh for tumbling into the whirlpool: a tone
+   *  that spirals down through wobbles, under a sweep of swirling noise. */
+  _whirl() {
+    const t = this.ctx.currentTime;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2200;
+    lp.connect(this.master);
+    for (const [type, base, peak] of [['sine', 640, 0.16], ['triangle', 648, 0.08]]) {
+      const o = this.ctx.createOscillator();
+      o.type = type;
+      const f = o.frequency;
+      // The spiral: down, up a touch, down further… vertiginous.
+      f.setValueAtTime(base, t);
+      f.exponentialRampToValueAtTime(base * 0.6, t + 0.25);
+      f.exponentialRampToValueAtTime(base * 0.85, t + 0.5);
+      f.exponentialRampToValueAtTime(base * 0.45, t + 0.85);
+      f.exponentialRampToValueAtTime(base * 0.62, t + 1.1);
+      f.exponentialRampToValueAtTime(base * 0.3, t + 1.5);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      o.connect(g).connect(lp);
+      o.start(t);
+      o.stop(t + 1.7);
+    }
+    // A shimmer of swirling noise sweeping down with the pitch.
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noise();
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1800, t);
+    bp.frequency.exponentialRampToValueAtTime(480, t + 1.4);
+    bp.Q.value = 4;
+    const ng = this.ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.exponentialRampToValueAtTime(0.05, t + 0.1);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    src.connect(bp).connect(ng).connect(this.master);
+    src.start(t);
+    src.stop(t + 1.6);
   }
 
   /** A wet, croaky frog ribbit for a toxic-frog collision. */

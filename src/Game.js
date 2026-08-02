@@ -165,6 +165,9 @@ const SCORE_MILESTONES = [
 const SANDWICH_POINTS = 55.5;
 const PICKLE_VALUE = 8.8;          // Pickle Stick collectible value
 const GUAVA_VALUE = 50;            // Platinum Guava value
+const FRITTER_POINTS = 88.8;      // the charred pickle fritter reward
+const PAN_SCORE_MIN = 0;          // pan is only free with a score in this range
+const PAN_SCORE_MAX = 50;
 const FRIDGE_CLICKS_REQUIRED = 10; // clicks before the pickle appears
 const PICKLE_UNLOCK_SCORE = 100;   // score needed when grabbing the pickle
 const SANDWICH_RANGE = 2.6;
@@ -385,6 +388,9 @@ export class Game {
     this._whirlPosStreak = 0;        // consecutive positive whirlpool dips (Whirly Lucky)
     this._whirlNegStreak = 0;        // consecutive negative whirlpool dips (In A Spin)
     this._pickleSummonedThisRun = false;   // fridge-summoned pickle placed?
+    this.holdingPan = false;               // carrying Neptune's pan?
+    this.pickleInPan = false;              // a pickle caught in the pan?
+    this.fritterCooked = false;            // charred pickle fritter made this run?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -647,6 +653,13 @@ export class Game {
           }
         } else {
           this.ui.showTimeToast('OH, PICKLE STICKS! +8.8');
+        }
+        // Carrying Neptune's pan? The pickle lands right in it.
+        if (this.holdingPan && !this.pickleInPan) {
+          this.pickleInPan = true;
+          this.world.setPanPickle(true);
+          this.audio.play('squelch');
+          this.ui.showTimeToast("THE PICKLE'S IN THE PAN!");
         }
       }
 
@@ -1488,6 +1501,9 @@ export class Game {
       }
     }
 
+    // Neptune's Nook pan: pick it up, cook the fritter, or set it down.
+    if (this.handlePan()) return;
+
     // Inside the cottage: appliances answer to a double-tap.
     if (this.handleCottage()) return;
 
@@ -1545,6 +1561,66 @@ export class Game {
    * and Marblella — a marble of unusual density — rolls onto the roster.
    * Returns true when the tap was spent indoors.
    */
+  /**
+   * The Neptune's Nook pan quest: lift the pan from the cupboard (score
+   * 0–50), catch a pickle in it, carry it to the cottage stove and fry a
+   * charred pickle fritter (+88.8, once per run). A double-tap otherwise
+   * puts the pan back.
+   */
+  handlePan() {
+    const px = this.player.position.x;
+    const pz = this.player.position.z;
+    const py = this.player.position.y;
+    const near = (p, r) => (px - p.x) ** 2 + (pz - p.z) ** 2 < r * r && Math.abs(py - p.y) < 2.5;
+    const w = this.world;
+
+    // Cook on the cottage stove — holding a pan with a pickle in it.
+    if (
+      this.holdingPan && this.pickleInPan && !this.fritterCooked &&
+      w.cottage && near(w.cottage.stove, 2.6)
+    ) {
+      this.fritterCooked = true;
+      this.holdingPan = false;
+      this.pickleInPan = false;
+      w.setPanPickle(false);
+      if (w.panMesh && w.panHome) w.panMesh.position.copy(w.panHome);
+      this.points += FRITTER_POINTS;
+      this.ui.setPoints(this.points);
+      this.audio.play('squelch');
+      this.awardAchievement('charredmeander');
+      this.ui.showTimeToast('A TASTY CHARRED PICKLE FRITTER! +88.8');
+      this.particles.spawnBurst(
+        this._playerCenter.set(w.cottage.stove.x, w.cottage.stove.y + 0.6, w.cottage.stove.z),
+        0xffb24a,
+        { count: 42, speed: 4.6, size: 48, upBias: 0.7, life: 0.9 }
+      );
+      return true;
+    }
+
+    // Lift the pan out of the cupboard — only with a score of 0–50.
+    if (w.neptune && !this.holdingPan && !this.fritterCooked && near(w.neptune.cupboard, 2.4)) {
+      if (this.points >= PAN_SCORE_MIN && this.points <= PAN_SCORE_MAX) {
+        this.holdingPan = true;
+        this.audio.play('select');
+        this.ui.showTimeToast('YOU LIFT THE PAN FROM THE CUPBOARD');
+      } else {
+        this.ui.showTimeToast('THE PAN ONLY COMES FREE WITH A SCORE OF 0–50');
+      }
+      return true;
+    }
+
+    // Otherwise, a double-tap puts the pan back in the cupboard.
+    if (this.holdingPan) {
+      this.holdingPan = false;
+      this.pickleInPan = false;
+      w.setPanPickle(false);
+      if (w.panMesh && w.panHome) w.panMesh.position.copy(w.panHome);
+      this.ui.showTimeToast('YOU PUT THE PAN BACK');
+      return true;
+    }
+    return false;
+  }
+
   handleCottage() {
     const spots = this.world.cottage;
     if (!spots) return false;
@@ -2222,6 +2298,12 @@ export class Game {
       this.awardAchievement('chimptactoe');
     }
 
+    // Farmer vs Pig: having played a full run as both Robo-Farmer and Bacon
+    // (the current run counts — recordCharacterUse ran at its start).
+    if (this.charUsage.robofarmer && this.charUsage.bacon) {
+      this.awardAchievement('farmervspig');
+    }
+
     // Owlin' 4 U: 400+ as Pastry Owl, in the same 21:00–23:59 window.
     if (this.characterName === 'owl' && this.points >= 400 && this.isOwlHour()) {
       this.awardAchievement('owlin4u');
@@ -2314,6 +2396,13 @@ export class Game {
     this._whirlPosStreak = 0;
     this._whirlNegStreak = 0;
     this._pickleSummonedThisRun = false;
+    this.holdingPan = false;
+    this.pickleInPan = false;
+    this.fritterCooked = false;
+    if (this.world.panMesh && this.world.panHome) {
+      this.world.panMesh.position.copy(this.world.panHome);
+      this.world.setPanPickle(false);
+    }
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -2586,6 +2675,7 @@ export class Game {
           Math.abs(this.player.position.y - this.world.whirlWaterLevel) < 3;
         if (wd < 4 && nearSurface && !this._inWhirl) {
           this._inWhirl = true;
+          this.audio.play('whirl'); // the mysterious spiralling plunge
           // Tally this dip against the all-time count; 100 wakes Snappy.
           this.whirlEntries += 1;
           writeStorage(STORAGE_WHIRL_ENTRIES, String(this.whirlEntries));
@@ -2614,6 +2704,13 @@ export class Game {
         } else if (wd > 7) {
           this._inWhirl = false; // clear of the throat — the next dip counts
         }
+      }
+
+      // Carry the pan aloft while it's held.
+      if (this.holdingPan && this.world.panMesh) {
+        const p = this.player.position;
+        this.world.panMesh.position.set(p.x, p.y + 0.95, p.z);
+        this.world.panMesh.rotation.y = this.player.facingYaw || 0;
       }
 
       // Parsley O'Riley: arrive at the cave's BLT garnish-ready — 300+ on

@@ -3869,17 +3869,27 @@ export class Player {
     const mouthMat = track(createToonMaterial({ color: 0x8a4a54 }));
     const hoofMat = track(createToonMaterial({ color: 0xc07a86 }));
 
-    // A flat half-moon pupil: a filled circle with a slightly larger,
-    // offset circle bitten out so a fat crescent (close to a half circle)
-    // remains — the concave edge on the +X side of the shape.
+    // A near-semicircular pupil: a filled circle with a large, far-offset
+    // circle bitten out, so only a shallow crescent concave is carved and
+    // most of the disc (a half-moon) remains. Concave edge on the +X side.
     const crescentGeo = (() => {
       const shape = new THREE.Shape();
       shape.absarc(0, 0, 0.062, 0, Math.PI * 2, false);
       const hole = new THREE.Path();
-      hole.absarc(0.084, 0, 0.08, 0, Math.PI * 2, true);
+      hole.absarc(0.15, 0, 0.115, 0, Math.PI * 2, true);
       shape.holes.push(hole);
-      return track(new THREE.ShapeGeometry(shape, 24));
+      return track(new THREE.ShapeGeometry(shape, 28));
     })();
+
+    // A flat 2D-comic black outline: a slightly larger black back-face shell
+    // behind each part reads as an inked line around its silhouette.
+    const outlineMat = track(new THREE.MeshBasicMaterial({ color: 0x120a10, side: THREE.BackSide }));
+    const outline = (mesh, s = 1.08) => {
+      const o = new THREE.Mesh(mesh.geometry, outlineMat);
+      o.scale.setScalar(s);
+      mesh.add(o);
+      return mesh;
+    };
 
     const body = new THREE.Group();
     body.name = 'body';
@@ -3905,6 +3915,8 @@ export class Player {
     skull.scale.set(1.05, 0.98, 0.92);
     skull.castShadow = true;
     head.add(skull);
+    outline(skull, 1.05);
+    outline(torso, 1.05);
     for (const side of [-1, 1]) {
       const cheek = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), pinkDeepMat);
       cheek.position.set(side * 0.24, -0.06, 0.18);
@@ -3920,6 +3932,7 @@ export class Player {
       ear.scale.set(1, 1, 0.5);
       ear.castShadow = true;
       head.add(ear);
+      outline(ear, 1.1);
       const earInner = new THREE.Mesh(track(new THREE.ConeGeometry(0.08, 0.17, 4)), pinkDeepMat);
       earInner.position.set(side * 0.24, 0.26, 0.02);
       earInner.rotation.set(0.3, Math.PI / 4, side * 0.5);
@@ -3934,28 +3947,29 @@ export class Player {
       white.position.set(side * 0.15, 0.06, 0.24);
       white.scale.set(1, 1.05, 0.7);
       head.add(white);
+      outline(white, 1.08);
       const iris = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), irisMat);
       iris.position.set(side * 0.15, 0.05, 0.32);
       head.add(iris);
       const pupil = new THREE.Mesh(crescentGeo, pupilMat);
       pupil.position.set(side * 0.15, 0.05, 0.37);
-      // Both crescents point the same way: concave edge facing down toward
-      // the south-east of the viewer.
-      pupil.rotation.z = -Math.PI / 4;
+      // Both half-moon pupils tilted 25° the same way.
+      pupil.rotation.z = -25 * Math.PI / 180;
       head.add(pupil);
       this.googlyEyes.push({ pupil, baseX: side * 0.15, baseY: 0.05, seed: Math.random() * 6.28 });
     }
 
-    // --- the big snout with two vertical nostrils --------------------------
-    const snout = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.17, 0.12, 20)), snoutMat);
+    // --- a modest snout with two vertical nostrils -------------------------
+    const snout = new THREE.Mesh(track(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 20)), snoutMat);
     snout.rotation.x = Math.PI / 2;
-    snout.position.set(0, -0.12, 0.32);
+    snout.position.set(0, -0.13, 0.33);
     snout.scale.set(1.1, 1, 1);
     snout.castShadow = true;
     head.add(snout);
+    outline(snout, 1.1);
     for (const side of [-1, 1]) {
-      const nostril = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.02, 0.06, 4, 8)), nostrilMat);
-      nostril.position.set(side * 0.06, -0.12, 0.39);
+      const nostril = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.016, 0.05, 4, 8)), nostrilMat);
+      nostril.position.set(side * 0.045, -0.13, 0.39);
       head.add(nostril);
     }
     // A small OFF-CENTRE smile, tucked to one side under the snout.
@@ -3981,6 +3995,7 @@ export class Player {
       const leg = new THREE.Mesh(legGeo, pinkMat);
       leg.castShadow = true;
       pivot.add(leg);
+      outline(leg, 1.12);
       const hoof = new THREE.Mesh(track(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 8)), hoofMat);
       hoof.position.y = -0.28;
       pivot.add(hoof);
