@@ -344,8 +344,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   any runs.
 - **Robo-Farmer** — a farmer whose face is half flesh, half machine: a
   grey metal side with mechanical seams and a glowing **red cybernetic
-  eye**, a human side with a **blue eye**, white hair under a tan ball cap,
-  over dungaree overalls. Unlock him in one run by **reaching 231 points
+  eye**, a human side with a **blue eye**, a thick head of **grey hair**
+  under a tan ball cap, **gritted teeth chewing a piece of hay**, over a
+  chunky **green jumper**. Unlock him in one run by **reaching 231 points
   AND beating Turnip Scart** at Veggie Tac Toe.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat

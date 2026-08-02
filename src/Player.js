@@ -3869,118 +3869,132 @@ export class Player {
     const mouthMat = track(createToonMaterial({ color: 0x8a4a54 }));
     const hoofMat = track(createToonMaterial({ color: 0xc07a86 }));
 
+    // A flat crescent-moon pupil: a filled circle with an offset circular
+    // bite taken out of it.
+    const crescentGeo = (() => {
+      const shape = new THREE.Shape();
+      shape.absarc(0, 0, 0.05, 0, Math.PI * 2, false);
+      const hole = new THREE.Path();
+      hole.absarc(0.028, 0.012, 0.045, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      return track(new THREE.ShapeGeometry(shape, 20));
+    })();
+
     const body = new THREE.Group();
     body.name = 'body';
     body.position.y = 0.5;
     root.add(body);
     this.bodyGroup = body;
 
-    // --- one big round pink head-body, chubby and filling the frame --------
-    const blob = new THREE.Mesh(track(new THREE.SphereGeometry(0.5, 20, 16)), pinkMat);
-    blob.position.y = 0.4;
-    blob.scale.set(1.05, 1.0, 0.9);
-    blob.castShadow = true;
-    body.add(blob);
-    // rosy cheeks
+    // --- a proper plump body (like Turnip Scart's), on four little legs ----
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.34, 0.34, 6, 12));
+    torsoGeo.rotateX(Math.PI / 2); // long axis along Z
+    const torso = new THREE.Mesh(torsoGeo, pinkMat);
+    torso.position.y = 0.18;
+    torso.scale.set(1.05, 0.95, 1.15);
+    torso.castShadow = true;
+    body.add(torso);
+
+    // --- the head sits up front on the body --------------------------------
+    const head = new THREE.Group();
+    head.position.set(0, 0.46, 0.24);
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.32, 20, 16)), pinkMat);
+    skull.scale.set(1.05, 0.98, 0.92);
+    skull.castShadow = true;
+    head.add(skull);
     for (const side of [-1, 1]) {
-      const cheek = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 10, 8)), pinkDeepMat);
-      cheek.position.set(side * 0.34, 0.28, 0.34);
+      const cheek = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), pinkDeepMat);
+      cheek.position.set(side * 0.24, -0.06, 0.18);
       cheek.scale.set(1, 0.8, 0.5);
-      body.add(cheek);
+      head.add(cheek);
     }
 
     // --- two floppy triangular ears up top ---------------------------------
-    this.headGroup = body; // eyes/snout live on the blob; head-turn nudges all
     for (const side of [-1, 1]) {
-      const ear = new THREE.Mesh(track(new THREE.ConeGeometry(0.16, 0.3, 4)), pinkMat);
-      ear.position.set(side * 0.34, 0.78, 0.05);
+      const ear = new THREE.Mesh(track(new THREE.ConeGeometry(0.14, 0.26, 4)), pinkMat);
+      ear.position.set(side * 0.24, 0.28, -0.02);
       ear.rotation.set(0.3, Math.PI / 4, side * 0.5);
       ear.scale.set(1, 1, 0.5);
       ear.castShadow = true;
-      body.add(ear);
-      const earInner = new THREE.Mesh(track(new THREE.ConeGeometry(0.09, 0.2, 4)), pinkDeepMat);
-      earInner.position.set(side * 0.34, 0.76, 0.09);
+      head.add(ear);
+      const earInner = new THREE.Mesh(track(new THREE.ConeGeometry(0.08, 0.17, 4)), pinkDeepMat);
+      earInner.position.set(side * 0.24, 0.26, 0.02);
       earInner.rotation.set(0.3, Math.PI / 4, side * 0.5);
       earInner.scale.set(1, 1, 0.4);
-      body.add(earInner);
+      head.add(earInner);
     }
 
-    // --- two big eyes with blue irises -------------------------------------
+    // --- two big eyes with blue irises and crescent pupils -----------------
     this.googlyEyes = [];
     for (const side of [-1, 1]) {
-      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 14, 12)), whiteMat);
-      white.position.set(side * 0.18, 0.5, 0.4);
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.12, 14, 12)), whiteMat);
+      white.position.set(side * 0.15, 0.06, 0.24);
       white.scale.set(1, 1.05, 0.7);
-      body.add(white);
-      const iris = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 12, 10)), irisMat);
-      iris.position.set(side * 0.18, 0.49, 0.49);
-      body.add(iris);
-      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 10, 8)), pupilMat);
-      pupil.position.set(side * 0.18, 0.49, 0.54);
-      body.add(pupil);
-      this.googlyEyes.push({ pupil, baseX: side * 0.18, baseY: 0.49, seed: Math.random() * 6.28 });
+      head.add(white);
+      const iris = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 12, 10)), irisMat);
+      iris.position.set(side * 0.15, 0.05, 0.32);
+      head.add(iris);
+      const pupil = new THREE.Mesh(crescentGeo, pupilMat);
+      pupil.position.set(side * 0.15, 0.05, 0.37);
+      pupil.rotation.z = side * 0.4; // crescents curve outward
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.15, baseY: 0.05, seed: Math.random() * 6.28 });
     }
 
     // --- the big snout with two vertical nostrils --------------------------
-    const snout = new THREE.Mesh(track(new THREE.CylinderGeometry(0.19, 0.19, 0.12, 20)), snoutMat);
+    const snout = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.17, 0.12, 20)), snoutMat);
     snout.rotation.x = Math.PI / 2;
-    snout.position.set(0, 0.28, 0.48);
+    snout.position.set(0, -0.12, 0.32);
     snout.scale.set(1.1, 1, 1);
     snout.castShadow = true;
-    body.add(snout);
+    head.add(snout);
     for (const side of [-1, 1]) {
-      const nostril = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.022, 0.07, 4, 8)), nostrilMat);
-      nostril.position.set(side * 0.07, 0.28, 0.55);
-      body.add(nostril);
+      const nostril = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.02, 0.06, 4, 8)), nostrilMat);
+      nostril.position.set(side * 0.06, -0.12, 0.39);
+      head.add(nostril);
     }
-    // a small mouth under the snout
-    const mouth = new THREE.Mesh(track(new THREE.TorusGeometry(0.09, 0.018, 6, 12, Math.PI)), mouthMat);
-    mouth.position.set(0, 0.13, 0.44);
-    mouth.rotation.x = Math.PI;
-    body.add(mouth);
+    // A small OFF-CENTRE smile, tucked to one side under the snout.
+    const smile = new THREE.Mesh(track(new THREE.TorusGeometry(0.07, 0.016, 6, 12, Math.PI * 0.9)), mouthMat);
+    smile.position.set(0.09, -0.27, 0.26);
+    smile.rotation.set(Math.PI, 0, -0.35);
+    head.add(smile);
 
-    // --- stubby trotters ----------------------------------------------------
-    const armGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.22, 8));
-    armGeo.translate(0, -0.11, 0);
-    this.arms = [];
-    for (const side of [-1, 1]) {
-      const pivot = new THREE.Group();
-      pivot.position.set(side * 0.46, 0.42, 0.05);
-      pivot.rotation.z = -side * 0.4;
-      const arm = new THREE.Mesh(armGeo, pinkMat);
-      arm.castShadow = true;
-      pivot.add(arm);
-      const hoof = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 8, 6)), hoofMat);
-      hoof.position.y = -0.24;
-      pivot.add(hoof);
-      body.add(pivot);
-      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
-    }
-    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.08, 0.24, 8));
-    legGeo.translate(0, -0.12, 0);
+    // --- four stubby trotters ----------------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.09, 0.08, 0.26, 8));
+    legGeo.translate(0, -0.13, 0);
     this.legs = [];
-    for (const side of [-1, 1]) {
+    this.arms = [];
+    const slots = [
+      { x: -0.2, z: 0.22, phase: 0 },
+      { x: 0.2, z: 0.22, phase: Math.PI },
+      { x: -0.22, z: -0.22, phase: Math.PI },
+      { x: 0.22, z: -0.22, phase: 0 }
+    ];
+    for (const slot of slots) {
       const pivot = new THREE.Group();
-      pivot.position.set(side * 0.18, 0.04, 0);
+      pivot.position.set(slot.x, 0.06, slot.z);
       const leg = new THREE.Mesh(legGeo, pinkMat);
       leg.castShadow = true;
       pivot.add(leg);
       const hoof = new THREE.Mesh(track(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 8)), hoofMat);
-      hoof.position.y = -0.26;
+      hoof.position.y = -0.28;
       pivot.add(hoof);
       body.add(pivot);
-      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+      this.legs.push({ pivot, phase: slot.phase });
     }
 
-    // --- a little curly tail ------------------------------------------------
-    const tailCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0.4, -0.44),
-      new THREE.Vector3(0.1, 0.46, -0.52),
-      new THREE.Vector3(0.02, 0.54, -0.5),
-      new THREE.Vector3(-0.06, 0.5, -0.44),
-      new THREE.Vector3(0.03, 0.46, -0.42)
-    ]);
-    const tail = new THREE.Mesh(track(new THREE.TubeGeometry(tailCurve, 16, 0.025, 6, false)), pinkMat);
+    // --- a proper curly corkscrew tail -------------------------------------
+    const tailPts = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24;
+      const ang = t * Math.PI * 3.2;
+      const rad = 0.07 * (1 - t * 0.5);
+      tailPts.push(new THREE.Vector3(Math.cos(ang) * rad, 0.22 + t * 0.18, -0.5 - Math.sin(ang) * rad));
+    }
+    const tail = new THREE.Mesh(track(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(tailPts), 24, 0.022, 6, false)), pinkMat);
+    tail.castShadow = true;
     body.add(tail);
     this.tail = tail;
 
@@ -3990,9 +4004,9 @@ export class Player {
   /**
    * Robo-Farmer — a farmer whose face is half flesh, half machine: the left
    * side is grey metal plating with mechanical seams and a glowing red
-   * cybernetic eye; the right side is human skin with a blue eye. Tufts of
-   * white hair under a tan ball cap, over dungaree overalls. Matches the
-   * reference split-face portrait.
+   * cybernetic eye; the right side is human skin with a blue eye. A thick
+   * head of grey hair under a tan ball cap, gritted teeth clamped on a piece
+   * of hay, over a chunky green jumper. Matches the reference portrait.
    */
   buildRoboFarmer() {
     const root = new THREE.Group();
@@ -4010,11 +4024,14 @@ export class Player {
     const whiteMat = track(createToonMaterial({ color: 0xf3efe6 }));
     const blueEyeMat = track(createToonMaterial({ color: 0x3f76c4 }));
     const pupilMat = track(createToonMaterial({ color: 0x141018 }));
-    const hairMat = track(createToonMaterial({ color: 0xe8e4da, rim: { color: 0xffffff, strength: 0.4, threshold: 0.55 } }));
+    const hairMat = track(createToonMaterial({ color: 0xc4c1b8, rim: { color: 0xf2f0ea, strength: 0.45, threshold: 0.52 } }));
     const capMat = track(createToonMaterial({ color: 0xb79463, rim: { color: 0xe6d2ac, strength: 0.3, threshold: 0.62 } }));
-    const denimMat = track(createToonMaterial({ color: 0x3f5a86, rim: { color: 0x9fb4d8, strength: 0.3, threshold: 0.62 } }));
-    const shirtMat = track(createToonMaterial({ color: 0x8a3a3a }));
-    const mouthMat = track(createToonMaterial({ color: 0x7a4a44 }));
+    const jumperMat = track(createToonMaterial({ color: 0x3f7a44, rim: { color: 0x9fd0a0, strength: 0.3, threshold: 0.62 } }));
+    const jumperDarkMat = track(createToonMaterial({ color: 0x2f5e34 }));
+    const trouserMat = track(createToonMaterial({ color: 0x5a4632 }));
+    const mouthMat = track(createToonMaterial({ color: 0x3a2622 }));
+    const teethMat = track(createToonMaterial({ color: 0xf2ede0 }));
+    const hayMat = track(createToonMaterial({ color: 0xd8c060, rim: { color: 0xfff0b0, strength: 0.35, threshold: 0.6 } }));
 
     const body = new THREE.Group();
     body.name = 'body';
@@ -4022,21 +4039,19 @@ export class Player {
     root.add(body);
     this.bodyGroup = body;
 
-    // --- overalls torso -----------------------------------------------------
-    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.28, 0.4, 6, 14)), denimMat);
+    // --- a chunky green knitted jumper -------------------------------------
+    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.29, 0.4, 6, 14)), jumperMat);
     torso.position.y = 0.3;
     torso.castShadow = true;
     body.add(torso);
-    const shirt = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 12, 10)), shirtMat);
-    shirt.position.set(0, 0.42, 0.14);
-    shirt.scale.set(0.9, 0.7, 0.5);
-    body.add(shirt);
-    for (const side of [-1, 1]) {
-      const strap = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.4, 0.04)), denimMat);
-      strap.position.set(side * 0.1, 0.42, 0.24);
-      strap.rotation.x = -0.1;
-      body.add(strap);
-    }
+    // ribbed collar and hem
+    const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.17, 0.045, 8, 20)), jumperDarkMat);
+    collar.position.y = 0.56;
+    collar.rotation.x = Math.PI / 2;
+    body.add(collar);
+    const hem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.29, 0.27, 0.08, 16)), jumperDarkMat);
+    hem.position.y = 0.06;
+    body.add(hem);
 
     // --- the split head -----------------------------------------------------
     const head = new THREE.Group();
@@ -4101,21 +4116,57 @@ export class Player {
     pupil.position.set(0.13, 0.05, 0.36);
     head.add(pupil);
     this.googlyEyes.push({ pupil, baseX: 0.13, baseY: 0.05, seed: Math.random() * 6.28 });
-    // Nose + a small mouth straddling the divide.
+    // Nose above a set of gritted teeth.
     const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), skinMat);
     nose.position.set(0.02, -0.06, 0.32);
     head.add(nose);
-    const mouth = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 0.02, 0.02)), mouthMat);
-    mouth.position.set(0.02, -0.18, 0.28);
-    head.add(mouth);
+    // Gritted teeth: a dark mouth slot filled with a row of clenched teeth.
+    const mouthSlot = new THREE.Mesh(track(new THREE.BoxGeometry(0.22, 0.07, 0.03)), mouthMat);
+    mouthSlot.position.set(0.02, -0.19, 0.27);
+    head.add(mouthSlot);
+    for (let i = 0; i < 7; i++) {
+      const tooth = new THREE.Mesh(track(new THREE.BoxGeometry(0.024, 0.06, 0.02)), teethMat);
+      tooth.position.set(-0.08 + i * 0.032, -0.19, 0.285);
+      head.add(tooth);
+    }
+    // A piece of hay clamped in the teeth, jutting out to one side.
+    const hay = new THREE.Group();
+    hay.position.set(0.12, -0.19, 0.29);
+    hay.rotation.set(0, 0, -0.35);
+    const stalk = new THREE.Mesh(track(new THREE.CylinderGeometry(0.011, 0.007, 0.34, 5)), hayMat);
+    stalk.rotation.z = Math.PI / 2;
+    stalk.position.x = 0.13;
+    hay.add(stalk);
+    for (const t of [0.02, 0.08]) {
+      const frond = new THREE.Mesh(track(new THREE.CylinderGeometry(0.006, 0.004, 0.08, 4)), hayMat);
+      frond.position.set(0.28, t, 0);
+      frond.rotation.z = 0.6;
+      hay.add(frond);
+    }
+    head.add(hay);
 
-    // --- white hair fringe + the tan ball cap ------------------------------
-    for (let i = 0; i < 9; i++) {
-      const a = -0.5 + (i / 8) * (Math.PI + 1);
-      const tuft = new THREE.Mesh(track(new THREE.SphereGeometry(0.08, 8, 6)), hairMat);
-      tuft.position.set(Math.cos(a) * 0.28, 0.12 + Math.sin(a) * 0.08, 0.12 - Math.abs(Math.cos(a)) * 0.1);
-      tuft.scale.set(1, 0.8, 0.9);
+    // --- a thick head of grey hair spilling out under the tan ball cap -----
+    // A dense fringe around the sides and back, plus side-tufts over the ears.
+    for (let i = 0; i < 16; i++) {
+      const a = -0.7 + (i / 15) * (Math.PI + 1.4);
+      const tuft = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 8, 6)), hairMat);
+      tuft.position.set(Math.cos(a) * 0.3, 0.08 + Math.sin(a) * 0.1, 0.06 - Math.abs(Math.cos(a)) * 0.14);
+      tuft.scale.set(1, 0.85, 0.95);
+      tuft.castShadow = true;
       head.add(tuft);
+    }
+    // Bushy side-locks and a shaggy nape at the back.
+    for (const side of [-1, 1]) {
+      const lock = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 10, 8)), hairMat);
+      lock.position.set(side * 0.3, -0.04, 0.02);
+      lock.scale.set(0.8, 1.1, 0.9);
+      head.add(lock);
+    }
+    for (let i = 0; i < 5; i++) {
+      const nape = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 8, 6)), hairMat);
+      nape.position.set(-0.2 + i * 0.1, 0.02, -0.24);
+      nape.scale.set(1, 1.1, 0.8);
+      head.add(nape);
     }
     const capDome = new THREE.Mesh(track(new THREE.SphereGeometry(0.32, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5)), capMat);
     capDome.position.y = 0.14;
@@ -4141,11 +4192,13 @@ export class Player {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.3, 0.52, 0);
       pivot.rotation.z = -side * 0.3;
-      const mat = side === -1 ? metalMat : skinMat; // left arm robotic
-      const arm = new THREE.Mesh(armGeo, mat);
+      // Left arm robotic; right arm a green jumper sleeve with a skin hand.
+      const sleeveMat = side === -1 ? metalMat : jumperMat;
+      const handMat = side === -1 ? metalMat : skinMat;
+      const arm = new THREE.Mesh(armGeo, sleeveMat);
       arm.castShadow = true;
       pivot.add(arm);
-      const hand = new THREE.Mesh(handGeo, mat);
+      const hand = new THREE.Mesh(handGeo, handMat);
       hand.position.y = -0.4;
       pivot.add(hand);
       body.add(pivot);
@@ -4159,7 +4212,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.14, 0.06, 0);
-      const leg = new THREE.Mesh(legGeo, denimMat);
+      const leg = new THREE.Mesh(legGeo, trouserMat);
       leg.castShadow = true;
       pivot.add(leg);
       const boot = new THREE.Mesh(bootGeo, bootMat);
