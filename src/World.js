@@ -690,7 +690,7 @@ export class World {
    * Re-center the shadow frustum on the player each frame, snapped to the
    * shadow-map texel grid in light space so edges don't crawl.
    */
-  update(dt, focus) {
+  update(dt, focus, camera) {
     const m = this._shadowMatrix;
     m.lookAt(this.sunDirection, this._shadowScratch.set(0, 0, 0), THREE.Object3D.DEFAULT_UP);
     const bx = this._shadowBasisX.setFromMatrixColumn(m, 0);
@@ -738,6 +738,25 @@ export class World {
       const inside =
         Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && focus.y < this.neptuneLevel + 5.5;
       this.neptuneRoof.visible = !inside;
+      // A two-storey box needs more than a lifted roof: cut away the wall(s)
+      // facing the camera while you're inside, so the character stays visible.
+      if (this.neptuneWalls) {
+        const w = this.neptuneWalls;
+        if (!inside || !camera) {
+          for (const side of ['front', 'back', 'left', 'right'])
+            for (const m of w[side]) m.visible = true;
+        } else {
+          const cdx = camera.position.x - this.neptuneX;
+          const cdz = camera.position.z - this.neptuneZ;
+          const clx = cdx * this.neptuneDoorZ - cdz * this.neptuneDoorX;
+          const clz = cdx * this.neptuneDoorX + cdz * this.neptuneDoorZ;
+          const setSide = (arr, hidden) => { for (const m of arr) m.visible = !hidden; };
+          setSide(w.right, clx > 0.5);
+          setSide(w.left, clx < -0.5);
+          setSide(w.front, clz > 0.5);
+          setSide(w.back, clz < -0.5);
+        }
+      }
     }
 
     // The lit stove flickers — flames jitter in height, the glow pulses.
@@ -2675,21 +2694,27 @@ export class World {
       return mesh;
     };
 
+    // Walls grouped by side so the one(s) facing the camera can cut away
+    // when you're inside (a dollhouse view for a two-storey building).
+    const walls = { front: [], back: [], left: [], right: [] };
+    this.neptuneWalls = walls;
+
     // --- shell: same footprint as the cottage ------------------------------
     addBox(6.4, 0.1, 5.4, floorMat, 0, 0, 0);
-    addBox(6.4, 2.5, 0.2, wallMat, 0, 1.3, -2.6);
-    addBox(0.2, 2.5, 5.0, wallMat, -3.1, 1.3, 0);
-    addBox(0.2, 2.5, 5.0, wallMat, 3.1, 1.3, 0);
-    addBox(2.1, 2.5, 0.2, wallMat, -2.15, 1.3, 2.6);
-    addBox(2.1, 2.5, 0.2, wallMat, 2.15, 1.3, 2.6);
-    addBox(2.2, 0.45, 0.2, trimMat, 0, 2.325, 2.6);
-    addBox(0.3, 0.9, 1.1, paneMat, -3.1, 1.55, 0.6);
-    addBox(0.3, 0.9, 1.1, paneMat, 3.1, 1.55, 0.6);
+    walls.back.push(addBox(6.4, 2.5, 0.2, wallMat, 0, 1.3, -2.6));
+    walls.left.push(addBox(0.2, 2.5, 5.0, wallMat, -3.1, 1.3, 0));
+    walls.right.push(addBox(0.2, 2.5, 5.0, wallMat, 3.1, 1.3, 0));
+    walls.front.push(addBox(2.1, 2.5, 0.2, wallMat, -2.15, 1.3, 2.6));
+    walls.front.push(addBox(2.1, 2.5, 0.2, wallMat, 2.15, 1.3, 2.6));
+    walls.front.push(addBox(2.2, 0.45, 0.2, trimMat, 0, 2.325, 2.6));
+    walls.left.push(addBox(0.3, 0.9, 1.1, paneMat, -3.1, 1.55, 0.6));
+    walls.right.push(addBox(0.3, 0.9, 1.1, paneMat, 3.1, 1.55, 0.6));
     const doorPivot = new THREE.Group();
     doorPivot.position.set(-1.1, 1.15, 2.66);
     doorPivot.rotation.y = -2.1;
     nook.add(doorPivot);
     addBox(1.0, 2.0, 0.08, deepMat, 0.5, 0, 0, doorPivot);
+    walls.front.push(doorPivot);
 
     // --- roof (lifts away) -------------------------------------------------
     const roof = new THREE.Group();
@@ -2714,34 +2739,37 @@ export class World {
     }
     addBox(0.55, 1.6, 0.55, wallMat, 1.9, 3.6, -1.2, roof);
     addBox(0.7, 0.12, 0.7, deepMat, 1.9, 4.46, -1.2, roof);
-    // Lift the whole roof to sit atop the new second storey.
-    roof.position.y = 2.15;
+    // Lift the whole roof to sit flush atop the second storey.
+    roof.position.y = 2.0;
 
     // --- second storey: an upper loft reached by an inside staircase -------
-    // Floor of the loft, in two pieces so the stairwell (west) and the front
-    // strip (so you drop back down rather than out) stay open.
-    addBox(4.5, 0.16, 4.2, floorMat, 0.75, 2.62, -0.4);   // main loft floor
-    addBox(1.5, 0.16, 1.0, floorMat, -2.25, 2.62, -2.0);  // rear patch by the stairs
-    // Upper walls (2m tall, sitting on the loft floor).
-    addBox(6.4, 2.0, 0.2, wallMat, 0, 3.7, -2.6);   // back
-    addBox(0.2, 2.0, 5.0, wallMat, -3.1, 3.7, 0);   // left
-    addBox(0.2, 2.0, 5.0, wallMat, 3.1, 3.7, 0);    // right
-    addBox(6.4, 2.0, 0.2, wallMat, 0, 3.7, 2.6);    // front
-    addBox(1.6, 1.0, 0.12, paneMat, 0, 3.7, 2.68);  // a loft window
-    addBox(2.2, 0.45, 0.2, trimMat, 0, 4.72, 2.6);  // little gable trim
-    // The staircase: seven steps climbing +z along the west wall.
+    // Its floor sits flush on the ground-floor walls (top at 2.55), so the two
+    // storeys stack cleanly with no gap. Built in two pieces so the stairwell
+    // (west) and the front strip stay open (you drop back down inside).
+    const LOFT = 2.55;                                     // loft floor top
+    addBox(4.5, 0.16, 4.2, floorMat, 0.75, LOFT - 0.08, -0.4);  // main loft floor
+    addBox(1.5, 0.16, 1.0, floorMat, -2.25, LOFT - 0.08, -2.0); // rear patch by the stairs
+    // Upper walls (2m tall) standing directly on the ground-floor walls.
+    const uy = LOFT + 1.0; // centre of a 2m wall sitting on the loft floor
+    walls.back.push(addBox(6.4, 2.0, 0.2, wallMat, 0, uy, -2.6));
+    walls.left.push(addBox(0.2, 2.0, 5.0, wallMat, -3.1, uy, 0));
+    walls.right.push(addBox(0.2, 2.0, 5.0, wallMat, 3.1, uy, 0));
+    walls.front.push(addBox(6.4, 2.0, 0.2, wallMat, 0, uy, 2.6));
+    walls.front.push(addBox(1.6, 1.0, 0.12, paneMat, 0, uy, 2.68)); // a loft window
+    walls.front.push(addBox(2.2, 0.45, 0.2, trimMat, 0, LOFT + 2.02, 2.6)); // gable trim
+    // The staircase: seven steps climbing +z along the west wall to the loft.
     const stepCount = 7;
     for (let i = 0; i < stepCount; i++) {
-      const topY = 0.42 + i * 0.38;
+      const topY = LOFT * (i + 1) / stepCount;
       const lz = -1.2 + i * 0.42;
       addBox(1.2, topY, 0.44, cabinetMat, -2.2, topY / 2, lz);
     }
     // A slim newel post at the foot of the stairs.
-    addBox(0.12, 2.9, 0.12, deepMat, -2.75, 1.45, -1.4);
+    addBox(0.12, LOFT + 0.15, 0.12, deepMat, -2.75, (LOFT + 0.15) / 2, -1.4);
 
     // --- Neptune's Raisin: a weird, spooky blue raisin up in the loft ------
     const raisin = new THREE.Group();
-    this._raisinBaseY = 3.05;
+    this._raisinBaseY = LOFT + 0.35;
     raisin.position.set(1.0, this._raisinBaseY, -0.2);
     const raisinGeo = track(new THREE.IcosahedronGeometry(0.22, 1));
     const rp = raisinGeo.attributes.position;
@@ -2793,6 +2821,7 @@ export class World {
     const sign = new THREE.Mesh(track(new THREE.PlaneGeometry(2.0, 0.5)), signMat);
     sign.position.set(0, 2.72, 2.72);
     nook.add(sign);
+    walls.front.push(sign); // cut away with the front wall
 
     // --- a writing desk against the back wall ------------------------------
     const desk = new THREE.Group();
@@ -2910,15 +2939,15 @@ export class World {
         top: spot.y + top
       });
     };
-    // Each stair tread.
-    for (let i = 0; i < 7; i++) addPlatform(-2.2, -1.2 + i * 0.42, 0.62, 0.42 + i * 0.38);
+    // Each stair tread (tops rise evenly to the loft floor at 2.55).
+    for (let i = 0; i < 7; i++) addPlatform(-2.2, -1.2 + i * 0.42, 0.62, 2.55 * (i + 1) / 7);
     // Tile the main loft floor (skipping the stairwell + front strip, which
     // are left open so you can drop back down inside).
     for (let lx = -1.4; lx <= 2.9; lx += 0.7)
-      for (let lz = -2.4; lz <= 1.6; lz += 0.7) addPlatform(lx, lz, 0.5, 2.7);
+      for (let lz = -2.4; lz <= 1.6; lz += 0.7) addPlatform(lx, lz, 0.5, 2.55);
     // The little rear patch beside the stairs.
     for (let lx = -2.9; lx <= -1.6; lx += 0.65)
-      for (let lz = -2.4; lz <= -1.6; lz += 0.6) addPlatform(lx, lz, 0.5, 2.7);
+      for (let lz = -2.4; lz <= -1.6; lz += 0.6) addPlatform(lx, lz, 0.5, 2.55);
 
     const pushWall = (lx, lz) => {
       const p = toWorld(lx, 0, lz);

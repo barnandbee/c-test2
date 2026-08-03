@@ -2924,7 +2924,7 @@ export class Game {
       this.clockTower.setTimeFraction((this.timeLeft % GAME_DURATION) / GAME_DURATION || (this.timeLeft > 0 ? 1 : 0));
     }
     this.particles.update();
-    this.world.update(dt, this.player.position);
+    this.world.update(dt, this.player.position, this.camera);
 
     this.renderer.render(this.scene, this.camera);
   }
