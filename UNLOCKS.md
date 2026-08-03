@@ -15,6 +15,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
+| — | **🎲 Random** | Always available. Assigns you one of your currently unlocked heroes at random for the run (see *Mystic runs* below). |
 | 1 | **Badger** | Your starting hero — always available. |
 | 2 | **Badgerette** | Finish a run with more than 30 points. |
 | 3 | **‘Crisp Packet’ Hughes** | Survive the full three minutes without taking a single hit. |
@@ -190,6 +191,17 @@ An inside staircase climbs to a **second-storey loft**. Up there,
 fades **in for 10 seconds, out for 10 seconds**, over and over. Reach it
 while it's showing and it's worth a random **8, 16 or 24 points**, and it
 can only be taken **once per run**.
+
+---
+
+## Mystic runs
+
+Picking the **🎲 Random** card draws one of your currently unlocked heroes
+(the Badger is always in the hat). Each Random run also has a **1.8%**
+chance of turning **Mystic**: the entire world is rendered in greyscale —
+terrain, sky, water, particles and the hero alike — with the single
+exception of the **pink blossom tree**, which keeps its colour. It's
+purely cosmetic (no scoring change), and colour returns at the bell.
 
 ---
 

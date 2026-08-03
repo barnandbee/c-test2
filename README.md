@@ -463,9 +463,16 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 - **The welcome menu** — an epic title screen with the twilight forest
   drifting behind it: your best score, the full hero roster, and one
   large inviting button. The clock doesn't start until you press it.
-- **Achievements** — the game-over screen (which now scrolls, so the
-  full roster and buttons are always reachable) carries an
-  **Achievements** button. It opens a viewer listing every hero and every
+- **Random Character** — first in the roster sits a rainbow-dice
+  **Random** card. Pick it and the run assigns you one of your currently
+  unlocked heroes at random (the Badger is always in the hat). There's a
+  rare **1.8% chance** the run turns **Mystic**: the whole world drains
+  to greyscale — terrain, sky, water, sparkles and all — and only the
+  **pink blossom tree** keeps its colour. Purely cosmetic, and colour
+  returns at the bell.
+- **Achievements** — both the welcome menu (at the bottom, below the
+  controls) and the game-over screen (which scrolls, so the full roster
+  and buttons are always reachable) carry an **Achievements** button. It opens a viewer listing every hero and every
   trophy — but anything you **haven't unlocked yet keeps its how-to
   hidden** (shown as `???`), so nothing spoils the way to earn it; the
   description is revealed only once you've earned it. It lists score

@@ -37,7 +37,7 @@ import { VeggieTacToe } from './VeggieTacToe.js';
 import { PaintingGame } from './PaintingGame.js';
 import { SoundFX } from './Audio.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
-import { SharedUniforms, updateSharedTime } from './Shaders.js';
+import { SharedUniforms, updateSharedTime, setMysticMode } from './Shaders.js';
 import { clamp } from './utils/MathUtils.js';
 
 const PINE_CONE_COUNT = 26;
@@ -156,6 +156,7 @@ const CORE_STATIONS = ['cave', 'lake', 'copse'];
 // sweep needs every one of these in a single run.
 const ALL_STATIONS = ['cave', 'lake', 'copse', 'cactus'];
 const PAINTING_MAX_SCORE = 100; // the easel is only workable under this score
+const MYSTIC_CHANCE = 0.018;    // 1.8% of Random-Character runs turn Mystic
 const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
 const PARSLEY_SCORE = 300;         // Parsley O'Riley's garnish threshold
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
@@ -434,6 +435,7 @@ export class Game {
     this._veggiePrompted = false;
     this.paintingGame = null;          // the Neptune's Nook easel mini-game
     this.paintingComplete = false;     // finished a painting this run?
+    this.mysticRun = false;            // a rare greyscale 'Mystic' run?
     this.puttPlayed = false;
     this._puttPrompted = false;
     this._puttFocus = { position: new THREE.Vector3(), velocity: new THREE.Vector3(), facingYaw: 0 };
@@ -959,6 +961,46 @@ export class Game {
     return name === 'badger';
   }
 
+  /**
+   * The pool of characters the player may currently be assigned at random:
+   * the always-there Badger plus every unlocked hero.
+   */
+  randomCharacterPool() {
+    const map = this.getUnlockedMap();
+    const pool = ['badger'];
+    for (const key in map) if (map[key]) pool.push(key);
+    return pool;
+  }
+
+  /**
+   * Resolve a 'random' pick into a concrete character, rolling the rare
+   * (1.8%) Mystic run as a side effect. Returns the chosen character name.
+   */
+  resolveRandomCharacter() {
+    const pool = this.randomCharacterPool();
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    this.mysticRun = Math.random() < MYSTIC_CHANCE;
+    return chosen;
+  }
+
+  /** Turn the greyscale Mystic wash on or off for the current run. */
+  setMystic(on) {
+    this.mysticRun = on;
+    setMysticMode(on);
+  }
+
+  /** Announce a Random-Character run — and apply the Mystic wash if it rolled. */
+  announceRandomRun(chosen) {
+    const name = this.characterDisplayName(chosen);
+    if (this.mysticRun) {
+      this.setMystic(true);
+      this.audio.play('trophy');
+      this.ui.showTimeToast(`✨ MYSTIC ${name.toUpperCase()} ✨`);
+    } else {
+      this.ui.showTimeToast(`🎲 RANDOM: ${name.toUpperCase()}`);
+    }
+  }
+
   getUnlockedMap() {
     return {
       badgerette: this.badgeretteUnlocked,
@@ -1282,10 +1324,14 @@ export class Game {
   beginRun(versus = false, difficulty = 'easy') {
     if (!this.inMenu) return;
     this.audio.resume(); // the "Enter the Forest" click unlocks audio
-    const chosen = this.ui.getSelectedCharacter() || this.characterName;
+    this.setMystic(false); // clear any prior wash before resolving this run
+    let chosen = this.ui.getSelectedCharacter() || this.characterName;
+    const wasRandom = chosen === 'random';
+    if (wasRandom) chosen = this.resolveRandomCharacter(); // rolls this.mysticRun
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
     }
+    if (wasRandom) this.announceRandomRun(chosen);
     this.recordCharacterUse(); // tally this run against the chosen hero
     this.versus = versus;
     this.cpuDifficulty = difficulty;
@@ -2231,6 +2277,7 @@ export class Game {
   gameOver(reason) {
     this.isGameOver = true;
     this.closeTravel();
+    this.setMystic(false); // colour returns to the world at the bell
     this.audio.stopAll(); // silence any engine / movement bed at the bell
     this._vehicleSound = null;
     this._moveKind = null;
@@ -2451,10 +2498,14 @@ export class Game {
     this._announcedUnlocks = 0;
 
     // Apply the character chosen on the game-over screen (if any).
-    const chosen = this.ui.getSelectedCharacter() || this.characterName;
+    this.setMystic(false); // clear any prior wash before resolving this run
+    let chosen = this.ui.getSelectedCharacter() || this.characterName;
+    const wasRandom = chosen === 'random';
+    if (wasRandom) chosen = this.resolveRandomCharacter(); // rolls this.mysticRun
     if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
       this.setCharacter(chosen);
     }
+    if (wasRandom) this.announceRandomRun(chosen);
     this.recordCharacterUse(); // tally this run against the chosen hero
 
     this.clearEntities();

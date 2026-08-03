@@ -25,11 +25,17 @@ import * as THREE from 'three';
 export const SharedUniforms = {
   uTime: { value: 0 },
   uFogBase: { value: 1.0 },          // world Y where fog is thickest
-  uFogHeightFalloff: { value: 0.10 } // how fast fog thins with altitude
+  uFogHeightFalloff: { value: 0.10 }, // how fast fog thins with altitude
+  uMystic: { value: 0 }              // 1 = greyscale the world (Mystic run)
 };
 
 export function updateSharedTime(dt) {
   SharedUniforms.uTime.value += dt;
+}
+
+/** A 'Mystic' run drains all colour from the world (bar the pink tree). */
+export function setMysticMode(on) {
+  SharedUniforms.uMystic.value = on ? 1 : 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -80,6 +86,8 @@ const FRAGMENT_PARS = /* glsl */ `
 uniform float uTime;
 uniform float uFogBase;
 uniform float uFogHeightFalloff;
+uniform float uMystic;      // 1 during a Mystic run
+uniform float uKeepColor;   // 1 keeps this material's colour (the pink tree)
 varying vec3 vHFWorldPos;
 #ifdef USE_RIM
   uniform vec3 uRimColor;
@@ -115,6 +123,19 @@ const FRAGMENT_RIM = /* glsl */ `
 #include <opaque_fragment>
 `;
 
+// Mystic desaturation: at the very end of the fragment, drain the final
+// colour to greyscale — unless this material is flagged to keep its colour
+// (the pink blossom tree).
+const FRAGMENT_MYSTIC = /* glsl */ `
+{
+  if ( uMystic > 0.5 && uKeepColor < 0.5 ) {
+    float mysticGrey = dot( gl_FragColor.rgb, vec3( 0.299, 0.587, 0.114 ) );
+    gl_FragColor.rgb = vec3( mysticGrey );
+  }
+}
+#include <dithering_fragment>
+`;
+
 // Exponential height fog: classic exp2 distance term, attenuated by an
 // exponential falloff on the fragment's altitude above uFogBase.
 const FRAGMENT_HEIGHT_FOG = /* glsl */ `
@@ -144,10 +165,16 @@ const FRAGMENT_HEIGHT_FOG = /* glsl */ `
  * (which keys on defines) compiles exactly one program per variant.
  */
 function patchMaterial(material, extraUniforms = {}) {
+  // Per-material "keep colour" flag (the pink tree sets this to 1). Created
+  // eagerly so callers can flip it before the shader ever compiles.
+  const keepColor = { value: 0 };
+  material.userData.uKeepColor = keepColor;
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = SharedUniforms.uTime;
     shader.uniforms.uFogBase = SharedUniforms.uFogBase;
     shader.uniforms.uFogHeightFalloff = SharedUniforms.uFogHeightFalloff;
+    shader.uniforms.uMystic = SharedUniforms.uMystic;
+    shader.uniforms.uKeepColor = keepColor;
     for (const key of Object.keys(extraUniforms)) {
       shader.uniforms[key] = extraUniforms[key];
     }
@@ -161,7 +188,8 @@ function patchMaterial(material, extraUniforms = {}) {
       .replace('#include <common>', '#include <common>\n' + FRAGMENT_PARS)
       .replace('#include <emissivemap_fragment>', FRAGMENT_PULSE)
       .replace('#include <opaque_fragment>', FRAGMENT_RIM)
-      .replace('#include <fog_fragment>', FRAGMENT_HEIGHT_FOG);
+      .replace('#include <fog_fragment>', FRAGMENT_HEIGHT_FOG)
+      .replace('#include <dithering_fragment>', FRAGMENT_MYSTIC);
   };
   material.customProgramCacheKey = () =>
     'mystic|' + material.type + '|' + Object.keys(material.defines || {}).sort().join(',');
@@ -255,6 +283,7 @@ export function createSkyMaterial() {
     fog: false,
     uniforms: {
       uTime: SharedUniforms.uTime,
+      uMystic: SharedUniforms.uMystic,
       uHorizonColor: { value: new THREE.Color(0xff9560) },
       uMidColor: { value: new THREE.Color(0x84518c) },
       uZenithColor: { value: new THREE.Color(0x1f1a48) },
@@ -271,6 +300,7 @@ export function createSkyMaterial() {
     `,
     fragmentShader: /* glsl */ `
       uniform float uTime;
+      uniform float uMystic;
       uniform vec3 uHorizonColor;
       uniform vec3 uMidColor;
       uniform vec3 uZenithColor;
@@ -308,6 +338,11 @@ export function createSkyMaterial() {
         col += vec3( 0.85, 0.88, 1.0 ) * starMask * starDot * twinkle
              * smoothstep( 0.25, 0.65, h );
 
+        if ( uMystic > 0.5 ) {
+          float skyGrey = dot( col, vec3( 0.299, 0.587, 0.114 ) );
+          col = vec3( skyGrey );
+        }
+
         gl_FragColor = vec4( col, 1.0 );
       }
     `
@@ -333,6 +368,7 @@ export function createWaterMaterial() {
     fog: true, // lets the renderer feed fogColor/fogDensity from scene.fog
     uniforms: {
       uTime: SharedUniforms.uTime,
+      uMystic: SharedUniforms.uMystic,
       uShallow: { value: new THREE.Color(0x4a9ec4) },
       uDeep: { value: new THREE.Color(0x1b4a72) },
       uFoam: { value: new THREE.Color(0xd8ecec) },
@@ -358,6 +394,7 @@ export function createWaterMaterial() {
     `,
     fragmentShader: /* glsl */ `
       uniform float uTime;
+      uniform float uMystic;
       uniform vec3 uShallow;
       uniform vec3 uDeep;
       uniform vec3 uFoam;
@@ -377,6 +414,9 @@ export function createWaterMaterial() {
         col = mix( col, uFoam, smoothstep( 0.96, 1.0, r ) * 0.75 );
         float fogFactor = 1.0 - exp( -fogDensity * fogDensity * vFogDepth * vFogDepth );
         col = mix( col, fogColor, clamp( fogFactor, 0.0, 1.0 ) );
+        if ( uMystic > 0.5 ) {
+          col = vec3( dot( col, vec3( 0.299, 0.587, 0.114 ) ) );
+        }
         gl_FragColor = vec4( col, 0.6 );
       }
     `
@@ -410,6 +450,7 @@ export function createBurstMaterial() {
       uBirth: { value: 0 },
       uGravity: { value: 7.5 },
       uSize: { value: 42.0 },
+      uMystic: SharedUniforms.uMystic,
       uColor: { value: new THREE.Color(0xffe08a) }
     },
     vertexShader: /* glsl */ `
@@ -434,12 +475,14 @@ export function createBurstMaterial() {
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor;
+      uniform float uMystic;
       varying float vFade;
       ${SOFT_DISC}
       void main() {
         float alpha = softDisc( gl_PointCoord ) * vFade;
         if ( alpha < 0.003 ) discard;
-        gl_FragColor = vec4( uColor, alpha );
+        vec3 c = uMystic > 0.5 ? vec3( dot( uColor, vec3( 0.299, 0.587, 0.114 ) ) ) : uColor;
+        gl_FragColor = vec4( c, alpha );
       }
     `
   });
@@ -457,6 +500,8 @@ export function createAuraMaterial() {
     blending: THREE.AdditiveBlending,
     uniforms: {
       uTime: SharedUniforms.uTime,
+      uMystic: SharedUniforms.uMystic,
+      uKeepColor: { value: 0 }, // the blossom aura sets this to 1
       uSize: { value: 30.0 },
       uColor: { value: new THREE.Color(0xffd44f) }
     },
@@ -484,12 +529,16 @@ export function createAuraMaterial() {
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor;
+      uniform float uMystic;
+      uniform float uKeepColor;
       varying float vSparkle;
       ${SOFT_DISC}
       void main() {
         float alpha = softDisc( gl_PointCoord ) * vSparkle * 0.9;
         if ( alpha < 0.003 ) discard;
-        gl_FragColor = vec4( uColor, alpha );
+        vec3 c = uColor;
+        if ( uMystic > 0.5 && uKeepColor < 0.5 ) c = vec3( dot( c, vec3( 0.299, 0.587, 0.114 ) ) );
+        gl_FragColor = vec4( c, alpha );
       }
     `
   });
@@ -511,6 +560,7 @@ export function createPoisonMaterial(radius = 2.0, height = 1.6) {
       uSize: { value: 58.0 },
       uRadius: { value: radius },
       uHeight: { value: height },
+      uMystic: SharedUniforms.uMystic,
       uColor: { value: new THREE.Color(0x6fdc3c) }
     },
     vertexShader: /* glsl */ `
@@ -538,12 +588,14 @@ export function createPoisonMaterial(radius = 2.0, height = 1.6) {
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor;
+      uniform float uMystic;
       varying float vAlpha;
       ${SOFT_DISC}
       void main() {
         float alpha = softDisc( gl_PointCoord ) * vAlpha * 0.34;
         if ( alpha < 0.003 ) discard;
-        gl_FragColor = vec4( uColor, alpha );
+        vec3 c = uMystic > 0.5 ? vec3( dot( uColor, vec3( 0.299, 0.587, 0.114 ) ) ) : uColor;
+        gl_FragColor = vec4( c, alpha );
       }
     `
   });

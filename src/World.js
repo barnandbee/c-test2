@@ -1546,6 +1546,10 @@ export class World {
       })
     );
     this._disposables.push(trunkGeo, canopyGeo, barkMat, ...petalMats);
+    // The pink tree keeps its colour even in a Mystic (greyscale) run.
+    for (const m of [barkMat, ...petalMats]) {
+      if (m.userData.uKeepColor) m.userData.uKeepColor.value = 1;
+    }
 
     const tree = new THREE.Group();
     tree.position.set(spot.x, spot.y - 0.2, spot.z);
@@ -1581,6 +1585,10 @@ export class World {
     });
     this.blossomAura.material.uniforms.uColor.value.set(0xffb8d9);
     this.blossomAura.material.uniforms.uSize.value = 34;
+    // Its sparkle halo stays pink through a Mystic run, too.
+    if (this.blossomAura.material.uniforms.uKeepColor) {
+      this.blossomAura.material.uniforms.uKeepColor.value = 1;
+    }
     tree.add(this.blossomAura);
 
     // A rose glow pooling beneath the tree at twilight.

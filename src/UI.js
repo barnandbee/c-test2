@@ -217,7 +217,7 @@ export class UI {
     this._selectedCharacter = currentCharacter;
     for (const card of this.charCards) {
       const char = card.dataset.char;
-      const available = char === 'badger' || Boolean(unlocked[char]);
+      const available = char === 'badger' || char === 'random' || Boolean(unlocked[char]);
       card.classList.toggle('hidden', !available);
       card.classList.toggle('selected', char === currentCharacter);
     }
