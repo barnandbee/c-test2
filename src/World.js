@@ -1258,10 +1258,10 @@ export class World {
     g.strokeRect(10, 10, 492, 236);
     g.textAlign = 'center';
     g.fillStyle = '#2c2014';
-    g.font = 'bold 52px Georgia, serif';
+    g.font = 'bold 52px "Lilita One", "Trebuchet MS", sans-serif';
     g.fillText('WATCH OUT FOR', 256, 100);
     g.fillStyle = '#a01818';
-    g.font = 'bold 64px Georgia, serif';
+    g.font = 'bold 64px "Lilita One", "Trebuchet MS", sans-serif';
     g.fillText('RED OCTOBER!', 256, 190);
     const signTex = new THREE.CanvasTexture(canvas);
     signTex.colorSpace = THREE.SRGBColorSpace;
@@ -2059,10 +2059,10 @@ export class World {
     g.strokeRect(6, 6, 500, 138);
     g.textAlign = 'center';
     g.fillStyle = '#f4e4b8';
-    g.font = 'bold 60px Georgia, serif';
+    g.font = 'bold 60px "Lilita One", "Trebuchet MS", sans-serif';
     g.fillText("WOODOO'S", 256, 76);
     g.fillStyle = '#d8b878';
-    g.font = '22px Georgia, serif';
+    g.font = '22px "Lilita One", "Trebuchet MS", sans-serif';
     g.fillText('· TIMBER YARD ·', 256, 116);
     const signTex = track(new THREE.CanvasTexture(canvas));
     signTex.colorSpace = THREE.SRGBColorSpace;
@@ -2501,7 +2501,8 @@ export class World {
     this._smokePuffs = [];
     this._smokeTime = 0;
     for (let i = 0; i < 4; i++) {
-      const puffMat = track(createToonMaterial({ color: 0xd8d2cc }));
+      // Blue-green sea-coloured chimney smoke.
+      const puffMat = track(createToonMaterial({ color: 0x2ea6a0, emissive: 0x0e4f4a, emissiveIntensity: 0.35 }));
       puffMat.transparent = true;
       puffMat.opacity = 0;
       puffMat.depthWrite = false;
@@ -2744,11 +2745,12 @@ export class World {
 
     // --- second storey: an upper loft reached by an inside staircase -------
     // Its floor sits flush on the ground-floor walls (top at 2.55), so the two
-    // storeys stack cleanly with no gap. Built in two pieces so the stairwell
-    // (west) and the front strip stay open (you drop back down inside).
-    const LOFT = 2.55;                                     // loft floor top
-    addBox(4.5, 0.16, 4.2, floorMat, 0.75, LOFT - 0.08, -0.4);  // main loft floor
-    addBox(1.5, 0.16, 1.0, floorMat, -2.25, LOFT - 0.08, -2.0); // rear patch by the stairs
+    // storeys stack cleanly with no gap. It's a full floor apart from the
+    // stairwell (west), which the staircase itself fills — so there's nowhere
+    // to fall through. You come back down the stairs.
+    const LOFT = 2.55;                                       // loft floor top
+    addBox(4.5, 0.16, 5.0, floorMat, 0.75, LOFT - 0.08, 0);      // main loft floor (full depth)
+    addBox(1.5, 0.16, 1.1, floorMat, -2.25, LOFT - 0.08, -1.95); // patch behind the stairs' foot
     // Upper walls (2m tall) standing directly on the ground-floor walls.
     const uy = LOFT + 1.0; // centre of a 2m wall sitting on the loft floor
     walls.back.push(addBox(6.4, 2.0, 0.2, wallMat, 0, uy, -2.6));
@@ -2810,7 +2812,7 @@ export class World {
     const signText = "NEPTUNE'S NOOK";
     let signSize = 62;
     do {
-      sg.font = `bold ${signSize}px Georgia, serif`;
+      sg.font = `bold ${signSize}px "Lilita One", "Trebuchet MS", sans-serif`;
       if (sg.measureText(signText).width <= 464) break;
       signSize -= 2;
     } while (signSize > 20);
@@ -2941,13 +2943,13 @@ export class World {
     };
     // Each stair tread (tops rise evenly to the loft floor at 2.55).
     for (let i = 0; i < 7; i++) addPlatform(-2.2, -1.2 + i * 0.42, 0.62, 2.55 * (i + 1) / 7);
-    // Tile the main loft floor (skipping the stairwell + front strip, which
-    // are left open so you can drop back down inside).
-    for (let lx = -1.4; lx <= 2.9; lx += 0.7)
-      for (let lz = -2.4; lz <= 1.6; lz += 0.7) addPlatform(lx, lz, 0.5, 2.55);
-    // The little rear patch beside the stairs.
-    for (let lx = -2.9; lx <= -1.6; lx += 0.65)
-      for (let lz = -2.4; lz <= -1.6; lz += 0.6) addPlatform(lx, lz, 0.5, 2.55);
+    // Tile the main loft floor at full depth (east of the stairwell). Dense
+    // spacing with generous overlap so there are no fall-through gaps.
+    for (let lx = -1.4; lx <= 2.95; lx += 0.55)
+      for (let lz = -2.4; lz <= 2.45; lz += 0.55) addPlatform(lx, lz, 0.5, 2.55);
+    // The patch behind the foot of the stairs (west, rear).
+    for (let lx = -2.9; lx <= -1.5; lx += 0.55)
+      for (let lz = -2.4; lz <= -1.45; lz += 0.5) addPlatform(lx, lz, 0.5, 2.55);
 
     const pushWall = (lx, lz) => {
       const p = toWorld(lx, 0, lz);
