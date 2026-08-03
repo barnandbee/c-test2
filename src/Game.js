@@ -391,6 +391,7 @@ export class Game {
     this.holdingPan = false;               // carrying Neptune's pan?
     this.pickleInPan = false;              // a pickle caught in the pan?
     this.fritterCooked = false;            // charred pickle fritter made this run?
+    this.raisinTaken = false;              // grabbed Neptune's Raisin this run?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -1504,6 +1505,9 @@ export class Game {
     // Neptune's Nook pan: pick it up, cook the fritter, or set it down.
     if (this.handlePan()) return;
 
+    // The nook's other furnishings just read out a note on a double-tap.
+    if (this.handleNookNote()) return;
+
     // Inside the cottage: appliances answer to a double-tap.
     if (this.handleCottage()) return;
 
@@ -1623,35 +1627,30 @@ export class Game {
   }
 
   /**
-   * A gentle proximity "note" as you brush past each of Neptune's Nook's
-   * furnishings. The desk, armchair and pot plant do nothing — they just
-   * describe themselves — while the pan hints that it can be pried free.
-   * Each note fires once on approach and re-arms after you step away, so
-   * loitering doesn't machine-gun the toast.
+   * A double-tap by one of Neptune's Nook's furnishings reads out a little
+   * note. The desk, armchair and pot plant do nothing but describe
+   * themselves — the pan (by the cupboard) is handled separately by
+   * handlePan, so it isn't listed here. Returns true when a note fires, to
+   * consume the tap.
    */
-  _updateNookNotes() {
+  handleNookNote() {
     const n = this.world.neptune;
-    if (!n) return;
+    if (!n) return false;
     const px = this.player.position.x;
     const pz = this.player.position.z;
     const notes = [
-      ['pan', n.cupboard, "There's a pan here that you might be able to pry free"],
-      ['desk', n.desk, 'A cluttered writing desk — the ink has long since dried.'],
-      ['armchair', n.armchair, 'A deep blue armchair. It has seen better tides.'],
-      ['plant', n.plant, 'A leafy pot plant, quietly minding its own business.']
+      [n.desk, 'A cluttered writing desk — the ink has long since dried.'],
+      [n.armchair, 'A deep blue armchair. It has seen better tides.'],
+      [n.plant, 'A leafy pot plant, quietly minding its own business.']
     ];
-    let hit = null;
-    for (const [key, p, msg] of notes) {
+    for (const [p, msg] of notes) {
       if (!p) continue;
-      const r = key === 'pan' ? 2.4 : 1.9;
-      if ((px - p.x) ** 2 + (pz - p.z) ** 2 < r * r) { hit = { key, msg }; break; }
+      if ((px - p.x) ** 2 + (pz - p.z) ** 2 < 1.9 * 1.9) {
+        this.ui.showTimeToast(msg);
+        return true;
+      }
     }
-    if (!hit) { this._nookNoteKey = null; return; }
-    if (this._nookNoteKey === hit.key) return; // already announced this one
-    this._nookNoteKey = hit.key;
-    // The pan only teases "pry it free" while it's still in the cupboard.
-    if (hit.key === 'pan' && (this.holdingPan || this.fritterCooked)) return;
-    this.ui.showTimeToast(hit.msg);
+    return false;
   }
 
   handleCottage() {
@@ -2437,7 +2436,8 @@ export class Game {
       this.world.setPanPickle(false);
     }
     this.world.douseStove();
-    this._nookNoteKey = null;
+    this.raisinTaken = false;
+    this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -2748,9 +2748,28 @@ export class Game {
         this.world.panMesh.rotation.y = this.player.facingYaw || 0;
       }
 
-      // Little notes as you wander Neptune's Nook — most items are just
-      // for atmosphere; the pan is the one you can actually do something with.
-      this._updateNookNotes();
+      // Neptune's Raisin: snaffle it while it's showing up in the loft for a
+      // random 8/16/24 — once per run.
+      if (!this.raisinTaken && this.world.neptuneRaisin && this.world.neptuneRaisin.visible) {
+        const rp = this.world.neptuneRaisinPos;
+        const c = this.player.getColliderCenter(this._playerCenter);
+        const rdx = c.x - rp.x, rdy = c.y - rp.y, rdz = c.z - rp.z;
+        if (rdx * rdx + rdy * rdy + rdz * rdz < 1.1 * 1.1) {
+          this.raisinTaken = true;
+          const worth = [8, 16, 24][Math.floor(Math.random() * 3)];
+          this.points += worth;
+          this.ui.setPoints(this.points);
+          this.audio.play('collect', 1);
+          this.world.takeRaisin();
+          this.ui.showTimeToast(`NEPTUNE'S RAISIN! +${worth}`);
+          this.particles.spawnBurst(
+            this._playerCenter.set(rp.x, rp.y, rp.z),
+            0x6a9cff,
+            { count: 30, speed: 4.2, size: 42, upBias: 0.5, life: 0.8 }
+          );
+        }
+      }
+
 
       // Parsley O'Riley: arrive at the cave's BLT garnish-ready — 300+ on
       // the board, with the balloon your ONLY transport this run (no

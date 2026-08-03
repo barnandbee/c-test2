@@ -215,6 +215,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Double-tap there and the stove fires up for **a tasty charred pickle
   fritter (+88.8)**, once per run — the **Charred Meander** trophy.
   (Entering the whirlpool now also plays a mysterious spiralling sound.)
+  Double-tap the desk, armchair or pot plant and they'll murmur a note.
+  An inside **staircase** climbs to a **second-storey loft**, where
+  **Neptune's Raisin** — a weird, spooky blue raisin — haunts the room,
+  fading in for ten seconds and out for ten. Grab it while it shows for a
+  random **8, 16 or 24 points** (once per run).
 - **Cottage Lane** — the trap door's lock only respects a **perfectly
   square score** (1, 4, 9, 16, 25…). Arrive square, double-tap, and it
   swings open — down the stairs to a London Underground platform 14m

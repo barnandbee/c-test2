@@ -170,7 +170,18 @@ pan. The pan is the start of a little cooking quest:
    cooks **a tasty charred pickle fritter (+88.8)** — **once per run** — and
    earns the **Charred Meander** trophy.
 
+Double-tapping the desk, armchair or pot plant reads out a little note —
+those are just for atmosphere and do nothing.
+
 Entering the whirlpool now also plays a mysterious spiralling sound.
+
+### The loft & Neptune's Raisin
+
+An inside staircase climbs to a **second-storey loft**. Up there,
+**Neptune's Raisin** — a weird, spooky blue raisin — haunts the room: it
+fades **in for 10 seconds, out for 10 seconds**, over and over. Reach it
+while it's showing and it's worth a random **8, 16 or 24 points**, and it
+can only be taken **once per run**.
 
 ---
 

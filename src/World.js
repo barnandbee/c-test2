@@ -736,7 +736,7 @@ export class World {
       const lx = dx * this.neptuneDoorZ - dz * this.neptuneDoorX;
       const lz = dx * this.neptuneDoorX + dz * this.neptuneDoorZ;
       const inside =
-        Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && focus.y < this.neptuneLevel + 3;
+        Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && focus.y < this.neptuneLevel + 5.5;
       this.neptuneRoof.visible = !inside;
     }
 
@@ -749,6 +749,18 @@ export class World {
         if (f.isMesh) f.scale.y = 0.8 + Math.abs(Math.sin(t * 9 + i * 1.7)) * 0.5;
       }
       if (this.stoveFlameLight) this.stoveFlameLight.intensity = 2.4 + Math.sin(t * 11) * 0.6;
+    }
+
+    // Neptune's Raisin haunts the loft: it fades in for 10s, out for 10s,
+    // bobbing and turning while it shows. Once taken, it stays gone.
+    if (this.neptuneRaisin && !this._raisinTaken) {
+      this._raisinTime = (this._raisinTime || 0) + dt;
+      const showing = this._raisinTime % 20 < 10;
+      this.neptuneRaisin.visible = showing;
+      if (showing) {
+        this.neptuneRaisin.rotation.y += dt * 1.4;
+        this.neptuneRaisin.position.y = this._raisinBaseY + Math.sin(this._raisinTime * 2.2) * 0.08;
+      }
     }
 
     // Chimney smoke: puffs rise, wander a little, swell and thin out.
@@ -2702,6 +2714,59 @@ export class World {
     }
     addBox(0.55, 1.6, 0.55, wallMat, 1.9, 3.6, -1.2, roof);
     addBox(0.7, 0.12, 0.7, deepMat, 1.9, 4.46, -1.2, roof);
+    // Lift the whole roof to sit atop the new second storey.
+    roof.position.y = 2.15;
+
+    // --- second storey: an upper loft reached by an inside staircase -------
+    // Floor of the loft, in two pieces so the stairwell (west) and the front
+    // strip (so you drop back down rather than out) stay open.
+    addBox(4.5, 0.16, 4.2, floorMat, 0.75, 2.62, -0.4);   // main loft floor
+    addBox(1.5, 0.16, 1.0, floorMat, -2.25, 2.62, -2.0);  // rear patch by the stairs
+    // Upper walls (2m tall, sitting on the loft floor).
+    addBox(6.4, 2.0, 0.2, wallMat, 0, 3.7, -2.6);   // back
+    addBox(0.2, 2.0, 5.0, wallMat, -3.1, 3.7, 0);   // left
+    addBox(0.2, 2.0, 5.0, wallMat, 3.1, 3.7, 0);    // right
+    addBox(6.4, 2.0, 0.2, wallMat, 0, 3.7, 2.6);    // front
+    addBox(1.6, 1.0, 0.12, paneMat, 0, 3.7, 2.68);  // a loft window
+    addBox(2.2, 0.45, 0.2, trimMat, 0, 4.72, 2.6);  // little gable trim
+    // The staircase: seven steps climbing +z along the west wall.
+    const stepCount = 7;
+    for (let i = 0; i < stepCount; i++) {
+      const topY = 0.42 + i * 0.38;
+      const lz = -1.2 + i * 0.42;
+      addBox(1.2, topY, 0.44, cabinetMat, -2.2, topY / 2, lz);
+    }
+    // A slim newel post at the foot of the stairs.
+    addBox(0.12, 2.9, 0.12, deepMat, -2.75, 1.45, -1.4);
+
+    // --- Neptune's Raisin: a weird, spooky blue raisin up in the loft ------
+    const raisin = new THREE.Group();
+    this._raisinBaseY = 3.05;
+    raisin.position.set(1.0, this._raisinBaseY, -0.2);
+    const raisinGeo = track(new THREE.IcosahedronGeometry(0.22, 1));
+    const rp = raisinGeo.attributes.position;
+    for (let i = 0; i < rp.count; i++) {
+      const f = 0.8 + Math.random() * 0.34;   // pinch each vertex for wrinkles
+      rp.setXYZ(i, rp.getX(i) * f, rp.getY(i) * f * 0.85, rp.getZ(i) * f);
+    }
+    raisinGeo.computeVertexNormals();
+    const raisinMat = track(createToonMaterial({ color: 0x33478f, emissive: 0x22307a, emissiveIntensity: 0.9, rim: { color: 0x8fb6ff, strength: 0.6, threshold: 0.48 } }));
+    const raisinBody = new THREE.Mesh(raisinGeo, raisinMat);
+    raisinBody.castShadow = true;
+    raisin.add(raisinBody);
+    // Two hollow, glowing spooky eyes.
+    const eyeMat = track(createToonMaterial({ color: 0xdff0ff, emissive: 0xbfe4ff, emissiveIntensity: 1.6 }));
+    for (const ex of [-0.08, 0.08]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.035, 8, 6)), eyeMat);
+      eye.position.set(ex, 0.03, 0.18);
+      raisin.add(eye);
+    }
+    const raisinGlow = new THREE.PointLight(0x6a9cff, 1.4, 3.5, 2);
+    raisin.add(raisinGlow);
+    nook.add(raisin);
+    this.neptuneRaisin = raisin;
+    this._raisinTaken = false;
+    this._raisinTime = 0;
 
     // --- a hand-lettered "NEPTUNE'S NOOK" sign over the door ---------------
     const signCanvas = document.createElement('canvas');
@@ -2833,9 +2898,32 @@ export class World {
       plant: toWorld(-2.5, 0.5, 1.9),
       door: toWorld(0, 1.0, 2.6)
     };
+    // Where the raisin floats, in world space (for the pickup test).
+    this.neptuneRaisinPos = toWorld(1.0, this._raisinBaseY, -0.2);
+
+    // --- standable platforms: the staircase + the loft floor ---------------
+    const addPlatform = (lx, lz, half, top) => {
+      const p = toWorld(lx, 0, lz);
+      this.platforms.push({
+        minX: p.x - half, maxX: p.x + half,
+        minZ: p.z - half, maxZ: p.z + half,
+        top: spot.y + top
+      });
+    };
+    // Each stair tread.
+    for (let i = 0; i < 7; i++) addPlatform(-2.2, -1.2 + i * 0.42, 0.62, 0.42 + i * 0.38);
+    // Tile the main loft floor (skipping the stairwell + front strip, which
+    // are left open so you can drop back down inside).
+    for (let lx = -1.4; lx <= 2.9; lx += 0.7)
+      for (let lz = -2.4; lz <= 1.6; lz += 0.7) addPlatform(lx, lz, 0.5, 2.7);
+    // The little rear patch beside the stairs.
+    for (let lx = -2.9; lx <= -1.6; lx += 0.65)
+      for (let lz = -2.4; lz <= -1.6; lz += 0.6) addPlatform(lx, lz, 0.5, 2.7);
+
     const pushWall = (lx, lz) => {
       const p = toWorld(lx, 0, lz);
-      this.colliders.push({ x: p.x, z: p.z, radius: 0.35, top: spot.y + 2.6 });
+      // Tall enough to fence in both storeys.
+      this.colliders.push({ x: p.x, z: p.z, radius: 0.35, top: spot.y + 4.7 });
     };
     for (let x = -2.8; x <= 2.81; x += 0.7) pushWall(x, -2.6);
     for (let z = -2.4; z <= 2.41; z += 0.685) { pushWall(-3.1, z); pushWall(3.1, z); }
@@ -2849,6 +2937,22 @@ export class World {
   /** Show/hide the pickle resting in the pan. */
   setPanPickle(on) {
     if (this._panPickle) this._panPickle.visible = on;
+  }
+
+  /** Neptune's Raisin has been snaffled — hide it for the rest of the run. */
+  takeRaisin() {
+    this._raisinTaken = true;
+    if (this.neptuneRaisin) this.neptuneRaisin.visible = false;
+  }
+
+  /** Fresh run: the raisin resumes its 10s-on, 10s-off haunting. */
+  resetRaisin() {
+    this._raisinTaken = false;
+    this._raisinTime = 0;
+    if (this.neptuneRaisin) {
+      this.neptuneRaisin.visible = true;
+      this.neptuneRaisin.position.y = this._raisinBaseY;
+    }
   }
 
   /** Light the cottage stove — flames blaze for the rest of the run. */
