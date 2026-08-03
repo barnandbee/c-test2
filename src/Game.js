@@ -34,6 +34,7 @@ import {
 import { CpuRival } from './Bot.js';
 import { PuttingGame } from './PuttingGame.js';
 import { VeggieTacToe } from './VeggieTacToe.js';
+import { PaintingGame } from './PaintingGame.js';
 import { SoundFX } from './Audio.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime } from './Shaders.js';
@@ -151,6 +152,10 @@ const CACTUS_JUNCTION_POINTS = 33.101; // the secret stop's fare rebate (+33.101
 // The three original Mystic Line stops — the 'End of the Line' trophy and
 // Billy's unlock mean THESE three; Cactus Junction is a bonus secret stop.
 const CORE_STATIONS = ['cave', 'lake', 'copse'];
+// All four stops, Cactus Junction included — the 'More Lines Than Mondrian'
+// sweep needs every one of these in a single run.
+const ALL_STATIONS = ['cave', 'lake', 'copse', 'cactus'];
+const PAINTING_MAX_SCORE = 100; // the easel is only workable under this score
 const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
 const PARSLEY_SCORE = 300;         // Parsley O'Riley's garnish threshold
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
@@ -427,6 +432,8 @@ export class Game {
     this.veggieGame = null;
     this.veggiePlayed = false;
     this._veggiePrompted = false;
+    this.paintingGame = null;          // the Neptune's Nook easel mini-game
+    this.paintingComplete = false;     // finished a painting this run?
     this.puttPlayed = false;
     this._puttPrompted = false;
     this._puttFocus = { position: new THREE.Vector3(), velocity: new THREE.Vector3(), facingYaw: 0 };
@@ -1505,6 +1512,9 @@ export class Game {
     // Neptune's Nook pan: pick it up, cook the fritter, or set it down.
     if (this.handlePan()) return;
 
+    // Neptune's Nook desk: sit down and paint a badger (score under 100).
+    if (this.handleEasel()) return;
+
     // The nook's other furnishings just read out a note on a double-tap.
     if (this.handleNookNote()) return;
 
@@ -1639,7 +1649,6 @@ export class Game {
     const px = this.player.position.x;
     const pz = this.player.position.z;
     const notes = [
-      [n.desk, 'A cluttered writing desk — the ink has long since dried.'],
       [n.armchair, 'A deep blue armchair. It has seen better tides.'],
       [n.plant, 'A leafy pot plant, quietly minding its own business.']
     ];
@@ -1651,6 +1660,25 @@ export class Game {
       }
     }
     return false;
+  }
+
+  /**
+   * Neptune's Nook desk holds a paint set. Double-tap it with a score under
+   * 100 to open the badger-painting activity; otherwise it just notes that
+   * the paints have run dry (come back with a lower score).
+   */
+  handleEasel() {
+    const desk = this.world.neptune && this.world.neptune.desk;
+    if (!desk) return false;
+    const dx = this.player.position.x - desk.x;
+    const dz = this.player.position.z - desk.z;
+    if (dx * dx + dz * dz >= 1.9 * 1.9) return false;
+    if (this.points < PAINTING_MAX_SCORE) {
+      this.startPainting();
+    } else {
+      this.ui.showTimeToast('THE PAINTS HAVE DRIED — COME BACK UNDER 100');
+    }
+    return true;
   }
 
   handleCottage() {
@@ -1820,6 +1848,7 @@ export class Game {
     if (CORE_STATIONS.every((s) => this.stationsVisited.has(s))) {
       this.awardAchievement('allstations');
     }
+    this._checkMondrian();
     this.audio.play('train');
     const w = this.world;
 
@@ -2113,6 +2142,40 @@ export class Game {
       this.ui.showTimeToast('OUTFOXED BY A GOAT');
     } else {
       this.ui.showTimeToast('A DRAW — COME BACK ON ANOTHER SEVEN');
+    }
+  }
+
+  /** 'More Lines Than Mondrian': all four stations AND a finished painting. */
+  _checkMondrian() {
+    if (this.paintingComplete && ALL_STATIONS.every((s) => this.stationsVisited.has(s))) {
+      this.awardAchievement('mondrian');
+    }
+  }
+
+  /** Open the badger-painting activity at the desk (bird's-eye, clock frozen). */
+  startPainting() {
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.input.suppressPointerLock = true; // keep the cursor visible for taps
+    this.player.root.visible = false;
+    if (this.world.neptuneRoof) this.world.neptuneRoof.visible = false;
+    const tc = document.getElementById('touch-controls');
+    if (tc) tc.classList.add('hidden');
+    this.paintingGame = new PaintingGame((result) => this.endPainting(result));
+  }
+
+  endPainting(result) {
+    if (!this.paintingGame) return;
+    this.paintingGame.dispose();
+    this.paintingGame = null;
+    this.input.suppressPointerLock = false;
+    this.player.root.visible = true;
+    const tc = document.getElementById('touch-controls');
+    if (tc) tc.classList.remove('hidden');
+    if (result === 'complete') {
+      this.paintingComplete = true;
+      this.audio.play('trophy');
+      this.ui.showTimeToast('A MASTERPIECE! THE BADGER IS FRAMED 🖼️');
+      this._checkMondrian();
     }
   }
 
@@ -2478,6 +2541,15 @@ export class Game {
       const tc = document.getElementById('touch-controls');
       if (tc) tc.classList.remove('hidden');
     }
+    if (this.paintingGame) {
+      this.paintingGame.dispose();
+      this.paintingGame = null;
+      this.input.suppressPointerLock = false;
+      this.player.root.visible = true;
+      const tc = document.getElementById('touch-controls');
+      if (tc) tc.classList.remove('hidden');
+    }
+    this.paintingComplete = false;
     this.veggiePlayed = false;
     this._veggiePrompted = false;
     this.puttPlayed = false;
@@ -2589,6 +2661,23 @@ export class Game {
         this.veggieGame.update(dt);
       }
       this.audio.setMoveIntensity(0); // no roll/hover hum during the game
+      this.player.animate(dt, false);
+    } else if (this.paintingGame) {
+      // 'Paint the Badger': clock FROZEN, a bird's-eye camera over the nook.
+      // The colouring is a DOM overlay; taps are swallowed so they don't read
+      // as gestures. Escape (or the Leave-it button) abandons it.
+      const n = this.world.neptunePos || this.world.neptune.desk;
+      this.camera.position.set(n.x, this.world.neptuneLevel + 12, n.z + 0.01);
+      this.camera.lookAt(n.x, this.world.neptuneLevel, n.z);
+      this.camera.updateMatrixWorld();
+      this.input.consumeDoubleTap();
+      this.input.consumeTripleTap();
+      if (this.input.keys.has('Escape')) {
+        this.paintingGame.abandon();
+      } else {
+        this.paintingGame.update(dt);
+      }
+      this.audio.setMoveIntensity(0);
       this.player.animate(dt, false);
     } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
@@ -2944,6 +3033,7 @@ export class Game {
     window.removeEventListener('resize', this._onResize);
     if (this.minigame) { this.minigame.dispose(); this.minigame = null; }
     if (this.veggieGame) { this.veggieGame.dispose(); this.veggieGame = null; }
+    if (this.paintingGame) { this.paintingGame.dispose(); this.paintingGame = null; }
     this.clearEntities();
     disposeEntityAssets();
     this.particles.dispose();

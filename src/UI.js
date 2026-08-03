@@ -38,6 +38,7 @@ export class UI {
     this.veggiePanel = document.getElementById('veggie-panel');
     this.veggieStatus = document.getElementById('veggie-status');
     this.achievementsBtn = document.getElementById('achievements-btn');
+    this.menuAchievementsBtn = document.getElementById('menu-achievements-btn');
     this.achievementsPanel = document.getElementById('achievements-panel');
     this.achClose = document.getElementById('ach-close');
     this.achProgress = document.getElementById('ach-progress');
@@ -297,6 +298,7 @@ export class UI {
 
   bindAchievements(onOpen, onClose) {
     if (this.achievementsBtn) this.achievementsBtn.addEventListener('click', onOpen);
+    if (this.menuAchievementsBtn) this.menuAchievementsBtn.addEventListener('click', onOpen);
     if (this.achClose) this.achClose.addEventListener('click', onClose);
     // Tapping the dimmed backdrop (but not the card) also closes.
     if (this.achievementsPanel) {

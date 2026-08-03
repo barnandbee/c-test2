@@ -853,6 +853,136 @@ body {
   background: rgba(255, 255, 255, 0.18);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Paint the Badger — the Neptune's Nook colouring activity            */
+/* ------------------------------------------------------------------ */
+
+.painting-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 20, 40, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.painting-card {
+  width: min(460px, 96vw);
+  max-height: 96vh;
+  overflow-y: auto;
+  text-align: center;
+  padding: 16px 18px 18px;
+  background: rgba(22, 40, 70, 0.92);
+  border: 1px solid rgba(127, 176, 220, 0.5);
+  border-radius: 20px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.painting-title {
+  font-family: var(--font-stack);
+  font-size: 24px;
+  letter-spacing: 0.05em;
+  color: #cfe2f4;
+  text-shadow: 0 2px 14px rgba(63, 154, 208, 0.4);
+}
+
+.painting-status {
+  font-family: var(--font-notes);
+  font-size: 16px;
+  color: rgba(243, 239, 255, 0.85);
+  margin: 4px 0 10px;
+}
+
+.painting-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #bfe0ef;
+  border-radius: 12px;
+  border: 2px solid rgba(127, 176, 220, 0.6);
+}
+
+.paint-region {
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+
+.paint-region:hover {
+  opacity: 0.82;
+}
+
+.painting-palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.painting-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.painting-swatch:hover {
+  transform: scale(1.1);
+}
+
+.painting-swatch.selected {
+  border-color: #ffd44f;
+  transform: scale(1.18);
+  box-shadow: 0 0 0 2px rgba(255, 212, 79, 0.5);
+}
+
+.painting-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.painting-done,
+.painting-quit {
+  font-family: var(--font-stack);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 9px 22px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.painting-done {
+  color: #10203a;
+  background: linear-gradient(180deg, #ffe08a, #ffc44f);
+  border-color: rgba(255, 212, 79, 0.7);
+}
+
+.painting-done:disabled {
+  color: rgba(243, 239, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  cursor: default;
+}
+
+.painting-quit {
+  color: rgba(243, 239, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.painting-quit:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
 /* Transparent tap targets laid over the 3D board's cells. */
 .veggie-grid {
   position: fixed;
@@ -1271,6 +1401,7 @@ body {
 /* ------------------------------------------------------------------ */
 
 #achievements-btn,
+#menu-achievements-btn,
 .ghost-btn {
   font-family: var(--font-stack);
   font-size: 14px;
@@ -1286,6 +1417,7 @@ body {
 }
 
 #achievements-btn:hover,
+#menu-achievements-btn:hover,
 .ghost-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 212, 79, 0.5);

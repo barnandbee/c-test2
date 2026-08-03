@@ -108,7 +108,8 @@ milestone counts your best past run automatically.
 | 🚇 **Mind the Gap** | Ride down to the Cottage Lane tube station. |
 | 🫧 **Deep Diver** | Reach the bottom of the lake (Marblella only). |
 | 🚆 **Getting the Train** | Ride the Mystic Line from the ticket machine. |
-| 🚉 **End of the Line** | Visit all three (original) Mystic Line stations in one run. |
+| 🚉 **End of the Line** | Visit three Mystic Line stations in one run. |
+| 🎨 **More Lines Than Mondrian** | Visit **all four** Mystic Line stations in one run AND complete a painting at the Neptune's Nook desk. |
 | 🌲 **Homecoming** | Take President Fir Tree into the Mystic Forest. |
 | 🐻‍❄️ **Peak Bear** | Take Polar Pear to the mountain summit flag. |
 | 🐐 **Kid vs Goat** | Beat Turnip Scart at Veggie Tac Toe while playing as Turnip Scart. |
@@ -170,8 +171,15 @@ pan. The pan is the start of a little cooking quest:
    cooks **a tasty charred pickle fritter (+88.8)** — **once per run** — and
    earns the **Charred Meander** trophy.
 
-Double-tapping the desk, armchair or pot plant reads out a little note —
-those are just for atmosphere and do nothing.
+Double-tapping the armchair or pot plant reads out a little note — those
+are just for atmosphere and do nothing.
+
+**Paint the Badger:** double-tap the **desk** with a score **under 100** to
+open a colouring activity. A storybook badger in a forest appears in a
+bird's-eye modal (the clock pauses); pick from the **ROYGBIV + white +
+black** palette and tap each part to colour it, then **Frame it!** to
+finish. No points — but finishing one, plus visiting all four stations in
+the same run, earns **More Lines Than Mondrian**.
 
 Entering the whirlpool now also plays a mysterious spiralling sound.
 

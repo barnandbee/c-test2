@@ -215,7 +215,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Double-tap there and the stove fires up for **a tasty charred pickle
   fritter (+88.8)**, once per run — the **Charred Meander** trophy.
   (Entering the whirlpool now also plays a mysterious spiralling sound.)
-  Double-tap the desk, armchair or pot plant and they'll murmur a note.
+  Double-tap the armchair or pot plant and they'll murmur a note. Double-tap
+  the **desk** with a score **under 100** to open **Paint the Badger** — a
+  bird's-eye colouring activity (the clock pauses) with a ROYGBIV + white +
+  black palette. Finish a painting *and* visit all four Mystic Line stations
+  in the same run for the **More Lines Than Mondrian** trophy.
   An inside **staircase** climbs to a **second-storey loft**, where
   **Neptune's Raisin** — a weird, spooky blue raisin — haunts the room,
   fading in for ten seconds and out for ten. Grab it while it shows for a
@@ -525,6 +529,7 @@ src/
   PuttingGame.js    'Puttmost Respect' putting minigame (ball physics,
                     power meter, slope break, club + aim arrow)
   VeggieTacToe.js   'Veggie Tac Toe' — tic-tac-toe vs Turnip Scart
+  PaintingGame.js   'Paint the Badger' — the Neptune's Nook colouring activity
   Bot.js            the versus-mode CPU rival (greedy-collector brain
                     feeding a synthetic input into a second Player)
   Particles.js      GPU burst pool, gold aura, poison cloud point systems
