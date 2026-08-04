@@ -373,6 +373,21 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   **nine times as high** as anybody else, but he is in no hurry whatsoever
   and ambles at **half speed**. Unlock him by taking **101 toxic frog
   hits** across all your runs — the frogs make their own champion.
+- **Error #43** — Error #42's sister, one release later. Where #42
+  segfaulted across the ten heroes *before* her, #43 collided with the ten
+  that came *after*: Mayonnaise's cream jar and gold lid fused down a
+  glowing seam with Jam's berry preserve and gingham cap; Dodecahedron's
+  beret over one temple and Turnip Scart's curved horn out of the other;
+  Margaret's button eye, string hair and control strings on one side,
+  Julie's masked blue eye and gold flower tag on the other; a tier of
+  President Fir Tree's conifer with his red tie and star of office;
+  Marblella's glass marble lodged in her middle; the Perpendicular Bird's
+  flat sketch wing locked at a textbook right angle; and a Haunted
+  Sweatshirt sleeve dangling where an arm should be. She glitches, of
+  course — it runs in the family. **You can't pick her at first:** she
+  gate-crashes **4.3% of Random-Character runs** from your very first run,
+  unlocked or not. **Finish one of those runs on 250 or more** and she
+  joins the roster for good.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
@@ -472,7 +487,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   large inviting button. The clock doesn't start until you press it.
 - **Random Character** — first in the roster sits a rainbow-dice
   **Random** card. Pick it and the run assigns you one of your currently
-  unlocked heroes at random (the Badger is always in the hat). There's a
+  unlocked heroes at random (the Badger is always in the hat) — except
+  that **Error #43** gets first refusal on **4.3%** of draws, unlocked or
+  not, which is the only way to meet her. There's a
   rare **1.8% chance** the run turns **Mystic**: the whole world drains
   to greyscale — terrain, sky, water, sparkles and all — and only the
   **pink blossom tree** keeps its colour. Purely cosmetic, and colour

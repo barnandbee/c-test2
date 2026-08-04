@@ -110,5 +110,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'snappy', name: 'Top Hat Snappy', how: 'Enter the whirlpool 100 times across all your runs (multiple dips in one run all count).' },
   { key: 'bacon', name: 'Bacon', how: 'Dress the cave BLT with every sandwich hero (Mayonnaise, Jam and Chimpy Henderson) — across any runs.' },
   { key: 'robofarmer', name: 'Robo-Farmer', how: 'In one run: reach 231 points AND beat Turnip Scart at Veggie Tac Toe.' },
-  { key: 'frosch', name: 'Sir Frosch', how: 'Take 101 toxic frog hits across all your runs. Leaps nine times as high as anyone else — but ambles at half speed.' }
+  { key: 'frosch', name: 'Sir Frosch', how: 'Take 101 toxic frog hits across all your runs. Leaps nine times as high as anyone else — but ambles at half speed.' },
+  { key: 'error43', name: 'Error #43', how: 'She turns up on 4.3% of Random-Character runs from the very beginning, unlocked or not. Finish one of those runs on 250 or more and she joins the roster for good.' }
 ];

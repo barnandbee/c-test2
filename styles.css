@@ -1857,6 +1857,51 @@ body {
   95% { transform: translateX(2px); filter: hue-rotate(-60deg); }
 }
 
+/* Error #43: her sister's corrupted seam, in the palette of the ten heroes
+   she's stitched from — mayo cream | jam berry, with a beret and a horn. */
+.error43-icon {
+  position: relative;
+  border-radius: 9px;
+  background:
+    /* Margaret's button eye (left) + Julie's masked blue eye (right) */
+    radial-gradient(circle at 31% 38%, #7a5a2a 0, #7a5a2a 2.6px, #e8d8b0 2.6px, #e8d8b0 6px, transparent 6.5px),
+    radial-gradient(circle at 69% 38%, #101014 0, #101014 2.2px, #4aa8e8 2.2px, #4aa8e8 6px, transparent 6.5px),
+    /* the goat's chin beard, low left */
+    radial-gradient(ellipse 5px 4px at 34% 82%, #efe4cc 0 70%, transparent 74%),
+    /* glitch scanlines */
+    linear-gradient(#00ffcc, #00ffcc) 55% 60% / 66% 2px no-repeat,
+    linear-gradient(#ffb0e0, #ffb0e0) 40% 74% / 42% 2px no-repeat,
+    /* mayo cream | corrupted seam | jam berry */
+    linear-gradient(103deg, #f2e6c2 0%, #f2e6c2 47%, #00ffcc 47%, #00ffcc 53%, #6a2a55 53%, #6a2a55 100%);
+  animation: error42-flicker 3.7s steps(1) infinite;
+}
+
+.error43-icon::before {
+  /* Dodeca's beret, tilted over the left edge */
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -2px;
+  width: 18px;
+  height: 9px;
+  border-radius: 9px 9px 5px 5px;
+  background: #2f3d78;
+}
+
+.error43-icon::after {
+  /* Turnip Scart's curved horn, off the right temple */
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 2px;
+  width: 8px;
+  height: 11px;
+  border: 2.5px solid #cbb489;
+  border-color: #cbb489 #cbb489 transparent transparent;
+  border-radius: 0 9px 0 0;
+  transform: rotate(16deg);
+}
+
 /* Mayonnaise: a jar. Gold lid, label band, quiet confidence. */
 .mayo-icon {
   border-radius: 10px 10px 8px 8px;

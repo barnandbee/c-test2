@@ -146,6 +146,7 @@ export class Player {
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
     else if (this.character === 'magnus') this.root = this.buildMagnus();
     else if (this.character === 'error42') this.root = this.buildError42();
+    else if (this.character === 'error43') this.root = this.buildError43();
     else if (this.character === 'mayo') this.root = this.buildMayo();
     else if (this.character === 'jam') this.root = this.buildJam();
     else if (this.character === 'dodeca') this.root = this.buildDodeca();
@@ -1841,6 +1842,333 @@ export class Player {
         t.rotation.z = -toe * 0.8;
         pivot.add(t);
       }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Error #43 — her sister's fault, one release later. Where Error #42
+   * segfaulted across the ten heroes before her, #43 collided with the ten
+   * that came after: Mayonnaise's cream jar and gold lid fused down the
+   * seam with Jam's berry preserve and gingham cap; Dodecahedron's beret
+   * over one temple and Turnip Scart's curved horn out of the other;
+   * Margaret's button eye and puppet strings on one side, Julie's masked
+   * blue eye and gold flower tag on the other; a tier of President Fir
+   * Tree's conifer with his red tie and star of office; Marblella's glass
+   * marble lodged in her middle; the Perpendicular Bird's flat sketch wing
+   * locked at a textbook right angle; and a Haunted Sweatshirt sleeve
+   * dangling where an arm ought to be. Glitches, obviously — it runs in
+   * the family.
+   */
+  buildError43() {
+    const root = new THREE.Group();
+    root.name = 'error43';
+    this.isGlitchy = true;
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // --- the palette, one entry per donor ---------------------------------
+    const seamMat = track(createToonMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.8 }));
+    const torsoMat = track(createToonMaterial({
+      vertexColors: true,
+      rim: { color: 0x00ffcc, strength: 0.45, threshold: 0.55 }
+    }));
+    const creamMat = track(createToonMaterial({ color: 0xf2e6c2 }));            // Mayo
+    const goldMat = track(createToonMaterial({ color: 0xf5c542, emissive: 0x4a3300, emissiveIntensity: 0.9 }));
+    const berryMat = track(createToonMaterial({ color: 0x6a2a55 }));            // Jam
+    const ginghamMat = track(createToonMaterial({ color: 0xc85a6a }));
+    const beretMat = track(createToonMaterial({ color: 0x2f3d78 }));            // Dodeca
+    const hornMat = track(createToonMaterial({ color: 0xcbb489 }));             // Turnip Scart
+    const goatCreamMat = track(createToonMaterial({ color: 0xefe4cc }));
+    const woodMat = track(createToonMaterial({ color: 0xd8b483 }));             // Margaret
+    const buttonMat = track(createToonMaterial({ color: 0xe8d8b0 }));
+    const stringMat = track(createToonMaterial({ color: 0xe8e0cc }));
+    const doodleGreyMat = track(createToonMaterial({ color: 0x9aa0a8, rim: { color: 0xe8eef4, strength: 0.35, threshold: 0.66 } })); // Julie
+    const doodleBlackMat = track(createToonMaterial({ color: 0x1c1c22 }));
+    const blueEyeMat = track(createToonMaterial({ color: 0x4aa8e8 }));
+    const firMat = track(createToonMaterial({ color: 0x2f6b46, rim: { color: 0x9fe0b0, strength: 0.35, threshold: 0.62 } })); // Fir Tree
+    const tieMat = track(createToonMaterial({ color: 0xb02434 }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const paperMat = track(createToonMaterial({ color: 0xf6f2e6 }));            // Perpendicular Bird
+    paperMat.side = THREE.DoubleSide;
+    const inkMat = track(createToonMaterial({ color: 0x2a2620 }));
+    const marbleMat = track(createToonMaterial({                                // Marblella
+      color: 0xbfe4f2, emissive: 0x2f6f9a, emissiveIntensity: 0.5,
+      rim: { color: 0xffffff, strength: 0.7, threshold: 0.42 }
+    }));
+    marbleMat.transparent = true;
+    marbleMat.opacity = 0.72;
+    const spectralMat = track(createToonMaterial({                              // Haunted Sweatshirt
+      color: 0x6a8fd0, emissive: 0x2a4a90, emissiveIntensity: 0.7,
+      rim: { color: 0xbfd8ff, strength: 0.6, threshold: 0.5 }
+    }));
+    spectralMat.transparent = true;
+    spectralMat.opacity = 0.55;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: Mayo's jar on the left, Jam's preserve on the right --------
+    const torsoGeo = track(new THREE.CylinderGeometry(0.34, 0.36, 0.86, 18, 8));
+    {
+      const pos = torsoGeo.attributes.position;
+      const colors = new Float32Array(pos.count * 3);
+      const c = new THREE.Color();
+      const cream = new THREE.Color(0xf2e6c2);
+      const label = new THREE.Color(0xdfd0a4);
+      const berry = new THREE.Color(0x6a2a55);
+      const berryDark = new THREE.Color(0x4d1c3e);
+      const seam = new THREE.Color(0x00ffcc);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const py = pos.getY(i) / 0.43; // -1..1
+        if (Math.abs(x) < 0.035) {
+          c.copy(seam); // the corrupted byte boundary, same as her sister's
+        } else if (x < 0) {
+          c.copy(Math.abs(py) < 0.34 ? label : cream); // Mayo's wraparound label
+        } else {
+          c.copy(py < -0.2 ? berryDark : berry);       // Jam settles darker
+        }
+        colors[i * 3 + 0] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      torsoGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    }
+    const torso = new THREE.Mesh(torsoGeo, torsoMat);
+    torso.position.y = 0.4;
+    torso.castShadow = true;
+    body.add(torso);
+
+    // Mayo's gold lid over her left shoulder; Jam's gingham cap over the right.
+    const lid = new THREE.Mesh(track(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14, 1, false, Math.PI / 2, Math.PI)), goldMat);
+    lid.position.set(0, 0.86, 0);
+    body.add(lid);
+    const capCloth = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 14, 10, Math.PI * 1.5, Math.PI, 0, Math.PI * 0.5)), ginghamMat);
+    capCloth.position.set(0, 0.84, 0);
+    capCloth.scale.set(1, 0.7, 1);
+    body.add(capCloth);
+    const capString = new THREE.Mesh(track(new THREE.TorusGeometry(0.19, 0.016, 6, 16, Math.PI)), stringMat);
+    capString.position.set(0, 0.8, 0);
+    capString.rotation.set(Math.PI / 2, 0, Math.PI);
+    body.add(capString);
+
+    // --- a tier of President Fir Tree, worn as a collar, tie and all -------
+    const firTier = new THREE.Mesh(track(new THREE.ConeGeometry(0.42, 0.34, 9)), firMat);
+    firTier.position.y = 0.66;
+    firTier.castShadow = true;
+    body.add(firTier);
+    const tie = new THREE.Mesh(track(new THREE.BoxGeometry(0.1, 0.28, 0.05)), tieMat);
+    tie.position.set(0.02, 0.42, 0.35);
+    tie.rotation.z = 0.1;
+    body.add(tie);
+    const seal = new THREE.Mesh(track(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 10)), goldMat);
+    seal.position.set(0.02, 0.52, 0.37);
+    seal.rotation.x = Math.PI / 2;
+    body.add(seal);
+
+    // --- Marblella's marble, lodged in her middle where a stomach goes -----
+    const marble = new THREE.Mesh(track(new THREE.SphereGeometry(0.17, 16, 14)), marbleMat);
+    marble.position.set(-0.04, 0.3, 0.28);
+    body.add(marble);
+    const twist = new THREE.Mesh(track(new THREE.TorusKnotGeometry(0.07, 0.028, 40, 6, 2, 3)), tieMat);
+    twist.position.copy(marble.position);
+    body.add(twist);
+
+    // --- the seam itself, running up the front ------------------------------
+    const seamStrip = new THREE.Mesh(track(new THREE.BoxGeometry(0.02, 0.88, 0.02)), seamMat);
+    seamStrip.position.set(0, 0.4, 0.36);
+    body.add(seamStrip);
+
+    // --- head: wooden puppet on the left, shaggy doodle on the right -------
+    const head = new THREE.Group();
+    head.position.y = 1.02;
+    body.add(head);
+    this.headGroup = head;
+    const skullL = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 14, Math.PI / 2, Math.PI)), woodMat);
+    skullL.castShadow = true;
+    head.add(skullL);
+    const skullR = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 16, 14, Math.PI * 1.5, Math.PI)), doodleGreyMat);
+    skullR.castShadow = true;
+    head.add(skullR);
+    // Julie's dark patches over her half of the coat.
+    for (const [px, py] of [[0.2, 0.12], [0.14, -0.1], [0.25, -0.02]]) {
+      const patch = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 8, 6)), doodleBlackMat);
+      patch.position.set(px, py, 0.2);
+      patch.scale.set(1, 0.8, 0.35);
+      head.add(patch);
+    }
+    // The glitch seam continues over the crown.
+    const headSeam = new THREE.Mesh(track(new THREE.BoxGeometry(0.015, 0.62, 0.02)), seamMat);
+    headSeam.position.set(0, 0, 0.28);
+    head.add(headSeam);
+
+    // Margaret's button eye (left) and Julie's masked blue eye (right).
+    this.googlyEyes = [];
+    const button = new THREE.Mesh(track(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 12)), buttonMat);
+    button.position.set(-0.13, 0.06, 0.27);
+    button.rotation.x = Math.PI / 2;
+    head.add(button);
+    for (const hx of [-0.025, 0.025]) {
+      const hole = new THREE.Mesh(track(new THREE.CylinderGeometry(0.011, 0.011, 0.03, 6)), pupilMat);
+      hole.position.set(-0.13 + hx, 0.06, 0.29);
+      hole.rotation.x = Math.PI / 2;
+      head.add(hole);
+    }
+    const mask = new THREE.Mesh(track(new THREE.SphereGeometry(0.12, 10, 8)), doodleBlackMat);
+    mask.position.set(0.13, 0.06, 0.22);
+    mask.scale.set(1, 0.9, 0.4);
+    head.add(mask);
+    const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.072, 12, 10)), blueEyeMat);
+    white.position.set(0.13, 0.06, 0.27);
+    head.add(white);
+    const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), pupilMat);
+    pupil.position.set(0.13, 0.06, 0.33);
+    head.add(pupil);
+    this.googlyEyes.push({ pupil, baseX: 0.13, baseY: 0.06, seed: Math.random() * 6.28 });
+
+    // Julie's black button nose, and Turnip Scart's chin beard below.
+    const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), doodleBlackMat);
+    nose.position.set(0.06, -0.1, 0.3);
+    head.add(nose);
+    const beard = new THREE.Mesh(track(new THREE.ConeGeometry(0.07, 0.2, 6)), goatCreamMat);
+    beard.position.set(-0.08, -0.28, 0.18);
+    beard.rotation.x = 0.3;
+    head.add(beard);
+
+    // Turnip Scart's curved horn (right) and floppy ear; Dodeca's beret (left).
+    const hornPts = [];
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12;
+      hornPts.push(new THREE.Vector3(0.2 + t * 0.16, 0.26 + t * 0.26 - t * t * 0.2, -0.02 - t * 0.14));
+    }
+    const horn = new THREE.Mesh(
+      track(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hornPts), 14, 0.045, 6, false)),
+      hornMat
+    );
+    horn.castShadow = true;
+    head.add(horn);
+    const ear = new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 10, 8)), doodleBlackMat);
+    ear.position.set(0.29, 0.02, 0.02);
+    ear.scale.set(0.5, 1.5, 0.7);
+    ear.rotation.z = 0.4;
+    head.add(ear);
+    const beret = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5)), beretMat);
+    beret.position.set(-0.1, 0.24, -0.02);
+    beret.scale.set(1.15, 0.5, 1.1);
+    beret.rotation.z = 0.3;
+    beret.castShadow = true;
+    head.add(beret);
+    const beretStalk = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), beretMat);
+    beretStalk.position.set(-0.12, 0.38, -0.02);
+    head.add(beretStalk);
+    // Fir Tree's star of office, askew on the crown because of course it is.
+    const star = new THREE.Mesh(track(new THREE.ConeGeometry(0.07, 0.14, 5)), goldMat);
+    star.position.set(0.12, 0.36, 0.04);
+    star.rotation.z = -0.5;
+    head.add(star);
+    // Margaret's mop of string hair, spilling out of the left side.
+    for (let i = 0; i < 6; i++) {
+      const strand = new THREE.Mesh(track(new THREE.CylinderGeometry(0.012, 0.008, 0.24, 5)), stringMat);
+      strand.position.set(-0.24 + i * 0.03, 0.12 - i * 0.02, 0.06 - i * 0.04);
+      strand.rotation.z = 0.5 + i * 0.08;
+      head.add(strand);
+    }
+
+    // --- Margaret's control strings, rising to an unseen crossbar ----------
+    for (const [sx, sz] of [[-0.26, 0.1], [0.26, 0.1], [-0.16, -0.2], [0.16, -0.2]]) {
+      const str = new THREE.Mesh(track(new THREE.CylinderGeometry(0.006, 0.006, 1.5, 4)), stringMat);
+      str.position.set(sx, 1.9, sz);
+      str.rotation.z = -sx * 0.14;
+      body.add(str);
+    }
+
+    // --- Julie's collar with the gold flower tag ---------------------------
+    const collar = new THREE.Mesh(track(new THREE.TorusGeometry(0.2, 0.03, 8, 18)), tieMat);
+    collar.position.y = 0.86;
+    collar.rotation.x = Math.PI / 2;
+    body.add(collar);
+    const tag = new THREE.Mesh(track(new THREE.CylinderGeometry(0.055, 0.055, 0.018, 8)), goldMat);
+    tag.position.set(0.06, 0.74, 0.2);
+    tag.rotation.x = Math.PI / 2;
+    body.add(tag);
+
+    // --- arms: the Perpendicular Bird's sketch wing, and a spectral sleeve --
+    this.arms = [];
+    // Left: a flat drawn wing, locked perfectly horizontal, with its 90° mark.
+    {
+      const pivot = new THREE.Group();
+      pivot.position.set(-0.38, 0.6, 0);
+      const wing = new THREE.Mesh(track(new THREE.PlaneGeometry(0.46, 0.24)), paperMat);
+      wing.position.set(-0.23, 0, 0);
+      wing.rotation.y = 0.12;
+      pivot.add(wing);
+      // The right-angle marker: a little square bracket under the wing.
+      for (const [bx, by, bw, bh] of [[-0.3, -0.14, 0.14, 0.014], [-0.37, -0.07, 0.014, 0.14]]) {
+        const bar = new THREE.Mesh(track(new THREE.BoxGeometry(bw, bh, 0.012)), inkMat);
+        bar.position.set(bx, by, 0.01);
+        pivot.add(bar);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: Math.PI });
+    }
+    // Right: a limp, empty Haunted Sweatshirt sleeve.
+    {
+      const pivot = new THREE.Group();
+      pivot.position.set(0.36, 0.66, 0);
+      pivot.rotation.z = -0.28;
+      const sleeve = new THREE.Mesh(track(new THREE.CylinderGeometry(0.095, 0.075, 0.44, 10, 1, true)), spectralMat);
+      sleeve.position.y = -0.22;
+      pivot.add(sleeve);
+      const cuff = new THREE.Mesh(track(new THREE.TorusGeometry(0.078, 0.022, 6, 12)), spectralMat);
+      cuff.position.y = -0.44;
+      cuff.rotation.x = Math.PI / 2;
+      pivot.add(cuff);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: 0 });
+    }
+
+    // --- legs: one puppet leg on a hoof, one spectral wisp ------------------
+    this.legs = [];
+    {
+      // Margaret's jointed pine leg, ending in one of Scart's dark hooves.
+      const pivot = new THREE.Group();
+      pivot.position.set(-0.15, -0.03, 0);
+      const legGeo = track(new THREE.CylinderGeometry(0.045, 0.04, 0.46, 8));
+      legGeo.translate(0, -0.23, 0);
+      const leg = new THREE.Mesh(legGeo, woodMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      const knee = new THREE.Mesh(track(new THREE.SphereGeometry(0.055, 8, 6)), woodMat);
+      knee.position.y = -0.23;
+      pivot.add(knee);
+      const hoof = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.075, 0.1, 8)), doodleBlackMat);
+      hoof.position.y = -0.5;
+      pivot.add(hoof);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: 0 });
+    }
+    {
+      // …and on the other side, nothing solid at all: a drifting hem.
+      const pivot = new THREE.Group();
+      pivot.position.set(0.15, -0.03, 0);
+      const wisp = new THREE.Mesh(track(new THREE.ConeGeometry(0.13, 0.44, 10, 1, true)), spectralMat);
+      wisp.position.y = -0.22;
+      wisp.rotation.x = Math.PI;
+      pivot.add(wisp);
+      const hem = new THREE.Mesh(track(new THREE.TorusGeometry(0.115, 0.024, 6, 14)), spectralMat);
+      hem.position.y = -0.04;
+      hem.rotation.x = Math.PI / 2;
+      pivot.add(hem);
       body.add(pivot);
       this.legs.push({ pivot, phase: Math.PI });
     }

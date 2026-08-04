@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (43)
+## Characters (44)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -59,6 +59,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 41 | **Bacon** | Dress the cave BLT with **every** sandwich hero — Mayonnaise, Jam **and** Chimpy Henderson — across any runs. |
 | 42 | **Robo-Farmer** | In one run: **reach 231 points AND beat Turnip Scart** at Veggie Tac Toe. |
 | 43 | **Sir Frosch** | Take **101 toxic frog hits** across all your runs. A giant, monocled toad: he leaps **9× as high** as anyone else, but ambles at **half speed**. |
+| 44 | **Error #43** | Error #42's sister. She gate-crashes **4.3% of Random-Character runs from the very first run**, unlocked or not — that's the only way to meet her. Finish one of those runs on **250 or more** and she joins the roster for good. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -201,8 +202,9 @@ can only be taken **once per run**.
 ## Mystic runs
 
 Picking the **🎲 Random** card draws one of your currently unlocked heroes
-(the Badger is always in the hat). Each Random run also has a **1.8%**
-chance of turning **Mystic**: the entire world is rendered in greyscale —
+(the Badger is always in the hat) — except that **Error #43** gets first
+refusal on **4.3%** of draws, whether or not you've unlocked her. Each
+Random run also has a **1.8%** chance of turning **Mystic**: the entire world is rendered in greyscale —
 terrain, sky, water, particles and the hero alike — with the single
 exception of the **pink blossom tree**, which keeps its colour. It's
 purely cosmetic (no scoring change), and colour returns at the bell.

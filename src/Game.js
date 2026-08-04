@@ -110,6 +110,7 @@ const STORAGE_WHIRL_ENTRIES = 'mystic-badger.whirlEntries';
 const STORAGE_BACON = 'mystic-badger.baconUnlocked';
 const STORAGE_ROBOFARMER = 'mystic-badger.roboFarmerUnlocked';
 const STORAGE_FROSCH = 'mystic-badger.froschUnlocked';
+const STORAGE_ERROR43 = 'mystic-badger.error43Unlocked';
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
 // Every hero who can dress the cave BLT for +55.5. Do it with all of them
@@ -164,6 +165,10 @@ const CORE_STATIONS = ['cave', 'lake', 'copse'];
 const ALL_STATIONS = ['cave', 'lake', 'copse', 'cactus'];
 const PAINTING_MAX_SCORE = 100; // the easel is only workable under this score
 const MYSTIC_CHANCE = 0.018;    // 1.8% of Random-Character runs turn Mystic
+// Error #43 gate-crashes the Random draw from the very first run — locked or
+// not — and only joins the roster properly once she's had a good run herself.
+const ERROR43_CHANCE = 0.043;   // 4.3% of Random-Character runs are hers
+const ERROR43_SCORE = 250;      // …finish one on this and she's yours
 const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
 const PARSLEY_SCORE = 300;         // Parsley O'Riley's garnish threshold
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
@@ -299,6 +304,7 @@ export class Game {
     this.baconUnlocked = readStorage(STORAGE_BACON) === '1';
     this.roboFarmerUnlocked = readStorage(STORAGE_ROBOFARMER) === '1';
     this.froschUnlocked = readStorage(STORAGE_FROSCH) === '1';
+    this.error43Unlocked = readStorage(STORAGE_ERROR43) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -970,6 +976,9 @@ export class Game {
     if (name === 'bacon') return this.baconUnlocked;
     if (name === 'robofarmer') return this.roboFarmerUnlocked;
     if (name === 'frosch') return this.froschUnlocked;
+    // Error #43 can still be *drawn* at random before this is true — the flag
+    // only governs whether she's directly pickable from the roster.
+    if (name === 'error43') return this.error43Unlocked;
     return name === 'badger';
   }
 
@@ -987,12 +996,16 @@ export class Game {
   /**
    * Resolve a 'random' pick into a concrete character, rolling the rare
    * (1.8%) Mystic run as a side effect. Returns the chosen character name.
+   *
+   * Error #43 is drawn first and separately: she turns up on 4.3% of Random
+   * runs whether or not she's been unlocked, which is the only way to meet
+   * her in the first place.
    */
   resolveRandomCharacter() {
-    const pool = this.randomCharacterPool();
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
     this.mysticRun = Math.random() < MYSTIC_CHANCE;
-    return chosen;
+    if (Math.random() < ERROR43_CHANCE) return 'error43';
+    const pool = this.randomCharacterPool();
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   /** Turn the greyscale Mystic wash on or off for the current run. */
@@ -1056,7 +1069,8 @@ export class Game {
       snappy: this.snappyUnlocked,
       bacon: this.baconUnlocked,
       robofarmer: this.roboFarmerUnlocked,
-      frosch: this.froschUnlocked
+      frosch: this.froschUnlocked,
+      error43: this.error43Unlocked
     };
   }
 
@@ -1358,7 +1372,9 @@ export class Game {
     let chosen = this.ui.getSelectedCharacter() || this.characterName;
     const wasRandom = chosen === 'random';
     if (wasRandom) chosen = this.resolveRandomCharacter(); // rolls this.mysticRun
-    if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
+    // A random draw is self-authorising — it only ever returns heroes you
+    // own, plus Error #43, who turns up uninvited by design.
+    if (chosen !== this.characterName && (wasRandom || this.isCharacterAllowed(chosen))) {
       this.setCharacter(chosen);
     }
     if (wasRandom) this.announceRandomRun(chosen);
@@ -2334,6 +2350,17 @@ export class Game {
       writeStorage(STORAGE_UNLOCKED, '1');
       newlyUnlockedNames.push('Badgerette');
     }
+    // Error #43: she gate-crashes Random runs from the very beginning, but
+    // only joins the roster for good once she's finished one on 250+.
+    if (
+      !this.error43Unlocked &&
+      this.characterName === 'error43' &&
+      this.points >= ERROR43_SCORE
+    ) {
+      this.error43Unlocked = true;
+      writeStorage(STORAGE_ERROR43, '1');
+      newlyUnlockedNames.push('Error #43');
+    }
     // Hughes: go the full three minutes without taking a single hit.
     if (!this.hughesUnlocked && reason === 'time' && this.health >= 100) {
       this.hughesUnlocked = true;
@@ -2536,7 +2563,9 @@ export class Game {
     let chosen = this.ui.getSelectedCharacter() || this.characterName;
     const wasRandom = chosen === 'random';
     if (wasRandom) chosen = this.resolveRandomCharacter(); // rolls this.mysticRun
-    if (chosen !== this.characterName && this.isCharacterAllowed(chosen)) {
+    // A random draw is self-authorising — it only ever returns heroes you
+    // own, plus Error #43, who turns up uninvited by design.
+    if (chosen !== this.characterName && (wasRandom || this.isCharacterAllowed(chosen))) {
       this.setCharacter(chosen);
     }
     if (wasRandom) this.announceRandomRun(chosen);
