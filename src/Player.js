@@ -122,6 +122,7 @@ export class Player {
     this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
     this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
     this.tail = null;
+    this._tailBase = null;   // build-time tail angle the idle sway swings around
     this.headGroup = null;
     this.marbleMesh = null;  // Marblella: the sphere that actually rolls
 
@@ -7691,8 +7692,15 @@ export class Player {
     // Idle life: tail sway and a sniffing nose-bob when standing still.
     const t = performance.now() / 1000;
     if (this.tail) {
-      this.tail.rotation.y = Math.sin(t * 2.1) * 0.35;
-      this.tail.rotation.x = Math.sin(t * 1.7) * 0.2;
+      // Sway AROUND whatever angle the build set, rather than overwriting it.
+      // Several tails (Snappy's tapered cone especially) are rotated at build
+      // time to lie back along the body; assigning absolute angles here used
+      // to wipe that out and stand them on end.
+      if (!this._tailBase) {
+        this._tailBase = { x: this.tail.rotation.x, y: this.tail.rotation.y };
+      }
+      this.tail.rotation.y = this._tailBase.y + Math.sin(t * 2.1) * 0.35;
+      this.tail.rotation.x = this._tailBase.x + Math.sin(t * 1.7) * 0.2;
     }
     if (this.headGroup) {
       if (!hasInput && this.grounded) {
