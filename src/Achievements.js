@@ -60,7 +60,10 @@ export const TROPHIES = [
   { id: 'lifeaquatic', medal: '🌊', title: 'Life Aquatic', desc: 'Finish a run out on the water of one of the lakes.' },
   { id: 'afkc', medal: '😴', title: 'AFKC', desc: 'Finish a run on 100 or more without collecting a single item.' },
   { id: 'charredmeander', medal: '🍳', title: 'Charred Meander', desc: 'Cook a charred pickle fritter: carry the pan from Neptune’s Nook, catch a pickle in it, and fry it on the cottage stove.' },
-  { id: 'farmervspig', medal: '🐖', title: 'Farmer vs Pig', desc: 'Complete a run as both Robo-Farmer and Bacon.' }
+  { id: 'farmervspig', medal: '🐖', title: 'Farmer vs Pig', desc: 'Complete a run as both Robo-Farmer and Bacon.' },
+  { id: 'mysticsquared', medal: '🔲', title: 'Mystic Squared', desc: 'Complete a run with a Mystic (monochrome) run active.' },
+  { id: 'frogs50', medal: '🐸', title: 'Frogs!', desc: 'Take more than 50 toxic frog hits across all your runs.' },
+  { id: 'frogs100', medal: '🐸', title: 'FROGS!!!!', desc: 'Take more than 100 toxic frog hits across all your runs.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -106,5 +109,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'owl', name: 'Pastry Owl', how: 'Score 300+ with at least five clouds collected, between 21:00 and 23:59 (local time).' },
   { key: 'snappy', name: 'Top Hat Snappy', how: 'Enter the whirlpool 100 times across all your runs (multiple dips in one run all count).' },
   { key: 'bacon', name: 'Bacon', how: 'Dress the cave BLT with every sandwich hero (Mayonnaise, Jam and Chimpy Henderson) — across any runs.' },
-  { key: 'robofarmer', name: 'Robo-Farmer', how: 'In one run: reach 231 points AND beat Turnip Scart at Veggie Tac Toe.' }
+  { key: 'robofarmer', name: 'Robo-Farmer', how: 'In one run: reach 231 points AND beat Turnip Scart at Veggie Tac Toe.' },
+  { key: 'frosch', name: 'Sir Frosch', how: 'Take 101 toxic frog hits across all your runs. Leaps nine times as high as anyone else — but ambles at half speed.' }
 ];

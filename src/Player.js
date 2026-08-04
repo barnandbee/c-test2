@@ -162,6 +162,7 @@ export class Player {
     else if (this.character === 'snappy') this.root = this.buildTopHatSnappy();
     else if (this.character === 'bacon') this.root = this.buildBacon();
     else if (this.character === 'robofarmer') this.root = this.buildRoboFarmer();
+    else if (this.character === 'frosch') this.root = this.buildSirFrosch();
     else if (this.character === 'mcdonovan') this.root = this.buildMcDonovan();
     else if (this.character === 'prunella') this.root = this.buildPrunella();
     else if (this.character === 'gary') this.root = this.buildGaryMountain();
@@ -4270,6 +4271,190 @@ export class Player {
       boot.scale.set(1, 0.7, 1.5);
       outline(boot, 1.12);
       pivot.add(boot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Sir Frosch — a giant, distinguished toad: the toxic forest frog grown to
+   * heroic proportions, with a gold monocle screwed into one bulging eye.
+   * Those enormous haunches launch him nine times as high as anybody else,
+   * but he is in no hurry whatsoever, and ambles at half speed.
+   */
+  buildSirFrosch() {
+    const root = new THREE.Group();
+    root.name = 'frosch';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    // Powers: a colossal leap, an unhurried amble.
+    this.moveScale = 0.5;
+    this.jumpScale = 3;      // apex ∝ jumpScale² ⇒ 9× a normal leap
+
+    const skinMat = track(createToonMaterial({
+      color: 0x4f9c2a,
+      rim: { color: 0xa4ff6e, strength: 0.6, threshold: 0.58 }
+    }));
+    const skinDarkMat = track(createToonMaterial({ color: 0x3a7a1e }));
+    const bellyMat = track(createToonMaterial({
+      color: 0xc9d97a,
+      rim: { color: 0xe8ffb0, strength: 0.4, threshold: 0.62 }
+    }));
+    const sacMat = track(createToonMaterial({
+      color: 0xd9e691,
+      rim: { color: 0xd6ff9e, strength: 0.4, threshold: 0.6 }
+    }));
+    const eyeMat = track(createToonMaterial({ color: 0xd8e04a }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+    const wartMat = track(createToonMaterial({ color: 0x2f6b17 }));
+    const brassMat = track(createToonMaterial({
+      color: 0xe8c34a,
+      rim: { color: 0xfff0b0, strength: 0.6, threshold: 0.52 }
+    }));
+    const glassMat = track(createToonMaterial({ color: 0xd8f0ff }));
+    glassMat.transparent = true;
+    glassMat.opacity = 0.35;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.46;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- an enormous squat torso -------------------------------------------
+    const torso = new THREE.Mesh(track(new THREE.SphereGeometry(0.52, 24, 18)), skinMat);
+    torso.scale.set(1.15, 0.86, 1.1);
+    torso.castShadow = true;
+    body.add(torso);
+    // Pale belly tucked underneath.
+    const belly = new THREE.Mesh(track(new THREE.SphereGeometry(0.44, 20, 14)), bellyMat);
+    belly.position.set(0, -0.12, 0.1);
+    belly.scale.set(1.05, 0.66, 1.0);
+    body.add(belly);
+    // A scatter of warts across his back.
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      const wart = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), wartMat);
+      wart.position.set(Math.cos(a) * 0.34, 0.3 + Math.sin(i * 2.1) * 0.1, Math.sin(a) * 0.3 - 0.1);
+      body.add(wart);
+    }
+
+    // --- the head, low and wide at the front --------------------------------
+    const head = new THREE.Group();
+    head.position.set(0, 0.24, 0.38);
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.36, 22, 16)), skinMat);
+    skull.scale.set(1.1, 0.78, 1.0);
+    skull.castShadow = true;
+    head.add(skull);
+    // A wide, grave mouth line.
+    const mouth = new THREE.Mesh(track(new THREE.BoxGeometry(0.44, 0.03, 0.03)), skinDarkMat);
+    mouth.position.set(0, -0.14, 0.3);
+    head.add(mouth);
+    // Nostrils on the snout.
+    for (const side of [-1, 1]) {
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.028, 6, 5)), pupilMat);
+      nostril.position.set(side * 0.08, 0.02, 0.35);
+      head.add(nostril);
+    }
+    // The croaking throat sac, slung under the chin.
+    const sac = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 16, 12)), sacMat);
+    sac.position.set(0, -0.2, 0.16);
+    sac.scale.set(1.0, 0.72, 0.9);
+    head.add(sac);
+
+    // --- the bulging eyes, sat high on the skull ----------------------------
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.16, 14, 12)), eyeMat);
+      eye.position.set(side * 0.2, 0.26, 0.06);
+      eye.castShadow = true;
+      head.add(eye);
+      // A heavy lid capping each one — the classic sleepy toad glare.
+      const lid = new THREE.Mesh(
+        track(new THREE.SphereGeometry(0.17, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.45)),
+        skinMat
+      );
+      lid.position.set(side * 0.2, 0.27, 0.06);
+      lid.rotation.x = -0.3;
+      head.add(lid);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.07, 10, 8)), pupilMat);
+      pupil.scale.set(0.45, 1, 1); // a vertical slit
+      pupil.position.set(side * 0.2, 0.26, 0.19);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.2, baseY: 0.26, seed: Math.random() * 6.28 });
+    }
+
+    // --- the monocle, screwed into his right eye ----------------------------
+    const monocle = new THREE.Group();
+    monocle.position.set(0.2, 0.26, 0.22);
+    head.add(monocle);
+    const ring = new THREE.Mesh(track(new THREE.TorusGeometry(0.19, 0.022, 8, 22)), brassMat);
+    monocle.add(ring);
+    const lens = new THREE.Mesh(track(new THREE.CircleGeometry(0.19, 22)), glassMat);
+    monocle.add(lens);
+    // The cord, swinging away toward his shoulder.
+    const cordPts = [
+      new THREE.Vector3(0.17, -0.09, 0),
+      new THREE.Vector3(0.24, -0.3, -0.06),
+      new THREE.Vector3(0.16, -0.52, -0.16)
+    ];
+    const cord = new THREE.Mesh(
+      track(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cordPts), 14, 0.012, 5, false)),
+      brassMat
+    );
+    monocle.add(cord);
+
+    // --- front arms ---------------------------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.07, 0.055, 0.36, 8));
+    armGeo.translate(0, -0.18, 0);
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.42, 0.04, 0.28);
+      pivot.rotation.z = -side * 0.34;
+      const arm = new THREE.Mesh(armGeo, skinMat);
+      arm.castShadow = true;
+      pivot.add(arm);
+      // A splayed webbed hand.
+      const hand = new THREE.Mesh(track(new THREE.ConeGeometry(0.11, 0.2, 5)), skinMat);
+      hand.position.y = -0.4;
+      hand.rotation.x = Math.PI / 2;
+      hand.scale.set(1.2, 1, 0.42);
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- the great launching haunches ---------------------------------------
+    const legGeo = track(new THREE.CylinderGeometry(0.11, 0.09, 0.34, 8));
+    legGeo.translate(0, -0.17, 0);
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, -0.16, -0.16);
+      // The big muscled thigh sits on the pivot so it swings with the leg.
+      const haunch = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 16, 12)), skinMat);
+      haunch.position.set(side * 0.06, 0.12, -0.04);
+      haunch.scale.set(0.92, 0.88, 1.25);
+      haunch.castShadow = true;
+      pivot.add(haunch);
+      const shin = new THREE.Mesh(legGeo, skinMat);
+      shin.castShadow = true;
+      pivot.add(shin);
+      // Broad webbed foot, splayed forward for the landing.
+      const foot = new THREE.Mesh(track(new THREE.ConeGeometry(0.16, 0.34, 5)), skinMat);
+      foot.position.set(0, -0.36, 0.12);
+      foot.rotation.x = Math.PI / 2;
+      foot.scale.set(1.3, 1, 0.4);
+      pivot.add(foot);
       body.add(pivot);
       this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
     }

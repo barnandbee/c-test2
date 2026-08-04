@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (42)
+## Characters (43)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -58,6 +58,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 40 | **Top Hat Snappy** | Enter the whirlpool **100 times** across all your runs (multiple dips in one run all count). Slides rather than walks, can swim in the lakes, and has a limited jump. |
 | 41 | **Bacon** | Dress the cave BLT with **every** sandwich hero — Mayonnaise, Jam **and** Chimpy Henderson — across any runs. |
 | 42 | **Robo-Farmer** | In one run: **reach 231 points AND beat Turnip Scart** at Veggie Tac Toe. |
+| 43 | **Sir Frosch** | Take **101 toxic frog hits** across all your runs. A giant, monocled toad: he leaps **9× as high** as anyone else, but ambles at **half speed**. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -72,7 +73,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (51)
+## Trophies (57)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -154,6 +155,9 @@ milestone counts your best past run automatically.
 | 😴 **AFKC** | Finish a run on **100 or more** without collecting a single item (like *AFK?*, but past a century). |
 | 🍳 **Charred Meander** | Carry the pan from **Neptune's Nook**, catch a pickle in it, and fry it on the **cottage stove** for a charred pickle fritter (see below). |
 | 🐖 **Farmer vs Pig** | Complete a full run as **Robo-Farmer** *and* a full run as **Bacon** (once both are unlocked). |
+| 🔲 **Mystic Squared** | Complete a run that turned **Mystic** (monochrome) — see *Mystic runs* below. |
+| 🐸 **Frogs!** | Take **more than 50** toxic frog hits across all your runs. |
+| 🐸 **FROGS!!!!** | Take **more than 100** toxic frog hits across all your runs. One more bruise (101) and **Sir Frosch** hops onto the roster. |
 
 ---
 

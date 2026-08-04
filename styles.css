@@ -2350,6 +2350,47 @@ body {
   background: #3a3f44;
 }
 
+/* Sir Frosch: a green toad face, bulging eyes up top, and a gold monocle. */
+.frosch-icon {
+  position: relative;
+  border-color: #2f6b17;
+  background:
+    /* slit pupils in the bulging eyes */
+    radial-gradient(circle at 33% 26%, #101014 0 1.3px, transparent 1.7px),
+    radial-gradient(circle at 67% 26%, #101014 0 1.3px, transparent 1.7px),
+    /* the yellow-green eyeballs themselves */
+    radial-gradient(circle at 33% 26%, #d8e04a 0 6px, transparent 6.4px),
+    radial-gradient(circle at 67% 26%, #d8e04a 0 6px, transparent 6.4px),
+    /* pale throat sac low on the face */
+    radial-gradient(ellipse 62% 26% at 50% 84%, #d9e691 0 70%, transparent 74%),
+    linear-gradient(165deg, #5aab30, #4f9c2a 60%, #3f7d22);
+}
+
+.frosch-icon::before {
+  /* the monocle: a gold ring over the right eye */
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: 55%;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid #e8c34a;
+  background: rgba(226, 244, 255, 0.28);
+}
+
+.frosch-icon::after {
+  /* its cord, trailing down off the rim */
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 76%;
+  width: 1.5px;
+  height: 11px;
+  background: #e8c34a;
+  transform: rotate(14deg);
+}
+
 /* McDonovan: a grey fedora over a mouse face with big round ears. */
 .mcdonovan-icon {
   position: relative;

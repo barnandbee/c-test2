@@ -366,6 +366,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   under a tan ball cap, **gritted teeth chewing a piece of hay**, over a
   chunky **green jumper**. Unlock him in one run by **reaching 231 points
   AND beating Turnip Scart** at Veggie Tac Toe.
+- **Sir Frosch** — the toxic forest frog grown to heroic proportions: a
+  giant, distinguished toad with bulging slit-pupilled eyes, a pale
+  croaking throat sac, warts along his back, and a **gold monocle**
+  screwed into one eye (cord and all). Those enormous haunches launch him
+  **nine times as high** as anybody else, but he is in no hurry whatsoever
+  and ambles at **half speed**. Unlock him by taking **101 toxic frog
+  hits** across all your runs — the frogs make their own champion.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

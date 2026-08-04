@@ -109,12 +109,19 @@ const STORAGE_SNAPPY = 'mystic-badger.snappyUnlocked';
 const STORAGE_WHIRL_ENTRIES = 'mystic-badger.whirlEntries';
 const STORAGE_BACON = 'mystic-badger.baconUnlocked';
 const STORAGE_ROBOFARMER = 'mystic-badger.roboFarmerUnlocked';
+const STORAGE_FROSCH = 'mystic-badger.froschUnlocked';
+const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
 // Every hero who can dress the cave BLT for +55.5. Do it with all of them
 // (across any runs) to unlock Bacon.
 const SANDWICH_DRESSERS = ['mayo', 'jam', 'chimpy'];
 const ROBOFARMER_SCORE = 231;     // reach this AND beat Turnip in one run
 const SNAPPY_WHIRL_ENTRIES = 100; // all-time whirlpool dips to unlock Top Hat Snappy
+// All-time toxic-frog bruises: two trophies on the way, and Sir Frosch waiting
+// at the end of them.
+const FROGS_TROPHY_HITS = 50;     // 'Frogs!' — more than this
+const FROGS_SHOUT_HITS = 100;     // 'FROGS!!!!' — more than this
+const FROSCH_FROG_HITS = 101;     // Sir Frosch hops onto the roster
 // Pastry Owl's witching hours: 21:00–23:59 on the player's local clock.
 const OWL_HOUR_START = 21;
 const OWL_HOUR_END = 23;
@@ -291,6 +298,9 @@ export class Game {
     this.whirlEntries = parseInt(readStorage(STORAGE_WHIRL_ENTRIES, '0'), 10) || 0;
     this.baconUnlocked = readStorage(STORAGE_BACON) === '1';
     this.roboFarmerUnlocked = readStorage(STORAGE_ROBOFARMER) === '1';
+    this.froschUnlocked = readStorage(STORAGE_FROSCH) === '1';
+    // All-time tally of toxic-frog bruises (across every run).
+    this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
     this.sandwichDressers = new Set(
       (readStorage(STORAGE_SANDWICH_DRESSERS, '') || '').split(',').filter(Boolean)
@@ -805,6 +815,7 @@ export class Game {
 
       this.health -= DAMAGE_PER_HIT;
       this.frogHits += 1; // Margaret counts her bruises
+      this.registerFrogHit(); // …and the all-time tally counts them forever
       this.invulnTimer = INVULN_TIME;
       this.ui.setHealth(this.health);
       this.audio.play('ribbit');
@@ -958,6 +969,7 @@ export class Game {
     if (name === 'snappy') return this.snappyUnlocked;
     if (name === 'bacon') return this.baconUnlocked;
     if (name === 'robofarmer') return this.roboFarmerUnlocked;
+    if (name === 'frosch') return this.froschUnlocked;
     return name === 'badger';
   }
 
@@ -1043,7 +1055,8 @@ export class Game {
       owl: this.pastryOwlUnlocked,
       snappy: this.snappyUnlocked,
       bacon: this.baconUnlocked,
-      robofarmer: this.roboFarmerUnlocked
+      robofarmer: this.roboFarmerUnlocked,
+      frosch: this.froschUnlocked
     };
   }
 
@@ -1305,6 +1318,23 @@ export class Game {
     const k = this.characterName;
     this.charUsage[k] = (this.charUsage[k] || 0) + 1;
     writeStorage(STORAGE_CHAR_USAGE, JSON.stringify(this.charUsage));
+  }
+
+  /**
+   * Add one to the all-time frog-bruise tally and pay out whatever it earns:
+   * two trophies on the way up, and Sir Frosch himself at 101.
+   */
+  registerFrogHit() {
+    this.frogHitsAllTime += 1;
+    writeStorage(STORAGE_FROG_HITS, String(this.frogHitsAllTime));
+    if (this.frogHitsAllTime > FROGS_TROPHY_HITS) this.awardAchievement('frogs50');
+    if (this.frogHitsAllTime > FROGS_SHOUT_HITS) this.awardAchievement('frogs100');
+    if (!this.froschUnlocked && this.frogHitsAllTime >= FROSCH_FROG_HITS) {
+      this.froschUnlocked = true;
+      writeStorage(STORAGE_FROSCH, '1');
+      this.runUnlockNames.push('Sir Frosch');
+      this.ui.showTimeToast('★ SIR FROSCH UNLOCKED! RIBBIT, OLD BEAN 🐸');
+    }
   }
 
   /**
@@ -2277,6 +2307,9 @@ export class Game {
   gameOver(reason) {
     this.isGameOver = true;
     this.closeTravel();
+    // Mystic Squared: this run was run in monochrome. Noted BEFORE the wash
+    // is cleared, since setMystic(false) resets the flag.
+    const wasMystic = this.mysticRun;
     this.setMystic(false); // colour returns to the world at the bell
     this.audio.stopAll(); // silence any engine / movement bed at the bell
     this._vehicleSound = null;
@@ -2284,6 +2317,7 @@ export class Game {
     if (document.pointerLockElement) document.exitPointerLock();
 
     if (reason === 'health') this.awardAchievement('rip');
+    if (wasMystic) this.awardAchievement('mysticsquared');
 
     // Persist the high score and any character unlocks.
     const isNewHigh = this.points > this.highScore;
