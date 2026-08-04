@@ -1376,6 +1376,7 @@ export class Game {
     this.player.position.set(x, y, z);
     this.player.velocity.set(0, 0, 0);
     this.player.grounded = false;
+    this.player.clearTrail(); // else the trail smears across the whole map
     this.cameraRig.snapTo(this.player.position);
     this.audio.play('whirl');
     this.particles.spawnBurst(

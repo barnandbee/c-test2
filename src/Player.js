@@ -2199,16 +2199,17 @@ export class Player {
       return resource;
     };
 
+    // Emissive does the lifting here, since she carries no light of her own.
     const protonMat = track(createToonMaterial({
-      color: 0xe8556a, emissive: 0x8a1e33, emissiveIntensity: 0.9,
-      rim: { color: 0xffc0cc, strength: 0.6, threshold: 0.5 }
+      color: 0xe8556a, emissive: 0xc23048, emissiveIntensity: 1.1,
+      rim: { color: 0xffc0cc, strength: 0.7, threshold: 0.46 }
     }));
     const neutronMat = track(createToonMaterial({
-      color: 0x9fb4d8, emissive: 0x2f4a7a, emissiveIntensity: 0.6,
-      rim: { color: 0xdfe8ff, strength: 0.5, threshold: 0.55 }
+      color: 0x9fb4d8, emissive: 0x4a70b0, emissiveIntensity: 0.9,
+      rim: { color: 0xdfe8ff, strength: 0.65, threshold: 0.5 }
     }));
     const electronMat = track(createToonMaterial({
-      color: 0x8fe8ff, emissive: 0x2a86b0, emissiveIntensity: 0.7,
+      color: 0x8fe8ff, emissive: 0x3fa8d8, emissiveIntensity: 1.1,
       pulse: { speed: 4.2, phase: 0 }
     }));
     const orbitMat = track(createToonMaterial({
@@ -2312,11 +2313,11 @@ export class Player {
       this.nucleusRings.push({ spinner, speed: 2.2 + i * 0.9 });
     }
 
-    // --- her glow: a cold blue light and a sparkle halo --------------------
-    // Kept modest on purpose — any brighter and it blows out her own face.
-    const glow = new THREE.PointLight(0x7fd0ff, 1.7, 5.5, 2);
-    body.add(glow);
-    this.nucleusGlow = glow;
+    // --- her glow: emissive only, plus a sparkle halo ----------------------
+    // Deliberately NO point light. Three.js forward-renders every light
+    // against every lit fragment, so one more dynamic light is a screen-wide
+    // cost on weaker GPUs — and she'd be carrying it around the whole run.
+    // Emissive materials and the halo give the same look for free.
     const aura = createAuraPoints(22, {
       radiusBase: 0.5, radiusVar: 0.35, heightBase: -0.25, heightVar: 0.6
     });
@@ -7611,6 +7612,17 @@ export class Player {
     this.grounded = true;
   }
 
+  /**
+   * Drop the Nucleus' trail history. Called when she teleports, so the
+   * ghosts don't smear a glowing streak clean across the map from wherever
+   * she just was to wherever she just turned up.
+   */
+  clearTrail() {
+    if (!this._trailPts) return;
+    this._trailPts.length = 0;
+    for (const ghost of this._trailMeshes) ghost.visible = false;
+  }
+
   /** Applied by Game when a toxic frog connects. */
   applyKnockback(fromX, fromZ, strength = 9) {
     const dx = this.position.x - fromX;
@@ -7756,7 +7768,6 @@ export class Player {
       for (const ring of this.nucleusRings) ring.spinner.rotation.z += ring.speed * dt;
       this.bodyGroup.rotation.y += dt * 0.35;
       this.bodyGroup.position.y = Math.sin(t * 1.5) * 0.07;
-      if (this.nucleusGlow) this.nucleusGlow.intensity = 1.7 + Math.sin(t * 3.3) * 0.4;
 
       // The trail group is counter-rotated so its offsets stay world-aligned
       // while the root turns to face travel.
@@ -7764,8 +7775,12 @@ export class Player {
       this._trailTick = (this._trailTick || 0) + dt;
       if (this._trailTick > 0.07) {
         this._trailTick = 0;
-        this._trailPts.unshift(this.position.clone());
-        if (this._trailPts.length > this._trailMeshes.length) this._trailPts.pop();
+        // Recycle the oldest point rather than allocating a fresh Vector3
+        // several times a second for the whole run.
+        const pt = this._trailPts.length >= this._trailMeshes.length
+          ? this._trailPts.pop()
+          : new THREE.Vector3();
+        this._trailPts.unshift(pt.copy(this.position));
       }
       for (let i = 0; i < this._trailMeshes.length; i++) {
         const ghost = this._trailMeshes[i];
