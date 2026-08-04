@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (44)
+## Characters (46)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -60,6 +60,8 @@ each one is earned. This is the single source of truth for unlock conditions
 | 42 | **Robo-Farmer** | In one run: **reach 231 points AND beat Turnip Scart** at Veggie Tac Toe. |
 | 43 | **Sir Frosch** | Take **101 toxic frog hits** across all your runs. A giant, monocled toad: he leaps **9× as high** as anyone else, but ambles at **half speed**. |
 | 44 | **Error #43** | Error #42's sister. She gate-crashes **4.3% of Random-Character runs from the very first run**, unlocked or not — that's the only way to meet her. Finish one of those runs on **250 or more** and she joins the roster for good. |
+| 45 | **The Nucleus Of Time Itself** | Bank a full extra **180 seconds** in one run, doubling it to **six minutes** (eighteen clock-tower visits, or sixteen plus the cottage alarm). An atom with a suave feminine face that floats, glows and trails — and **teleports to a random spot on the map every 25-30 seconds**, be that solid ground, inside a building, or the open sky. |
+| 46 | **Tudor Lizard** | Finish a run on a perfectly round hundred — **100, 200, 300, 400, 500…** |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -74,7 +76,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (57)
+## Trophies (58)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -159,6 +161,7 @@ milestone counts your best past run automatically.
 | 🔲 **Mystic Squared** | Complete a run that turned **Mystic** (monochrome) — see *Mystic runs* below. |
 | 🐸 **Frogs!** | Take **more than 50** toxic frog hits across all your runs. |
 | 🐸 **FROGS!!!!** | Take **more than 100** toxic frog hits across all your runs. One more bruise (101) and **Sir Frosch** hops onto the roster. |
+| 🧊 **Mystic Cubed** | Complete a **Mystic** (monochrome) run having also ridden the Mystic Line to **Mystic Forest Central** on that same run. |
 
 ---
 

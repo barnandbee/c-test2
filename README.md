@@ -388,6 +388,23 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   gate-crashes **4.3% of Random-Character runs** from your very first run,
   unlocked or not. **Finish one of those runs on 250 or more** and she
   joins the roster for good.
+- **The Nucleus Of Time Itself** — an atom with opinions: a clustered core
+  of protons and neutrons wearing a **suave feminine face**, wrapped in
+  three tilted electron orbits whose particles race around them, lit from
+  within and dragging a soft **trail** of where she has just been. She
+  **floats** rather than walks — and every **25–30 seconds** she simply
+  gives up on being here and **teleports to a random spot on the map**:
+  solid ground, the inside of a building, or thin air a long way up, in
+  which case she falls in. That haphazardness is the whole point of her.
+  Unlock her by banking a full extra **180 seconds** in a single run,
+  doubling it to **six minutes** — eighteen clock-tower visits, or sixteen
+  plus the cottage alarm.
+- **Tudor Lizard** — an anthropomorphic lizard in full Tudor court dress:
+  a great starched white **ruff** standing around his neck, a slashed
+  crimson doublet with puffed sleeves and a peascod point, trunk hose over
+  dark stockings, buckled shoes, a gold chain of office, and a flat velvet
+  cap with a feather over his golden slit eyes. Unlock him by finishing a
+  run on a **perfectly round hundred** — 100, 200, 300, 400, 500…
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

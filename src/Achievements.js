@@ -63,7 +63,8 @@ export const TROPHIES = [
   { id: 'farmervspig', medal: '🐖', title: 'Farmer vs Pig', desc: 'Complete a run as both Robo-Farmer and Bacon.' },
   { id: 'mysticsquared', medal: '🔲', title: 'Mystic Squared', desc: 'Complete a run with a Mystic (monochrome) run active.' },
   { id: 'frogs50', medal: '🐸', title: 'Frogs!', desc: 'Take more than 50 toxic frog hits across all your runs.' },
-  { id: 'frogs100', medal: '🐸', title: 'FROGS!!!!', desc: 'Take more than 100 toxic frog hits across all your runs.' }
+  { id: 'frogs100', medal: '🐸', title: 'FROGS!!!!', desc: 'Take more than 100 toxic frog hits across all your runs.' },
+  { id: 'mysticcubed', medal: '🧊', title: 'Mystic Cubed', desc: 'Complete a Mystic (monochrome) run having ridden the Mystic Line to Mystic Forest Central on that same run.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -111,5 +112,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'bacon', name: 'Bacon', how: 'Dress the cave BLT with every sandwich hero (Mayonnaise, Jam and Chimpy Henderson) — across any runs.' },
   { key: 'robofarmer', name: 'Robo-Farmer', how: 'In one run: reach 231 points AND beat Turnip Scart at Veggie Tac Toe.' },
   { key: 'frosch', name: 'Sir Frosch', how: 'Take 101 toxic frog hits across all your runs. Leaps nine times as high as anyone else — but ambles at half speed.' },
-  { key: 'error43', name: 'Error #43', how: 'She turns up on 4.3% of Random-Character runs from the very beginning, unlocked or not. Finish one of those runs on 250 or more and she joins the roster for good.' }
+  { key: 'error43', name: 'Error #43', how: 'She turns up on 4.3% of Random-Character runs from the very beginning, unlocked or not. Finish one of those runs on 250 or more and she joins the roster for good.' },
+  { key: 'nucleus', name: 'The Nucleus Of Time Itself', how: 'Bank enough bonus seconds in one run to double its length to six minutes — 180 extra seconds (eighteen clock-tower visits, or sixteen plus the cottage alarm).' },
+  { key: 'tudor', name: 'Tudor Lizard', how: 'Finish a run on a perfectly round hundred — 100, 200, 300, 400, 500…' }
 ];

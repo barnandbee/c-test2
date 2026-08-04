@@ -111,6 +111,8 @@ const STORAGE_BACON = 'mystic-badger.baconUnlocked';
 const STORAGE_ROBOFARMER = 'mystic-badger.roboFarmerUnlocked';
 const STORAGE_FROSCH = 'mystic-badger.froschUnlocked';
 const STORAGE_ERROR43 = 'mystic-badger.error43Unlocked';
+const STORAGE_NUCLEUS = 'mystic-badger.nucleusUnlocked';
+const STORAGE_TUDOR = 'mystic-badger.tudorUnlocked';
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
 // Every hero who can dress the cave BLT for +55.5. Do it with all of them
@@ -169,6 +171,12 @@ const MYSTIC_CHANCE = 0.018;    // 1.8% of Random-Character runs turn Mystic
 // not — and only joins the roster properly once she's had a good run herself.
 const ERROR43_CHANCE = 0.043;   // 4.3% of Random-Character runs are hers
 const ERROR43_SCORE = 250;      // …finish one on this and she's yours
+// Bank this many bonus seconds in a single run and it runs to double length
+// (180 + 180 = six minutes), which wakes The Nucleus Of Time Itself.
+const DOUBLE_TIME_BONUS = GAME_DURATION;
+// The Nucleus is haphazard by nature: it blinks somewhere else every 25-30s.
+const NUCLEUS_HOP_MIN = 25;
+const NUCLEUS_HOP_MAX = 30;
 const ALL_VEHICLES = ['hovercraft', 'balloon', 'rocket'];
 const PARSLEY_SCORE = 300;         // Parsley O'Riley's garnish threshold
 const CANDY_HELTER_VISITS = 100;   // all-time helter-skelter visits to unlock Candy Florence
@@ -305,6 +313,8 @@ export class Game {
     this.roboFarmerUnlocked = readStorage(STORAGE_ROBOFARMER) === '1';
     this.froschUnlocked = readStorage(STORAGE_FROSCH) === '1';
     this.error43Unlocked = readStorage(STORAGE_ERROR43) === '1';
+    this.nucleusUnlocked = readStorage(STORAGE_NUCLEUS) === '1';
+    this.tudorUnlocked = readStorage(STORAGE_TUDOR) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -395,6 +405,8 @@ export class Game {
     this.invulnTimer = 0;
     this.isGameOver = false;
     this.towerVisits = 0;
+    this.bonusTimeGranted = 0;
+    this._nucleusHopIn = NUCLEUS_HOP_MIN + Math.random() * (NUCLEUS_HOP_MAX - NUCLEUS_HOP_MIN);
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
@@ -890,9 +902,8 @@ export class Game {
     if (Math.abs(this.player.position.y - tower.position.y) > 5) return;
     if (!tower.tryEnter(this.player.position)) return;
 
-    this.timeLeft += TOWER_TIME_BONUS;
+    this.grantBonusTime(TOWER_TIME_BONUS);
     this.towerVisits += 1;
-    this.ui.setTimer(this.timeLeft);
     this.audio.play('ticks'); // clock ticks as time is banked
     if (this.towerVisits >= 3) this.awardAchievement('tower3');
     if (this.towerVisits >= 10) this.awardAchievement('tower10');
@@ -979,6 +990,8 @@ export class Game {
     // Error #43 can still be *drawn* at random before this is true — the flag
     // only governs whether she's directly pickable from the roster.
     if (name === 'error43') return this.error43Unlocked;
+    if (name === 'nucleus') return this.nucleusUnlocked;
+    if (name === 'tudor') return this.tudorUnlocked;
     return name === 'badger';
   }
 
@@ -1070,7 +1083,9 @@ export class Game {
       bacon: this.baconUnlocked,
       robofarmer: this.roboFarmerUnlocked,
       frosch: this.froschUnlocked,
-      error43: this.error43Unlocked
+      error43: this.error43Unlocked,
+      nucleus: this.nucleusUnlocked,
+      tudor: this.tudorUnlocked
     };
   }
 
@@ -1332,6 +1347,59 @@ export class Game {
     const k = this.characterName;
     this.charUsage[k] = (this.charUsage[k] || 0) + 1;
     writeStorage(STORAGE_CHAR_USAGE, JSON.stringify(this.charUsage));
+  }
+
+  /**
+   * The Nucleus blinks out of existence here and back into it somewhere
+   * else — anywhere at all inside the playable ring. Roughly half the time
+   * it lands on (or inside) whatever is standing at that spot; the rest of
+   * the time it reappears high overhead and simply falls in. Haphazard is
+   * the whole point of it.
+   */
+  nucleusHop() {
+    const w = this.world;
+    const from = this._playerCenter.copy(this.player.position);
+    this.particles.spawnBurst(from, 0x8fd8ff, {
+      count: 34, speed: 5.2, size: 46, upBias: 0.3, life: 0.8
+    });
+
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.sqrt(Math.random()) * (w.playableRadius - 6);
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    // Ground here may be terrain, a rooftop, or a station floor — whatever
+    // getGroundHeight reports from high above is the top of it.
+    const surface = w.getGroundHeight(x, z, 1e4, w.getHeight(x, z));
+    const inTheSky = Math.random() < 0.45;
+    const y = surface + (inTheSky ? 14 + Math.random() * 22 : 0.6);
+
+    this.player.position.set(x, y, z);
+    this.player.velocity.set(0, 0, 0);
+    this.player.grounded = false;
+    this.cameraRig.snapTo(this.player.position);
+    this.audio.play('whirl');
+    this.particles.spawnBurst(
+      this._playerCenter.set(x, y + 0.5, z), 0x8fd8ff,
+      { count: 40, speed: 5.6, size: 50, upBias: 0.4, life: 0.9 }
+    );
+    this.ui.showTimeToast(inTheSky ? '⚛ RELOCATED — MIND THE DROP' : '⚛ RELOCATED');
+  }
+
+  /**
+   * Bank bonus seconds onto the clock and note them against this run's
+   * running total. Stretch a run to double length — a full extra
+   * GAME_DURATION of banked time — and The Nucleus Of Time Itself notices.
+   */
+  grantBonusTime(seconds) {
+    this.timeLeft += seconds;
+    this.bonusTimeGranted += seconds;
+    this.ui.setTimer(this.timeLeft);
+    if (!this.nucleusUnlocked && this.bonusTimeGranted >= DOUBLE_TIME_BONUS) {
+      this.nucleusUnlocked = true;
+      writeStorage(STORAGE_NUCLEUS, '1');
+      this.runUnlockNames.push('The Nucleus Of Time Itself');
+      this.ui.showTimeToast('★ THE NUCLEUS OF TIME ITSELF UNLOCKED! ⚛');
+    }
   }
 
   /**
@@ -1798,8 +1866,7 @@ export class Game {
     if (hit === 'clock') {
       if (!this.alarmRung) {
         this.alarmRung = true;
-        this.timeLeft += ALARM_TIME_BONUS;
-        this.ui.setTimer(this.timeLeft);
+        this.grantBonusTime(ALARM_TIME_BONUS);
         this.audio.play('ticks'); // clock ticks as time is banked
         this.ui.showTimeToast(`RUDE AWAKENING! +${ALARM_TIME_BONUS} SECONDS`);
         this.particles.spawnBurst(
@@ -2334,6 +2401,10 @@ export class Game {
 
     if (reason === 'health') this.awardAchievement('rip');
     if (wasMystic) this.awardAchievement('mysticsquared');
+    // Mystic Cubed: monochrome AND rode the line to Mystic Forest Central.
+    if (wasMystic && this.stationsVisited.has('copse')) {
+      this.awardAchievement('mysticcubed');
+    }
 
     // Persist the high score and any character unlocks.
     const isNewHigh = this.points > this.highScore;
@@ -2360,6 +2431,12 @@ export class Game {
       this.error43Unlocked = true;
       writeStorage(STORAGE_ERROR43, '1');
       newlyUnlockedNames.push('Error #43');
+    }
+    // Tudor Lizard: finish on a perfectly round hundred — 100, 200, 300…
+    if (!this.tudorUnlocked && this.points > 0 && this.points % 100 === 0) {
+      this.tudorUnlocked = true;
+      writeStorage(STORAGE_TUDOR, '1');
+      newlyUnlockedNames.push('Tudor Lizard');
     }
     // Hughes: go the full three minutes without taking a single hit.
     if (!this.hughesUnlocked && reason === 'time' && this.health >= 100) {
@@ -2590,6 +2667,8 @@ export class Game {
     this.invulnTimer = 0;
     this.isGameOver = false;
     this.towerVisits = 0;
+    this.bonusTimeGranted = 0;
+    this._nucleusHopIn = NUCLEUS_HOP_MIN + Math.random() * (NUCLEUS_HOP_MAX - NUCLEUS_HOP_MIN);
     this.runUnlockNames = [];
     this.redOctoberClaimed = false;
     this.flewBalloon = false;
@@ -2949,6 +3028,17 @@ export class Game {
         const p = this.player.position;
         this.world.panMesh.position.set(p.x, p.y + 0.95, p.z);
         this.world.panMesh.rotation.y = this.player.facingYaw || 0;
+      }
+
+      // The Nucleus Of Time Itself blinks somewhere else entirely every
+      // 25-30 seconds — deliberately haphazard.
+      if (this.characterName === 'nucleus') {
+        this._nucleusHopIn -= dt;
+        if (this._nucleusHopIn <= 0) {
+          this.nucleusHop();
+          this._nucleusHopIn = NUCLEUS_HOP_MIN +
+            Math.random() * (NUCLEUS_HOP_MAX - NUCLEUS_HOP_MIN);
+        }
       }
 
       // Neptune's Raisin: snaffle it while it's showing up in the loft for a

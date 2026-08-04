@@ -21,6 +21,7 @@
 
 import * as THREE from 'three';
 import { createToonMaterial } from './Shaders.js';
+import { createAuraPoints } from './Particles.js';
 import { clamp, damp, dampAngle, moveToward } from './utils/MathUtils.js';
 
 /* ------------------------------------------------------------------ */
@@ -111,6 +112,7 @@ export class Player {
     this.googlyEyes = null;  // rattling pupils (Hughes, Edith)
     this.rockMesh = null;    // Rhombus: the body that waddle-rocks
     this.isGlitchy = false;  // Error #42's intermittent reality problem
+    this.nucleusRings = null; // The Nucleus' orbiting electrons
     this.isFloaty = false;   // Haunted Sweatshirt's ethereal hover
     this.isBouncy = false;   // Pickle Stick hops to get around
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
@@ -147,6 +149,8 @@ export class Player {
     else if (this.character === 'magnus') this.root = this.buildMagnus();
     else if (this.character === 'error42') this.root = this.buildError42();
     else if (this.character === 'error43') this.root = this.buildError43();
+    else if (this.character === 'nucleus') this.root = this.buildNucleus();
+    else if (this.character === 'tudor') this.root = this.buildTudorLizard();
     else if (this.character === 'mayo') this.root = this.buildMayo();
     else if (this.character === 'jam') this.root = this.buildJam();
     else if (this.character === 'dodeca') this.root = this.buildDodeca();
@@ -2172,6 +2176,394 @@ export class Player {
       body.add(pivot);
       this.legs.push({ pivot, phase: Math.PI });
     }
+
+    return root;
+  }
+
+  /**
+   * The Nucleus Of Time Itself — an atom with opinions. A clustered core of
+   * protons and neutrons wearing a suave feminine face, wrapped in three
+   * tilted electron orbits whose particles race around them, lit from
+   * within and dragging a soft trail of where it has just been. It floats
+   * rather than walks, and every 25-30 seconds it simply gives up on being
+   * here and turns up somewhere else entirely (see Game.nucleusHop).
+   */
+  buildNucleus() {
+    const root = new THREE.Group();
+    root.name = 'nucleus';
+    this.isFloaty = true;
+    this.hoverHeight = 0.7;
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const protonMat = track(createToonMaterial({
+      color: 0xe8556a, emissive: 0x8a1e33, emissiveIntensity: 0.9,
+      rim: { color: 0xffc0cc, strength: 0.6, threshold: 0.5 }
+    }));
+    const neutronMat = track(createToonMaterial({
+      color: 0x9fb4d8, emissive: 0x2f4a7a, emissiveIntensity: 0.6,
+      rim: { color: 0xdfe8ff, strength: 0.5, threshold: 0.55 }
+    }));
+    const electronMat = track(createToonMaterial({
+      color: 0x8fe8ff, emissive: 0x2a86b0, emissiveIntensity: 0.7,
+      pulse: { speed: 4.2, phase: 0 }
+    }));
+    const orbitMat = track(createToonMaterial({
+      color: 0x6fd0ff, emissive: 0x2f9ad0, emissiveIntensity: 0.8
+    }));
+    orbitMat.transparent = true;
+    orbitMat.opacity = 0.5;
+    const skinMat = track(createToonMaterial({
+      color: 0xf6dfe4, emissive: 0x6a3a48, emissiveIntensity: 0.25
+    }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xffffff }));
+    const pupilMat = track(createToonMaterial({ color: 0x1a1420 }));
+    const lashMat = track(createToonMaterial({ color: 0x2a1a24 }));
+    const lipMat = track(createToonMaterial({
+      color: 0xd8425e, emissive: 0x6a1020, emissiveIntensity: 0.5
+    }));
+    const trailMat = track(createToonMaterial({
+      color: 0x8fd8ff, emissive: 0x3fa8e0, emissiveIntensity: 1.0
+    }));
+    trailMat.transparent = true;
+    trailMat.depthWrite = false;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.62;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the core: a clustered knot of protons and neutrons ----------------
+    const core = new THREE.Group();
+    body.add(core);
+    this.headGroup = core; // the face rides the core, so let it lead the look
+    const nucleonGeo = track(new THREE.SphereGeometry(0.15, 14, 12));
+    const cluster = [
+      [0, 0, 0, 1], [0.17, 0.08, 0.05, 0], [-0.16, 0.1, -0.04, 0],
+      [0.05, -0.17, 0.08, 1], [-0.08, -0.14, -0.12, 0], [0.13, 0.02, -0.16, 1],
+      [-0.14, -0.02, 0.15, 1], [0.02, 0.19, -0.09, 0]
+    ];
+    for (const [nx, ny, nz, isProton] of cluster) {
+      const n = new THREE.Mesh(nucleonGeo, isProton ? protonMat : neutronMat);
+      n.position.set(nx, ny, nz);
+      n.castShadow = true;
+      core.add(n);
+    }
+
+    // --- her face, set into the front of the core ---------------------------
+    const face = new THREE.Group();
+    face.position.set(0, 0.02, 0.2);
+    core.add(face);
+    // A softly lit cheek-plate so the features read against the nucleons.
+    const cheek = new THREE.Mesh(track(new THREE.SphereGeometry(0.2, 16, 14)), skinMat);
+    cheek.scale.set(1, 0.92, 0.5);
+    face.add(cheek);
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(track(new THREE.SphereGeometry(0.055, 12, 10)), eyeWhiteMat);
+      white.position.set(side * 0.075, 0.05, 0.09);
+      white.scale.set(1.25, 0.85, 0.5);
+      face.add(white);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.026, 8, 6)), pupilMat);
+      pupil.position.set(side * 0.075, 0.05, 0.13);
+      face.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.075, baseY: 0.05, seed: Math.random() * 6.28 });
+      // A heavy sweep of lashes, and a fine arched brow above it.
+      const lash = new THREE.Mesh(track(new THREE.BoxGeometry(0.11, 0.016, 0.02)), lashMat);
+      lash.position.set(side * 0.078, 0.087, 0.12);
+      lash.rotation.z = side * 0.34;
+      face.add(lash);
+      const brow = new THREE.Mesh(track(new THREE.BoxGeometry(0.085, 0.012, 0.015)), lashMat);
+      brow.position.set(side * 0.08, 0.125, 0.11);
+      brow.rotation.z = side * 0.3;
+      face.add(brow);
+    }
+    // A knowing half-smile, painted on.
+    const lips = new THREE.Mesh(track(new THREE.TorusGeometry(0.05, 0.016, 6, 14, Math.PI)), lipMat);
+    lips.position.set(0.012, -0.075, 0.11);
+    lips.rotation.set(0, 0, Math.PI + 0.24);
+    face.add(lips);
+
+    // --- three tilted electron orbits, each with a racing electron ---------
+    this.nucleusRings = [];
+    const ringGeo = track(new THREE.TorusGeometry(0.52, 0.012, 6, 40));
+    const electronGeo = track(new THREE.SphereGeometry(0.055, 10, 8));
+    const tilts = [
+      [0, 0, 0],
+      [Math.PI / 2.6, 0.5, 0.4],
+      [-Math.PI / 2.4, -0.6, -0.5]
+    ];
+    for (let i = 0; i < tilts.length; i++) {
+      const ring = new THREE.Group();
+      ring.rotation.set(tilts[i][0], tilts[i][1], tilts[i][2]);
+      body.add(ring);
+      const hoop = new THREE.Mesh(ringGeo, orbitMat);
+      ring.add(hoop);
+      // The spinner carries the electron around the hoop.
+      const spinner = new THREE.Group();
+      ring.add(spinner);
+      const electron = new THREE.Mesh(electronGeo, electronMat);
+      electron.position.x = 0.52;
+      spinner.add(electron);
+      this.nucleusRings.push({ spinner, speed: 2.2 + i * 0.9 });
+    }
+
+    // --- her glow: a cold blue light and a sparkle halo --------------------
+    // Kept modest on purpose — any brighter and it blows out her own face.
+    const glow = new THREE.PointLight(0x7fd0ff, 1.7, 5.5, 2);
+    body.add(glow);
+    this.nucleusGlow = glow;
+    const aura = createAuraPoints(22, {
+      radiusBase: 0.5, radiusVar: 0.35, heightBase: -0.25, heightVar: 0.6
+    });
+    aura.material.uniforms.uColor.value.set(0x8ec8e8);
+    aura.material.uniforms.uSize.value = 16;
+    body.add(aura);
+    this._disposables.push(aura.geometry, aura.material);
+
+    // --- the trail: ghosts of where she has just been -----------------------
+    // Held in a counter-rotated group so the offsets stay world-aligned even
+    // as the root turns to face travel.
+    const trail = new THREE.Group();
+    root.add(trail);
+    this._trailGroup = trail;
+    this._trailMeshes = [];
+    this._trailPts = [];
+    const trailGeo = track(new THREE.SphereGeometry(0.2, 10, 8));
+    for (let i = 0; i < 7; i++) {
+      const ghost = new THREE.Mesh(trailGeo, trailMat.clone());
+      this._disposables.push(ghost.material);
+      ghost.material.opacity = 0;
+      ghost.visible = false;
+      trail.add(ghost);
+      this._trailMeshes.push(ghost);
+    }
+
+    this.arms = [];
+    this.legs = [];
+    return root;
+  }
+
+  /**
+   * Tudor Lizard — an anthropomorphic lizard done up in full Tudor court
+   * dress: a great frilled ruff standing white around his neck, a slashed
+   * doublet with puffed sleeves over trunk hose, a flat velvet cap with a
+   * feather, and a fine chain of office. Scaly green, entirely composed.
+   */
+  buildTudorLizard() {
+    const root = new THREE.Group();
+    root.name = 'tudor';
+
+    const track = (resource) => {
+      this._disposables.push(resource);
+      return resource;
+    };
+
+    const scaleMat = track(createToonMaterial({
+      color: 0x5f9e46, rim: { color: 0xc4f0a0, strength: 0.45, threshold: 0.6 }
+    }));
+    const bellyMat = track(createToonMaterial({ color: 0xc8dc96 }));
+    const ruffMat = track(createToonMaterial({
+      color: 0xf6f2e8, rim: { color: 0xffffff, strength: 0.5, threshold: 0.58 }
+    }));
+    const doubletMat = track(createToonMaterial({
+      color: 0x6a1230, rim: { color: 0xc06a88, strength: 0.35, threshold: 0.62 }
+    }));
+    const slashMat = track(createToonMaterial({ color: 0xe8d8a0 }));
+    const hoseMat = track(createToonMaterial({ color: 0x2a2a4a }));
+    const goldMat = track(createToonMaterial({
+      color: 0xf5c542, emissive: 0x4a3300, emissiveIntensity: 0.8
+    }));
+    const capMat = track(createToonMaterial({ color: 0x1c1c2a }));
+    const featherMat = track(createToonMaterial({ color: 0xe8e2d0 }));
+    const shoeMat = track(createToonMaterial({ color: 0x3a2418 }));
+    const eyeMat = track(createToonMaterial({ color: 0xf2d84a }));
+    const pupilMat = track(createToonMaterial({ color: 0x101014 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.5;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the slashed doublet, with puffed sleeves to come ------------------
+    const torso = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.27, 0.36, 6, 14)), doubletMat);
+    torso.position.y = 0.28;
+    torso.castShadow = true;
+    body.add(torso);
+    // Vertical slashes showing the cream lining beneath.
+    for (let i = 0; i < 5; i++) {
+      const a = -0.5 + i * 0.25;
+      const slash = new THREE.Mesh(track(new THREE.BoxGeometry(0.03, 0.3, 0.02)), slashMat);
+      slash.position.set(Math.sin(a) * 0.26, 0.3, Math.cos(a) * 0.26);
+      slash.rotation.y = a;
+      body.add(slash);
+    }
+    // The peascod point at the waist, and a gold chain of office.
+    const peascod = new THREE.Mesh(track(new THREE.ConeGeometry(0.16, 0.2, 10)), doubletMat);
+    peascod.position.set(0, 0.08, 0.18);
+    peascod.rotation.x = Math.PI;
+    body.add(peascod);
+    const chain = new THREE.Mesh(track(new THREE.TorusGeometry(0.19, 0.018, 6, 20)), goldMat);
+    chain.position.set(0, 0.4, 0.06);
+    chain.rotation.x = 1.3;
+    body.add(chain);
+    const pendant = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8)), goldMat);
+    pendant.position.set(0, 0.24, 0.25);
+    pendant.rotation.x = Math.PI / 2;
+    body.add(pendant);
+
+    // --- the great starched ruff ------------------------------------------
+    const ruff = new THREE.Group();
+    ruff.position.y = 0.6;
+    body.add(ruff);
+    // A stack of two figure-of-eight frills, built from many small lobes.
+    for (const [ring, rad, lobe, ry] of [[0, 0.3, 0.075, 0], [1, 0.27, 0.065, 0.07]]) {
+      for (let i = 0; i < 22; i++) {
+        const a = (i / 22) * Math.PI * 2 + ring * 0.14;
+        const lobeMesh = new THREE.Mesh(track(new THREE.SphereGeometry(lobe, 8, 6)), ruffMat);
+        lobeMesh.position.set(Math.cos(a) * rad, ry, Math.sin(a) * rad);
+        lobeMesh.scale.set(1, 0.55, 1.5);
+        lobeMesh.rotation.y = -a;
+        ruff.add(lobeMesh);
+      }
+    }
+
+    // --- the lizard himself, above the ruff --------------------------------
+    const head = new THREE.Group();
+    head.position.y = 0.78;
+    body.add(head);
+    this.headGroup = head;
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.23, 16, 14)), scaleMat);
+    skull.scale.set(1, 0.88, 1.15);
+    skull.castShadow = true;
+    head.add(skull);
+    // A long reptilian snout with a pale underside.
+    const snout = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.1, 0.2, 5, 10)), scaleMat);
+    snout.rotation.x = Math.PI / 2;
+    snout.position.set(0, -0.04, 0.26);
+    head.add(snout);
+    const jaw = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.075, 0.18, 4, 8)), bellyMat);
+    jaw.rotation.x = Math.PI / 2;
+    jaw.position.set(0, -0.11, 0.26);
+    head.add(jaw);
+    for (const side of [-1, 1]) {
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.018, 6, 5)), pupilMat);
+      nostril.position.set(side * 0.045, 0.01, 0.4);
+      head.add(nostril);
+    }
+    // Hooded golden eyes with slit pupils.
+    this.googlyEyes = [];
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 12, 10)), eyeMat);
+      eye.position.set(side * 0.16, 0.08, 0.12);
+      head.add(eye);
+      const brow = new THREE.Mesh(
+        track(new THREE.SphereGeometry(0.082, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)),
+        scaleMat
+      );
+      brow.position.set(side * 0.16, 0.09, 0.12);
+      brow.rotation.x = -0.3;
+      head.add(brow);
+      const pupil = new THREE.Mesh(track(new THREE.SphereGeometry(0.032, 8, 6)), pupilMat);
+      pupil.scale.set(0.35, 1, 1);
+      pupil.position.set(side * 0.16, 0.08, 0.19);
+      head.add(pupil);
+      this.googlyEyes.push({ pupil, baseX: side * 0.16, baseY: 0.08, seed: Math.random() * 6.28 });
+    }
+    // A row of small dorsal scutes over the crown.
+    for (let i = 0; i < 4; i++) {
+      const scute = new THREE.Mesh(track(new THREE.ConeGeometry(0.03, 0.06, 4)), scaleMat);
+      scute.position.set(0, 0.2 - i * 0.02, -0.06 - i * 0.07);
+      head.add(scute);
+    }
+
+    // --- a flat velvet cap, worn at an angle, with its feather -------------
+    const cap = new THREE.Mesh(track(new THREE.CylinderGeometry(0.26, 0.26, 0.07, 18)), capMat);
+    cap.position.set(-0.03, 0.24, -0.03);
+    cap.rotation.z = 0.18;
+    cap.castShadow = true;
+    head.add(cap);
+    const capBand = new THREE.Mesh(track(new THREE.TorusGeometry(0.2, 0.025, 6, 18)), goldMat);
+    capBand.position.set(-0.03, 0.21, -0.03);
+    capBand.rotation.set(Math.PI / 2, 0, 0.18);
+    head.add(capBand);
+    const feather = new THREE.Mesh(track(new THREE.ConeGeometry(0.045, 0.34, 5)), featherMat);
+    feather.position.set(0.2, 0.36, -0.1);
+    feather.rotation.set(0.3, 0, -0.9);
+    head.add(feather);
+
+    // --- puffed sleeves and scaly hands ------------------------------------
+    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.055, 0.3, 8));
+    armGeo.translate(0, -0.15, 0);
+    this.arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.3, 0.46, 0);
+      pivot.rotation.z = -side * 0.28;
+      const puff = new THREE.Mesh(track(new THREE.SphereGeometry(0.15, 12, 10)), doubletMat);
+      puff.position.y = -0.06;
+      puff.scale.set(1, 0.9, 1);
+      puff.castShadow = true;
+      pivot.add(puff);
+      const arm = new THREE.Mesh(armGeo, scaleMat);
+      arm.position.y = -0.14;
+      pivot.add(arm);
+      const cuff = new THREE.Mesh(track(new THREE.TorusGeometry(0.06, 0.022, 6, 12)), ruffMat);
+      cuff.position.y = -0.32;
+      cuff.rotation.x = Math.PI / 2;
+      pivot.add(cuff);
+      const hand = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 10, 8)), scaleMat);
+      hand.position.y = -0.4;
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- trunk hose over stockinged legs, in buckled shoes -----------------
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.06, 0.34, 8));
+    legGeo.translate(0, -0.17, 0);
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.13, 0.06, 0);
+      const trunk = new THREE.Mesh(track(new THREE.SphereGeometry(0.135, 12, 10)), doubletMat);
+      trunk.position.y = -0.02;
+      trunk.scale.set(1, 0.85, 1);
+      trunk.castShadow = true;
+      pivot.add(trunk);
+      const leg = new THREE.Mesh(legGeo, hoseMat);
+      leg.position.y = -0.08;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 10, 8)), shoeMat);
+      shoe.position.set(0, -0.44, 0.04);
+      shoe.scale.set(1, 0.65, 1.5);
+      pivot.add(shoe);
+      const buckle = new THREE.Mesh(track(new THREE.BoxGeometry(0.05, 0.03, 0.012)), goldMat);
+      buckle.position.set(0, -0.42, 0.11);
+      pivot.add(buckle);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // --- and a proper lizard tail out the back ------------------------------
+    const tailPts = [];
+    for (let i = 0; i <= 14; i++) {
+      const t = i / 14;
+      tailPts.push(new THREE.Vector3(Math.sin(t * 2.4) * 0.06, 0.16 - t * 0.12, -0.24 - t * 0.6));
+    }
+    const tail = new THREE.Mesh(
+      track(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(tailPts), 16, 0.075, 7, false)),
+      scaleMat
+    );
+    tail.castShadow = true;
+    body.add(tail);
+    this.tail = tail;
 
     return root;
   }
@@ -7354,6 +7746,41 @@ export class Player {
       } else {
         this.bodyGroup.position.x = 0;
         this.bodyGroup.rotation.y = 0;
+      }
+    }
+
+    // The Nucleus Of Time Itself: electrons race their orbits, the core
+    // turns slowly, the glow breathes, and a trail of ghosts marks where
+    // she has just been.
+    if (this.nucleusRings) {
+      for (const ring of this.nucleusRings) ring.spinner.rotation.z += ring.speed * dt;
+      this.bodyGroup.rotation.y += dt * 0.35;
+      this.bodyGroup.position.y = Math.sin(t * 1.5) * 0.07;
+      if (this.nucleusGlow) this.nucleusGlow.intensity = 1.7 + Math.sin(t * 3.3) * 0.4;
+
+      // The trail group is counter-rotated so its offsets stay world-aligned
+      // while the root turns to face travel.
+      this._trailGroup.rotation.y = -this.root.rotation.y;
+      this._trailTick = (this._trailTick || 0) + dt;
+      if (this._trailTick > 0.07) {
+        this._trailTick = 0;
+        this._trailPts.unshift(this.position.clone());
+        if (this._trailPts.length > this._trailMeshes.length) this._trailPts.pop();
+      }
+      for (let i = 0; i < this._trailMeshes.length; i++) {
+        const ghost = this._trailMeshes[i];
+        const pt = this._trailPts[i];
+        if (!pt) { ghost.visible = false; continue; }
+        const fade = 1 - i / this._trailMeshes.length;
+        ghost.visible = true;
+        // Local offset = world delta, un-rotated by the counter-rotation.
+        ghost.position.set(
+          pt.x - this.position.x,
+          pt.y - this.position.y,
+          pt.z - this.position.z
+        );
+        ghost.scale.setScalar(0.35 + fade * 0.6);
+        ghost.material.opacity = fade * 0.4;
       }
     }
 
