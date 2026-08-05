@@ -38,6 +38,7 @@ import { PaintingGame } from './PaintingGame.js';
 import { SoundFX } from './Audio.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime, setMysticMode } from './Shaders.js';
+import { BloomPass } from './Bloom.js';
 import { clamp } from './utils/MathUtils.js';
 
 const PINE_CONE_COUNT = 26;
@@ -134,6 +135,7 @@ const STORAGE_SCORED100 = 'mystic-badger.scored100';
 const STORAGE_SCORED200 = 'mystic-badger.scored200';
 const STORAGE_SCORED300 = 'mystic-badger.scored300';
 const STORAGE_MUTED = 'mystic-badger.muted';
+const STORAGE_BLOOM = 'mystic-badger.bloom';
 const STORAGE_CHARACTER = 'mystic-badger.character';
 const STORAGE_ACHIEVEMENTS = 'mystic-badger.achievements';
 const FIR_JUMPS_REQUIRED = 3; // jumps inside the Mystic Forest
@@ -235,9 +237,20 @@ export class Game {
     this.renderer.toneMappingExposure = 1.15;
     container.appendChild(this.renderer.domElement);
 
+    // --- bloom -------------------------------------------------------------
+    // Costs an extra fullscreen pass, so it defaults OFF on phones and small
+    // screens, where the frame budget is tight. A stored preference always
+    // wins over that default, so the toggle sticks either way.
+    const stored = readStorage(STORAGE_BLOOM, '');
+    this.bloomEnabled = stored === '' ? !this.isLowPowerDevice() : stored === '1';
+    this.bloom = new BloomPass(this.renderer);
+    this.bloom.setSize(window.innerWidth, window.innerHeight, this.renderer.getPixelRatio());
+
     // --- scene & camera -----------------------------------------------------
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 700);
+    // Near plane kept off 0.1: with far at 700 that was a 7000:1 depth range,
+    // which wastes depth precision and invites z-fighting on distant geometry.
+    this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.35, 700);
 
     // --- systems ---------------------------------------------------------------
     this.world = new World(this.scene, this.renderer);
@@ -258,6 +271,7 @@ export class Game {
       writeStorage(STORAGE_MUTED, muted ? '1' : '0');
       return muted;
     });
+    this.ui.bindBloom(this.bloomEnabled, () => this.setBloom(!this.bloomEnabled));
     // Flipping between character choices makes a soft pip — and, since it's
     // a user gesture, also unlocks/starts the ambient music over the menu.
     this.ui.bindCharacterToggle(() => {
@@ -3220,13 +3234,39 @@ export class Game {
     this.particles.update();
     this.world.update(dt, this.player.position, this.camera);
 
-    this.renderer.render(this.scene, this.camera);
+    if (this.bloomEnabled && this.bloom) {
+      this.bloom.render(this.scene, this.camera);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   resize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.bloom) {
+      this.bloom.setSize(window.innerWidth, window.innerHeight, this.renderer.getPixelRatio());
+    }
+  }
+
+  /**
+   * A rough "is this a phone" test, used only to pick the default for
+   * optional effects. Coarse pointer (no mouse) or a small screen.
+   */
+  isLowPowerDevice() {
+    const coarse = typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches;
+    return coarse || Math.min(window.innerWidth, window.innerHeight) < 500;
+  }
+
+  /** Turn bloom on or off and remember the choice. */
+  setBloom(on) {
+    this.bloomEnabled = Boolean(on);
+    writeStorage(STORAGE_BLOOM, this.bloomEnabled ? '1' : '0');
+    // Dropping out of the bloom chain leaves the renderer pointed at a target.
+    if (!this.bloomEnabled) this.renderer.setRenderTarget(null);
+    return this.bloomEnabled;
   }
 
   /* ================================================================ */
@@ -3247,6 +3287,7 @@ export class Game {
     this.world.dispose();
     this.input.dispose();
     this.ui.dispose();
+    if (this.bloom) { this.bloom.dispose(); this.bloom = null; }
     this.renderer.dispose();
     if (this.renderer.domElement.parentNode) {
       this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);

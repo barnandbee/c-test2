@@ -343,6 +343,12 @@ export function createSkyMaterial() {
           col = vec3( skyGrey );
         }
 
+        // A sky is one big smooth gradient, which is exactly what 8-bit
+        // output banks into visible bands. A sub-LSB dither breaks the
+        // bands up into noise the eye reads as clean.
+        float dither = hash21( gl_FragCoord.xy ) - 0.5;
+        col += dither / 255.0;
+
         gl_FragColor = vec4( col, 1.0 );
       }
     `

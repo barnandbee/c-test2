@@ -512,6 +512,26 @@ body {
   opacity: 0.55;
 }
 
+/* Glow (bloom) toggle, paired to the LEFT of the sound pill — the slot
+   directly below is taken by #vs-panel in versus runs. */
+#bloom-btn {
+  position: fixed;
+  top: 74px;
+  right: 70px;
+  padding: 8px 12px;
+  font-size: 18px;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+#bloom-btn.off {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
 /* Versus mode: the CPU rival's running score, tucked under the mute pill. */
 #vs-panel {
   position: fixed;

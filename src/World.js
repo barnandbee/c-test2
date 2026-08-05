@@ -656,7 +656,12 @@ export class World {
     sun.shadow.camera.near = 5;
     sun.shadow.camera.far = 170;
     sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.9;
+    // normalBias is in WORLD UNITS. One shadow texel here is
+    // (SHADOW_EXTENT * 2) / SHADOW_MAP_SIZE ≈ 0.029 units, and the usual rule
+    // is 1-2 texels. This used to be 0.9 — some thirty texels — which shoved
+    // the lookup clean off the caster, so characters cast only a small
+    // detached smudge instead of a body shadow.
+    sun.shadow.normalBias = 0.04;
     this.sun = sun;
     this.scene.add(sun);
     this.scene.add(sun.target);
@@ -1420,7 +1425,9 @@ export class World {
     const canopyMat = createToonMaterial({
       vertexColors: false,
       color: 0xffffff, // tinted per-instance
-      rim: { color: 0xb9a4ff, strength: 0.45, threshold: 0.62 },
+      // A twilight rim, kept restrained: at 0.45 the lavender edge read as
+      // frost on every canopy, which is a strange look for a summer wood.
+      rim: { color: 0xb9a4ff, strength: 0.25, threshold: 0.62 },
       sway: { strength: 0.14, speed: 1.5 }
     });
     this._disposables.push(trunkGeo, branchGeo, canopyGeo, trunkMat, canopyMat);
@@ -1732,7 +1739,10 @@ export class World {
       vec.set(x, h - 0.03, z);
       matrix.compose(vec, quat, scl);
       grass.setMatrixAt(i, matrix);
-      color.set(0x4e8a4c).offsetHSL(this.rng.range(-0.04, 0.06), 0, this.rng.range(-0.08, 0.06));
+      // Lifted off the old 0x4e8a4c: against the lit turf those tufts read as
+      // dark debris rather than grass. Lighter base, and the lightness spread
+      // now leans up rather than down.
+      color.set(0x6aa257).offsetHSL(this.rng.range(-0.03, 0.045), 0, this.rng.range(-0.05, 0.12));
       grass.setColorAt(i, color);
     }
 

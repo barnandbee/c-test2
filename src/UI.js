@@ -374,6 +374,15 @@ export class UI {
    * flips the audio engine and returns the new muted state so we can sync
    * the icon.
    */
+  /** Wire the glow (bloom) toggle; onToggle returns the new enabled state. */
+  bindBloom(initialOn, onToggle) {
+    const btn = document.getElementById('bloom-btn');
+    if (!btn) return;
+    const paint = (on) => btn.classList.toggle('off', !on);
+    paint(initialOn);
+    btn.addEventListener('click', () => paint(onToggle()));
+  }
+
   bindMute(initialMuted, onToggle) {
     const btn = document.getElementById('mute-btn');
     const icon = document.getElementById('mute-icon');
