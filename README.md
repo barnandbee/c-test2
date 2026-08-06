@@ -98,7 +98,12 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   **snow**. Each grades the whole scene — fog colour and density, the
   hemisphere bounce, the sun, the sky tint — and hangs precipitation over
   you: slanted streaks for rain, a heavier lean for storms, drifting flakes
-  for snow. Storms crack with **lightning** that flashes the whole forest,
+  for snow. **Snow also settles**: a sheet of it lies across the whole
+  landscape — terrain, tree canopies, rooftops, rocks, even the hero's
+  back — catching only upward-facing surfaces so it reads as lying ON
+  the world rather than tinting it, drifting in over a few seconds and
+  thawing off again when the weather turns.
+  Storms crack with **lightning** that flashes the whole forest,
   with thunder rolling in behind it, and rain and storms carry their own
   synthesised sound bed. Snow is silent, as snow should be. All of it is
   one draw call with no per-frame CPU — every particle's motion is derived

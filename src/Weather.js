@@ -15,7 +15,7 @@
  */
 
 import * as THREE from 'three';
-import { createPrecipMaterial } from './Shaders.js';
+import { createPrecipMaterial, setSnowCover } from './Shaders.js';
 
 /**
  * The forecast. Weights are probabilities and must leave the remainder to
@@ -63,6 +63,8 @@ const PRESETS = {
     hemiIntensity: 1.05, sunIntensity: 1.45,
     skyTint: 0x8fa0c0, skyTintAmount: 0.34,
     particles: 1700,
+    // How thickly it lies on upward-facing surfaces once settled.
+    cover: 0.85,
     precip: { fall: 3.6, drift: 2.2, slant: 0.05, size: 13, streak: 0,
               opacity: 0.8, color: 0xf2f6ff }
   }
@@ -128,6 +130,11 @@ export class Weather {
     this._applySkyTint(preset);
 
     if (preset.particles > 0) this._buildPoints(preset);
+    // Snow settles in over a few seconds rather than snapping on, so a snowy
+    // run visibly turns white around you instead of starting that way.
+    this._coverTarget = preset.cover || 0;
+    this._cover = 0;
+    setSnowCover(0);
     this._flash = 0;
     this._nextBolt = this.kind === 'storm' ? 2 + Math.random() * 5 : -1;
     this._thunderIn = -1;
@@ -196,6 +203,14 @@ export class Weather {
       this.points.position.copy(focus);
       this.material.uniforms.uOrigin.value.copy(focus);
     }
+    // Ease the settled snow toward its target (roughly four seconds to lie).
+    if (this._cover !== this._coverTarget) {
+      const step = dt * 0.25;
+      this._cover = this._cover < this._coverTarget
+        ? Math.min(this._coverTarget, this._cover + step)
+        : Math.max(this._coverTarget, this._cover - step * 3); // thaws faster
+      setSnowCover(this._cover);
+    }
     if (this.kind === 'storm') this._updateLightning(dt);
   }
 
@@ -238,5 +253,6 @@ export class Weather {
 
   dispose() {
     this._disposePoints();
+    setSnowCover(0); // never leave the world white behind us
   }
 }

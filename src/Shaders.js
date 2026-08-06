@@ -26,7 +26,8 @@ export const SharedUniforms = {
   uTime: { value: 0 },
   uFogBase: { value: 1.0 },          // world Y where fog is thickest
   uFogHeightFalloff: { value: 0.10 }, // how fast fog thins with altitude
-  uMystic: { value: 0 }              // 1 = greyscale the world (Mystic run)
+  uMystic: { value: 0 },             // 1 = greyscale the world (Mystic run)
+  uSnow: { value: 0 }                // 0..1 = snow settled on upward faces
 };
 
 export function updateSharedTime(dt) {
@@ -36,6 +37,15 @@ export function updateSharedTime(dt) {
 /** A 'Mystic' run drains all colour from the world (bar the pink tree). */
 export function setMysticMode(on) {
   SharedUniforms.uMystic.value = on ? 1 : 0;
+}
+
+/**
+ * How thickly snow has settled, 0..1. Applied in the fragment shader to every
+ * lit surface at once, so terrain, trees, rocks, buildings and grass all get
+ * a covering without a single extra triangle.
+ */
+export function setSnowCover(amount) {
+  SharedUniforms.uSnow.value = Math.max(0, Math.min(1, amount));
 }
 
 /* ------------------------------------------------------------------ */
@@ -88,7 +98,23 @@ uniform float uFogBase;
 uniform float uFogHeightFalloff;
 uniform float uMystic;      // 1 during a Mystic run
 uniform float uKeepColor;   // 1 keeps this material's colour (the pink tree)
+uniform float uSnow;        // 0..1 snow settled on upward-facing surfaces
 varying vec3 vHFWorldPos;
+
+// Smoothly interpolated value noise. A raw floor()-ed hash quantises into
+// visible square cells, which reads as a checkerboard on a big open surface
+// like the terrain; interpolating the four corners gives soft drift instead.
+float snowHash( vec2 p ) {
+  return fract( sin( dot( p, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+}
+float snowNoise( vec2 p ) {
+  vec2 i = floor( p );
+  vec2 f = fract( p );
+  f = f * f * ( 3.0 - 2.0 * f );
+  return mix( mix( snowHash( i ), snowHash( i + vec2( 1.0, 0.0 ) ), f.x ),
+              mix( snowHash( i + vec2( 0.0, 1.0 ) ), snowHash( i + vec2( 1.0, 1.0 ) ), f.x ),
+              f.y );
+}
 #ifdef USE_RIM
   uniform vec3 uRimColor;
   uniform float uRimStrength;
@@ -120,6 +146,25 @@ const FRAGMENT_RIM = /* glsl */ `
   outgoingLight += uRimColor * ( rim * uRimStrength );
 }
 #endif
+// Settled snow. Deliberately OUTSIDE the rim ifdef so materials without a rim
+// light get covered too, and after it so the snow lies over the rim rather
+// than under it. Only upward-facing surfaces catch it, which is what makes it
+// read as lying ON the world instead of tinting it.
+{
+  if ( uSnow > 0.001 ) {
+    // three's fragment 'normal' is view-space; the view matrix's rotation is
+    // orthonormal, so multiplying on the right transposes it back to world.
+    vec3 snowN = normalize( normal * mat3( viewMatrix ) );
+    float up = smoothstep( 0.28, 0.72, snowN.y );
+    // Two octaves of smooth world-space noise, so the snowline drifts rather
+    // than following a clean contour.
+    float grain = snowNoise( vHFWorldPos.xz * 0.6 ) * 0.65
+                + snowNoise( vHFWorldPos.xz * 2.1 ) * 0.35;
+    up *= 0.78 + grain * 0.42;
+    float cover = clamp( up * uSnow, 0.0, 1.0 );
+    outgoingLight = mix( outgoingLight, vec3( 0.94, 0.96, 1.0 ), cover );
+  }
+}
 #include <opaque_fragment>
 `;
 
@@ -174,6 +219,7 @@ function patchMaterial(material, extraUniforms = {}) {
     shader.uniforms.uFogBase = SharedUniforms.uFogBase;
     shader.uniforms.uFogHeightFalloff = SharedUniforms.uFogHeightFalloff;
     shader.uniforms.uMystic = SharedUniforms.uMystic;
+    shader.uniforms.uSnow = SharedUniforms.uSnow;
     shader.uniforms.uKeepColor = keepColor;
     for (const key of Object.keys(extraUniforms)) {
       shader.uniforms[key] = extraUniforms[key];
