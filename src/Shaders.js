@@ -606,3 +606,92 @@ export function createPoisonMaterial(radius = 2.0, height = 1.6) {
     `
   });
 }
+
+/**
+ * Precipitation: rain streaks or snowflakes, in one draw call with zero CPU
+ * per frame. Every particle's position is derived analytically from a fixed
+ * per-particle seed, so nothing is ever written back to a buffer.
+ *
+ * The Points object is kept centred on the player, but the wrap arithmetic
+ * subtracts that origin, so particles read as anchored in the WORLD and slide
+ * through the moving box rather than travelling along with you — otherwise
+ * you'd be running around inside a static wall of rain.
+ *
+ * uStreak blends the sprite between a long thin rain streak (1) and a soft
+ * round flake (0).
+ */
+export function createPrecipMaterial(opts = {}) {
+  return new THREE.ShaderMaterial({
+    name: 'Precipitation',
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.NormalBlending,
+    uniforms: {
+      uTime: SharedUniforms.uTime,
+      uMystic: SharedUniforms.uMystic,
+      uOrigin: { value: new THREE.Vector3() },
+      uExtent: { value: new THREE.Vector3(56, 34, 56) },
+      uFall: { value: opts.fall !== undefined ? opts.fall : 26 },
+      uDrift: { value: opts.drift !== undefined ? opts.drift : 0.6 },
+      uSlant: { value: opts.slant !== undefined ? opts.slant : 0.22 },
+      uSize: { value: opts.size !== undefined ? opts.size : 34 },
+      uStreak: { value: opts.streak !== undefined ? opts.streak : 1 },
+      uOpacity: { value: opts.opacity !== undefined ? opts.opacity : 0.5 },
+      uColor: { value: new THREE.Color(opts.color !== undefined ? opts.color : 0xbcd0e8) }
+    },
+    vertexShader: /* glsl */ `
+      uniform float uTime;
+      uniform vec3 uOrigin;
+      uniform vec3 uExtent;
+      uniform float uFall;
+      uniform float uDrift;
+      uniform float uSlant;
+      uniform float uSize;
+      attribute vec4 aSeed;   // xyz = position seed 0..1, w = speed jitter
+      varying float vFade;
+      void main() {
+        float speed = 0.65 + aSeed.w * 0.7;
+        // Fall and wrap. Subtracting uOrigin.y keeps the column world-locked
+        // vertically too, so climbing doesn't drag the rain up with you.
+        float y = uExtent.y - mod(
+          aSeed.y * uExtent.y + uTime * uFall * speed + uOrigin.y, uExtent.y );
+        // Lateral drift: snow wanders, rain barely does.
+        float wander = uDrift * sin( uTime * 0.6 + aSeed.w * 6.28 );
+        // Wind slant leans the column over as it descends.
+        float lean = ( uExtent.y - y ) * uSlant;
+        float x = mod( aSeed.x * uExtent.x - uOrigin.x + wander + lean, uExtent.x )
+                  - uExtent.x * 0.5;
+        float z = mod( aSeed.z * uExtent.z - uOrigin.z + wander * 0.7, uExtent.z )
+                  - uExtent.z * 0.5;
+        vec3 pos = vec3( x, y - uExtent.y * 0.25, z );
+        // Thin out toward the edges of the box so it has no hard boundary.
+        float edge = max( abs( pos.x ), abs( pos.z ) ) / ( uExtent.x * 0.5 );
+        vFade = 1.0 - smoothstep( 0.72, 1.0, edge );
+        vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );
+        // Clamped: without a ceiling the nearest particles balloon into big
+        // soft blobs as 1/z runs away, which reads as floating orbs, not snow.
+        gl_PointSize = clamp( uSize * ( 14.0 / max( -mvPosition.z, 0.5 ) ), 1.0, 26.0 );
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uColor;
+      uniform float uOpacity;
+      uniform float uStreak;
+      uniform float uMystic;
+      varying float vFade;
+      void main() {
+        vec2 pc = gl_PointCoord - 0.5;
+        // Squeeze the sprite horizontally for rain to make a streak; leave it
+        // round for snow.
+        vec2 shaped = vec2( pc.x * mix( 1.0, 5.5, uStreak ), pc.y );
+        float d = length( shaped );
+        float alpha = smoothstep( 0.5, 0.05, d ) * vFade * uOpacity;
+        if ( alpha < 0.004 ) discard;
+        vec3 c = uColor;
+        if ( uMystic > 0.5 ) c = vec3( dot( c, vec3( 0.299, 0.587, 0.114 ) ) );
+        gl_FragColor = vec4( c, alpha );
+      }
+    `
+  });
+}

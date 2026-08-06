@@ -39,6 +39,7 @@ import { SoundFX } from './Audio.js';
 import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
 import { SharedUniforms, updateSharedTime, setMysticMode } from './Shaders.js';
 import { BloomPass } from './Bloom.js';
+import { Weather } from './Weather.js';
 import { clamp } from './utils/MathUtils.js';
 
 const PINE_CONE_COUNT = 26;
@@ -264,6 +265,10 @@ export class Game {
     this.audio.armOnGesture(); // unlock on the first click / key / touch
     this._vehicleSound = null;   // last vehicle kind announced to the audio bed
     this._announcedUnlocks = 0;  // runUnlockNames length already slide-whistled
+
+    // The forecast. Built after the audio so storms can reach the sound bed;
+    // rolled fresh at the start of every run.
+    this.weather = new Weather(this.scene, this.world, this.audio);
     this._moveKind = null;       // 'roll' | 'hover' | 'foot' movement-sound mode
     this._lastStep = 0;          // walk-cycle half-phase index, for footstep timing
     this.ui.bindMute(this.audio.muted, () => {
@@ -1035,6 +1040,19 @@ export class Game {
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
+  /**
+   * Roll this run's forecast. Usually the forest is exactly as lovely as it
+   * has always been; occasionally it isn't. Announced only when it's worth
+   * announcing — nobody needs telling the weather is fine.
+   */
+  rollWeather() {
+    if (!this.weather) return 'clear';
+    const kind = this.weather.set(Weather.roll());
+    const label = this.weather.label;
+    if (label) this.ui.showTimeToast(label);
+    return kind;
+  }
+
   /** Turn the greyscale Mystic wash on or off for the current run. */
   setMystic(on) {
     this.mysticRun = on;
@@ -1462,6 +1480,7 @@ export class Game {
     }
     if (wasRandom) this.announceRandomRun(chosen);
     this.recordCharacterUse(); // tally this run against the chosen hero
+    this.rollWeather();
     this.versus = versus;
     this.cpuDifficulty = difficulty;
     if (versus) this.spawnCpu();
@@ -2662,6 +2681,7 @@ export class Game {
     }
     if (wasRandom) this.announceRandomRun(chosen);
     this.recordCharacterUse(); // tally this run against the chosen hero
+    this.rollWeather();
 
     this.clearEntities();
     this.spawnEntities();
@@ -3233,6 +3253,7 @@ export class Game {
     }
     this.particles.update();
     this.world.update(dt, this.player.position, this.camera);
+    if (this.weather) this.weather.update(dt, this.player.position);
 
     if (this.bloomEnabled && this.bloom) {
       this.bloom.render(this.scene, this.camera);
@@ -3288,6 +3309,7 @@ export class Game {
     this.input.dispose();
     this.ui.dispose();
     if (this.bloom) { this.bloom.dispose(); this.bloom = null; }
+    if (this.weather) { this.weather.dispose(); this.weather = null; }
     this.renderer.dispose();
     if (this.renderer.domElement.parentNode) {
       this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);

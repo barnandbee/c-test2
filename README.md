@@ -55,6 +55,9 @@ offline.
   **squelch** as Mayonnaise (or Jam) dresses the sandwich, a departing-**train**
   motif on the Mystic Line, and a **victory fanfare** for winning Veggie
   Tac Toe.
+- **Weather** — rain and storms carry a looping bed of filtered noise
+  (darker, with a low rumble, when it's a storm), and lightning is followed
+  by a **thunderclap** — a cracking transient over a long rolling decay.
 - **Vehicles** — each rides its own looping engine bed (hovercraft **whir**,
   balloon **burner hiss**, rocket **roar**) that fades in on boarding and
   out on dismount.
@@ -89,6 +92,17 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   way the rival now keeps a grudge list: any prize it can't actually get
   to (walls happen) is abandoned and left off the menu for a while, so it
   never stands around grinding its nose against the cottage.
+- **Weather** — a forecast is rolled at the start of every run. It's
+  usually exactly the lovely twilight it has always been (**80%**), but
+  there's a **10%** chance of **rain**, **5%** of a **storm** and **5%** of
+  **snow**. Each grades the whole scene — fog colour and density, the
+  hemisphere bounce, the sun, the sky tint — and hangs precipitation over
+  you: slanted streaks for rain, a heavier lean for storms, drifting flakes
+  for snow. Storms crack with **lightning** that flashes the whole forest,
+  with thunder rolling in behind it, and rain and storms carry their own
+  synthesised sound bed. Snow is silent, as snow should be. All of it is
+  one draw call with no per-frame CPU — every particle's motion is derived
+  analytically in the vertex shader.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -578,6 +592,8 @@ src/
                     power meter, slope break, club + aim arrow)
   VeggieTacToe.js   'Veggie Tac Toe' — tic-tac-toe vs Turnip Scart
   PaintingGame.js   'Paint the Badger' — the Neptune's Nook colouring activity
+  Weather.js        rain / storm / snow: scene grading + GPU precipitation
+  Bloom.js          the optional bloom post-pass
   Bot.js            the versus-mode CPU rival (greedy-collector brain
                     feeding a synthetic input into a second Player)
   Particles.js      GPU burst pool, gold aura, poison cloud point systems

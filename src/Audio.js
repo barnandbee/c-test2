@@ -117,6 +117,7 @@ export class SoundFX {
       case 'whirl': return this._whirl();
       case 'ribbit': return this._ribbit();
       case 'carthorn': return this._carthorn();
+      case 'thunder': return this._thunder();
       case 'select': return this._select();
       default: return;
     }
@@ -783,4 +784,106 @@ export class SoundFX {
     this._stopMove();
     this._pendingVehicle = null;
   }
+
+  /* ---------------- weather ---------------- */
+
+  /**
+   * A steady weather bed: filtered noise standing in for rainfall. Storms get
+   * a louder, darker version with a low rumble underneath. Snow is silent —
+   * that's rather the point of snow.
+   */
+  setWeatherBed(kind) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    if (this._weather && this._weather.kind === kind) return;
+    this._stopWeather();
+    if (kind !== 'rain' && kind !== 'storm') return;
+    this._weather = this._rainBed(kind === 'storm');
+    if (this._weather) this._weather.kind = kind;
+  }
+
+  _stopWeather() {
+    const w = this._weather;
+    this._weather = null;
+    if (!w) return;
+    const t = this.ctx.currentTime;
+    w.gain.gain.cancelScheduledValues(t);
+    w.gain.gain.setTargetAtTime(0.0001, t, 0.25);
+    for (const n of w.nodes) { try { n.stop(t + 1.2); } catch (e) { /* already stopped */ } }
+  }
+
+  /** Rainfall: bandpassed noise, with a darker low bed when it's a storm. */
+  _rainBed(heavy) {
+    const t = this.ctx.currentTime;
+    const out = this.ctx.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(heavy ? 0.10 : 0.062, t + 1.4);
+    out.connect(this.master);
+
+    // The hiss of it.
+    const hiss = this.ctx.createBufferSource();
+    hiss.buffer = this._noise();
+    hiss.loop = true;
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = heavy ? 1500 : 2400;
+    bp.Q.value = 0.55;
+    hiss.connect(bp).connect(out);
+
+    // A slow swell so it breathes rather than sitting flat.
+    const swell = this.ctx.createOscillator();
+    swell.frequency.value = 0.09;
+    const swellGain = this.ctx.createGain();
+    swellGain.gain.value = heavy ? 420 : 260;
+    swell.connect(swellGain).connect(bp.frequency);
+
+    const nodes = [hiss, swell];
+    if (heavy) {
+      // Storm rumble: low filtered noise under the rainfall.
+      const low = this.ctx.createBufferSource();
+      low.buffer = this._noise();
+      low.loop = true;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 190;
+      const lowGain = this.ctx.createGain();
+      lowGain.gain.value = 0.5;
+      low.connect(lp).connect(lowGain).connect(out);
+      nodes.push(low);
+    }
+    for (const n of nodes) n.start(t);
+    return { nodes, gain: out };
+  }
+
+  /** A thunderclap: a cracking transient over a long decaying rumble. */
+  _thunder() {
+    const t = this.ctx.currentTime;
+    const out = this.ctx.createGain();
+    out.gain.setValueAtTime(0.34, t);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
+    out.connect(this.master);
+
+    // The body: noise swept downward through a lowpass, so it rolls away.
+    const body = this.ctx.createBufferSource();
+    body.buffer = this._noise();
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(760, t);
+    lp.frequency.exponentialRampToValueAtTime(70, t + 2.2);
+    body.connect(lp).connect(out);
+
+    // The crack at the front.
+    const crack = this.ctx.createGain();
+    crack.gain.setValueAtTime(0.5, t);
+    crack.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    const snap = this.ctx.createBufferSource();
+    snap.buffer = this._noise();
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 900;
+    snap.connect(hp).connect(crack).connect(out);
+
+    body.start(t); body.stop(t + 2.8);
+    snap.start(t); snap.stop(t + 0.3);
+  }
+
 }
