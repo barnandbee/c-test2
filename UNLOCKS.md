@@ -76,7 +76,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (58)
+## Trophies (63)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -92,6 +92,10 @@ milestone counts your best past run automatically.
 | 👑 **Quintuple Ton** | Score 500 or more in a run. |
 | 💎 **Sextuple Ton** | Score 600 or more in a run. |
 | 🔢 **Irrational** | Score a decimal (fractional) score. |
+| ☝️ **Point Proved** | Score your first ever point (an all-time total of **1 or more**). |
+| 🔟 **Lifetime M10** | Score an all-time total of **over 10,000** points across every run. |
+| 🏔️ **Lifetime M50** | Score an all-time total of **over 50,000** points across every run. |
+| 🌟 **Lifetime M100** | Score an all-time total of **over 100,000** points across every run. |
 
 ### Collecting
 | Trophy | How to unlock |
@@ -162,6 +166,7 @@ milestone counts your best past run automatically.
 | 🐸 **Frogs!** | Take **more than 50** toxic frog hits across all your runs. |
 | 🐸 **FROGS!!!!** | Take **more than 100** toxic frog hits across all your runs. One more bruise (101) and **Sir Frosch** hops onto the roster. |
 | 🧊 **Mystic Cubed** | Complete a **Mystic** (monochrome) run having also ridden the Mystic Line to **Mystic Forest Central** on that same run. |
+| 🐸 **Frog Spawn** | As **Sir Frosch**, take damage from **more than one frog** and finish the run on **400 or more**. |
 
 ---
 

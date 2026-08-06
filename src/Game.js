@@ -157,6 +157,15 @@ const NIGHTEYE_TOTAL_SCORE = 10000; // all-time cumulative points to unlock Nigh
 const GLASSBADGER_TOTAL_SCORE = 20000; // all-time cumulative points to unlock Glass Badger
 const VAPOUR_TOTAL_SCORE = 40000;  // all-time cumulative points to unlock Vapour Badger
 const SPIRIT_TOTAL_SCORE = 100000; // all-time cumulative points to unlock Spirit of the Forest Badger
+// All-time points trophies. `strictly` distinguishes "1 or more" (Point
+// Proved) from "over 10,000" (the M tiers), where the bar itself isn't enough.
+const LIFETIME_MILESTONES = [
+  { need: 1, id: 'pointproved', strictly: false },
+  { need: 10000, id: 'lifetime10k', strictly: true },
+  { need: 50000, id: 'lifetime50k', strictly: true },
+  { need: 100000, id: 'lifetime100k', strictly: true }
+];
+const FROGSPAWN_SCORE = 400;      // Sir Frosch's frog-bothering payday
 const DODECA_SCORE = 300;          // score this as Rhombus to unlock Dodecahedron
 const POLARPEAR_HEALTH = 10;       // reach the summit at or below this to arm Polar Pear
 const GARY_SUMMIT_VISITS = 100;    // all-time summit arrivals to unlock Gary Mountain
@@ -464,6 +473,7 @@ export class Game {
     this.cloudsCollected = 0;
     this.eggsCollected = 0;
     this.frogHits = 0;
+    this.frogsThatHit = new Set(); // distinct frogs that landed a hit this run
     this.picklesCollected = 0;      // Pickle Sticks grabbed this run ("In a Pickle")
     this.magnaCartasCollected = 0;  // Magna Cartas grabbed this run ("Hastings")
     // Spawned counts this run, for the "clear them all" trophies.
@@ -852,6 +862,9 @@ export class Game {
 
       this.health -= DAMAGE_PER_HIT;
       this.frogHits += 1; // Margaret counts her bruises
+      // Frog Spawn wants damage from more than one *frog*, not merely more
+      // than one hit, so note which individuals got you.
+      this.frogsThatHit.add(frog);
       this.registerFrogHit(); // …and the all-time tally counts them forever
       this.invulnTimer = INVULN_TIME;
       this.ui.setHealth(this.health);
@@ -1164,7 +1177,25 @@ export class Game {
         changed = true;
       }
     }
+    // The all-time points ladder gets the same silent backfill, so a player
+    // who already has the total banked is credited without a wall of toasts.
+    for (const { need, id, strictly } of LIFETIME_MILESTONES) {
+      const cleared = strictly ? this.totalScore > need : this.totalScore >= need;
+      if (cleared && !this.achievements.has(id)) {
+        this.achievements.add(id);
+        changed = true;
+      }
+    }
     if (changed) writeStorage(STORAGE_ACHIEVEMENTS, [...this.achievements].join(','));
+  }
+
+  /** Award any all-time points trophies the banked total now clears. */
+  checkLifetimeMilestones() {
+    for (const { need, id, strictly } of LIFETIME_MILESTONES) {
+      if (strictly ? this.totalScore > need : this.totalScore >= need) {
+        this.awardAchievement(id);
+      }
+    }
   }
 
   /**
@@ -2435,6 +2466,15 @@ export class Game {
 
     if (reason === 'health') this.awardAchievement('rip');
     if (wasMystic) this.awardAchievement('mysticsquared');
+    // Frog Spawn: the giant toad taking a beating from his own kind, and
+    // still coming home with a score.
+    if (
+      this.characterName === 'frosch' &&
+      this.frogsThatHit.size > 1 &&
+      this.points >= FROGSPAWN_SCORE
+    ) {
+      this.awardAchievement('frogspawn');
+    }
     // Mystic Cubed: monochrome AND rode the line to Mystic Forest Central.
     if (wasMystic && this.stationsVisited.has('copse')) {
       this.awardAchievement('mysticcubed');
@@ -2552,6 +2592,7 @@ export class Game {
     // (this run included) reaches 1000; Night Eye at 10000.
     this.totalScore += this.points;
     writeStorage(STORAGE_TOTAL_SCORE, this.totalScore);
+    this.checkLifetimeMilestones(); // …and the all-time points trophies
     if (!this.jamUnlocked && this.totalScore >= JAM_TOTAL_SCORE) {
       this.jamUnlocked = true;
       writeStorage(STORAGE_JAM, '1');
@@ -2747,6 +2788,7 @@ export class Game {
     this.cloudsCollected = 0;
     this.eggsCollected = 0;
     this.frogHits = 0;
+    this.frogsThatHit = new Set(); // distinct frogs that landed a hit this run
     this.picklesCollected = 0;
     this.magnaCartasCollected = 0;
     this._yoyoCrossings = 0;

@@ -64,7 +64,12 @@ export const TROPHIES = [
   { id: 'mysticsquared', medal: '🔲', title: 'Mystic Squared', desc: 'Complete a run with a Mystic (monochrome) run active.' },
   { id: 'frogs50', medal: '🐸', title: 'Frogs!', desc: 'Take more than 50 toxic frog hits across all your runs.' },
   { id: 'frogs100', medal: '🐸', title: 'FROGS!!!!', desc: 'Take more than 100 toxic frog hits across all your runs.' },
-  { id: 'mysticcubed', medal: '🧊', title: 'Mystic Cubed', desc: 'Complete a Mystic (monochrome) run having ridden the Mystic Line to Mystic Forest Central on that same run.' }
+  { id: 'mysticcubed', medal: '🧊', title: 'Mystic Cubed', desc: 'Complete a Mystic (monochrome) run having ridden the Mystic Line to Mystic Forest Central on that same run.' },
+  { id: 'pointproved', medal: '☝️', title: 'Point Proved', desc: 'Score your first ever point.' },
+  { id: 'lifetime10k', medal: '🔟', title: 'Lifetime M10', desc: 'Score an all-time total of more than 10,000 points across every run.' },
+  { id: 'lifetime50k', medal: '🏔️', title: 'Lifetime M50', desc: 'Score an all-time total of more than 50,000 points across every run.' },
+  { id: 'lifetime100k', medal: '🌟', title: 'Lifetime M100', desc: 'Score an all-time total of more than 100,000 points across every run.' },
+  { id: 'frogspawn', medal: '🐸', title: 'Frog Spawn', desc: 'As Sir Frosch, take damage from more than one frog and finish the run on 400 or more.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
