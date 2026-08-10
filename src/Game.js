@@ -51,6 +51,13 @@ const DAMAGE_PER_HIT = 10;
 const CART_HEALTH_DAMAGE = 20;
 const CART_POINTS_DAMAGE = 20;
 const INVULN_TIME = 1.1;
+// The transmission tower, live in a storm.
+const TOWER_SHOCK_DAMAGE = 40;
+const TOWER_SHOCK_POINTS = 40;
+// Three heroes are, in their different ways, already electrical problems:
+// the two glitches and the empty haunted garment. The pylon feeds them.
+const TOWER_CONDUCTORS = ['error42', 'error43', 'sweatshirt'];
+const TOWER_CONES = 4;            // pine cones gathered at its feet
 const GAME_DURATION = 180;          // three twilight minutes
 const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
@@ -555,6 +562,18 @@ export class Game {
       const p = this.world.randomGroundPoint(7, 78);
       this.collectibles.push(new PineCone(this.scene, p));
     }
+    // A little cluster of cones gathers at the pylon's feet — the reason to
+    // go near it at all on a fine day, and the reason not to in a storm.
+    if (this.world.towerPos) {
+      for (let i = 0; i < TOWER_CONES; i++) {
+        const a = (i / TOWER_CONES) * Math.PI * 2 + Math.random() * 0.6;
+        const r = this.world.towerRadius + 1.2 + Math.random() * 2.4;
+        const cx = this.world.towerX + Math.cos(a) * r;
+        const cz = this.world.towerZ + Math.sin(a) * r;
+        const p = new THREE.Vector3(cx, this.world.getHeight(cx, cz), cz);
+        this.collectibles.push(new PineCone(this.scene, p));
+      }
+    }
     // Eggs are rare and live out toward the wilds.
     for (let i = 0; i < GOLDEN_EGG_COUNT; i++) {
       const p = this.world.randomGroundPoint(30, 98, 0.72);
@@ -849,9 +868,54 @@ export class Game {
     this.ui.showTimeToast('💎 A PLATINUM GUAVA FELL FROM THE SKY!');
   }
 
+  /**
+   * The transmission tower. Inert in fine weather — it just stands there,
+   * with pine cones round its feet. In a storm the lightning finds it and
+   * the frame goes live: touch it and it takes 40 health off you.
+   *
+   * Unless you happen to be one of the three heroes who are already an
+   * electrical problem — the two Errors and the Haunted Sweatshirt — in
+   * which case 40,000 volts is simply lunch, and it pays 40 points.
+   *
+   * @returns {boolean} true if the shock landed (consumes the hazard pass)
+   */
+  handleTower(center) {
+    const w = this.world;
+    if (!w.towerPos || !w.towerElectrified) return false;
+    const dx = center.x - w.towerX;
+    const dz = center.z - w.towerZ;
+    if (dx * dx + dz * dz > w.towerRadius * w.towerRadius) return false;
+    // Only at the pylon's own height — not from the tube platform far below.
+    if (Math.abs(center.y - w.towerLevel) > 6) return false;
+
+    this.invulnTimer = INVULN_TIME;
+    const burstAt = this._playerCenter.set(center.x, center.y, center.z);
+    if (TOWER_CONDUCTORS.includes(this.characterName)) {
+      this.points += TOWER_SHOCK_POINTS;
+      this.ui.setPoints(this.points);
+      this.audio.play('collect', 1);
+      this.ui.showTimeToast(`⚡ FULLY CHARGED! +${TOWER_SHOCK_POINTS}`);
+      this.particles.spawnBurst(burstAt, 0x9fe4ff,
+        { count: 40, speed: 5.4, size: 48, upBias: 0.5, life: 0.9 });
+      return true;
+    }
+    this.health -= TOWER_SHOCK_DAMAGE;
+    this.ui.setHealth(this.health);
+    this.audio.play('whirl');
+    this.ui.flashDamage();
+    this.player.applyKnockback(w.towerX, w.towerZ, 12);
+    this.ui.showTimeToast(`⚡ ZAPPED! -${TOWER_SHOCK_DAMAGE} HEALTH`);
+    this.particles.spawnBurst(burstAt, 0x9fe4ff,
+      { count: 34, speed: 5.0, size: 46, upBias: 0.5, life: 0.8 });
+    if (this.health <= 0) this.gameOver('health');
+    return true;
+  }
+
   handleHazards() {
     if (this.invulnTimer > 0) return;
     const center = this.player.getColliderCenter(this._playerCenter);
+
+    if (this.handleTower(center)) return;
 
     for (const frog of this.frogs) {
       const dx = center.x - frog.position.x;

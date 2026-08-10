@@ -360,6 +360,7 @@ export class World {
     this._buildGolfFlag();
     this._buildCottage();
     this._buildNeptunesNook();
+    this._buildTransmissionTower();
     this._buildStation();
     this._buildCopse();
     this._buildTubeSigns();
@@ -599,6 +600,8 @@ export class World {
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 1.5) continue;
       // …or in Neptune's Nook's yard.
       if (this.neptuneRadius && Math.hypot(x - this.neptuneX, z - this.neptuneZ) < this.neptuneRadius + 1.5) continue;
+      // …and out from under the pylon's legs.
+      if (this.towerRadius && Math.hypot(x - this.towerX, z - this.towerZ) < this.towerRadius) continue;
       // …or inside (or on the wall of) the hidden dell.
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 5) continue;
       // …or on Turnip Scart's vegetable patch.
@@ -773,6 +776,21 @@ export class World {
         if (f.isMesh) f.scale.y = 0.8 + Math.abs(Math.sin(t * 9 + i * 1.7)) * 0.5;
       }
       if (this.stoveFlameLight) this.stoveFlameLight.intensity = 2.4 + Math.sin(t * 11) * 0.6;
+    }
+
+    // A live pylon crackles: the arcs jitter and the glow stutters, so it
+    // reads as something you should not walk into.
+    if (this.towerElectrified && this.towerLive) {
+      this._towerTime = (this._towerTime || 0) + dt;
+      const t = this._towerTime;
+      for (let i = 0; i < this.towerLive.children.length; i++) {
+        const part = this.towerLive.children[i];
+        part.visible = Math.sin(t * (17 + i * 3.1) + i) > -0.55; // stuttery
+        part.rotation.z += dt * (0.7 + i * 0.35);
+      }
+      if (this.towerLight) {
+        this.towerLight.intensity = 2.4 + Math.abs(Math.sin(t * 13)) * 2.2;
+      }
     }
 
     // Neptune's Raisin haunts the loft: it fades in for 10s, out for 10s,
@@ -1395,6 +1413,7 @@ export class World {
       if (Math.hypot(x - this.caveX, z - this.caveZ) < 9) continue;
       if (Math.hypot(x - this.cottageX, z - this.cottageZ) < this.cottageRadius + 2) continue;
       if (this.neptuneRadius && Math.hypot(x - this.neptuneX, z - this.neptuneZ) < this.neptuneRadius + 2) continue;
+      if (this.towerRadius && Math.hypot(x - this.towerX, z - this.towerZ) < this.towerRadius + 5) continue;
       if (Math.hypot(x - this.dellX, z - this.dellZ) < this.dellRadius + 7) continue;
       if (Math.hypot(x - this.vegPatchX, z - this.vegPatchZ) < this.vegPatchRadius + 3) continue;
       if (Math.hypot(x - this.helterX, z - this.helterZ) < this.helterRadius + 4) continue;
@@ -1768,6 +1787,9 @@ export class World {
     const anchorR = 72;
     const bx = Math.cos(anchorAngle) * anchorR;
     const bz = Math.sin(anchorAngle) * anchorR;
+    // Remembered so other things can be sited relative to the folly.
+    this.stairsX = bx;
+    this.stairsZ = bz;
     const h0 = this.getHeight(bx, bz) + 0.5;
     this._stairMeshes = [];
 
@@ -2981,6 +3003,196 @@ export class World {
     this.colliders.push({ x: cupP.x, z: cupP.z, radius: 0.5, top: spot.y + 1.5 });
     const deskP = toWorld(-1.9, 0, -1.95);
     this.colliders.push({ x: deskP.x, z: deskP.z, radius: 0.55, top: spot.y + 0.9 });
+  }
+
+  /* ================================================================ */
+  /*  The transmission tower                                          */
+  /* ================================================================ */
+
+  /**
+   * A lattice pylon a short walk from Neptune's Nook, set along the line
+   * toward the Escher stairs. Ordinarily it just stands there being tall
+   * (and pine cones like to gather at its feet) — but when a storm rolls in
+   * the lightning finds it, and the whole frame goes live.
+   */
+  _buildTransmissionTower() {
+    // 20-30 paces from the nook, on the bearing toward the folly.
+    //
+    // That bearing runs straight over the whirlpool lake — the nook sits on
+    // its shore and the stairs are away beyond it — so the ideal spot is
+    // underwater. Rather than shortening the walk (every distance in the band
+    // is equally wet), fan the BEARING out until dry, flat ground turns up,
+    // smallest deviation first, so it stays as near the stairs line as the
+    // terrain allows while keeping the distance the brief asked for.
+    const baseAngle = Math.atan2(this.stairsZ - this.neptuneZ, this.stairsX - this.neptuneX);
+    const unusable = (px, pz) => {
+      if (this.isNearLake(px, pz) && this.getHeight(px, pz) < this.waterLevel + 0.6) return true;
+      if (this.isNearWhirlLake(px, pz) && this.getHeight(px, pz) < this.whirlWaterLevel + 0.6) return true;
+      if (Math.hypot(px - this.caveX, pz - this.caveZ) < this.caveRadius + 4) return true;
+      if (this.dellRadius && Math.hypot(px - this.dellX, pz - this.dellZ) < this.dellRadius + 4) return true;
+      if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 10) return true;
+      // A pylon wants ground it can actually stand on, not a cliff face.
+      const e = 1.2;
+      const grad = Math.hypot(
+        this.getHeight(px + e, pz) - this.getHeight(px - e, pz),
+        this.getHeight(px, pz + e) - this.getHeight(px, pz - e)
+      ) / (2 * e);
+      return grad > 0.42;
+    };
+
+    let x = this.neptuneX + Math.cos(baseAngle) * 25;
+    let z = this.neptuneZ + Math.sin(baseAngle) * 25;
+    let sited = false;
+    // Deviate by 0, ±8°, ±16° … and at each bearing try across the band.
+    for (let step = 0; step <= 22 && !sited; step++) {
+      for (const sign of step === 0 ? [1] : [1, -1]) {
+        const a = baseAngle + sign * step * (8 * Math.PI / 180);
+        for (const d of [25, 22, 28, 20, 30]) {
+          const px = this.neptuneX + Math.cos(a) * d;
+          const pz = this.neptuneZ + Math.sin(a) * d;
+          if (unusable(px, pz)) continue;
+          x = px; z = pz; sited = true;
+          break;
+        }
+        if (sited) break;
+      }
+    }
+    const y = this.getHeight(x, z);
+    this.towerX = x;
+    this.towerZ = z;
+    this.towerLevel = y;
+    this.towerRadius = 2.6;          // how close counts as touching it
+    this.towerPos = new THREE.Vector3(x, y, z);
+
+    const track = (r) => { this._disposables.push(r); return r; };
+    const steelMat = track(createToonMaterial({
+      color: 0x8c9099, rim: { color: 0xdfe6ef, strength: 0.4, threshold: 0.6 }
+    }));
+    const darkMat = track(createToonMaterial({ color: 0x4c5058 }));
+    // The live look: emissive, and pulsing, so it reads as dangerous.
+    const liveMat = track(createToonMaterial({
+      color: 0x9fe4ff, emissive: 0x3fc8ff, emissiveIntensity: 2.2,
+      pulse: { speed: 9.0, phase: 0 }
+    }));
+
+    const tower = new THREE.Group();
+    tower.position.set(x, y, z);
+    this.towerMeshes = tower;
+
+    const HEIGHT = 13;
+    const BASE = 2.5;      // half-width at the feet
+    const TOP = 0.55;      // half-width at the crown
+    const widthAt = (t) => BASE + (TOP - BASE) * t;
+
+    // Four tapering legs.
+    const legPts = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    for (const [sx, sz] of legPts) {
+      const pts = [];
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8;
+        const w = widthAt(t);
+        pts.push(new THREE.Vector3(sx * w, t * HEIGHT, sz * w));
+      }
+      const leg = new THREE.Mesh(
+        track(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.14, 5, false)),
+        steelMat
+      );
+      leg.castShadow = true;
+      tower.add(leg);
+    }
+
+    // Horizontal belts, with cross-bracing between them.
+    const braceGeo = track(new THREE.CylinderGeometry(0.055, 0.055, 1, 4));
+    const strut = (a, b, mat) => {
+      const mid = a.clone().add(b).multiplyScalar(0.5);
+      const dir = b.clone().sub(a);
+      const m = new THREE.Mesh(braceGeo, mat);
+      m.position.copy(mid);
+      m.scale.y = dir.length();
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      tower.add(m);
+      return m;
+    };
+    const corners = (t) => {
+      const w = widthAt(t);
+      const yy = t * HEIGHT;
+      return legPts.map(([sx, sz]) => new THREE.Vector3(sx * w, yy, sz * w));
+    };
+    for (let i = 0; i <= 5; i++) {
+      const t = i / 5 * 0.92;
+      const c = corners(t);
+      // Belt: 0-1, 1-3, 3-2, 2-0 walks the square.
+      for (const [a, b] of [[0, 1], [1, 3], [3, 2], [2, 0]]) strut(c[a], c[b], darkMat);
+      if (i < 5) {
+        const c2 = corners((i + 1) / 5 * 0.92);
+        for (const [a, b] of [[0, 1], [1, 3], [3, 2], [2, 0]]) strut(c[a], c2[b], steelMat);
+      }
+    }
+
+    // Cross-arms near the top, with insulators hanging off them.
+    this.towerLive = new THREE.Group();   // everything that glows when live
+    tower.add(this.towerLive);
+    for (const [ay, half] of [[HEIGHT * 0.74, 3.4], [HEIGHT * 0.88, 2.6]]) {
+      const arm = new THREE.Mesh(track(new THREE.BoxGeometry(half * 2, 0.16, 0.3)), steelMat);
+      arm.position.y = ay;
+      arm.castShadow = true;
+      tower.add(arm);
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 3; k++) {
+          const disc = new THREE.Mesh(
+            track(new THREE.CylinderGeometry(0.13, 0.13, 0.05, 8)), darkMat
+          );
+          disc.position.set(side * half * 0.86, ay - 0.16 - k * 0.13, 0);
+          tower.add(disc);
+        }
+        // The conductor sitting on the end of each arm — this is what lights.
+        const conductor = new THREE.Mesh(
+          track(new THREE.SphereGeometry(0.2, 10, 8)), liveMat
+        );
+        conductor.position.set(side * half * 0.86, ay - 0.62, 0);
+        this.towerLive.add(conductor);
+      }
+    }
+
+    // A warning light and a lightning rod on the crown.
+    const rod = new THREE.Mesh(track(new THREE.CylinderGeometry(0.04, 0.06, 1.6, 5)), steelMat);
+    rod.position.y = HEIGHT + 0.8;
+    tower.add(rod);
+    const lamp = new THREE.Mesh(track(new THREE.SphereGeometry(0.17, 10, 8)), liveMat);
+    lamp.position.y = HEIGHT + 1.7;
+    this.towerLive.add(lamp);
+
+    // Arcs strung between the conductors, only visible while live.
+    for (let i = 0; i < 5; i++) {
+      const arc = new THREE.Mesh(
+        track(new THREE.TorusGeometry(0.9 + i * 0.35, 0.035, 5, 14, Math.PI * 1.4)),
+        liveMat
+      );
+      arc.position.y = HEIGHT * (0.5 + i * 0.09);
+      arc.rotation.set(Math.PI / 2, i * 0.7, 0);
+      this.towerLive.add(arc);
+    }
+
+    // The glow that spills onto the ground when it's live.
+    const buzz = new THREE.PointLight(0x6fd6ff, 0, 16, 2);
+    buzz.position.y = HEIGHT * 0.8;
+    tower.add(buzz);
+    this.towerLight = buzz;
+
+    this.towerLive.visible = false;
+    this.scene.add(tower);
+
+    // Its feet are solid; the middle is open enough to walk into.
+    for (const [sx, sz] of legPts) {
+      this.colliders.push({ x: x + sx * BASE, z: z + sz * BASE, radius: 0.4, top: y + HEIGHT });
+    }
+  }
+
+  /** Energise (or earth) the tower — driven by the weather. */
+  setTowerLive(on) {
+    this.towerElectrified = Boolean(on);
+    if (this.towerLive) this.towerLive.visible = this.towerElectrified;
+    if (this.towerLight) this.towerLight.intensity = this.towerElectrified ? 3.2 : 0;
   }
 
   /** Show/hide the pickle resting in the pan. */

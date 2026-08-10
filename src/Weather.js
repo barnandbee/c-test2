@@ -138,6 +138,8 @@ export class Weather {
     this._flash = 0;
     this._nextBolt = this.kind === 'storm' ? 2 + Math.random() * 5 : -1;
     this._thunderIn = -1;
+    // Only a storm puts the transmission tower live.
+    if (this.world.setTowerLive) this.world.setTowerLive(this.kind === 'storm');
     if (this.audio) this.audio.setWeatherBed(this.kind);
     return this.kind;
   }

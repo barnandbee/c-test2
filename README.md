@@ -108,6 +108,16 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   synthesised sound bed. Snow is silent, as snow should be. All of it is
   one draw call with no per-frame CPU — every particle's motion is derived
   analytically in the vertex shader.
+- **The transmission tower** — a lattice pylon standing a couple of dozen
+  paces from **Neptune's Nook**, on the bearing toward the Escher stairs.
+  In fine weather it does nothing at all except look tall — and a little
+  cluster of **pine cones** gathers at its feet, which is the only reason
+  to go near it. In a **storm** the lightning finds it and the whole frame
+  goes live, crackling with arcs: touch it then and it takes **40 health**
+  off you. Unless you happen to be **Error #42**, **Error #43** or the
+  **Haunted Sweatshirt** — three heroes who are already electrical
+  problems in their own right — for whom 40,000 volts is simply lunch, and
+  it pays **+40 points** instead.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
