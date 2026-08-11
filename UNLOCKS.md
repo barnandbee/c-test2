@@ -62,7 +62,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 44 | **Error #43** | Error #42's sister. She gate-crashes **4.3% of Random-Character runs from the very first run**, unlocked or not — that's the only way to meet her. Finish one of those runs on **250 or more** and she joins the roster for good. |
 | 45 | **The Nucleus Of Time Itself** | Bank a full extra **180 seconds** in one run, doubling it to **six minutes** (eighteen clock-tower visits, or sixteen plus the cottage alarm). An atom with a suave feminine face that floats, glows and trails — and **teleports to a random spot on the map every 25-30 seconds**, be that solid ground, inside a building, or the open sky. |
 | 46 | **Tudor Lizard** | Finish a run on a perfectly round hundred — **100, 200, 300, 400, 500…** |
-| 47 | **Electro Badger** | Playing as **any badger** — Badger, Badgerette, Glass, Vapour or Spirit — walk into the **live transmission tower during a storm** on a score of **400 or more** and let it take you to **zero health**. A badger running on mains: arc rings, a crest of lightning fins, and fur permanently stood on end. |
+| 47 | **Electro Badger** | Playing as **any badger** — Badger, Badgerette, **William the Conqueror**, Glass, Vapour or Spirit — walk into the **live transmission tower during a storm** on a score of **400 or more** and let it take you to **zero health**. A badger running on mains: arc rings, a crest of lightning fins, and fur permanently stood on end. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -243,10 +243,13 @@ Three unlocks hang off that live frame:
 
 - **⚡ Zapped!** — the tower takes any character's health to zero.
 - **🔌 Anti-Zapped** — you take the **+40** as one of the three conductors.
-- **Electro Badger** (character) — a **badger** (Badger, Badgerette, Glass,
-  Vapour or Spirit) is taken to zero by the tower while holding **400 or
-  more** points. The score is checked at the moment of the shock, so bank
-  the points *before* you walk into it.
+- **Electro Badger** (character) — a **badger** is taken to zero by the
+  tower while holding **400 or more** points. Seven heroes count as badgers:
+  **Badger, Badgerette, William the Conqueror, Glass Badger, Vapour Badger,
+  Spirit of the Forest Badger** and Electro Badger himself. (William wears
+  the badger body under the crown and cape, so he qualifies.) The score is
+  checked at the moment of the shock, so bank the points *before* you walk
+  into it.
 
 > Because a storm is only a **5%** roll, Electro Badger is as much a matter
 > of patience as of skill — you cannot force the weather.

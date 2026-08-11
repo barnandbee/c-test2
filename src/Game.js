@@ -58,10 +58,11 @@ const TOWER_SHOCK_POINTS = 40;
 // the two glitches and the empty haunted garment. The pylon feeds them.
 const TOWER_CONDUCTORS = ['error42', 'error43', 'sweatshirt'];
 const TOWER_CONES = 4;            // pine cones gathered at its feet
-// Every hero who is, in the end, a badger. Electro Badger is earned by one
-// of them walking into the live pylon on a good score — and counts himself.
-const BADGER_CHARACTERS = ['badger', 'badgerette', 'glassbadger', 'vapour', 'spirit', 'electro'];
-const ELECTRO_SCORE = 400;        // …and the score it takes to earn him
+// Electro Badger is earned by a badger walking into the live pylon on a good
+// score. Who counts as a badger is answered by Player.isBadger, which the
+// builders set on themselves — a name list here would go stale the moment a
+// new hero borrowed the badger body, which is exactly what happened.
+const ELECTRO_SCORE = 400;        // the score it takes to earn him
 const GAME_DURATION = 180;          // three twilight minutes
 const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
@@ -920,7 +921,7 @@ export class Game {
       // well. Claimed BEFORE gameOver so the bell announces him.
       if (
         !this.electroUnlocked &&
-        BADGER_CHARACTERS.includes(this.characterName) &&
+        this.player.isBadger &&
         this.points >= ELECTRO_SCORE
       ) {
         this.electroUnlocked = true;

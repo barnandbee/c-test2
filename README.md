@@ -445,9 +445,11 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   whiskers of raw current. Every part of him glows on its own clock, at its
   own speed and phase, so nothing on him ever quite settles into a rhythm.
   Unlock him the hard way: playing as **any badger** — the Badger,
-  Badgerette, Glass, Vapour or Spirit — walk into the **live pylon during a
-  storm** on a score of **400 or more** and let it take you to **zero
-  health**. He is born from the badger that didn't step back.
+  Badgerette, **William the Conqueror**, Glass, Vapour or Spirit (seven
+  heroes wear the badger body, William included, crown and all) — walk into
+  the **live pylon during a storm** on a score of **400 or more** and let it
+  take you to **zero health**. He is born from the badger that didn't step
+  back.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

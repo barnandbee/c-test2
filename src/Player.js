@@ -118,6 +118,11 @@ export class Player {
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
     this.moveScale = 1;      // per-instance top-speed multiplier (CPU rival tuning)
     this.walksOnWater = false; // Spirit of the Forest Badger treads the lakes
+    // Set by whichever builder actually makes a badger — buildBadger and the
+    // three badgers with bodies of their own. Kept here rather than in a list
+    // of names so a hero routed through buildBadger later (as William and
+    // Electro Badger are) counts as one without anybody remembering to.
+    this.isBadger = false;
     this.waterSink = 0;      // Top Hat Snappy rides this far below the surface
     this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
     this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
@@ -193,6 +198,7 @@ export class Player {
   /* ================================================================ */
 
   buildBadger() {
+    this.isBadger = true;   // badger, badgerette, william, electro
     const root = new THREE.Group();
     root.name = this.character;
 
@@ -3726,6 +3732,7 @@ export class Player {
    * face-stripe hint and glassy limbs.
    */
   buildGlassBadger() {
+    this.isBadger = true;
     const root = new THREE.Group();
     root.name = 'glassbadger';
 
@@ -3855,6 +3862,7 @@ export class Player {
    * solid surfaces — it's a badger-shaped cloud with two glowing eyes.
    */
   buildVapourBadger() {
+    this.isBadger = true;
     const root = new THREE.Group();
     root.name = 'vapour';
 
@@ -3979,6 +3987,7 @@ export class Player {
    * feet to walk across water. Densely detailed botanical scatter.
    */
   buildSpiritBadger() {
+    this.isBadger = true;
     const root = new THREE.Group();
     root.name = 'spirit';
 
