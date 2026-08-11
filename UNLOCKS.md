@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (46)
+## Characters (47)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -62,6 +62,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 44 | **Error #43** | Error #42's sister. She gate-crashes **4.3% of Random-Character runs from the very first run**, unlocked or not — that's the only way to meet her. Finish one of those runs on **250 or more** and she joins the roster for good. |
 | 45 | **The Nucleus Of Time Itself** | Bank a full extra **180 seconds** in one run, doubling it to **six minutes** (eighteen clock-tower visits, or sixteen plus the cottage alarm). An atom with a suave feminine face that floats, glows and trails — and **teleports to a random spot on the map every 25-30 seconds**, be that solid ground, inside a building, or the open sky. |
 | 46 | **Tudor Lizard** | Finish a run on a perfectly round hundred — **100, 200, 300, 400, 500…** |
+| 47 | **Electro Badger** | Playing as **any badger** — Badger, Badgerette, Glass, Vapour or Spirit — walk into the **live transmission tower during a storm** on a score of **400 or more** and let it take you to **zero health**. A badger running on mains: arc rings, a crest of lightning fins, and fur permanently stood on end. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -76,7 +77,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (63)
+## Trophies (65)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -167,6 +168,8 @@ milestone counts your best past run automatically.
 | 🐸 **FROGS!!!!** | Take **more than 100** toxic frog hits across all your runs. One more bruise (101) and **Sir Frosch** hops onto the roster. |
 | 🧊 **Mystic Cubed** | Complete a **Mystic** (monochrome) run having also ridden the Mystic Line to **Mystic Forest Central** on that same run. |
 | 🐸 **Frog Spawn** | As **Sir Frosch**, take damage from **more than one frog** and finish the run on **400 or more**. |
+| ⚡ **Zapped!** | Let the **transmission tower** take your health to zero during a storm — any character. |
+| 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **Error #43** or the **Haunted Sweatshirt** — the three heroes it feeds instead of frying. |
 
 ---
 
@@ -216,6 +219,37 @@ Random run also has a **1.8%** chance of turning **Mystic**: the entire world is
 terrain, sky, water, particles and the hero alike — with the single
 exception of the **pink blossom tree**, which keeps its colour. It's
 purely cosmetic (no scoring change), and colour returns at the bell.
+
+---
+
+## Weather & the transmission tower
+
+A **forecast is rolled once, at the start of every run**, and holds for the
+whole three minutes. Most of the time it stays lovely: **10%** rain, **5%**
+storm, **5%** snow, **80%** clear. It changes the fog, the light, the sky
+and the sound — and snow lays a sheet across the whole landscape, hero
+included. None of it changes scoring on its own.
+
+What *does* change scoring is the **transmission tower**: a lattice pylon a
+couple of dozen paces from **Neptune's Nook**, on the bearing toward the
+Escher stairs.
+
+| Weather | What the tower does |
+|---------|---------------------|
+| Clear, rain, snow | Nothing. It stands there looking tall. A cluster of **pine cones** gathers at its feet, which is the only reason to visit. |
+| **Storm** | Lightning finds it and the frame goes **live**. Touching it costs **40 health** — or pays **+40 points** if you are **Error #42**, **Error #43** or the **Haunted Sweatshirt**. |
+
+Three unlocks hang off that live frame:
+
+- **⚡ Zapped!** — the tower takes any character's health to zero.
+- **🔌 Anti-Zapped** — you take the **+40** as one of the three conductors.
+- **Electro Badger** (character) — a **badger** (Badger, Badgerette, Glass,
+  Vapour or Spirit) is taken to zero by the tower while holding **400 or
+  more** points. The score is checked at the moment of the shock, so bank
+  the points *before* you walk into it.
+
+> Because a storm is only a **5%** roll, Electro Badger is as much a matter
+> of patience as of skill — you cannot force the weather.
 
 ---
 

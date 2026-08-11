@@ -184,7 +184,7 @@ export class Player {
     else if (this.character === 'julie') this.root = this.buildJulie();
     else if (this.character === 'turnip') this.root = this.buildTurnip();
     else if (this.character === 'sweatshirt') this.root = this.buildSweatshirt();
-    else this.root = this.buildBadger(); // badger, badgerette, william
+    else this.root = this.buildBadger(); // badger, badgerette, william, electro
     this.root.position.copy(this.position);
   }
 
@@ -201,14 +201,31 @@ export class Player {
       return resource;
     };
 
-    const rim = { color: 0xcfe0ff, strength: 0.22, threshold: 0.74 };
+    // Electro Badger wears his cousins' frame, but every inch of him is live.
+    // The palette is swapped for storm colours and the emissive breathes on
+    // the shader's own pulse clock, so the crackle costs nothing per frame.
+    const electro = this.character === 'electro';
 
-    const furMat = track(createToonMaterial({ vertexColors: true, rim }));
-    const darkMat = track(createToonMaterial({ color: 0x26262c, rim: { color: 0x9db4e8, strength: 0.25, threshold: 0.68 } }));
-    const creamMat = track(createToonMaterial({ color: 0xf2ecdd, rim }));
-    const noseMat = track(createToonMaterial({ color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
+    const rim = electro
+      ? { color: 0xaeeaff, strength: 0.9, threshold: 0.38 }
+      : { color: 0xcfe0ff, strength: 0.22, threshold: 0.74 };
+
+    const furMat = track(createToonMaterial(electro
+      ? { vertexColors: true, color: 0x86c8ff, emissive: 0x2f74d8, emissiveIntensity: 0.6, pulse: { speed: 5.4, phase: 0 }, rim }
+      : { vertexColors: true, rim }));
+    const darkMat = track(createToonMaterial(electro
+      ? { color: 0x111c40, emissive: 0x2a5fd0, emissiveIntensity: 0.7, pulse: { speed: 6.1, phase: 1.7 }, rim: { color: 0x8fd4ff, strength: 0.7, threshold: 0.44 } }
+      : { color: 0x26262c, rim: { color: 0x9db4e8, strength: 0.25, threshold: 0.68 } }));
+    const creamMat = track(createToonMaterial(electro
+      ? { color: 0xeafaff, emissive: 0x7fd4ff, emissiveIntensity: 0.8, pulse: { speed: 7.3, phase: 3.1 }, rim }
+      : { color: 0xf2ecdd, rim }));
+    const noseMat = track(createToonMaterial(electro
+      ? { color: 0x0a1030, emissive: 0x4f9dff, emissiveIntensity: 0.9, rim: { color: 0xbfe8ff, strength: 0.6, threshold: 0.45 } }
+      : { color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
-    const clawMat = track(createToonMaterial({ color: 0xd9d2bf }));
+    const clawMat = track(createToonMaterial(electro
+      ? { color: 0xdff4ff, emissive: 0xa8e4ff, emissiveIntensity: 1.4, pulse: { speed: 8.5, phase: 0.8 } }
+      : { color: 0xd9d2bf }));
 
     // Everything above the legs hangs off bodyGroup so bob/squash/tilt are
     // applied in one place.
@@ -440,8 +457,94 @@ export class Player {
     if (this.character === 'william') {
       this._buildWilliamExtras(headGroup, body, track);
     }
+    // --- Electro Badger: arc rings, bolt spines, hair stood on end ---------
+    if (electro) {
+      this._buildElectroExtras(headGroup, body, track);
+    }
 
     return root;
+  }
+
+  /** Electro Badger's live-wire trimmings. Everything here glows on the
+   *  shader's pulse clock at a different speed and phase, so the arcs, the
+   *  spines and the static tufts all flicker out of step with one another —
+   *  the way a real discharge never quite settles into a rhythm. */
+  _buildElectroExtras(headGroup, body, track) {
+    // A shared bright core for the arcs; each ring gets its own material so
+    // it can carry its own pulse phase.
+    const arcMat = (speed, phase) => {
+      const mat = track(createToonMaterial({
+        color: 0xdff6ff,
+        emissive: 0x9fe4ff,
+        emissiveIntensity: 2.2,
+        pulse: { speed, phase },
+        rim: { color: 0xffffff, strength: 1.0, threshold: 0.3 }
+      }));
+      mat.transparent = true;
+      mat.opacity = 0.85;
+      mat.depthWrite = false;
+      return mat;
+    };
+
+    // --- three arc rings orbiting the torso at clashing angles -------------
+    const ringGeo = track(new THREE.TorusGeometry(0.78, 0.022, 6, 44));
+    const rings = [
+      { rx: Math.PI / 2, ry: 0.0, rz: 0.25, s: 1.0, speed: 6.4, phase: 0.0 },
+      { rx: 0.35, ry: 0.6, rz: 0.0, s: 0.86, speed: 7.9, phase: 2.1 },
+      { rx: 1.15, ry: -0.5, rz: 0.4, s: 0.72, speed: 9.3, phase: 4.4 }
+    ];
+    for (const r of rings) {
+      const ring = new THREE.Mesh(ringGeo, arcMat(r.speed, r.phase));
+      ring.rotation.set(r.rx, r.ry, r.rz);
+      ring.scale.setScalar(r.s);
+      ring.position.set(0, -0.02, -0.05);
+      body.add(ring);
+    }
+
+    // --- a jagged bolt crest running the length of the spine ---------------
+    // Cones flattened into fins, alternating lean so the crest reads as a
+    // zig-zag rather than a row of spikes.
+    const finGeo = track(new THREE.ConeGeometry(0.09, 0.3, 4));
+    const finMat = arcMat(11.0, 1.2);
+    const crest = [
+      { z: 0.42, h: 0.75, lean: 0.5 },
+      { z: 0.2, h: 1.05, lean: -0.42 },
+      { z: -0.04, h: 1.25, lean: 0.46 },
+      { z: -0.3, h: 1.0, lean: -0.38 },
+      { z: -0.56, h: 0.7, lean: 0.34 }
+    ];
+    for (const f of crest) {
+      const fin = new THREE.Mesh(finGeo, finMat);
+      fin.position.set(0, 0.46, f.z);
+      fin.scale.set(0.55, f.h, 1.35);
+      fin.rotation.z = f.lean;
+      fin.castShadow = true;
+      body.add(fin);
+    }
+
+    // --- static tufts: fur permanently stood on end around the crown -------
+    const tuftGeo = track(new THREE.ConeGeometry(0.035, 0.2, 5));
+    const tuftMat = arcMat(13.5, 0.4);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const tuft = new THREE.Mesh(tuftGeo, tuftMat);
+      tuft.position.set(Math.sin(a) * 0.24, 0.34 + Math.cos(a * 2) * 0.03, Math.cos(a) * 0.2 - 0.04);
+      tuft.rotation.set(Math.cos(a) * 0.55, 0, -Math.sin(a) * 0.55);
+      headGroup.add(tuft);
+    }
+
+    // --- whiskers of raw current, two per cheek ----------------------------
+    const whiskerGeo = track(new THREE.CylinderGeometry(0.008, 0.004, 0.36, 4));
+    const whiskerMat = arcMat(15.0, 2.6);
+    for (const side of [-1, 1]) {
+      for (const lift of [0.02, -0.06]) {
+        const whisker = new THREE.Mesh(whiskerGeo, whiskerMat);
+        whisker.position.set(side * 0.34, -0.09 + lift, 0.3);
+        whisker.rotation.z = side * (Math.PI / 2 - 0.35);
+        whisker.rotation.y = side * 0.5;
+        headGroup.add(whisker);
+      }
+    }
   }
 
   /** Norman regalia: a jeweled crown and a red cape that streams behind

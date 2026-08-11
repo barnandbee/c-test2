@@ -58,6 +58,10 @@ const TOWER_SHOCK_POINTS = 40;
 // the two glitches and the empty haunted garment. The pylon feeds them.
 const TOWER_CONDUCTORS = ['error42', 'error43', 'sweatshirt'];
 const TOWER_CONES = 4;            // pine cones gathered at its feet
+// Every hero who is, in the end, a badger. Electro Badger is earned by one
+// of them walking into the live pylon on a good score — and counts himself.
+const BADGER_CHARACTERS = ['badger', 'badgerette', 'glassbadger', 'vapour', 'spirit', 'electro'];
+const ELECTRO_SCORE = 400;        // …and the score it takes to earn him
 const GAME_DURATION = 180;          // three twilight minutes
 const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
@@ -122,6 +126,7 @@ const STORAGE_FROSCH = 'mystic-badger.froschUnlocked';
 const STORAGE_ERROR43 = 'mystic-badger.error43Unlocked';
 const STORAGE_NUCLEUS = 'mystic-badger.nucleusUnlocked';
 const STORAGE_TUDOR = 'mystic-badger.tudorUnlocked';
+const STORAGE_ELECTRO = 'mystic-badger.electroUnlocked';
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
 // Every hero who can dress the cave BLT for +55.5. Do it with all of them
@@ -350,6 +355,7 @@ export class Game {
     this.error43Unlocked = readStorage(STORAGE_ERROR43) === '1';
     this.nucleusUnlocked = readStorage(STORAGE_NUCLEUS) === '1';
     this.tudorUnlocked = readStorage(STORAGE_TUDOR) === '1';
+    this.electroUnlocked = readStorage(STORAGE_ELECTRO) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -894,6 +900,7 @@ export class Game {
       this.points += TOWER_SHOCK_POINTS;
       this.ui.setPoints(this.points);
       this.audio.play('collect', 1);
+      this.awardAchievement('antizapped');
       this.ui.showTimeToast(`⚡ FULLY CHARGED! +${TOWER_SHOCK_POINTS}`);
       this.particles.spawnBurst(burstAt, 0x9fe4ff,
         { count: 40, speed: 5.4, size: 48, upBias: 0.5, life: 0.9 });
@@ -907,7 +914,22 @@ export class Game {
     this.ui.showTimeToast(`⚡ ZAPPED! -${TOWER_SHOCK_DAMAGE} HEALTH`);
     this.particles.spawnBurst(burstAt, 0x9fe4ff,
       { count: 34, speed: 5.0, size: 46, upBias: 0.5, life: 0.8 });
-    if (this.health <= 0) this.gameOver('health');
+    if (this.health <= 0) {
+      this.awardAchievement('zapped');
+      // Electro Badger: a badger who went out on the pylon, and went out
+      // well. Claimed BEFORE gameOver so the bell announces him.
+      if (
+        !this.electroUnlocked &&
+        BADGER_CHARACTERS.includes(this.characterName) &&
+        this.points >= ELECTRO_SCORE
+      ) {
+        this.electroUnlocked = true;
+        writeStorage(STORAGE_ELECTRO, '1');
+        this.runUnlockNames.push('Electro Badger');
+        this.ui.showTimeToast('★ ELECTRO BADGER UNLOCKED! ⚡');
+      }
+      this.gameOver('health');
+    }
     return true;
   }
 
@@ -1088,6 +1110,7 @@ export class Game {
     if (name === 'error43') return this.error43Unlocked;
     if (name === 'nucleus') return this.nucleusUnlocked;
     if (name === 'tudor') return this.tudorUnlocked;
+    if (name === 'electro') return this.electroUnlocked;
     return name === 'badger';
   }
 
@@ -1194,7 +1217,8 @@ export class Game {
       frosch: this.froschUnlocked,
       error43: this.error43Unlocked,
       nucleus: this.nucleusUnlocked,
-      tudor: this.tudorUnlocked
+      tudor: this.tudorUnlocked,
+      electro: this.electroUnlocked
     };
   }
 

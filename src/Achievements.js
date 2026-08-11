@@ -69,7 +69,9 @@ export const TROPHIES = [
   { id: 'lifetime10k', medal: '🔟', title: 'Lifetime M10', desc: 'Score an all-time total of more than 10,000 points across every run.' },
   { id: 'lifetime50k', medal: '🏔️', title: 'Lifetime M50', desc: 'Score an all-time total of more than 50,000 points across every run.' },
   { id: 'lifetime100k', medal: '🌟', title: 'Lifetime M100', desc: 'Score an all-time total of more than 100,000 points across every run.' },
-  { id: 'frogspawn', medal: '🐸', title: 'Frog Spawn', desc: 'As Sir Frosch, take damage from more than one frog and finish the run on 400 or more.' }
+  { id: 'frogspawn', medal: '🐸', title: 'Frog Spawn', desc: 'As Sir Frosch, take damage from more than one frog and finish the run on 400 or more.' },
+  { id: 'zapped', medal: '⚡', title: 'Zapped!', desc: 'Let the transmission tower take your health to zero during a storm.' },
+  { id: 'antizapped', medal: '🔌', title: 'Anti-Zapped', desc: 'Take the tower\u2019s +40 as Error #42, Error #43 or the Haunted Sweatshirt \u2014 the three heroes it feeds instead of frying.' }
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -119,5 +121,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'frosch', name: 'Sir Frosch', how: 'Take 101 toxic frog hits across all your runs. Leaps nine times as high as anyone else — but ambles at half speed.' },
   { key: 'error43', name: 'Error #43', how: 'She turns up on 4.3% of Random-Character runs from the very beginning, unlocked or not. Finish one of those runs on 250 or more and she joins the roster for good.' },
   { key: 'nucleus', name: 'The Nucleus Of Time Itself', how: 'Bank enough bonus seconds in one run to double its length to six minutes — 180 extra seconds (eighteen clock-tower visits, or sixteen plus the cottage alarm).' },
-  { key: 'tudor', name: 'Tudor Lizard', how: 'Finish a run on a perfectly round hundred — 100, 200, 300, 400, 500…' }
+  { key: 'tudor', name: 'Tudor Lizard', how: 'Finish a run on a perfectly round hundred — 100, 200, 300, 400, 500…' },
+  { key: 'electro', name: 'Electro Badger', how: 'Playing as any badger, walk into the live transmission tower during a storm on a score of 400 or more and let it take you to zero health.' }
 ];

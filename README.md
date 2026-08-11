@@ -117,7 +117,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   off you. Unless you happen to be **Error #42**, **Error #43** or the
   **Haunted Sweatshirt** — three heroes who are already electrical
   problems in their own right — for whom 40,000 volts is simply lunch, and
-  it pays **+40 points** instead.
+  it pays **+40 points** instead. Being taken to zero by the pylon earns
+  **Zapped!**; taking its +40 as one of the three earns **Anti-Zapped**.
+  And a badger who goes out on it on **400 or more** leaves behind
+  **Electro Badger** (see the roster below).
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -434,6 +437,17 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   dark stockings, buckled shoes, a gold chain of office, and a flat velvet
   cap with a feather over his golden slit eyes. Unlock him by finishing a
   run on a **perfectly round hundred** — 100, 200, 300, 400, 500…
+- **Electro Badger** — the same badger frame as his cousins, but every inch
+  of him is live: storm-blue fur over a deep navy underside, a mask and
+  claws burnt white-hot, three **arc rings** orbiting his torso at clashing
+  angles, a **crest of lightning fins** zig-zagging down his spine, nine
+  tufts of fur permanently **stood on end** around his crown, and four
+  whiskers of raw current. Every part of him glows on its own clock, at its
+  own speed and phase, so nothing on him ever quite settles into a rhythm.
+  Unlock him the hard way: playing as **any badger** — the Badger,
+  Badgerette, Glass, Vapour or Spirit — walk into the **live pylon during a
+  storm** on a score of **400 or more** and let it take you to **zero
+  health**. He is born from the badger that didn't step back.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
