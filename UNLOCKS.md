@@ -256,6 +256,33 @@ Three unlocks hang off that live frame:
 
 ---
 
+## Keeping your progress
+
+Everything on this page is stored in **your browser**, which can lose it —
+clearing site data wipes it, another device never had it, and Safari deletes
+it after **seven days** without a visit.
+
+**💾 Save & Restore**, on the opening menu and the game-over card, turns the
+whole lot into a short **save code** (roughly 30 characters on a fresh save,
+90 on a well-played one). Copy it, screenshot it or write it down; paste it
+into any browser on any device to bring back every character, trophy, lifetime
+tally and preference exactly as it was.
+
+- The code uses **Crockford base32** — no `I`, `L`, `O` or `U`, so there is
+  nothing to misread. Case and spacing don't matter, and if you do write an
+  `O` for a `0` it still works.
+- Every code is **checksummed**. A mistyped one is refused with a message, and
+  nothing is written until the whole code has decoded — a bad paste can never
+  leave you half-restored.
+- **⬇️ Download backup** saves the same code as a dated `.json` file if you'd
+  rather keep a file.
+- After a run that unlocks somebody, the button **glows** until you open it.
+
+> **On iPhone or iPad:** add the game to your **Home Screen** and the
+> seven-day expiry stops applying.
+
+---
+
 ## Notes on a few tricky ones
 
 - **Hastings Is A Place On Earth** (exactly 106.6) is deliberately a

@@ -605,6 +605,51 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   **favourite hero** (the character you've played the most, with its run
   count).
 
+## Saving your progress
+
+Progress lives in this browser's `localStorage`, which is less permanent than
+it sounds. Clearing site data wipes it, another device never had it, and
+**Safari deletes it outright after seven days without a visit** — so a save can
+evaporate without you doing anything wrong.
+
+**💾 Save & Restore** (on the opening menu and the game-over card) is the
+answer. It shows a **save code**: a short string — around 30 characters on a
+fresh save, 90 on a well-played one — holding every unlock, trophy, lifetime
+tally and preference you have. Copy it, screenshot it, or write it down. Paste
+it into any browser on any device and everything comes back.
+
+- **📋 Copy** puts the code on the clipboard (with a select-all fallback for
+  browsers that block clipboard access).
+- **⬇️ Download backup** saves the same code as a dated `.json` file, for
+  anyone who would rather keep a file than a string. **📂 Load backup file**
+  reads one back — you can also just paste the file's whole contents into the
+  restore box.
+- After a run that **unlocked a new hero**, the Save & Restore button on the
+  game-over card **glows** until you open it. That is the whole nudge: no
+  modal, no nagging.
+
+The format is deliberately unfussy. It uses **Crockford base32**, which has no
+`I`, `L`, `O` or `U` in it, so there is nothing to misread — and the decoder
+accepts those four letters anyway, mapping them to the digits they resemble,
+along with any case and any spacing. Every code carries a **checksum**: a
+mistyped one is refused outright with an explanation, and *nothing is written*
+until a code has decoded completely, so a bad paste can never leave you with
+half a save.
+
+Two more things the game does on your behalf, neither of which replaces the
+code:
+
+- It calls `navigator.storage.persist()` at startup, which asks Chrome and
+  Firefox to exempt the site from routine eviction. Safari does not implement
+  it.
+- On **iPhone or iPad**, adding the game to your **Home Screen** exempts it
+  from that seven-day rule. The panel says so at the bottom.
+
+Anything the codec doesn't recognise — a key added in a later update, a trophy
+id it has never seen — is carried through verbatim in an overflow section
+rather than dropped, so an old code stays valid and a new one never silently
+loses ground.
+
 ## Architecture
 
 ```
@@ -623,6 +668,7 @@ src/
                     power meter, slope break, club + aim arrow)
   VeggieTacToe.js   'Veggie Tac Toe' — tic-tac-toe vs Turnip Scart
   PaintingGame.js   'Paint the Badger' — the Neptune's Nook colouring activity
+  SaveCode.js       packs the whole save into a short, checksummed code
   Weather.js        rain / storm / snow: scene grading + GPU precipitation
   Bloom.js          the optional bloom post-pass
   Bot.js            the versus-mode CPU rival (greedy-collector brain

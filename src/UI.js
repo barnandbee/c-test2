@@ -46,6 +46,19 @@ export class UI {
     this.achFav = document.getElementById('ach-fav');
     this.achTrophies = document.getElementById('ach-trophies');
     this.achChars = document.getElementById('ach-chars');
+    this.menuSaveBtn = document.getElementById('menu-save-btn');
+    this.gameOverSaveBtn = document.getElementById('gameover-save-btn');
+    this.savePanel = document.getElementById('save-panel');
+    this.saveClose = document.getElementById('save-close');
+    this.saveCode = document.getElementById('save-code');
+    this.saveSummary = document.getElementById('save-summary');
+    this.saveCopyBtn = document.getElementById('save-copy');
+    this.saveDownloadBtn = document.getElementById('save-download');
+    this.saveRestoreInput = document.getElementById('save-restore-input');
+    this.saveRestoreBtn = document.getElementById('save-restore');
+    this.saveUploadBtn = document.getElementById('save-upload');
+    this.saveFileInput = document.getElementById('save-file');
+    this.saveStatus = document.getElementById('save-status');
     this.menu = document.getElementById('menu');
     this.menuRoster = document.getElementById('menu-roster');
     this.menuBestRow = document.getElementById('menu-best-row');
@@ -176,6 +189,13 @@ export class UI {
     this.finalScore.textContent = formatScore(opts.score);
     this.highScoreValue.textContent = formatScore(opts.highScore);
     this.newHighBadge.classList.toggle('hidden', !opts.isNewHigh);
+
+    // A run that unlocked somebody is exactly the run worth backing up, so
+    // the save button glows until it has been opened. No modal, no nagging.
+    if (this.gameOverSaveBtn) {
+      const earned = (opts.newlyUnlockedNames || []).length > 0;
+      this.gameOverSaveBtn.classList.toggle('save-nudge', earned);
+    }
 
     // Versus verdict: who out-foraged whom.
     if (this.vsResult) {
@@ -345,6 +365,95 @@ export class UI {
 
   hideAchievements() {
     if (this.achievementsPanel) this.achievementsPanel.classList.add('hidden');
+  }
+
+  /* ---------------- save & restore ---------------- */
+
+  /**
+   * @param {Object} handlers
+   * @param {Function} handlers.onOpen   called to fetch and show the code
+   * @param {Function} handlers.onClose
+   * @param {Function} handlers.onRestore called with the pasted text
+   * @param {Function} handlers.onDownload
+   */
+  bindSave({ onOpen, onClose, onRestore, onDownload }) {
+    if (this.menuSaveBtn) this.menuSaveBtn.addEventListener('click', onOpen);
+    if (this.gameOverSaveBtn) this.gameOverSaveBtn.addEventListener('click', onOpen);
+    if (this.saveClose) this.saveClose.addEventListener('click', onClose);
+    if (this.savePanel) {
+      this.savePanel.addEventListener('click', (e) => {
+        if (e.target === this.savePanel) onClose();
+      });
+    }
+    if (this.saveCopyBtn) this.saveCopyBtn.addEventListener('click', () => this._copyCode());
+    if (this.saveDownloadBtn) this.saveDownloadBtn.addEventListener('click', onDownload);
+    if (this.saveRestoreBtn) {
+      this.saveRestoreBtn.addEventListener('click', () => {
+        onRestore((this.saveRestoreInput && this.saveRestoreInput.value) || '');
+      });
+    }
+    // The file picker is only a second way of getting text into the same box,
+    // so it lands there and takes the identical path through onRestore.
+    if (this.saveUploadBtn && this.saveFileInput) {
+      this.saveUploadBtn.addEventListener('click', () => this.saveFileInput.click());
+      this.saveFileInput.addEventListener('change', () => {
+        const file = this.saveFileInput.files && this.saveFileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = String(reader.result || '');
+          if (this.saveRestoreInput) this.saveRestoreInput.value = text.trim();
+          onRestore(text);
+        };
+        reader.onerror = () => this.setSaveStatus("couldn't read that file", false);
+        reader.readAsText(file);
+        this.saveFileInput.value = ''; // so the same file can be picked twice
+      });
+    }
+  }
+
+  showSave(code, summary) {
+    if (!this.savePanel) return;
+    if (this.saveCode) this.saveCode.value = code;
+    if (this.saveSummary && summary) {
+      this.saveSummary.textContent =
+        `${summary.characters} characters · ${summary.trophies} trophies · ` +
+        `best ${formatScore(summary.highScore)} · ${formatScore(summary.totalScore)} all-time`;
+    }
+    this.setSaveStatus('');
+    if (this.saveRestoreInput) this.saveRestoreInput.value = '';
+    if (this.gameOverSaveBtn) this.gameOverSaveBtn.classList.remove('save-nudge');
+    this.savePanel.classList.remove('hidden');
+  }
+
+  hideSave() {
+    if (this.savePanel) this.savePanel.classList.add('hidden');
+  }
+
+  setSaveStatus(text, good = true) {
+    if (!this.saveStatus) return;
+    this.saveStatus.textContent = text;
+    this.saveStatus.classList.toggle('save-ok', Boolean(text) && good);
+    this.saveStatus.classList.toggle('save-bad', Boolean(text) && !good);
+  }
+
+  /** Clipboard first, with a select-all fallback for browsers that refuse. */
+  _copyCode() {
+    const text = this.saveCode ? this.saveCode.value : '';
+    if (!text) return;
+    const fallback = () => {
+      if (!this.saveCode) return;
+      this.saveCode.focus();
+      this.saveCode.select();
+      this.setSaveStatus('selected — press ⌘C or Ctrl+C to copy');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => this.setSaveStatus('copied — keep it somewhere safe'))
+        .catch(fallback);
+    } else {
+      fallback();
+    }
   }
 
   /** Build one achievement/character row. */

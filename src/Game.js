@@ -31,6 +31,14 @@ import {
   PlatinumGuava,
   disposeEntityAssets
 } from './Entities.js';
+import {
+  encode as encodeSave,
+  decode as decodeSave,
+  readSave,
+  writeSave,
+  describe as describeSave,
+  SAVE_LABEL
+} from './SaveCode.js';
 import { CpuRival } from './Bot.js';
 import { PuttingGame } from './PuttingGame.js';
 import { VeggieTacToe } from './VeggieTacToe.js';
@@ -535,6 +543,12 @@ export class Game {
       () => this.ui.showAchievements(this.getAchievementsView()),
       () => this.ui.hideAchievements()
     );
+    this.ui.bindSave({
+      onOpen: () => this.openSavePanel(),
+      onClose: () => this.ui.hideSave(),
+      onRestore: (text) => this.restoreFromCode(text),
+      onDownload: () => this.downloadBackup()
+    });
     // On-screen concede for Veggie Tac Toe (mobile has no Escape key).
     this.ui.bindVeggieQuit(() => { if (this.veggieGame) this.veggieGame.abandon(); });
 
@@ -1303,6 +1317,126 @@ export class Game {
       writeStorage(STORAGE_TRIFEDORA, '1');
       this.runUnlockNames.push('Triangle the Fedora');
       this.ui.showTimeToast('★ TRIANGLE THE FEDORA UNLOCKED! 📐');
+    }
+  }
+
+  /* ================================================================ */
+  /*  Save & restore                                                  */
+  /* ================================================================ */
+
+  /** The current save, as a code. */
+  currentSaveCode() {
+    try {
+      return encodeSave(readSave(window.localStorage));
+    } catch (err) {
+      return '';
+    }
+  }
+
+  openSavePanel() {
+    const code = this.currentSaveCode();
+    if (!code) {
+      this.ui.showSave('', null);
+      this.ui.setSaveStatus("this browser won't let the game read its own storage", false);
+      return;
+    }
+    this.ui.showSave(code, describeSave(readSave(window.localStorage)));
+    this._saveNudged = true; // they have seen it; stop pestering for now
+  }
+
+  /**
+   * Take a pasted code (or the contents of a backup file) and make it the
+   * save. Nothing is written until the whole code has decoded cleanly, so a
+   * typo leaves the existing progress exactly where it was.
+   */
+  restoreFromCode(text) {
+    const raw = String(text || '').trim();
+    if (!raw) {
+      this.ui.setSaveStatus('paste a code first', false);
+      return;
+    }
+    // Backup files are JSON with the code inside; a pasted code is bare.
+    let code = raw;
+    if (raw.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(raw);
+        code = parsed && parsed.code ? String(parsed.code) : raw;
+      } catch (err) {
+        this.ui.setSaveStatus("that file isn't a badger backup", false);
+        return;
+      }
+    }
+
+    let save;
+    try {
+      save = decodeSave(code);
+    } catch (err) {
+      this.ui.setSaveStatus(err.message || 'that code could not be read', false);
+      return;
+    }
+
+    try {
+      writeSave(window.localStorage, save);
+    } catch (err) {
+      this.ui.setSaveStatus("this browser wouldn't let the game save", false);
+      return;
+    }
+
+    const summary = describeSave(save);
+    this.ui.setSaveStatus(
+      `restored — ${summary.characters} characters, ${summary.trophies} trophies. Reloading…`
+    );
+    // Every unlock flag, set and tally is read once in the constructor, so the
+    // honest way to apply a restored save is to start the game over rather
+    // than try to re-seat fifty fields in a running one.
+    window.setTimeout(() => window.location.reload(), 900);
+  }
+
+  /** Same code, as a file — for anyone who would rather not keep a string. */
+  downloadBackup() {
+    const code = this.currentSaveCode();
+    if (!code) {
+      this.ui.setSaveStatus('nothing to back up yet', false);
+      return;
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    const summary = describeSave(readSave(window.localStorage));
+    const payload = {
+      game: 'Badger of the Mystic Forest',
+      format: SAVE_LABEL,
+      saved: new Date().toISOString(),
+      characters: summary.characters,
+      trophies: summary.trophies,
+      highScore: summary.highScore,
+      code
+    };
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `badger-save-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      this.ui.setSaveStatus('backup downloaded');
+    } catch (err) {
+      this.ui.setSaveStatus("this browser wouldn't start the download", false);
+    }
+  }
+
+  /**
+   * Ask the browser to exempt this origin from routine eviction. Chrome and
+   * Firefox honour it once a site looks worth keeping; Safari does not
+   * implement it at all, which is why the panel also mentions the Home Screen.
+   * Entirely advisory — a refusal changes nothing.
+   */
+  requestPersistentStorage() {
+    try {
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+    } catch (err) {
+      /* nothing to do; the save code is the real answer */
     }
   }
 
@@ -2937,6 +3071,7 @@ export class Game {
   /* ================================================================ */
 
   start() {
+    this.requestPersistentStorage();
     this.renderer.setAnimationLoop(() => this.tick());
   }
 

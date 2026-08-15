@@ -250,6 +250,7 @@
         <b>Mouse</b> camera &nbsp;&middot;&nbsp; <b>2&times;click</b> ride
       </p>
       <button id="menu-achievements-btn" type="button">🏆 Achievements</button>
+      <button id="menu-save-btn" type="button">💾 Save &amp; Restore</button>
     </div>
     <button id="about-btn" type="button" aria-label="About this game">&#9432;</button>
   </div>
@@ -609,6 +610,7 @@
         </div>
       </div>
       <button id="achievements-btn" type="button">🏆 Achievements</button>
+      <button id="gameover-save-btn" type="button">💾 Save &amp; Restore</button>
       <br />
       <div class="restart-row">
         <button id="restart-btn" type="button">Rise Again Alone</button>
@@ -618,6 +620,44 @@
         <button id="restart-easy-btn" class="diff-easy" type="button">🌱 Simple Seeds</button>
         <button id="restart-hard-btn" class="diff-hard" type="button">🥜 Nefarious Nuts</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Save & Restore -->
+  <div id="save-panel" class="hidden">
+    <div id="save-card">
+      <button id="save-close" type="button" aria-label="Close">&times;</button>
+      <h2>Save &amp; Restore</h2>
+      <p id="save-blurb">
+        Your progress lives in this browser, and browsers forget — clearing site
+        data wipes it, and Safari deletes it after a week away. Keep the code
+        below somewhere safe and you can bring everything back, on any device.
+      </p>
+
+      <p class="save-section-label">Your save code</p>
+      <textarea id="save-code" readonly rows="3" spellcheck="false"
+                aria-label="Your save code"></textarea>
+      <p id="save-summary"></p>
+      <div class="save-row">
+        <button id="save-copy" type="button">📋 Copy</button>
+        <button id="save-download" type="button">⬇️ Download backup</button>
+      </div>
+
+      <p class="save-section-label">Restore from a code</p>
+      <textarea id="save-restore-input" rows="3" spellcheck="false"
+                placeholder="Paste a save code here…"
+                aria-label="Paste a save code to restore"></textarea>
+      <div class="save-row">
+        <button id="save-restore" type="button">↩️ Restore</button>
+        <button id="save-upload" type="button">📂 Load backup file</button>
+        <input id="save-file" type="file" accept=".txt,.json,text/plain,application/json" hidden />
+      </div>
+      <p id="save-status" role="status"></p>
+
+      <p id="save-tip">
+        <b>On iPhone or iPad:</b> add this game to your Home Screen and your
+        progress stops expiring after seven days.
+      </p>
     </div>
   </div>
 

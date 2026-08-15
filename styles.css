@@ -1422,6 +1422,8 @@ body {
 
 #achievements-btn,
 #menu-achievements-btn,
+#menu-save-btn,
+#gameover-save-btn,
 .ghost-btn {
   font-family: var(--font-stack);
   font-size: 14px;
@@ -1443,6 +1445,8 @@ body {
 
 #achievements-btn:hover,
 #menu-achievements-btn:hover,
+#menu-save-btn:hover,
+#gameover-save-btn:hover,
 .ghost-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 212, 79, 0.5);
@@ -3234,4 +3238,172 @@ body {
 #restart-btn:active,
 #restart-vs-btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Save & Restore                                                     */
+/* ------------------------------------------------------------------ */
+
+#save-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 14px;
+  /* Same storey as the achievements viewer: above the menu (40) and the
+     character select, so the close button is always reachable. */
+  z-index: 70;
+  background: rgba(8, 5, 20, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#save-card {
+  position: relative;
+  margin: auto;
+  width: min(560px, 100%);
+  text-align: center;
+  padding: 34px 30px 30px;
+  background: linear-gradient(160deg, rgba(38, 26, 74, 0.95), rgba(18, 12, 40, 0.96));
+  border: 1px solid rgba(255, 212, 79, 0.3);
+  border-radius: 22px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+#save-card h2 {
+  font-family: var(--font-logo);
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+
+#save-blurb {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(243, 239, 255, 0.62);
+  margin-bottom: 18px;
+}
+
+#save-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: rgba(243, 239, 255, 0.7);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-stack);
+}
+
+.save-section-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(243, 239, 255, 0.45);
+  text-align: left;
+  margin: 16px 0 6px;
+}
+
+#save-code,
+#save-restore-input {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 212, 79, 0.24);
+  background: rgba(10, 7, 24, 0.75);
+  color: var(--accent-gold);
+  /* A code you might read aloud or copy by hand wants fixed pitch and
+     generous tracking — the groups of five do the rest. */
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+#save-restore-input {
+  color: rgba(243, 239, 255, 0.92);
+}
+
+#save-restore-input::placeholder {
+  color: rgba(243, 239, 255, 0.32);
+  letter-spacing: 0.02em;
+}
+
+#save-summary {
+  font-size: 12px;
+  color: rgba(243, 239, 255, 0.55);
+  margin: 8px 0 0;
+}
+
+.save-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.save-row button {
+  flex: 1;
+  padding: 10px 8px;
+  font-size: 13px;
+  font-family: var(--font-stack);
+  font-weight: 600;
+  color: #2a1c05;
+  background: linear-gradient(160deg, #ffd44f, #f0a92e);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.save-row button:hover {
+  filter: brightness(1.08);
+}
+
+#save-status {
+  min-height: 18px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#save-status.save-ok { color: #8ce39a; }
+#save-status.save-bad { color: #ff9a9a; }
+
+#save-tip {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 212, 79, 0.16);
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(243, 239, 255, 0.5);
+}
+
+/* Both menu pills sit on the same line under the controls. */
+#menu-achievements-btn,
+#menu-save-btn {
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+/* The save button glows after a run that unlocked somebody — the one run
+   you would genuinely mind losing. It stops as soon as the panel is opened. */
+#gameover-save-btn.save-nudge {
+  animation: save-nudge-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes save-nudge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 212, 79, 0); }
+  50%      { box-shadow: 0 0 16px 3px rgba(255, 212, 79, 0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #gameover-save-btn.save-nudge {
+    animation: none;
+    box-shadow: 0 0 14px 2px rgba(255, 212, 79, 0.5);
+  }
 }
