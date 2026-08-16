@@ -237,12 +237,13 @@ Escher stairs.
 | Weather | What the tower does |
 |---------|---------------------|
 | Clear, rain, snow | Nothing. It stands there looking tall. A cluster of **pine cones** gathers at its feet, which is the only reason to visit. |
-| **Storm** | Lightning finds it and the frame goes **live**. Touching it costs **40 health** — or pays **+40 points** if you are **Error #42**, **Error #43** or the **Haunted Sweatshirt**. |
+| **Storm** | Lightning finds it and the frame goes **live**. Touching it costs **40 health** — or pays **+40 points** if you are **Error #42**, **Error #43** or the **Haunted Sweatshirt**. That payout is **once per run**; after it, a conductor stays immune but earns nothing more from it. The **40 health** has no such limit, and will keep taking you down. |
 
 Three unlocks hang off that live frame:
 
 - **⚡ Zapped!** — the tower takes any character's health to zero.
-- **🔌 Anti-Zapped** — you take the **+40** as one of the three conductors.
+- **🔌 Anti-Zapped** — you take the **+40** as one of the three conductors
+  (which the pylon pays at most once a run).
 - **Electro Badger** (character) — a **badger** is taken to zero by the
   tower while holding **400 or more** points. Seven heroes count as badgers:
   **Badger, Badgerette, William the Conqueror, Glass Badger, Vapour Badger,

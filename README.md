@@ -117,7 +117,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   off you. Unless you happen to be **Error #42**, **Error #43** or the
   **Haunted Sweatshirt** — three heroes who are already electrical
   problems in their own right — for whom 40,000 volts is simply lunch, and
-  it pays **+40 points** instead. Being taken to zero by the pylon earns
+  it pays **+40 points** instead — **once per run**. After that the pylon has
+  nothing left to give them: they stay immune to it, but they can't farm it.
+  Being taken to zero by the pylon earns
   **Zapped!**; taking its +40 as one of the three earns **Anti-Zapped**.
   And a badger who goes out on it on **400 or more** leaves behind
   **Electro Badger** (see the roster below).

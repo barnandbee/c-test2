@@ -476,6 +476,7 @@ export class Game {
     this.pickleInPan = false;              // a pickle caught in the pan?
     this.fritterCooked = false;            // charred pickle fritter made this run?
     this.raisinTaken = false;              // grabbed Neptune's Raisin this run?
+    this.towerCharged = false;             // conductors have taken the pylon's +40 this run?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -912,6 +913,14 @@ export class Game {
     this.invulnTimer = INVULN_TIME;
     const burstAt = this._playerCenter.set(center.x, center.y, center.z);
     if (TOWER_CONDUCTORS.includes(this.characterName)) {
+      // The pylon pays out once a run. After that a conductor is still immune
+      // — it just has nothing left to give them, so they can lean on it all
+      // they like without farming it.
+      if (this.towerCharged) {
+        this.ui.showTimeToast('⚡ Already fully charged');
+        return true;
+      }
+      this.towerCharged = true;
       this.points += TOWER_SHOCK_POINTS;
       this.ui.setPoints(this.points);
       this.audio.play('collect', 1);
@@ -2992,6 +3001,7 @@ export class Game {
     }
     this.world.douseStove();
     this.raisinTaken = false;
+    this.towerCharged = false;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
