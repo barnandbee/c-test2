@@ -80,7 +80,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (65)
+## Trophies (68)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -142,6 +142,7 @@ milestone counts your best past run automatically.
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |
 | 🎠 **The Whole Menagerie** | Play as 20 different characters. |
+| 🎢 **Standing Room Only** | Play as **40 different characters**. |
 | 💯 **C Unit** | Score 100 or more with **10** different characters (all-time). |
 | 🌊 **C Change** | Score 200 or more with **20** different characters (all-time). |
 | 👋 **C U Later** | Score 300 or more with **30** different characters (all-time). |
@@ -171,8 +172,10 @@ milestone counts your best past run automatically.
 | 🐸 **FROGS!!!!** | Take **more than 100** toxic frog hits across all your runs. One more bruise (101) and **Sir Frosch** hops onto the roster. |
 | 🧊 **Mystic Cubed** | Complete a **Mystic** (monochrome) run having also ridden the Mystic Line to **Mystic Forest Central** on that same run. |
 | 🐸 **Frog Spawn** | As **Sir Frosch**, take damage from **more than one frog** and finish the run on **400 or more**. |
+| 🏵️ **Half Centurion** | Amass **50 achievements in total** — trophies earned **plus** characters unlocked. |
+| 🎖️ **Centurion** | Amass **100 achievements in total** — trophies earned **plus** characters unlocked. |
 | ⚡ **Zapped!** | Let the **transmission tower** take your health to zero during a storm — any character. |
-| 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **Error #43** or the **Haunted Sweatshirt** — the three heroes it feeds instead of frying. |
+| 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt** — the four heroes it feeds instead of frying. |
 
 ---
 
@@ -240,12 +243,12 @@ Escher stairs.
 | Weather | What the tower does |
 |---------|---------------------|
 | Clear, rain, snow | Nothing. It stands there looking tall. A cluster of **pine cones** gathers at its feet, which is the only reason to visit. |
-| **Storm** | Lightning finds it and the frame goes **live**. Touching it costs **40 health** — or pays **+40 points** if you are **Error #42**, **Error #43** or the **Haunted Sweatshirt**. That payout is **once per run**; after it, a conductor stays immune but earns nothing more from it. The **40 health** has no such limit, and will keep taking you down. |
+| **Storm** | Lightning finds it and the frame goes **live**. Touching it costs **40 health** — or pays **+40 points** if you are **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt**. That payout is **once per run**; after it, a conductor stays immune but earns nothing more from it. The **40 health** has no such limit, and will keep taking you down. |
 
 Three unlocks hang off that live frame:
 
 - **⚡ Zapped!** — the tower takes any character's health to zero.
-- **🔌 Anti-Zapped** — you take the **+40** as one of the three conductors
+- **🔌 Anti-Zapped** — you take the **+40** as one of the four conductors
   (which the pylon pays at most once a run).
 - **Electro Badger** (character) — a **badger** is taken to zero by the
   tower while holding **400 or more** points. Seven heroes count as badgers:

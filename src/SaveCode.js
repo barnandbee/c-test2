@@ -71,7 +71,8 @@ export const VOCAB_TROPHIES = [
   'inaspin', 'chimptactoe', 'owlin4u', 'afk', 'plattytubes', 'lifeaquatic',
   'afkc', 'charredmeander', 'farmervspig', 'mysticsquared', 'frogs50',
   'frogs100', 'mysticcubed', 'pointproved', 'lifetime10k', 'lifetime50k',
-  'lifetime100k', 'frogspawn', 'zapped', 'antizapped'
+  'lifetime100k', 'frogspawn', 'zapped', 'antizapped',
+  'play40', 'total50', 'total100'
 ];
 
 export const VOCAB_CHARACTERS = [

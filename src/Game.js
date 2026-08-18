@@ -64,7 +64,7 @@ const TOWER_SHOCK_DAMAGE = 40;
 const TOWER_SHOCK_POINTS = 40;
 // Three heroes are, in their different ways, already electrical problems:
 // the two glitches and the empty haunted garment. The pylon feeds them.
-const TOWER_CONDUCTORS = ['error42', 'error43', 'sweatshirt'];
+const TOWER_CONDUCTORS = ['error42', 'error43', 'error44', 'sweatshirt'];
 const TOWER_CONES = 4;            // pine cones gathered at its feet
 // Electro Badger is earned by a badger walking into the live pylon on a good
 // score. Who counts as a badger is answered by Player.isBadger, which the
@@ -1526,6 +1526,7 @@ export class Game {
     if (played >= 5) this.awardAchievement('play5');
     if (played >= 10) this.awardAchievement('play10');
     if (played >= 20) this.awardAchievement('play20');
+    if (played >= 40) this.awardAchievement('play40');
 
     // President Fir Tree, home in the Mystic Forest.
     if (
@@ -1534,6 +1535,13 @@ export class Game {
     ) {
       this.awardAchievement('firforest');
     }
+
+    // The long haul: trophies earned plus heroes unlocked, counted together.
+    // Awarding one of these grows the tally by one, which is correct — it is
+    // a running total of everything you have to your name, medals included.
+    const amassed = this.achievements.size + unlocked;
+    if (amassed >= 50) this.awardAchievement('total50');
+    if (amassed >= 100) this.awardAchievement('total100');
 
     // Haunted Sweatshirt: a spectral reward for amassing 30 achievements
     // in total — earned trophies plus every hero unlocked so far.

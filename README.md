@@ -114,8 +114,8 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   cluster of **pine cones** gathers at its feet, which is the only reason
   to go near it. In a **storm** the lightning finds it and the whole frame
   goes live, crackling with arcs: touch it then and it takes **40 health**
-  off you. Unless you happen to be **Error #42**, **Error #43** or the
-  **Haunted Sweatshirt** — three heroes who are already electrical
+  off you. Unless you happen to be **Error #42**, **#43**, **#44** or the
+  **Haunted Sweatshirt** — four heroes who are already electrical
   problems in their own right — for whom 40,000 volts is simply lunch, and
   it pays **+40 points** instead — **once per run**. After that the pylon has
   nothing left to give them: they stay immune to it, but they can't farm it.
@@ -602,10 +602,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   cloud / cherry / golden pine cone in a run (and all three of stars,
   cherries and clouds together), letting your health hit zero, the
   **Yo-Yo 🪀** (bouncing your score across 100 up-down-up-down-up in one
-  run), and unlocking 1 / 5 / 10 characters. It also tracks the long-haul
-  feats: scoring 100 with 10 / 200 with 20 / 300 with 30 different
+  run), and unlocking 1 / 5 / 10 characters. Two more count everything you
+  have together — trophies earned **plus** heroes unlocked — at **50**
+  (**Half Centurion 🏵️**) and **100** (**Centurion 🎖️**), the same
+  combined tally the Haunted Sweatshirt uses at 30. It also tracks the
+  long-haul feats: scoring 100 with 10 / 200 with 20 / 300 with 30 different
   characters (**C Unit** / **C Change** / **C U Later**), playing as
-  5 / 10 / 20 different heroes,
+  5 / 10 / 20 / 40 different heroes (**Standing Room Only 🎢** at forty),
   visiting all three Mystic Line stations in one run, taking President Fir
   Tree home to the Mystic Forest, taking Polar Pear to the summit flag,
   beating Turnip Scart at Veggie Tac Toe *while playing as Turnip Scart*,

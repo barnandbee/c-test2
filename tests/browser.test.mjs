@@ -106,7 +106,7 @@ const clearElectro = () => page.evaluate(() => {
 });
 
 // -- the +40, and its once-per-run limit
-for (const c of ['error42', 'error43', 'sweatshirt']) {
+for (const c of ['error42', 'error43', 'error44', 'sweatshirt']) {
   const r = await tower({ character: c, weather: 'storm', points: 0, health: 100, touches: 5 });
   ok(`${c}: five touches pay 40 once`, r.points === 40, `got ${r.points}`);
   ok(`${c}: still immune on every touch`, r.hits.every(Boolean) && r.health === 100,
@@ -265,7 +265,49 @@ ok("water ends the Box's run", boxSplash.over === true && boxSplash.health === 0
 const badgerSplash = await splash('badger');
 ok('everyone else just bounces off it', badgerSplash.over === false && badgerSplash.health === 100, JSON.stringify(badgerSplash));
 
-/* == 4. save & restore, end to end ====================================== */
+/* == 4. the long-haul trophies ========================================== */
+console.log('\nStanding Room Only, Half Centurion, Centurion');
+
+const played = (n) => page.evaluate((n) => {
+  const g = window.__game;
+  const keys = Object.keys(g.getUnlockedMap());
+  g.charUsage = {};
+  for (let i = 0; i < n; i++) g.charUsage[keys[i] || ('x' + i)] = 1;
+  g.achievements.delete('play40');
+  g.checkAchievements();
+  return g.achievements.has('play40');
+}, n);
+ok('39 characters played → not yet', await played(39) === false);
+ok('exactly 40 → Standing Room Only', await played(40) === true);
+
+// The combined tally is trophies earned PLUS heroes unlocked, which is the
+// same metric the Haunted Sweatshirt uses at 30.
+const amass = (trophies, chars) => page.evaluate(([t, c]) => {
+  const g = window.__game;
+  const charKeys = Object.keys(g.getUnlockedMap());
+  for (const k of charKeys) { const f = k + 'Unlocked'; if (f in g) g[f] = false; }
+  let n = 0;
+  for (const k of charKeys) { const f = k + 'Unlocked'; if (f in g && n < c) { g[f] = true; n++; } }
+  g.achievements = new Set(Array.from({ length: t }, (_, i) => 'filler' + i));
+  g.checkAchievements();
+  return { t50: g.achievements.has('total50'), t100: g.achievements.has('total100') };
+}, [trophies, chars]);
+const under = await amass(10, 10);
+const fifty = await amass(30, 20);
+const hundred = await amass(60, 40);
+ok('20 combined → neither', under.t50 === false && under.t100 === false, JSON.stringify(under));
+ok('50 combined → Half Centurion only', fifty.t50 === true && fifty.t100 === false, JSON.stringify(fifty));
+ok('100 combined → both', hundred.t50 === true && hundred.t100 === true, JSON.stringify(hundred));
+
+const counts = await page.evaluate(() => {
+  const v = window.__game.getAchievementsView();
+  return { trophies: v.trophies.length, characters: v.characters.length };
+});
+// Centurion has to be reachable at all: the two lists must sum to >= 100.
+ok(`Centurion is attainable (${counts.trophies} + ${counts.characters})`,
+   counts.trophies + counts.characters >= 100, JSON.stringify(counts));
+
+/* == 5. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();

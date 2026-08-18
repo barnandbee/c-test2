@@ -71,7 +71,10 @@ export const TROPHIES = [
   { id: 'lifetime100k', medal: '🌟', title: 'Lifetime M100', desc: 'Score an all-time total of more than 100,000 points across every run.' },
   { id: 'frogspawn', medal: '🐸', title: 'Frog Spawn', desc: 'As Sir Frosch, take damage from more than one frog and finish the run on 400 or more.' },
   { id: 'zapped', medal: '⚡', title: 'Zapped!', desc: 'Let the transmission tower take your health to zero during a storm.' },
-  { id: 'antizapped', medal: '🔌', title: 'Anti-Zapped', desc: 'Take the tower\u2019s +40 as Error #42, Error #43 or the Haunted Sweatshirt \u2014 the three heroes it feeds instead of frying.' }
+  { id: 'antizapped', medal: '🔌', title: 'Anti-Zapped', desc: 'Take the tower\u2019s +40 as Error #42, Error #43 or the Haunted Sweatshirt \u2014 the four heroes it feeds instead of frying.' },
+  { id: 'play40', medal: '🎢', title: 'Standing Room Only', desc: 'Play as 40 different characters.' },
+  { id: 'total50', medal: '🏵️', title: 'Half Centurion', desc: 'Amass 50 achievements in total — trophies earned plus characters unlocked.' },
+  { id: 'total100', medal: '🎖️', title: 'Centurion', desc: 'Amass 100 achievements in total — trophies earned plus characters unlocked.' },
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
