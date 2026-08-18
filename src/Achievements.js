@@ -122,5 +122,8 @@ export const CHARACTER_UNLOCKS = [
   { key: 'error43', name: 'Error #43', how: 'She turns up on 4.3% of Random-Character runs from the very beginning, unlocked or not. Finish one of those runs on 250 or more and she joins the roster for good.' },
   { key: 'nucleus', name: 'The Nucleus Of Time Itself', how: 'Bank enough bonus seconds in one run to double its length to six minutes — 180 extra seconds (eighteen clock-tower visits, or sixteen plus the cottage alarm).' },
   { key: 'tudor', name: 'Tudor Lizard', how: 'Finish a run on a perfectly round hundred — 100, 200, 300, 400, 500…' },
-  { key: 'electro', name: 'Electro Badger', how: 'Playing as any badger, walk into the live transmission tower during a storm on a score of 400 or more and let it take you to zero health.' }
+  { key: 'electro', name: 'Electro Badger', how: 'Playing as any badger, walk into the live transmission tower during a storm on a score of 400 or more and let it take you to zero health.' },
+  { key: 'foil', name: 'Foil', how: 'In one run: open the cottage fridge, and clear every marshmallow cloud AND every star.' },
+  { key: 'error44', name: 'Error #44', how: 'Complete a run in Mystic mode — the rare monochrome wash.' },
+  { key: 'cardboard', name: "Ol' Cardboard Box", how: 'Board the rocket twice in the same run.' }
 ];

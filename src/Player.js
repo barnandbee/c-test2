@@ -117,6 +117,7 @@ export class Player {
     this.isBouncy = false;   // Pickle Stick hops to get around
     this.hoverHeight = 0;    // Candy Florence rests this far above the ground
     this.moveScale = 1;      // per-instance top-speed multiplier (CPU rival tuning)
+    this.airMoveScale = 1;   // extra top speed while airborne (Foil catches the wind)
     this.walksOnWater = false; // Spirit of the Forest Badger treads the lakes
     // Set by whichever builder actually makes a badger — buildBadger and the
     // three badgers with bodies of their own. Kept here rather than in a list
@@ -189,6 +190,9 @@ export class Player {
     else if (this.character === 'julie') this.root = this.buildJulie();
     else if (this.character === 'turnip') this.root = this.buildTurnip();
     else if (this.character === 'sweatshirt') this.root = this.buildSweatshirt();
+    else if (this.character === 'foil') this.root = this.buildFoil();
+    else if (this.character === 'error44') this.root = this.buildError44();
+    else if (this.character === 'cardboard') this.root = this.buildCardboardBox();
     else this.root = this.buildBadger(); // badger, badgerette, william, electro
     this.root.position.copy(this.position);
   }
@@ -7379,6 +7383,519 @@ export class Player {
     return root;
   }
 
+  /**
+   * Foil — a ball of scrunched-up kitchen foil with a pair of eyes stuck on.
+   * He rolls along the ground at everybody else's pace, but the moment he
+   * leaves it he is a crumpled sheet with almost no weight to him and the
+   * air takes him half again as fast.
+   *
+   * The crumple is real geometry: an icosahedron whose vertices are pushed
+   * in and out on a noise field, then given flat normals so every facet
+   * catches the light separately, which is what makes foil read as foil.
+   */
+  buildFoil() {
+    const root = new THREE.Group();
+    root.name = 'foil';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    this.moveScale = 1;        // ordinary pace on the ground…
+    this.airMoveScale = 1.5;   // …and half again as fast through the air
+
+    const foilMat = track(createToonMaterial({
+      color: 0xd8dee6,
+      vertexColors: true,
+      emissive: 0x3c4654,
+      emissiveIntensity: 0.22,
+      // A hard, bright rim is what sells metal in a toon shader — the facets
+      // do the rest.
+      rim: { color: 0xffffff, strength: 0.95, threshold: 0.34 }
+    }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xf6f8fb }));
+    const pupilMat = track(createToonMaterial({ color: 0x14161c }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.58;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the crumpled ball --------------------------------------------------
+    const R = 0.55;
+    const ballGeo = track(new THREE.IcosahedronGeometry(R, 3));
+    {
+      const pos = ballGeo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.set(pos.getX(i), pos.getY(i), pos.getZ(i));
+        // Two octaves: broad dents, then sharp creases over the top.
+        const broad = furNoise(v.x * 3.1, v.y * 3.1, v.z * 3.1) - 0.5;
+        const crease = furNoise(v.x * 11, v.y * 11, v.z * 11) - 0.5;
+        const k = 1 + broad * 0.34 + crease * 0.16;
+        pos.setXYZ(i, v.x * k, v.y * k, v.z * k);
+      }
+      // Flat normals: every facet lit on its own, like beaten metal.
+      ballGeo.computeVertexNormals();
+    }
+    paintVertexColors(ballGeo, (n, p, c) => {
+      // Foil is never one grey. Facets facing up catch a cold white, the
+      // undersides go to a warm shadowed pewter, with soot in the creases.
+      const up = THREE.MathUtils.smoothstep(n.y, -0.4, 0.9);
+      c.set(0x9aa2ae).lerp(new THREE.Color(0xfdfefe), up);
+      const soot = furNoise(p.x * 8, p.y * 8, p.z * 8);
+      c.offsetHSL(0, 0, (soot - 0.5) * 0.14);
+    });
+    const ball = new THREE.Mesh(ballGeo, foilMat);
+    ball.castShadow = true;
+    body.add(ball);
+    // Rolls at a speed matched to the ground, via the shared marble rig.
+    this.marbleMesh = ball;
+    this._rollRadius = R;
+
+    // --- eyes, which emphatically do NOT roll -------------------------------
+    // They hang off the body rather than the ball, so they stay looking
+    // forward however fast he is spinning underneath them.
+    const eyeGeo = track(new THREE.SphereGeometry(0.15, 18, 14));
+    const pupilGeo = track(new THREE.SphereGeometry(0.072, 12, 10));
+    const glintGeo = track(new THREE.SphereGeometry(0.026, 8, 6));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+      eye.position.set(side * 0.19, 0.14, 0.44);
+      eye.scale.set(1, 1.08, 0.72);
+      eye.castShadow = true;
+      body.add(eye);
+
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(side * 0.2, 0.13, 0.55);
+      body.add(pupil);
+
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.23, 0.18, 0.585);
+      body.add(glint);
+    }
+
+    // --- a torn corner, still sticking up where he was scrunched -----------
+    const tagGeo = track(new THREE.ConeGeometry(0.13, 0.3, 4));
+    const tag = new THREE.Mesh(tagGeo, foilMat);
+    tag.position.set(0.12, 0.52, -0.1);
+    tag.rotation.set(0.4, 0.6, 0.35);
+    tag.scale.set(1, 1, 0.4);
+    tag.castShadow = true;
+    body.add(tag);
+
+    return root;
+  }
+
+  /**
+   * Error #44 — the loader falls over a third time. #42 collided with the ten
+   * heroes before it and #43 with the ten after; #44 gets the ten after THAT:
+   * Polar Pear, Night Eye, Pineapple Penguin, Billy Rocketfingers, Pickle
+   * Stick, Glass Badger, McDonovan, Prunella Registered Voter, Gary Mountain
+   * and Candy Florence — fused down one seam, none of them quite finished.
+   * It glitches, of course. It runs in the family.
+   */
+  buildError44() {
+    const root = new THREE.Group();
+    root.name = 'error44';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    this.isGlitchy = true;   // the family's intermittent reality problem
+
+    const pearMat = track(createToonMaterial({ color: 0xf2f4f7, rim: { color: 0xcfe6ff, strength: 0.4, threshold: 0.6 } }));
+    const armourMat = track(createToonMaterial({ color: 0x33373f }));
+    const laserMat = track(createToonMaterial({ color: 0xff5a4a, emissive: 0xff2a1a, emissiveIntensity: 1.8, pulse: { speed: 3.4, phase: 0 } }));
+    const pineMat = track(createToonMaterial({ color: 0xd8a838, rim: { color: 0xffe9a0, strength: 0.4, threshold: 0.58 } }));
+    const beakMat = track(createToonMaterial({ color: 0xf0902c }));
+    const suitMat = track(createToonMaterial({ color: 0xf4f4f0 }));
+    const goldMat = track(createToonMaterial({ color: 0xe8b93c, emissive: 0x6b4a08, emissiveIntensity: 0.4 }));
+    const pickleMat = track(createToonMaterial({ color: 0x5f8f3a, rim: { color: 0xbfe89a, strength: 0.4, threshold: 0.58 } }));
+    const stoneMat = track(createToonMaterial({ color: 0x7d8189 }));
+    const snowMat = track(createToonMaterial({ color: 0xf2f7fb }));
+    const feltMat = track(createToonMaterial({ color: 0x5c5f66 }));
+    const paperMat = track(createToonMaterial({ color: 0xf7f5ec }));
+    const inkMat = track(createToonMaterial({ color: 0x2b2d33 }));
+    const candyMat = track(createToonMaterial({ color: 0xf07ab4, emissive: 0x8a2f5c, emissiveIntensity: 0.35 }));
+    const glassMat = track(createToonMaterial({
+      color: 0xbfe2f2, emissive: 0x1c3448, emissiveIntensity: 0.4,
+      rim: { color: 0xffffff, strength: 0.9, threshold: 0.38 }
+    }));
+    glassMat.transparent = true; glassMat.opacity = 0.45; glassMat.depthWrite = false;
+    const eyeMat = track(createToonMaterial({ color: 0x14161c }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.66;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: Polar Pear's pear on the left, Gary's crag on the right ----
+    const pearGeo = track(new THREE.SphereGeometry(0.46, 22, 18));
+    const pear = new THREE.Mesh(pearGeo, pearMat);
+    pear.position.set(-0.12, -0.06, 0);
+    pear.scale.set(0.86, 1.16, 0.9);   // pear-ish: narrow shoulders, wide hips
+    pear.castShadow = true;
+    body.add(pear);
+
+    const cragGeo = track(new THREE.DodecahedronGeometry(0.4, 0));
+    const crag = new THREE.Mesh(cragGeo, stoneMat);
+    crag.position.set(0.2, 0.02, -0.02);
+    crag.scale.set(0.92, 1.06, 0.86);
+    crag.rotation.set(0.3, 0.5, 0.2);
+    crag.castShadow = true;
+    body.add(crag);
+
+    // Glass Badger: a translucent slab lodged down the seam between them.
+    const seamGeo = track(new THREE.BoxGeometry(0.1, 0.92, 0.62));
+    const seam = new THREE.Mesh(seamGeo, glassMat);
+    seam.position.set(0.03, -0.02, 0.02);
+    body.add(seam);
+
+    // Pineapple Penguin: a crosshatched pineapple belly patch and a flipper.
+    const pineGeo = track(new THREE.SphereGeometry(0.24, 14, 12));
+    const pine = new THREE.Mesh(pineGeo, pineMat);
+    pine.position.set(-0.2, -0.3, 0.3);
+    pine.scale.set(0.9, 1.1, 0.5);
+    body.add(pine);
+    const flipperGeo = track(new THREE.SphereGeometry(0.15, 10, 8));
+    const flipper = new THREE.Mesh(flipperGeo, armourMat);
+    flipper.position.set(-0.5, -0.24, 0);
+    flipper.scale.set(0.34, 1.05, 0.62);
+    flipper.rotation.z = 0.35;
+    flipper.castShadow = true;
+    body.add(flipper);
+
+    // Prunella: her printed ballot sheet pinned across the chest, pencil and all.
+    const sheetGeo = track(new THREE.BoxGeometry(0.34, 0.44, 0.02));
+    const sheet = new THREE.Mesh(sheetGeo, paperMat);
+    sheet.position.set(0.16, 0.06, 0.36);
+    sheet.rotation.z = -0.16;
+    body.add(sheet);
+    const markGeo = track(new THREE.BoxGeometry(0.16, 0.03, 0.01));
+    for (const [y, rot] of [[0.1, 0.6], [0.1, -0.6]]) {
+      const mark = new THREE.Mesh(markGeo, inkMat);
+      mark.position.set(0.16, y, 0.375);
+      mark.rotation.z = rot;
+      body.add(mark);
+    }
+    const pencilGeo = track(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 6));
+    const pencil = new THREE.Mesh(pencilGeo, goldMat);
+    pencil.position.set(0.44, -0.1, 0.3);
+    pencil.rotation.set(0.4, 0, -0.7);
+    body.add(pencil);
+
+    // Billy Rocketfingers: a life-support pack slung on the back.
+    const packGeo = track(new THREE.BoxGeometry(0.34, 0.4, 0.18));
+    const pack = new THREE.Mesh(packGeo, suitMat);
+    pack.position.set(-0.06, 0.02, -0.42);
+    pack.castShadow = true;
+    body.add(pack);
+    const hoseGeo = track(new THREE.TorusGeometry(0.1, 0.02, 6, 12, Math.PI));
+    const hose = new THREE.Mesh(hoseGeo, armourMat);
+    hose.position.set(0.12, 0.14, -0.32);
+    hose.rotation.set(0, 0.6, 0.4);
+    body.add(hose);
+
+    // --- head: Night Eye's visor welded to Billy's bubble helmet -----------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.66, 0.06);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const skullGeo = track(new THREE.SphereGeometry(0.32, 20, 16));
+    const skull = new THREE.Mesh(skullGeo, armourMat);
+    skull.scale.set(1, 0.98, 1.04);
+    skull.castShadow = true;
+    headGroup.add(skull);
+
+    // Billy's bubble, only over the right half — the left never rendered.
+    const bubbleGeo = track(new THREE.SphereGeometry(0.38, 18, 14, 0, Math.PI));
+    const bubble = new THREE.Mesh(bubbleGeo, glassMat);
+    bubble.rotation.y = -Math.PI / 2;
+    headGroup.add(bubble);
+    const visorGeo = track(new THREE.SphereGeometry(0.345, 16, 12, 0, Math.PI * 0.55, Math.PI * 0.28, Math.PI * 0.4));
+    const visor = new THREE.Mesh(visorGeo, goldMat);
+    visor.rotation.y = -Math.PI * 0.28;
+    headGroup.add(visor);
+
+    // Night Eye's single laser eye, on the side the bubble forgot.
+    const laserGeo = track(new THREE.SphereGeometry(0.062, 12, 10));
+    const laser = new THREE.Mesh(laserGeo, laserMat);
+    laser.position.set(-0.17, 0.04, 0.28);
+    headGroup.add(laser);
+    const antennaGeo = track(new THREE.CylinderGeometry(0.014, 0.014, 0.3, 6));
+    const antenna = new THREE.Mesh(antennaGeo, armourMat);
+    antenna.position.set(-0.2, 0.3, -0.04);
+    antenna.rotation.z = 0.32;
+    headGroup.add(antenna);
+
+    // Polar Pear's little round ear on one side, McDonovan's mouse ear the other.
+    const earGeo = track(new THREE.SphereGeometry(0.11, 12, 10));
+    const pearEar = new THREE.Mesh(earGeo, pearMat);
+    pearEar.position.set(-0.26, 0.26, -0.04);
+    pearEar.scale.set(1, 1, 0.6);
+    headGroup.add(pearEar);
+    const mouseEar = new THREE.Mesh(earGeo, feltMat);
+    mouseEar.position.set(0.27, 0.28, -0.02);
+    mouseEar.scale.set(1.35, 1.35, 0.4);
+    headGroup.add(mouseEar);
+
+    // McDonovan's fedora, tilted low — over the half that has no bubble.
+    const brimGeo = track(new THREE.CylinderGeometry(0.36, 0.36, 0.03, 18));
+    const brim = new THREE.Mesh(brimGeo, feltMat);
+    brim.position.set(-0.08, 0.3, 0.02);
+    brim.rotation.z = 0.22;
+    brim.castShadow = true;
+    headGroup.add(brim);
+    const crownGeo = track(new THREE.CylinderGeometry(0.19, 0.21, 0.24, 14));
+    const crown = new THREE.Mesh(crownGeo, feltMat);
+    crown.position.set(-0.11, 0.42, 0.02);
+    crown.rotation.z = 0.22;
+    headGroup.add(crown);
+
+    // Penguin beak where a mouth might have gone.
+    const beakGeo = track(new THREE.ConeGeometry(0.08, 0.2, 8));
+    const beak = new THREE.Mesh(beakGeo, beakMat);
+    beak.position.set(0.04, -0.12, 0.32);
+    beak.rotation.x = Math.PI / 2;
+    headGroup.add(beak);
+
+    // Gary's snow cap, sitting on nothing in particular.
+    const capGeo = track(new THREE.SphereGeometry(0.16, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2));
+    const cap = new THREE.Mesh(capGeo, snowMat);
+    cap.position.set(0.22, 0.26, -0.1);
+    headGroup.add(cap);
+
+    // A stray eye, because #42 had one too many and the family keeps it.
+    const strayGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    const stray = new THREE.Mesh(strayGeo, eyeMat);
+    stray.position.set(0.16, -0.02, 0.3);
+    headGroup.add(stray);
+
+    // --- limbs: one pickle arm, one gloved; a stone leg and a pear leg -----
+    this.arms = [];
+    const gloveGeo = track(new THREE.SphereGeometry(0.1, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.44, 0.2, 0);
+
+      if (side === 1) {
+        // Pickle Stick, warts and all, doing duty as a right arm.
+        const armGeo = track(new THREE.CapsuleGeometry(0.09, 0.34, 6, 10));
+        const arm = new THREE.Mesh(armGeo, pickleMat);
+        arm.position.y = -0.26;
+        arm.castShadow = true;
+        pivot.add(arm);
+        const wartGeo = track(new THREE.SphereGeometry(0.026, 6, 5));
+        for (let i = 0; i < 5; i++) {
+          const wart = new THREE.Mesh(wartGeo, pickleMat);
+          const a = i * 1.7;
+          wart.position.set(Math.sin(a) * 0.085, -0.12 - i * 0.08, Math.cos(a) * 0.085);
+          pivot.add(wart);
+        }
+      } else {
+        const armGeo = track(new THREE.CylinderGeometry(0.06, 0.05, 0.42, 8));
+        const arm = new THREE.Mesh(armGeo, suitMat);
+        arm.position.y = -0.24;
+        arm.castShadow = true;
+        pivot.add(arm);
+        const glove = new THREE.Mesh(gloveGeo, armourMat);
+        glove.position.y = -0.48;
+        pivot.add(glove);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.4 });
+    }
+
+    this.legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.19, -0.5, 0);
+      const legGeo = track(new THREE.CylinderGeometry(0.085, 0.075, 0.4, 8));
+      const leg = new THREE.Mesh(legGeo, side === -1 ? stoneMat : armourMat);
+      leg.position.y = -0.2;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const bootGeo = track(new THREE.BoxGeometry(0.2, 0.1, 0.28));
+      const boot = new THREE.Mesh(bootGeo, side === -1 ? stoneMat : suitMat);
+      boot.position.set(0, -0.44, 0.04);
+      boot.castShadow = true;
+      pivot.add(boot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // Candy Florence: one boiled sweet orbiting the wreckage, unattached.
+    const sweetGeo = track(new THREE.SphereGeometry(0.1, 12, 10));
+    const sweet = new THREE.Mesh(sweetGeo, candyMat);
+    sweet.position.set(0.5, 0.5, 0.22);
+    sweet.scale.set(1, 1, 0.7);
+    body.add(sweet);
+    const wrapGeo = track(new THREE.ConeGeometry(0.06, 0.12, 5));
+    for (const dir of [-1, 1]) {
+      const wrap = new THREE.Mesh(wrapGeo, candyMat);
+      wrap.position.set(0.5 + dir * 0.15, 0.5, 0.22);
+      wrap.rotation.z = dir * Math.PI / 2;
+      body.add(wrap);
+    }
+
+    return root;
+  }
+
+  /**
+   * Ol' Cardboard Box — a corrugated box that got up and ran off. Arms and
+   * legs poked through the sides, two eyes cut in the front, and a set of
+   * flaps that never quite shut.
+   *
+   * He has one gift and one catastrophe. The gift: he is a container, so a
+   * pickle goes straight in him and travels to the stove without any of the
+   * business with Neptune's pan. The catastrophe is the obvious one, and
+   * lives in Game.js — water ends the run on the spot.
+   */
+  buildCardboardBox() {
+    const root = new THREE.Group();
+    root.name = 'cardboard';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const boxMat = track(createToonMaterial({
+      color: 0xc08a4e,
+      vertexColors: true,
+      rim: { color: 0xffd9a0, strength: 0.3, threshold: 0.64 }
+    }));
+    const flapMat = track(createToonMaterial({ color: 0xb07c44, rim: { color: 0xffd9a0, strength: 0.3, threshold: 0.64 } }));
+    const darkMat = track(createToonMaterial({ color: 0x6b4a28 }));
+    const inkMat = track(createToonMaterial({ color: 0x4a3520 }));
+    const tapeMat = track(createToonMaterial({ color: 0xd9c9a8 }));
+    tapeMat.transparent = true;
+    tapeMat.opacity = 0.75;
+    const eyeMat = track(createToonMaterial({ color: 0x1a1206 }));
+    const glintMat = track(createToonMaterial({ color: 0xfff6e2, emissive: 0xfff6e2, emissiveIntensity: 0.5 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.72;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the box itself, cardboard mottled along its corrugations ----------
+    const boxGeo = track(new THREE.BoxGeometry(0.86, 0.82, 0.66, 4, 4, 4));
+    paintVertexColors(boxGeo, (n, p, c) => {
+      c.set(0xc99257);
+      // Corrugated stripe, running up the sides.
+      const flute = Math.sin(p.x * 34) * 0.5 + 0.5;
+      c.offsetHSL(0, 0, (flute - 0.5) * 0.05);
+      // Sun-bleached on top, scuffed and dirty along the bottom edge.
+      c.lerp(new THREE.Color(0xe0b07a), THREE.MathUtils.smoothstep(n.y, 0.2, 1) * 0.5);
+      c.lerp(new THREE.Color(0x8a5f33), THREE.MathUtils.smoothstep(-p.y, 0.28, 0.42) * 0.55);
+      const scuff = furNoise(p.x * 7, p.y * 7, p.z * 7);
+      c.offsetHSL(0, 0, (scuff - 0.5) * 0.09);
+    });
+    const box = new THREE.Mesh(boxGeo, boxMat);
+    box.castShadow = true;
+    body.add(box);
+
+    // A strip of packing tape down the front seam, half peeled.
+    const tapeGeo = track(new THREE.BoxGeometry(0.16, 0.84, 0.01));
+    const tape = new THREE.Mesh(tapeGeo, tapeMat);
+    tape.position.set(-0.02, 0, 0.335);
+    body.add(tape);
+    const peelGeo = track(new THREE.BoxGeometry(0.16, 0.2, 0.01));
+    const peel = new THREE.Mesh(peelGeo, tapeMat);
+    peel.position.set(-0.02, 0.5, 0.3);
+    peel.rotation.x = -0.9;
+    body.add(peel);
+
+    // --- four top flaps, none of them shut ---------------------------------
+    const flapGeo = track(new THREE.BoxGeometry(0.42, 0.02, 0.32));
+    const flaps = [
+      { x: 0, z: 0.2, rx: -0.85, ry: 0 },
+      { x: 0, z: -0.2, rx: 0.7, ry: 0 },
+      { x: -0.3, z: 0, rx: 0, ry: Math.PI / 2, rz: 0.95 },
+      { x: 0.3, z: 0, rx: 0, ry: Math.PI / 2, rz: -0.75 }
+    ];
+    for (const f of flaps) {
+      const flap = new THREE.Mesh(flapGeo, flapMat);
+      flap.position.set(f.x, 0.42, f.z);
+      flap.rotation.set(f.rx, f.ry, f.rz || 0);
+      flap.castShadow = true;
+      body.add(flap);
+    }
+
+    // --- a face cut into the front ------------------------------------------
+    // The head group is the upper front of the box, so he still nods and
+    // looks about like everyone else.
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.12, 0.28);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const eyeGeo = track(new THREE.BoxGeometry(0.15, 0.19, 0.05));
+    const pupilGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.017, 8, 6));
+    for (const side of [-1, 1]) {
+      // The cut-out itself: a dark hole punched through the card.
+      const hole = new THREE.Mesh(eyeGeo, darkMat);
+      hole.position.set(side * 0.19, 0.06, 0.03);
+      hole.rotation.z = side * 0.1;
+      headGroup.add(hole);
+      const pupil = new THREE.Mesh(pupilGeo, eyeMat);
+      pupil.position.set(side * 0.19, 0.05, 0.07);
+      headGroup.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.21, 0.1, 0.095);
+      headGroup.add(glint);
+    }
+    // A stencilled arrow and a smile of scored card.
+    const arrowGeo = track(new THREE.ConeGeometry(0.07, 0.12, 3));
+    const arrow = new THREE.Mesh(arrowGeo, inkMat);
+    arrow.position.set(0, -0.2, 0.03);
+    arrow.rotation.x = -Math.PI / 2;
+    headGroup.add(arrow);
+    const smileGeo = track(new THREE.TorusGeometry(0.13, 0.014, 6, 14, Math.PI));
+    const smile = new THREE.Mesh(smileGeo, inkMat);
+    smile.position.set(0, -0.14, 0.03);
+    smile.rotation.z = Math.PI;
+    headGroup.add(smile);
+
+    // --- limbs poked through the sides --------------------------------------
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.05, 0.045, 0.4, 8));
+    const handGeo = track(new THREE.SphereGeometry(0.085, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.44, 0.14, 0);
+      const arm = new THREE.Mesh(armGeo, darkMat);
+      arm.position.y = -0.22;
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, flapMat);
+      hand.position.y = -0.43;
+      pivot.add(hand);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.45 });
+    }
+
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.055, 0.05, 0.36, 8));
+    const footGeo = track(new THREE.BoxGeometry(0.19, 0.09, 0.27));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.2, -0.42, 0);
+      const leg = new THREE.Mesh(legGeo, darkMat);
+      leg.position.y = -0.18;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const foot = new THREE.Mesh(footGeo, flapMat);
+      foot.position.set(0, -0.4, 0.05);
+      foot.castShadow = true;
+      pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+
   /* ================================================================ */
   /*  Physics                                                         */
   /* ================================================================ */
@@ -7431,9 +7948,12 @@ export class Player {
       // back to walk speed.
       if (hasInput) {
         const preSpeed = Math.hypot(vel.x, vel.z);
-        vel.x += wish.x * T.airAccel * dt;
-        vel.z += wish.z * T.airAccel * dt;
-        const cap = Math.max(T.maxSpeed * this.moveScale, preSpeed);
+        // airMoveScale lifts BOTH the steering rate and the ceiling: raising
+        // the cap alone would leave a hero that is allowed to go faster but
+        // never accelerates hard enough to get there.
+        vel.x += wish.x * T.airAccel * this.airMoveScale * dt;
+        vel.z += wish.z * T.airAccel * this.airMoveScale * dt;
+        const cap = Math.max(T.maxSpeed * this.moveScale * this.airMoveScale, preSpeed);
         const speed = Math.hypot(vel.x, vel.z);
         if (speed > cap) {
           const s = cap / speed;
@@ -7851,7 +8371,7 @@ export class Player {
     // so she never skids. (root already faces the travel direction, so
     // rolling is a plain pitch about local X.)
     if (this.marbleMesh) {
-      this.marbleMesh.rotation.x += (speed / 0.6) * dt;
+      this.marbleMesh.rotation.x += (speed / (this._rollRadius || 0.6)) * dt;
     }
 
     // Rhombus: waddle-rock while trotting, pinwheel gently in the air.

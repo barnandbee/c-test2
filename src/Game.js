@@ -136,6 +136,10 @@ const STORAGE_ERROR43 = 'mystic-badger.error43Unlocked';
 const STORAGE_NUCLEUS = 'mystic-badger.nucleusUnlocked';
 const STORAGE_TUDOR = 'mystic-badger.tudorUnlocked';
 const STORAGE_ELECTRO = 'mystic-badger.electroUnlocked';
+const STORAGE_FOIL = 'mystic-badger.foilUnlocked';
+const STORAGE_ERROR44 = 'mystic-badger.error44Unlocked';
+const STORAGE_CARDBOARD = 'mystic-badger.cardboardUnlocked';
+const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
 // Every hero who can dress the cave BLT for +55.5. Do it with all of them
@@ -365,6 +369,9 @@ export class Game {
     this.nucleusUnlocked = readStorage(STORAGE_NUCLEUS) === '1';
     this.tudorUnlocked = readStorage(STORAGE_TUDOR) === '1';
     this.electroUnlocked = readStorage(STORAGE_ELECTRO) === '1';
+    this.foilUnlocked = readStorage(STORAGE_FOIL) === '1';
+    this.error44Unlocked = readStorage(STORAGE_ERROR44) === '1';
+    this.cardboardUnlocked = readStorage(STORAGE_CARDBOARD) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -418,6 +425,18 @@ export class Game {
     this._lastSplashToast = -Infinity;
     this._onPlayerSplash = () => {
       const center = this.player.getColliderCenter(this._playerCenter);
+      // Ol' Cardboard Box does not bounce off water like everybody else.
+      // Cardboard and water have only ever had the one relationship.
+      if (this.characterName === 'cardboard' && !this.isGameOver) {
+        this.particles.spawnBurst(center, 0xc79a5c,
+          { count: 46, speed: 4.2, size: 44, upBias: 0.4, life: 1.1 });
+        this.health = 0;
+        this.ui.setHealth(0);
+        this.ui.flashDamage();
+        this.ui.showTimeToast('💧 THE BOX GOES SOGGY…');
+        this.gameOver('health');
+        return;
+      }
       this.particles.spawnBurst(center, 0xbfe4ef, {
         count: 26,
         speed: 3.4,
@@ -477,6 +496,9 @@ export class Game {
     this.fritterCooked = false;            // charred pickle fritter made this run?
     this.raisinTaken = false;              // grabbed Neptune's Raisin this run?
     this.towerCharged = false;             // conductors have taken the pylon's +40 this run?
+    this.fridgeOpenedThisRun = false;      // Foil: was the fridge opened this run?
+    this.rocketRides = 0;                  // Ol' Cardboard Box: launches this run
+    this.boxPickle = false;                // the Box is carrying a pickle bare-handed
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -761,6 +783,13 @@ export class Game {
           }
         } else {
           this.ui.showTimeToast('OH, PICKLE STICKS! +8.8');
+        }
+        // Ol' Cardboard Box has no hands to speak of but plenty of inside,
+        // so a pickle simply goes in him — no pan, no trip to the Nook.
+        if (this.characterName === 'cardboard' && !this.boxPickle && !this.fritterCooked) {
+          this.boxPickle = true;
+          this.audio.play('squelch');
+          this.ui.showTimeToast("THE PICKLE'S IN THE BOX!");
         }
         // Carrying Neptune's pan? The pickle lands right in it.
         if (this.holdingPan && !this.pickleInPan) {
@@ -1135,6 +1164,9 @@ export class Game {
     if (name === 'nucleus') return this.nucleusUnlocked;
     if (name === 'tudor') return this.tudorUnlocked;
     if (name === 'electro') return this.electroUnlocked;
+    if (name === 'foil') return this.foilUnlocked;
+    if (name === 'error44') return this.error44Unlocked;
+    if (name === 'cardboard') return this.cardboardUnlocked;
     return name === 'badger';
   }
 
@@ -1242,7 +1274,10 @@ export class Game {
       error43: this.error43Unlocked,
       nucleus: this.nucleusUnlocked,
       tudor: this.tudorUnlocked,
-      electro: this.electroUnlocked
+      electro: this.electroUnlocked,
+      foil: this.foilUnlocked,
+      error44: this.error44Unlocked,
+      cardboard: this.cardboardUnlocked
     };
   }
 
@@ -1524,6 +1559,14 @@ export class Game {
     const allClouds = this.spawnedClouds > 0 && this.cloudsCollected >= this.spawnedClouds;
     const allCherries = this.spawnedCherries > 0 && this.cherriesCollected >= this.spawnedCherries;
     const allEggs = this.spawnedEggs > 0 && this.eggsCollected >= this.spawnedEggs;
+    // Foil: a scrunched-up ball that has been in the fridge and swept the
+    // whole sky. Judged mid-run, so it sings out the moment it lands.
+    if (!this.foilUnlocked && this.fridgeOpenedThisRun && allStars && allClouds) {
+      this.foilUnlocked = true;
+      writeStorage(STORAGE_FOIL, '1');
+      this.runUnlockNames.push('Foil');
+      this.ui.showTimeToast('★ FOIL UNLOCKED! 🪩');
+    }
     if (allStars) this.awardAchievement('allstars');
     if (allClouds) this.awardAchievement('allclouds');
     if (allCherries) this.awardAchievement('allcherries');
@@ -1861,6 +1904,15 @@ export class Game {
       if (dx * dx + dz * dz < BOARDING_RANGE * BOARDING_RANGE && Math.abs(dy) < 4) {
         this.player.vehicle = this.rocket;
         this.rocket.rider = this.player;
+        // Ol' Cardboard Box: whoever goes up twice in one run has clearly
+        // been thrown away and come back, which is the whole idea of him.
+        this.rocketRides += 1;
+        if (!this.cardboardUnlocked && this.rocketRides >= ROCKET_RIDES_REQUIRED) {
+          this.cardboardUnlocked = true;
+          writeStorage(STORAGE_CARDBOARD, '1');
+          this.runUnlockNames.push("Ol' Cardboard Box");
+          this.ui.showTimeToast("★ OL' CARDBOARD BOX UNLOCKED! 📦");
+        }
         // Ignition: a proper kick off the pad.
         this.player.velocity.y = 16;
         this.ui.showTimeToast('TO THE STARS! HOLD JUMP TO THRUST');
@@ -2046,11 +2098,13 @@ export class Game {
     const w = this.world;
 
     // Cook on the cottage stove — holding a pan with a pickle in it.
+    const panReady = this.holdingPan && this.pickleInPan;
     if (
-      this.holdingPan && this.pickleInPan && !this.fritterCooked &&
+      (panReady || this.boxPickle) && !this.fritterCooked &&
       w.cottage && near(w.cottage.stove, 2.6)
     ) {
       this.fritterCooked = true;
+      this.boxPickle = false;
       this.holdingPan = false;
       this.pickleInPan = false;
       w.setPanPickle(false);
@@ -2177,6 +2231,7 @@ export class Game {
     } else if (hit === 'stove') {
       this.ui.showTimeToast('THE HOB IS BARELY WARM. PORRIDGE, RECENTLY.');
     } else if (hit === 'fridge') {
+      this.fridgeOpenedThisRun = true;   // Foil only needs it opened once
       // Ten pokes at the fridge and the message turns — a Pickle Stick is
       // then summoned to the top of a random tree (see managePickle()).
       if (!this.pickleStickUnlocked) {
@@ -2698,6 +2753,13 @@ export class Game {
 
     if (reason === 'health') this.awardAchievement('rip');
     if (wasMystic) this.awardAchievement('mysticsquared');
+    // Error #44: the loader falls over again, and only the monochrome run
+    // ever sees it happen.
+    if (wasMystic && !this.error44Unlocked) {
+      this.error44Unlocked = true;
+      writeStorage(STORAGE_ERROR44, '1');
+      this.runUnlockNames.push('Error #44');
+    }
     // Frog Spawn: the giant toad taking a beating from his own kind, and
     // still coming home with a score.
     if (
@@ -3002,6 +3064,9 @@ export class Game {
     this.world.douseStove();
     this.raisinTaken = false;
     this.towerCharged = false;
+    this.fridgeOpenedThisRun = false;
+    this.rocketRides = 0;
+    this.boxPickle = false;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;

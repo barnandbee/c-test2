@@ -3407,3 +3407,85 @@ body {
     box-shadow: 0 0 14px 2px rgba(255, 212, 79, 0.5);
   }
 }
+
+/* --- Foil: a crumpled silver ball with two eyes ---------------------- */
+.foil-icon {
+  background:
+    radial-gradient(circle at 32% 28%, #ffffff 0 12%, rgba(255, 255, 255, 0) 40%),
+    conic-gradient(from 20deg, #cfd6df, #f4f7fa, #9aa3b0, #eef2f6, #b6bec9, #cfd6df);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: inset 0 -3px 6px rgba(20, 26, 36, 0.45);
+}
+/* The two eyes, stuck on the front and refusing to roll with the rest. */
+.foil-icon::after {
+  content: '';
+  position: absolute;
+  inset: 46% 24% 30%;
+  background:
+    radial-gradient(circle at 22% 45%, #14161c 0 22%, #f6f8fb 23% 46%, transparent 47%),
+    radial-gradient(circle at 78% 45%, #14161c 0 22%, #f6f8fb 23% 46%, transparent 47%);
+}
+
+/* --- Error #44: the third crash, in ten colours --------------------- */
+.error44-icon {
+  background:
+    linear-gradient(105deg,
+      #f2f4f7 0 18%,   /* Polar Pear      */
+      #33373f 18% 30%, /* Night Eye       */
+      #d8a838 30% 42%, /* Pineapple       */
+      #bfe2f2 42% 52%, /* Glass Badger    */
+      #5f8f3a 52% 63%, /* Pickle Stick    */
+      #5c5f66 63% 73%, /* McDonovan       */
+      #f7f5ec 73% 82%, /* Prunella        */
+      #7d8189 82% 91%, /* Gary Mountain   */
+      #f07ab4 91% 100% /* Candy Florence  */
+    );
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+/* Night Eye's laser, still on, and a torn scanline across the middle. */
+.error44-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 26% 42%, #ff2a1a 0 9%, transparent 10%),
+    linear-gradient(#0000 0 46%, rgba(255, 255, 255, 0.75) 46% 52%, #0000 52%);
+  transform: translateX(0);
+  animation: error44-tear 2.6s steps(1) infinite;
+}
+@keyframes error44-tear {
+  0%, 74%  { transform: translateX(0); opacity: 1; }
+  78%      { transform: translateX(4px); opacity: 0.7; }
+  82%      { transform: translateX(-3px); opacity: 1; }
+  86%      { transform: translateX(2px); opacity: 0.85; }
+  90%, 100%{ transform: translateX(0); opacity: 1; }
+}
+
+/* --- Ol' Cardboard Box: corrugated, taped, and looking at you -------- */
+.cardboard-icon {
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(0, 0, 0, 0.05) 0 2px, rgba(255, 255, 255, 0.05) 2px 4px),
+    linear-gradient(160deg, #e0b07a, #c08a4e 55%, #8a5f33);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(74, 53, 32, 0.5);
+}
+/* Two cut-out eyes, and the strip of tape down the seam. */
+.cardboard-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 34% 44%, #1a1206 0 13%, transparent 14%),
+    radial-gradient(circle at 66% 44%, #1a1206 0 13%, transparent 14%),
+    linear-gradient(90deg, transparent 44%, rgba(217, 201, 168, 0.85) 44% 56%, transparent 56%);
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error44-icon::after { animation: none; }
+}
