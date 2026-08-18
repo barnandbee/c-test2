@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (47)
+## Characters (50)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -63,6 +63,9 @@ each one is earned. This is the single source of truth for unlock conditions
 | 45 | **The Nucleus Of Time Itself** | Bank a full extra **180 seconds** in one run, doubling it to **six minutes** (eighteen clock-tower visits, or sixteen plus the cottage alarm). An atom with a suave feminine face that floats, glows and trails — and **teleports to a random spot on the map every 25-30 seconds**, be that solid ground, inside a building, or the open sky. |
 | 46 | **Tudor Lizard** | Finish a run on a perfectly round hundred — **100, 200, 300, 400, 500…** |
 | 47 | **Electro Badger** | Playing as **any badger** — Badger, Badgerette, **William the Conqueror**, Glass, Vapour or Spirit — walk into the **live transmission tower during a storm** on a score of **400 or more** and let it take you to **zero health**. A badger running on mains: arc rings, a crest of lightning fins, and fur permanently stood on end. |
+| 48 | **Foil** | In one run: **open the cottage fridge**, and clear **every marshmallow cloud AND every star**. A ball of scrunched-up kitchen foil with eyes stuck on: he rolls at everyone's pace on the ground, but travels **1.5× as fast through the air**. |
+| 49 | **Error #44** | **Complete a run in Mystic mode** — the rare 1.8% monochrome wash. The loader's third crash, mashed from the ten heroes after Error #43's ten: Polar Pear, Night Eye, Pineapple Penguin, Billy Rocketfingers, Pickle Stick, Glass Badger, McDonovan, Prunella, Gary Mountain and Candy Florence. |
+| 50 | **Ol' Cardboard Box** | **Board the rocket twice in the same run.** A box with arms and legs. He is a container, so a **pickle goes straight in him** and travels to the stove with no pan needed — but **water ends the run on the spot**. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →

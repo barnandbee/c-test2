@@ -7400,6 +7400,8 @@ export class Player {
 
     this.moveScale = 1;        // ordinary pace on the ground…
     this.airMoveScale = 1.5;   // …and half again as fast through the air
+    // He has no legs to swing, but the walk rig iterates this unconditionally.
+    this.legs = [];
 
     const foilMat = track(createToonMaterial({
       color: 0xd8dee6,
@@ -7408,9 +7410,9 @@ export class Player {
       emissiveIntensity: 0.22,
       // A hard, bright rim is what sells metal in a toon shader — the facets
       // do the rest.
-      rim: { color: 0xffffff, strength: 0.95, threshold: 0.34 }
+      rim: { color: 0xffffff, strength: 0.5, threshold: 0.52 }
     }));
-    const eyeWhiteMat = track(createToonMaterial({ color: 0xf6f8fb }));
+    const eyeWhiteMat = track(createToonMaterial({ color: 0xf9fbff, emissive: 0xdfe8f4, emissiveIntensity: 0.55 }));
     const pupilMat = track(createToonMaterial({ color: 0x14161c }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8 }));
 
@@ -7460,17 +7462,17 @@ export class Player {
     const glintGeo = track(new THREE.SphereGeometry(0.026, 8, 6));
     for (const side of [-1, 1]) {
       const eye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
-      eye.position.set(side * 0.19, 0.14, 0.44);
-      eye.scale.set(1, 1.08, 0.72);
+      eye.position.set(side * 0.2, 0.15, 0.5);
+      eye.scale.set(1.1, 1.18, 0.72);
       eye.castShadow = true;
       body.add(eye);
 
       const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-      pupil.position.set(side * 0.2, 0.13, 0.55);
+      pupil.position.set(side * 0.21, 0.14, 0.6);
       body.add(pupil);
 
       const glint = new THREE.Mesh(glintGeo, glintMat);
-      glint.position.set(side * 0.23, 0.18, 0.585);
+      glint.position.set(side * 0.24, 0.19, 0.63);
       body.add(glint);
     }
 
@@ -7519,7 +7521,7 @@ export class Player {
       color: 0xbfe2f2, emissive: 0x1c3448, emissiveIntensity: 0.4,
       rim: { color: 0xffffff, strength: 0.9, threshold: 0.38 }
     }));
-    glassMat.transparent = true; glassMat.opacity = 0.45; glassMat.depthWrite = false;
+    glassMat.transparent = true; glassMat.opacity = 0.28; glassMat.depthWrite = false;
     const eyeMat = track(createToonMaterial({ color: 0x14161c }));
 
     const body = new THREE.Group();
@@ -7608,7 +7610,7 @@ export class Player {
     headGroup.add(skull);
 
     // Billy's bubble, only over the right half — the left never rendered.
-    const bubbleGeo = track(new THREE.SphereGeometry(0.38, 18, 14, 0, Math.PI));
+    const bubbleGeo = track(new THREE.SphereGeometry(0.35, 18, 14, 0, Math.PI));
     const bubble = new THREE.Mesh(bubbleGeo, glassMat);
     bubble.rotation.y = -Math.PI / 2;
     headGroup.add(bubble);
@@ -7757,11 +7759,11 @@ export class Player {
     const track = (r) => { this._disposables.push(r); return r; };
 
     const boxMat = track(createToonMaterial({
-      color: 0xc08a4e,
+      color: 0xe6b884,
       vertexColors: true,
       rim: { color: 0xffd9a0, strength: 0.3, threshold: 0.64 }
     }));
-    const flapMat = track(createToonMaterial({ color: 0xb07c44, rim: { color: 0xffd9a0, strength: 0.3, threshold: 0.64 } }));
+    const flapMat = track(createToonMaterial({ color: 0xc48f56, rim: { color: 0xffd9a0, strength: 0.3, threshold: 0.64 } }));
     const darkMat = track(createToonMaterial({ color: 0x6b4a28 }));
     const inkMat = track(createToonMaterial({ color: 0x4a3520 }));
     const tapeMat = track(createToonMaterial({ color: 0xd9c9a8 }));
@@ -7779,13 +7781,13 @@ export class Player {
     // --- the box itself, cardboard mottled along its corrugations ----------
     const boxGeo = track(new THREE.BoxGeometry(0.86, 0.82, 0.66, 4, 4, 4));
     paintVertexColors(boxGeo, (n, p, c) => {
-      c.set(0xc99257);
+      c.set(0xe8b989);
       // Corrugated stripe, running up the sides.
       const flute = Math.sin(p.x * 34) * 0.5 + 0.5;
       c.offsetHSL(0, 0, (flute - 0.5) * 0.05);
       // Sun-bleached on top, scuffed and dirty along the bottom edge.
-      c.lerp(new THREE.Color(0xe0b07a), THREE.MathUtils.smoothstep(n.y, 0.2, 1) * 0.5);
-      c.lerp(new THREE.Color(0x8a5f33), THREE.MathUtils.smoothstep(-p.y, 0.28, 0.42) * 0.55);
+      c.lerp(new THREE.Color(0xf6dcbb), THREE.MathUtils.smoothstep(n.y, 0.2, 1) * 0.55);
+      c.lerp(new THREE.Color(0xa87746), THREE.MathUtils.smoothstep(-p.y, 0.3, 0.44) * 0.4);
       const scuff = furNoise(p.x * 7, p.y * 7, p.z * 7);
       c.offsetHSL(0, 0, (scuff - 0.5) * 0.09);
     });
@@ -7828,14 +7830,14 @@ export class Player {
     body.add(headGroup);
     this.headGroup = headGroup;
 
-    const eyeGeo = track(new THREE.BoxGeometry(0.15, 0.19, 0.05));
+    const eyeGeo = track(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 14));
     const pupilGeo = track(new THREE.SphereGeometry(0.05, 10, 8));
     const glintGeo = track(new THREE.SphereGeometry(0.017, 8, 6));
     for (const side of [-1, 1]) {
       // The cut-out itself: a dark hole punched through the card.
       const hole = new THREE.Mesh(eyeGeo, darkMat);
       hole.position.set(side * 0.19, 0.06, 0.03);
-      hole.rotation.z = side * 0.1;
+      hole.rotation.x = Math.PI / 2;   // lie the disc flat against the card
       headGroup.add(hole);
       const pupil = new THREE.Mesh(pupilGeo, eyeMat);
       pupil.position.set(side * 0.19, 0.05, 0.07);

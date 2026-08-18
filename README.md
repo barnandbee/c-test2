@@ -452,6 +452,37 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   the **live pylon during a storm** on a score of **400 or more** and let it
   take you to **zero health**. He is born from the badger that didn't step
   back.
+- **Foil** — a ball of scrunched-up kitchen foil with a pair of eyes stuck
+  on the front. The crumple is real geometry: an icosahedron pushed around
+  on two octaves of noise and given **flat normals**, so every facet catches
+  the light separately, which is what makes foil read as foil rather than as
+  a grey ball. He **rolls** at everybody's pace on the ground — but he is a
+  crumpled sheet with no weight to him, so the moment he leaves it the air
+  takes him **1.5× as fast**. His eyes hang off his body rather than the
+  rolling ball, so they keep looking forward however fast he is spinning
+  underneath them. Unlock him by **opening the cottage fridge** and clearing
+  **every cloud and every star** in one run.
+- **Error #44** — the character loader falls over a third time. Where #42
+  collided with the ten heroes *before* it and #43 with the ten *after*, #44
+  gets the next ten: Polar Pear's white pear body and Gary Mountain's crag
+  fused down a **Glass Badger** seam; Night Eye's laser eye on the side
+  Billy Rocketfingers' bubble helmet forgot; a Pineapple Penguin belly and
+  flipper; Prunella's ballot sheet pinned to the chest with the pencil still
+  in hand; McDonovan's fedora tilted over a mouse ear; a **Pickle Stick**
+  doing duty as a right arm, warts and all; and one of Candy Florence's
+  boiled sweets orbiting the wreckage, attached to nothing. It glitches, of
+  course. It runs in the family. Unlock it by **completing a run in Mystic
+  mode**.
+- **Ol' Cardboard Box** — a corrugated box that got up and ran off: arms and
+  legs poked through the sides, two eyes cut into the front, a strip of
+  packing tape half peeled down the seam, and four top flaps that never
+  quite shut. He has one gift and one catastrophe. The gift is that he is a
+  **container** — a pickle goes straight in him and rides to the cottage
+  stove with **no pan and no trip to Neptune's Nook**, which is the whole
+  charred-fritter quest skipped in a single step. The catastrophe is the
+  obvious one: **water ends the run on the spot**. Cardboard and water have
+  only ever had the one relationship. Unlock him by **boarding the rocket
+  twice in the same run**.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

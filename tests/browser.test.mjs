@@ -152,7 +152,120 @@ for (const [name, opts, want] of [
   ok('surviving the shock unlocks nothing', r.electro === false && r.health === 60, JSON.stringify(r));
 }
 
-/* == 3. save & restore, end to end ====================================== */
+/* == 3. the newest three ================================================= */
+console.log('\nFoil, Error #44 and Ol\' Cardboard Box');
+
+// Helpers installed in the page: start a run, and tap somewhere through the
+// real handleDoubleTap() path rather than poking internals.
+await page.evaluate(() => {
+  window.__freshRun = (c) => {
+    const g = window.__game;
+    if (g.inMenu) { g.setCharacter(c); g.beginRun(false, 'easy'); }
+    else { g.restart(false, 'easy'); }
+    g.setCharacter(c);
+  };
+  window.__tapAt = (p, kind) => {
+    const g = window.__game;
+    g.player.position.set(p.x, p.y, p.z);
+    g.input.consumeTripleTap = () => kind === 'triple';
+    g.input.consumeDoubleTap = () => kind === 'double';
+    g.handleDoubleTap();
+  };
+});
+
+const traits = await page.evaluate(() => {
+  const g = window.__game; const out = {};
+  for (const c of ['foil', 'error44', 'cardboard']) {
+    g.setCharacter(c);
+    out[c] = { root: g.player.root.name, air: g.player.airMoveScale, move: g.player.moveScale,
+               rolls: !!g.player.marbleMesh, legs: (g.player.legs || []).length,
+               arms: (g.player.arms || []).length, glitch: !!g.player.isGlitchy };
+  }
+  return out;
+});
+// legs must be an array on every hero, legless ones included — the walk rig
+// iterates it unconditionally, and Foil shipped without it once.
+ok('Foil rolls, and still has an (empty) leg rig', traits.foil.rolls && traits.foil.legs === 0);
+ok('Foil: normal on the ground, 1.5x in the air', traits.foil.move === 1 && traits.foil.air === 1.5);
+ok('only Foil gets the air bonus', traits.error44.air === 1 && traits.cardboard.air === 1);
+ok('Error #44 glitches and walks', traits.error44.glitch && traits.error44.legs === 2);
+ok('the Box has arms and legs', traits.cardboard.legs === 2 && traits.cardboard.arms === 2);
+
+const foilCase = (o) => page.evaluate((o) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.foilUnlocked'); g.foilUnlocked = false;
+  window.__freshRun('badger');
+  g.fridgeOpenedThisRun = false;
+  if (o.fridge) window.__tapAt(g.world.cottage.fridge, 'double');
+  g.spawnedStars = 3; g.starsCollected = o.stars ? 3 : 1;
+  g.spawnedClouds = 4; g.cloudsCollected = o.clouds ? 4 : 2;
+  g.checkAchievements();
+  return g.foilUnlocked;
+}, o);
+ok('Foil: fridge + all clouds + all stars → unlock', await foilCase({ fridge: true, stars: true, clouds: true }) === true);
+ok('Foil: no fridge → no unlock', await foilCase({ fridge: false, stars: true, clouds: true }) === false);
+ok('Foil: a star missed → no unlock', await foilCase({ fridge: true, stars: false, clouds: true }) === false);
+ok('Foil: a cloud missed → no unlock', await foilCase({ fridge: true, stars: true, clouds: false }) === false);
+
+const mysticCase = (m) => page.evaluate((m) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.error44Unlocked'); g.error44Unlocked = false;
+  window.__freshRun('badger');
+  g.mysticRun = m;
+  g.gameOver('time');
+  return g.error44Unlocked;
+}, m);
+ok('Error #44: a completed Mystic run → unlock', await mysticCase(true) === true);
+ok('Error #44: an ordinary run → no unlock', await mysticCase(false) === false);
+
+const rocketCase = (rides) => page.evaluate(async (n) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.cardboardUnlocked'); g.cardboardUnlocked = false;
+  window.__freshRun('badger');
+  // The rocket only lands once the launchpad is uncovered, so put a real one
+  // down and board it through the ordinary triple-tap.
+  const { Rocket } = await import('./src/Entities.js');
+  if (g.rocket) { g.rocket.dispose(); g.rocket = null; }
+  g.rocket = new Rocket(g.scene, g.world, g.world.randomGroundPoint(12, 60, 0.85));
+  for (let i = 0; i < n; i++) {
+    g.player.vehicle = null; g.rocket.rider = null;
+    window.__tapAt(g.rocket.position, 'triple');
+  }
+  return { unlocked: g.cardboardUnlocked, rides: g.rocketRides, aboard: !!g.player.vehicle };
+}, rides);
+const oneRide = await rocketCase(1);
+const twoRides = await rocketCase(2);
+ok('the Box: boarding really happened', oneRide.rides === 1 && oneRide.aboard === true, JSON.stringify(oneRide));
+ok('the Box: one launch → no unlock', oneRide.unlocked === false);
+ok('the Box: two launches in one run → unlock', twoRides.unlocked === true, JSON.stringify(twoRides));
+
+const stove = (o) => page.evaluate((o) => {
+  const g = window.__game;
+  window.__freshRun(o.character);
+  g.boxPickle = o.pickle; g.fritterCooked = false; g.holdingPan = false; g.pickleInPan = false;
+  const before = g.points;
+  window.__tapAt(g.world.cottage.stove, 'double');
+  return { cooked: g.fritterCooked, gained: Math.round((g.points - before) * 10) / 10, carrying: g.boxPickle };
+}, o);
+const cooked = await stove({ character: 'cardboard', pickle: true });
+ok('the Box cooks a fritter with no pan at all', cooked.cooked === true && cooked.gained > 80, JSON.stringify(cooked));
+ok('and the pickle leaves the Box', cooked.carrying === false);
+ok('an empty Box cooks nothing', (await stove({ character: 'cardboard', pickle: false })).cooked === false);
+ok('everyone else still needs the pan', (await stove({ character: 'badger', pickle: false })).cooked === false);
+
+const splash = (c) => page.evaluate((c) => {
+  const g = window.__game;
+  window.__freshRun(c);
+  g.health = 100; g.isGameOver = false;
+  g.player.onSplash();
+  return { over: g.isGameOver, health: g.health };
+}, c);
+const boxSplash = await splash('cardboard');
+ok("water ends the Box's run", boxSplash.over === true && boxSplash.health === 0, JSON.stringify(boxSplash));
+const badgerSplash = await splash('badger');
+ok('everyone else just bounces off it', badgerSplash.over === false && badgerSplash.health === 100, JSON.stringify(badgerSplash));
+
+/* == 4. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();
