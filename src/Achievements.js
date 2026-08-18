@@ -36,6 +36,7 @@ export const TROPHIES = [
   { id: 'c100', medal: '💯', title: 'C Unit', desc: 'Score 100 or more with 10 different characters.' },
   { id: 'c200', medal: '🌊', title: 'C Change', desc: 'Score 200 or more with 20 different characters.' },
   { id: 'c300', medal: '👋', title: 'C U Later', desc: 'Score 300 or more with 30 different characters.' },
+  { id: 'c400', medal: '🛬', title: 'C U When You Get There', desc: 'Score 400 or more with 40 different characters.' },
   { id: 'play5', medal: '🎬', title: 'Repertory', desc: 'Play as 5 different characters.' },
   { id: 'play10', medal: '🎟️', title: 'Full Cast', desc: 'Play as 10 different characters.' },
   { id: 'play20', medal: '🎠', title: 'The Whole Menagerie', desc: 'Play as 20 different characters.' },

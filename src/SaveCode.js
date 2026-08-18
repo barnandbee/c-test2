@@ -48,7 +48,36 @@
  * game holds all of these in Sets, so order carries no meaning.
  */
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+
+/**
+ * A code is read with the SIZES IT WAS WRITTEN WITH, not today's.
+ *
+ * Version 1 hard-coded the current array lengths into the reader, which made
+ * "append only" necessary but not sufficient: appending a 49th boolean grew
+ * that bitfield from six bytes to seven, and every older code was then read
+ * at the wrong width. Version 2 writes the lengths into the code itself, so
+ * the lists can grow freely and old codes keep meaning what they meant.
+ *
+ * These are the layouts version 1 was actually issued with, newest first.
+ * A v1 code is tried against each and the one that consumes the payload
+ * exactly is the right one.
+ */
+const LEGACY_LAYOUTS = [
+  { bools: 51, trophies: 68, characters: 50, charSets: 4 }, // + the long-haul trophies
+  { bools: 51, trophies: 65, characters: 50, charSets: 4 }, // + Foil, Error #44, the Box
+  { bools: 48, trophies: 65, characters: 47, charSets: 4 }  // as first shipped
+];
+
+/** The sizes the current arrays imply. */
+function currentLayout() {
+  return {
+    bools: SCHEMA_BOOLS.length,
+    trophies: VOCAB_TROPHIES.length,
+    characters: VOCAB_CHARACTERS.length,
+    charSets: SCHEMA_CHAR_SETS.length
+  };
+}
 export const SAVE_PREFIX = 'mystic-badger.';
 
 /** Human-facing label for the code, used in the UI and the backup file. */
@@ -72,7 +101,7 @@ export const VOCAB_TROPHIES = [
   'afkc', 'charredmeander', 'farmervspig', 'mysticsquared', 'frogs50',
   'frogs100', 'mysticcubed', 'pointproved', 'lifetime10k', 'lifetime50k',
   'lifetime100k', 'frogspawn', 'zapped', 'antizapped',
-  'play40', 'total50', 'total100'
+  'play40', 'total50', 'total100', 'c400'
 ];
 
 export const VOCAB_CHARACTERS = [
@@ -122,7 +151,8 @@ export const SCHEMA_FLOATS = ['highScore', 'totalScore'];
 
 /** Comma-joined sets of character keys. */
 export const SCHEMA_CHAR_SETS = [
-  'scored100', 'scored200', 'scored300', 'sandwichDressers'
+  'scored100', 'scored200', 'scored300', 'sandwichDressers',
+  'scored400'
 ];
 
 const KEY_TROPHIES = 'achievements';
@@ -357,6 +387,13 @@ const splitList = (v) => String(v || '').split(',').map((s) => s.trim()).filter(
 export function encode(save) {
   const w = new Writer();
   w.byte(SAVE_VERSION);
+  // Self-describing: whoever reads this later knows exactly how wide each
+  // variable-length field is, whatever these arrays have grown to by then.
+  const layout = currentLayout();
+  w.varint(layout.bools);
+  w.varint(layout.trophies);
+  w.varint(layout.characters);
+  w.varint(layout.charSets);
 
   // Anything the schema cannot pack tightly rides along verbatim.
   const extras = {};
@@ -403,7 +440,7 @@ export function encode(save) {
   });
 
   w.bits(SCHEMA_BOOLS.map((k) => save[k] === '1'));
-  w.byte(sections);
+  w.varint(sections);
   for (const k of SCHEMA_INTS) w.varint(parseInt(save[k], 10) || 0);
   for (const k of SCHEMA_FLOATS) w.float(save[k]);
 
@@ -452,32 +489,33 @@ export function encode(save) {
  * @param {string} code
  * @returns {Object<string,string>} suffix -> value, ready for writeSave()
  */
-export function decode(code) {
-  const bytes = base32Decode(code);
-  if (bytes.length < 4) throw new Error('that code is too short to be a save');
-
-  // The trailing checksum covers everything before it. base32 pads up to a
-  // byte boundary, so a stray zero byte at the end is expected, not damage.
-  let end = bytes.length;
-  let body = null;
-  for (const candidate of [end, end - 1]) {
-    if (candidate < 3) continue;
-    const sum = bytes[candidate - 2] | (bytes[candidate - 1] << 8);
-    const head = bytes.slice(0, candidate - 2);
-    if (checksum(head) === sum) { body = head; break; }
-  }
-  if (!body) throw new Error('that code has a typo in it somewhere — check and try again');
-
+/**
+ * Parse a payload against one layout. Throws if it runs out of bytes.
+ * @returns {{save: Object, consumed: number}} how far it got, so the caller
+ *   can tell a correct layout (consumes everything) from a wrong guess.
+ */
+function parsePayload(body, layout, versioned) {
   const r = new Reader(body);
-  const version = r.byte();
-  if (version > SAVE_VERSION) {
-    throw new Error('that code was made by a newer version of the game');
+  r.byte(); // version, already read by the caller
+  if (versioned) {
+    layout = {
+      bools: r.varint(),
+      trophies: r.varint(),
+      characters: r.varint(),
+      charSets: r.varint()
+    };
   }
 
   const save = {};
-  const bools = r.bits(SCHEMA_BOOLS.length);
-  SCHEMA_BOOLS.forEach((k, i) => { if (bools[i]) save[k] = '1'; });
-  const sections = r.byte();
+  // A code may carry FEWER entries than we know about (older) or MORE (newer,
+  // if this build is behind). Read exactly what is there; anything past the
+  // end of our own list is a flag we have no name for, so it is dropped, and
+  // anything short simply stays false.
+  const bools = r.bits(layout.bools);
+  for (let i = 0; i < Math.min(layout.bools, SCHEMA_BOOLS.length); i++) {
+    if (bools[i]) save[SCHEMA_BOOLS[i]] = '1';
+  }
+  const sections = versioned ? r.varint() : r.byte();
   for (const k of SCHEMA_INTS) {
     const n = r.varint();
     if (n > 0) save[k] = String(n);
@@ -489,25 +527,35 @@ export function decode(code) {
 
   const trophies = [];
   if (sections & SECTION_TROPHIES) {
-    const bits = r.bits(VOCAB_TROPHIES.length);
-    VOCAB_TROPHIES.forEach((id, i) => { if (bits[i]) trophies.push(id); });
+    const bits = r.bits(layout.trophies);
+    for (let i = 0; i < Math.min(layout.trophies, VOCAB_TROPHIES.length); i++) {
+      if (bits[i]) trophies.push(VOCAB_TROPHIES[i]);
+    }
   }
 
   const charSets = {};
-  SCHEMA_CHAR_SETS.forEach((k, n) => {
-    charSets[k] = [];
-    if (!(sections & (1 << (SECTION_CHAR_SETS + n)))) return;
-    const header = r.byte();
-    if (header === 0xff) {
-      const bits = r.bits(VOCAB_CHARACTERS.length);
-      VOCAB_CHARACTERS.forEach((c, i) => { if (bits[i]) charSets[k].push(c); });
-    } else {
-      for (let i = 0; i < header; i++) {
-        const c = VOCAB_CHARACTERS[r.byte()];
-        if (c) charSets[k].push(c);
+  for (let n = 0; n < layout.charSets; n++) {
+    const key = SCHEMA_CHAR_SETS[n];
+    const members = [];
+    if (sections & (1 << (SECTION_CHAR_SETS + n))) {
+      const header = r.byte();
+      if (header === 0xff) {
+        const bits = r.bits(layout.characters);
+        for (let i = 0; i < Math.min(layout.characters, VOCAB_CHARACTERS.length); i++) {
+          if (bits[i]) members.push(VOCAB_CHARACTERS[i]);
+        }
+      } else {
+        for (let i = 0; i < header; i++) {
+          const c = VOCAB_CHARACTERS[r.byte()];
+          if (c) members.push(c);
+        }
       }
     }
-  });
+    // A set this build has no name for still had to be READ, to keep the
+    // stream in step — it just has nowhere to go.
+    if (key) charSets[key] = members;
+  }
+  for (const k of SCHEMA_CHAR_SETS) if (!charSets[k]) charSets[k] = [];
 
   if (sections & SECTION_CHARACTER) {
     save[KEY_CHARACTER] = VOCAB_CHARACTERS[r.byte()] || 'badger';
@@ -515,8 +563,13 @@ export function decode(code) {
 
   const usage = {};
   if (sections & SECTION_USAGE) {
-    const playedBits = r.bits(VOCAB_CHARACTERS.length);
-    VOCAB_CHARACTERS.forEach((c, i) => { if (playedBits[i]) usage[c] = r.varint(); });
+    const playedBits = r.bits(layout.characters);
+    for (let i = 0; i < layout.characters; i++) {
+      if (playedBits[i]) {
+        const n = r.varint();
+        if (VOCAB_CHARACTERS[i]) usage[VOCAB_CHARACTERS[i]] = n;
+      }
+    }
   }
 
   const extras = {};
@@ -546,7 +599,50 @@ export function decode(code) {
   }
   if (Object.keys(usage).length) save[KEY_USAGE] = JSON.stringify(usage);
 
-  return save;
+  return { save, consumed: r.i };
+}
+
+/**
+ * Unpack a code. Throws if it is damaged, truncated or from the future —
+ * callers must let that reach the player rather than importing a partial save.
+ * @param {string} code
+ * @returns {Object<string,string>} suffix -> value, ready for writeSave()
+ */
+export function decode(code) {
+  const bytes = base32Decode(code);
+  if (bytes.length < 4) throw new Error('that code is too short to be a save');
+
+  // The trailing checksum covers everything before it. base32 pads up to a
+  // byte boundary, so a stray zero byte at the end is expected, not damage.
+  let body = null;
+  for (const candidate of [bytes.length, bytes.length - 1]) {
+    if (candidate < 3) continue;
+    const sum = bytes[candidate - 2] | (bytes[candidate - 1] << 8);
+    const head = bytes.slice(0, candidate - 2);
+    if (checksum(head) === sum) { body = head; break; }
+  }
+  if (!body) throw new Error('that code has a typo in it somewhere — check and try again');
+
+  const version = body[0];
+  if (version > SAVE_VERSION) {
+    throw new Error('that code was made by a newer version of the game');
+  }
+
+  if (version >= 2) return parsePayload(body, null, true).save;
+
+  // Version 1 did not record its own sizes. Try the layouts it was issued
+  // with and take the one that consumes the payload exactly — a wrong guess
+  // either runs off the end or leaves bytes over.
+  let best = null;
+  for (const layout of LEGACY_LAYOUTS) {
+    try {
+      const got = parsePayload(body, layout, false);
+      if (got.consumed === body.length) return got.save;
+      if (!best) best = got.save;
+    } catch (e) { /* wrong layout: try the next */ }
+  }
+  if (best) return best;
+  throw new Error('that code could not be read — it may be from an older version');
 }
 
 /** Groups of five, which is how people read long codes without losing their place. */

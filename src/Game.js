@@ -160,6 +160,7 @@ const STORAGE_CHAR_USAGE = 'mystic-badger.charUsage';
 const STORAGE_SCORED100 = 'mystic-badger.scored100';
 const STORAGE_SCORED200 = 'mystic-badger.scored200';
 const STORAGE_SCORED300 = 'mystic-badger.scored300';
+const STORAGE_SCORED400 = 'mystic-badger.scored400';
 const STORAGE_MUTED = 'mystic-badger.muted';
 const STORAGE_BLOOM = 'mystic-badger.bloom';
 const STORAGE_CHARACTER = 'mystic-badger.character';
@@ -391,6 +392,7 @@ export class Game {
     this.scored100 = loadSet(STORAGE_SCORED100);
     this.scored200 = loadSet(STORAGE_SCORED200);
     this.scored300 = loadSet(STORAGE_SCORED300);
+    this.scored400 = loadSet(STORAGE_SCORED400);
     this.achievements = new Set(
       (readStorage(STORAGE_ACHIEVEMENTS, '') || '').split(',').filter(Boolean)
     );
@@ -1510,6 +1512,7 @@ export class Game {
     if (p >= 100) this._markCharScore(this.scored100, STORAGE_SCORED100, 'c100', 10);
     if (p >= 200) this._markCharScore(this.scored200, STORAGE_SCORED200, 'c200', 20);
     if (p >= 300) this._markCharScore(this.scored300, STORAGE_SCORED300, 'c300', 30);
+    if (p >= 400) this._markCharScore(this.scored400, STORAGE_SCORED400, 'c400', 40);
 
     // Snooker: land on exactly 147 having collected one of every item type.
     if (p === 147 && ERROR42_SET.every((v) => this.itemTypesCollected.has(v))) {

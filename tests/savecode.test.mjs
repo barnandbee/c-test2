@@ -200,7 +200,32 @@ ok('every live character is in VOCAB_CHARACTERS',
    liveChars.every((c) => VOCAB_CHARACTERS.includes(c)),
    `missing: ${liveChars.filter((c) => !VOCAB_CHARACTERS.includes(c)).join(', ')}`);
 
-/* -- 9. how big the codes actually are --------------------------------- */
+/* -- 9. codes from earlier versions still open ------------------------- */
+// Real codes, produced by the three versions of this module that were
+// actually shipped. Version 1 did not record its own field widths, so
+// appending a 49th boolean silently changed how every older code was read —
+// these fixtures are here so that can never happen again unnoticed.
+const LEGACY_SAVE = {
+  badgeretteUnlocked: '1', williamUnlocked: '1', electroUnlocked: '1', muted: '1',
+  frogHitsAllTime: '57', summitVisits: '3',
+  highScore: '106.6', totalScore: '12345.67',
+  achievements: 'score50,score100,zapped,antizapped,hastings',
+  scored100: 'badger,william', sandwichDressers: 'mayo,jam',
+  character: 'electro', charUsage: JSON.stringify({ badger: 40, william: 12 })
+};
+const LEGACY_CODES = {
+  'v1, as first shipped (48 bools, 65 trophies, 47 characters)':
+    '044G0-00001-G9EE8-30000-00D4A-C0RFB-AB0C0-00000-0G080-08200-2042R-K5R8G-00000-002G3-7SX0',
+  'v1, after Foil / Error #44 / the Box (51 bools, 50 characters)':
+    '044G0-00001-G015S-S0C00-0001M-H9G31-XD9C1-G0000-00201-00108-0080G-B2CQ1-20000-00000-181JC-56'
+};
+for (const [label, code] of Object.entries(LEGACY_CODES)) {
+  let got = null;
+  try { got = decode(code); } catch (e) { got = { error: e.message }; }
+  eq(`${label} still opens`, got, LEGACY_SAVE);
+}
+
+/* -- 10. how big the codes actually are --------------------------------- */
 console.log(`      code sizes — empty ${encode({}).length}, mid-game ${encode(mid).length}, maxed ${encode(full).length} chars`);
 
 console.log(`${fail === 0 ? '✅ savecode: ALL PASS' : `‼️  savecode: ${fail} FAILURE(S)`} (${pass} assertions)`);

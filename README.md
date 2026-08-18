@@ -120,7 +120,7 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   it pays **+40 points** instead — **once per run**. After that the pylon has
   nothing left to give them: they stay immune to it, but they can't farm it.
   Being taken to zero by the pylon earns
-  **Zapped!**; taking its +40 as one of the three earns **Anti-Zapped**.
+  **Zapped!**; taking its +40 as one of the four earns **Anti-Zapped**.
   And a badger who goes out on it on **400 or more** leaves behind
   **Electro Badger** (see the roster below).
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
@@ -606,8 +606,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   have together — trophies earned **plus** heroes unlocked — at **50**
   (**Half Centurion 🏵️**) and **100** (**Centurion 🎖️**), the same
   combined tally the Haunted Sweatshirt uses at 30. It also tracks the
-  long-haul feats: scoring 100 with 10 / 200 with 20 / 300 with 30 different
-  characters (**C Unit** / **C Change** / **C U Later**), playing as
+  long-haul feats: scoring 100 with 10 / 200 with 20 / 300 with 30 / 400
+  with 40 different characters (**C Unit** / **C Change** / **C U Later** /
+  **C U When You Get There 🛬**), playing as
   5 / 10 / 20 / 40 different heroes (**Standing Room Only 🎢** at forty),
   visiting all three Mystic Line stations in one run, taking President Fir
   Tree home to the Mystic Forest, taking Polar Pear to the summit flag,

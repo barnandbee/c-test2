@@ -307,6 +307,24 @@ const counts = await page.evaluate(() => {
 ok(`Centurion is attainable (${counts.trophies} + ${counts.characters})`,
    counts.trophies + counts.characters >= 100, JSON.stringify(counts));
 
+// C U When You Get There: 400 with 40 different characters.
+const cSeries = (score, chars) => page.evaluate(([sc, n]) => {
+  const g = window.__game;
+  const keys = Object.keys(g.getUnlockedMap());
+  g.achievements.delete('c400');
+  g.scored400 = new Set(keys.slice(0, Math.max(0, n - 1)));
+  window.__freshRun(keys[n - 1] || 'badger');
+  g.points = sc;
+  g.checkAchievements();
+  return { c400: g.achievements.has('c400'), banked: g.scored400.size };
+}, [score, chars]);
+const c39 = await cSeries(400, 39);
+const c40 = await cSeries(400, 40);
+const cLow = await cSeries(399, 40);
+ok('400 with 39 characters → not yet', c39.c400 === false, JSON.stringify(c39));
+ok('400 with 40 characters → C U When You Get There', c40.c400 === true, JSON.stringify(c40));
+ok('399 with 40 characters → no', cLow.c400 === false, JSON.stringify(cLow));
+
 /* == 5. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {

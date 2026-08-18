@@ -80,7 +80,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (68)
+## Trophies (69)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -146,6 +146,7 @@ milestone counts your best past run automatically.
 | 💯 **C Unit** | Score 100 or more with **10** different characters (all-time). |
 | 🌊 **C Change** | Score 200 or more with **20** different characters (all-time). |
 | 👋 **C U Later** | Score 300 or more with **30** different characters (all-time). |
+| 🛬 **C U When You Get There** | Score **400 or more** with **40** different characters (all-time). |
 
 ### Feats of daring
 | Trophy | How to unlock |
