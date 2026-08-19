@@ -93,9 +93,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   to (walls happen) is abandoned and left off the menu for a while, so it
   never stands around grinding its nose against the cottage.
 - **Weather** — a forecast is rolled at the start of every run. It's
-  usually exactly the lovely twilight it has always been (**80%**), but
-  there's a **10%** chance of **rain**, **5%** of a **storm** and **5%** of
-  **snow**. Each grades the whole scene — fog colour and density, the
+  usually exactly the lovely twilight it has always been (**70%**), but
+  there's a **10%** chance of **rain**, **5%** of a **storm**, **5%** of
+  **snow**, **5%** of **Purple Haze** and **5%** of **fog**. Each grades the whole scene — fog colour and density, the
   hemisphere bounce, the sun, the sky tint — and hangs precipitation over
   you: slanted streaks for rain, a heavier lean for storms, drifting flakes
   for snow. **Snow also settles**: a sheet of it lies across the whole
@@ -108,6 +108,19 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   synthesised sound bed. Snow is silent, as snow should be. All of it is
   one draw call with no per-frame CPU — every particle's motion is derived
   analytically in the vertex shader.
+  Two of them bring no precipitation at all, only atmosphere.
+  **🔮 Purple Haze** turns the *light itself* violet rather than laying a
+  purple filter over a normal scene: the sun, the hemisphere bounce, the fog
+  and the sky all go over together, the sun dims and the bounce lifts so
+  shadows fill in, and the whole forest reads flat, spooky and dreamlike.
+  **🌫️ Fog** is the visibility one — roughly three times clear's density,
+  and its height falloff is flattened almost to nothing so the murk fills
+  the air at every altitude instead of pooling in the valleys as evening
+  mist does. The sun is pulled right back, because a bright key through
+  thick fog only reads as haze. The point of it is the **lamps**: every
+  window, lantern, sign and glow in the world is turned up over three times
+  and given more than double its reach, so the buildings burn through the
+  murk and crossing the map becomes a matter of steering by them.
 - **The transmission tower** — a lattice pylon standing a couple of dozen
   paces from **Neptune's Nook**, on the bearing toward the Escher stairs.
   In fine weather it does nothing at all except look tall — and a little

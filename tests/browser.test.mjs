@@ -325,7 +325,78 @@ ok('400 with 39 characters → not yet', c39.c400 === false, JSON.stringify(c39)
 ok('400 with 40 characters → C U When You Get There', c40.c400 === true, JSON.stringify(c40));
 ok('399 with 40 characters → no', cLow.c400 === false, JSON.stringify(cLow));
 
-/* == 5. save & restore, end to end ====================================== */
+/* == 5. weather ========================================================= */
+console.log('\nWeather');
+await page.evaluate(async () => {
+  const S = await import('./src/Shaders.js');
+  window.__snap = () => {
+    const w = window.__game.world;
+    return {
+      fogColor: w.scene.fog.color.getHex(),
+      fogDensity: +w.scene.fog.density.toFixed(6),
+      fogFalloff: +S.SharedUniforms.uFogHeightFalloff.value.toFixed(6),
+      hemiI: +w.hemiLight.intensity.toFixed(4),
+      hemiSky: w.hemiLight.color.getHex(),
+      hemiGround: w.hemiLight.groundColor.getHex(),
+      sunI: +w.sun.intensity.toFixed(4),
+      sunColor: w.sun.color.getHex(),
+      lamps: w.lamps.map((l) => [+l.light.intensity.toFixed(3), +l.light.distance.toFixed(3)])
+    };
+  };
+});
+const wClear = await page.evaluate(() => { window.__game.weather.set('clear'); return window.__snap(); });
+const wHaze = await page.evaluate(() => { window.__game.weather.set('haze'); return window.__snap(); });
+const wFog = await page.evaluate(() => { window.__game.weather.set('fog'); return window.__snap(); });
+
+ok('Purple Haze recolours the light itself, not just dims it',
+   wHaze.hemiSky !== wClear.hemiSky && wHaze.sunColor !== wClear.sunColor);
+ok('Fog cuts visibility hard', wFog.fogDensity > wClear.fogDensity * 2.5,
+   `${wFog.fogDensity} vs ${wClear.fogDensity}`);
+ok('Fog fills the air rather than pooling low', wFog.fogFalloff < wClear.fogFalloff);
+ok('Fog turns the lamps up and out',
+   wFog.lamps.every(([i, d], n) => i >= wClear.lamps[n][0] && d >= wClear.lamps[n][1]) &&
+   wFog.lamps.some(([i], n) => i > wClear.lamps[n][0]));
+ok('a lamp that starts dark stays dark',
+   wFog.lamps.filter((l, n) => wClear.lamps[n][0] === 0).every(([i]) => i === 0));
+
+// The one that matters: any kind that does not fully undo itself leaves the
+// world permanently wrong for every later run in the session.
+for (const kind of ['haze', 'fog', 'rain', 'storm', 'snow']) {
+  const back = await page.evaluate((k) => {
+    const g = window.__game;
+    g.weather.set(k);
+    g.weather.set('clear');
+    return window.__snap();
+  }, kind);
+  ok(`${kind} → clear restores the scene byte for byte`,
+     JSON.stringify(back) === JSON.stringify(wClear));
+}
+
+const forecast = await page.evaluate(async () => {
+  const W = await import('./src/Weather.js');
+  const seen = {};
+  for (let i = 0; i < 20000; i++) { const k = W.Weather.roll(); seen[k] = (seen[k] || 0) + 1; }
+  return { total: +W.WEATHER_ODDS.reduce((a, o) => a + o.chance, 0).toFixed(4), seen };
+});
+ok('the odds leave the remainder to clear', forecast.total < 1, String(forecast.total));
+ok('haze and fog actually come up',
+   forecast.seen.haze > 500 && forecast.seen.fog > 500, JSON.stringify(forecast.seen));
+ok('clear is still the common case',
+   forecast.seen.clear > 10000, JSON.stringify(forecast.seen));
+
+const live = await page.evaluate(() => {
+  const g = window.__game; const out = {};
+  for (const k of ['clear', 'haze', 'fog', 'rain', 'snow', 'storm']) {
+    g.weather.set(k); out[k] = !!g.world.towerElectrified;
+  }
+  g.weather.set('clear');
+  return out;
+});
+ok('only a storm electrifies the pylon',
+   live.storm === true && !live.haze && !live.fog && !live.rain && !live.snow,
+   JSON.stringify(live));
+
+/* == 6. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();

@@ -15,7 +15,7 @@
  */
 
 import * as THREE from 'three';
-import { createPrecipMaterial, setSnowCover } from './Shaders.js';
+import { createPrecipMaterial, setSnowCover, SharedUniforms } from './Shaders.js';
 
 /**
  * The forecast. Weights are probabilities and must leave the remainder to
@@ -24,7 +24,9 @@ import { createPrecipMaterial, setSnowCover } from './Shaders.js';
 export const WEATHER_ODDS = [
   { kind: 'rain', chance: 0.10 },
   { kind: 'storm', chance: 0.05 },
-  { kind: 'snow', chance: 0.05 }
+  { kind: 'snow', chance: 0.05 },
+  { kind: 'haze', chance: 0.05 },
+  { kind: 'fog', chance: 0.05 }
 ];
 
 /**
@@ -56,6 +58,48 @@ const PRESETS = {
     particles: 3600,
     precip: { fall: 40, drift: 0.5, slant: 0.34, size: 30, streak: 1,
               opacity: 0.5, color: 0xaab8cc }
+  },
+  /**
+   * Purple Haze — no precipitation, just wrongness. The sky, the fog and
+   * BOTH lights go violet, so it is not a purple filter over a normal scene:
+   * the light itself is the wrong colour, and everything it touches turns
+   * with it. The sun is dimmed and the bounce lifted so shadows fill in and
+   * the whole forest reads flat and dreamlike.
+   */
+  haze: {
+    label: '🔮 PURPLE HAZE',
+    fogColor: 0x6b3fa0, fogDensity: 0.024,
+    hemiIntensity: 1.15, sunIntensity: 1.05,
+    hemiSky: 0x9a5fd0, hemiGround: 0x4a2a6e,
+    sunColor: 0xc77bff,
+    skyTint: 0x7b3fd4, skyTintAmount: 0.72,
+    particles: 0,
+    // Lamps read as lonely violet points rather than warm windows.
+    lampGain: 1.25, lampReach: 0.9
+  },
+  /**
+   * Fog — the visibility one. Density is roughly five times clear, which
+   * closes the view down to the near trees, and the sun is pulled right back
+   * because a bright key through thick fog just looks like haze.
+   *
+   * The point of it is the lamps: every window, sign and lantern in the world
+   * is turned up and given far more reach, so the buildings burn through the
+   * murk and navigating by them becomes the way you cross the map.
+   */
+  fog: {
+    label: '🌫️ FOG',
+    fogColor: 0xb9bcc6, fogDensity: 0.033,
+    // Near-uniform with height: fog, not mist in a hollow.
+    fogFalloff: 0.022,
+    hemiIntensity: 0.85, sunIntensity: 0.55,
+    hemiSky: 0xc3c7d2, hemiGround: 0x6d7268,
+    sunColor: 0xd8dae2,
+    skyTint: 0xc2c5cf, skyTintAmount: 0.8,
+    particles: 700,
+    // Barely-moving motes, to give the air something to hang in.
+    precip: { fall: 0.5, drift: 3.0, slant: 0.02, size: 14, streak: 0,
+              opacity: 0.1, color: 0xdfe3ea },
+    lampGain: 3.2, lampReach: 2.4
   },
   snow: {
     label: '❄️ SNOW',
@@ -93,7 +137,16 @@ export class Weather {
       fogColor: world.scene.fog.color.clone(),
       fogDensity: world.scene.fog.density,
       hemiIntensity: world.hemiLight.intensity,
-      sunIntensity: world.sun.intensity
+      sunIntensity: world.sun.intensity,
+      // Purple Haze needs the light itself to change colour, not just dim —
+      // so the originals have to be kept as carefully as the intensities.
+      hemiSky: world.hemiLight.color.clone(),
+      hemiGround: world.hemiLight.groundColor.clone(),
+      sunColor: world.sun.color.clone(),
+      // How fast fog thins with altitude. The default is steep, which reads
+      // as mist pooling in the valleys — right for twilight, wrong for fog,
+      // which should fill the air at every height.
+      fogFalloff: SharedUniforms.uFogHeightFalloff.value
     };
   }
 
@@ -116,16 +169,32 @@ export class Weather {
 
     // Grade the atmosphere.
     const fog = this.world.scene.fog;
+    const hemi = this.world.hemiLight;
     if (this.kind === 'clear') {
       fog.color.copy(this._base.fogColor);
       fog.density = this._base.fogDensity;
-      this.world.hemiLight.intensity = this._base.hemiIntensity;
+      hemi.intensity = this._base.hemiIntensity;
       this.world.sun.intensity = this._base.sunIntensity;
     } else {
       fog.color.setHex(preset.fogColor);
       fog.density = preset.fogDensity;
-      this.world.hemiLight.intensity = preset.hemiIntensity;
+      hemi.intensity = preset.hemiIntensity;
       this.world.sun.intensity = preset.sunIntensity;
+    }
+    // Light colour: a preset that says nothing about it gets the originals
+    // back, so every kind is a full description rather than a delta on
+    // whatever happened to be set last.
+    hemi.color.copy(preset.hemiSky !== undefined
+      ? new THREE.Color(preset.hemiSky) : this._base.hemiSky);
+    hemi.groundColor.copy(preset.hemiGround !== undefined
+      ? new THREE.Color(preset.hemiGround) : this._base.hemiGround);
+    this.world.sun.color.copy(preset.sunColor !== undefined
+      ? new THREE.Color(preset.sunColor) : this._base.sunColor);
+    SharedUniforms.uFogHeightFalloff.value = preset.fogFalloff !== undefined
+      ? preset.fogFalloff : this._base.fogFalloff;
+    // Windows and lanterns burn brighter the harder it is to see.
+    if (this.world.setLampBoost) {
+      this.world.setLampBoost(preset.lampGain || 1, preset.lampReach || 1);
     }
     this._applySkyTint(preset);
 

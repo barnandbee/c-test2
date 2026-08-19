@@ -233,7 +233,15 @@ purely cosmetic (no scoring change), and colour returns at the bell.
 
 A **forecast is rolled once, at the start of every run**, and holds for the
 whole three minutes. Most of the time it stays lovely: **10%** rain, **5%**
-storm, **5%** snow, **80%** clear. It changes the fog, the light, the sky
+storm, **5%** snow, **5%** Purple Haze, **5%** fog, **70%** clear.
+
+Two of them carry no precipitation, only atmosphere:
+
+- **🔮 Purple Haze** — the light itself turns violet, not a filter laid over
+  the scene. Spooky and flat and dreamlike. No effect on scoring.
+- **🌫️ Fog** — visibility drops hard, but every window, lantern and sign in
+  the world burns over three times brighter and reaches more than twice as
+  far, so you navigate by the buildings. No effect on scoring. It changes the fog, the light, the sky
 and the sound — and snow lays a sheet across the whole landscape, hero
 included. None of it changes scoring on its own.
 

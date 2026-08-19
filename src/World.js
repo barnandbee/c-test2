@@ -367,6 +367,40 @@ export class World {
     this._buildVegPatch();
     this._buildCoral();
     this._buildMountainPeak();
+    this._collectLamps();
+  }
+
+  /**
+   * Every point light in the world — cottage windows, the Nook's lamp, the
+   * helter skelter's glow, the blossom tree, the pylon's buzz — gathered by
+   * walking the scene rather than by listing them, so a lamp added later is
+   * picked up without anyone remembering to register it.
+   *
+   * Their base intensity and reach are kept so the weather can turn them up
+   * in fog and put them back afterwards. A lamp that starts dark (the stove
+   * flame, the pylon's arc) has a base of zero and stays dark — it drives
+   * its own brightness elsewhere, and this must not fight it.
+   */
+  _collectLamps() {
+    this.lamps = [];
+    this.scene.traverse((o) => {
+      if (o.isPointLight) {
+        this.lamps.push({ light: o, intensity: o.intensity, distance: o.distance });
+      }
+    });
+  }
+
+  /**
+   * Scale every lamp's brightness and reach. 1 restores them exactly.
+   * @param {number} gain  multiplier on intensity
+   * @param {number} reach multiplier on distance (how far the light carries)
+   */
+  setLampBoost(gain = 1, reach = 1) {
+    if (!this.lamps) return;
+    for (const l of this.lamps) {
+      l.light.intensity = l.intensity * gain;
+      l.light.distance = l.distance * reach;
+    }
   }
 
   /* ================================================================ */
