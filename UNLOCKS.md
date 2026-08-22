@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (50)
+## Characters (52)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -66,6 +66,8 @@ each one is earned. This is the single source of truth for unlock conditions
 | 48 | **Foil** | In one run: **open the cottage fridge**, and clear **every marshmallow cloud AND every star**. A ball of scrunched-up kitchen foil with eyes stuck on: he rolls at everyone's pace on the ground, but travels **1.5× as fast through the air**. |
 | 49 | **Error #44** | **Complete a run in Mystic mode** — the rare 1.8% monochrome wash. The loader's third crash, mashed from the ten heroes after Error #43's ten: Polar Pear, Night Eye, Pineapple Penguin, Billy Rocketfingers, Pickle Stick, Glass Badger, McDonovan, Prunella, Gary Mountain and Candy Florence. |
 | 50 | **Ol' Cardboard Box** | **Board the rocket twice in the same run.** A box with arms and legs. He is a container, so a **pickle goes straight in him** and travels to the stove with no pan needed — but **water ends the run on the spot**. |
+| 51 | **Tara Tapir** | In **one run**: cook the **charred pickle fritter**, collect **Neptune's Raisin**, use **no transport at all** (no hovercraft, balloon, rocket or train) and finish on **200 or more**. A tapir chef — toque, blue gingham whites, apron and whisk. |
+| 52 | **Postboxer** | Score **400 or more** as **all three Errors** — #42, #43 **and** #44 — across any runs. A pillar box in a blue flat cap with a satchel and a letter in hand. |
 
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
@@ -269,6 +271,21 @@ Three unlocks hang off that live frame:
 
 > Because a storm is only a **5%** roll, Electro Badger is as much a matter
 > of patience as of skill — you cannot force the weather.
+
+---
+
+## The coffee cart
+
+A small mobile coffee cart is parked out on the long empty stretch **between
+the transmission tower and the Escher stairs** — roughly **50 paces from the
+pylon**, on flat ground, clear of the mountain and never inside a tree.
+
+Walk into it and it pours you one: **+30 health, once per run** (it never
+takes you past 100). It is the only health in the game that isn't simply
+*don't get hit* — but it is a long way out, so the trip has to be worth it.
+
+Its lantern counts as one of the world's lamps, so in **fog** it burns
+brighter and further along with every other light, and can be steered by.
 
 ---
 

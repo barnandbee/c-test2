@@ -810,8 +810,8 @@ export class World {
       // Puffs rise, swell and fade, then start again from the urn.
       for (const puff of this.coffeeSteam.children) {
         const k = ((st * 0.42 + puff.userData.phase) % 1);
-        puff.position.set(Math.sin(k * 5 + puff.userData.phase) * 0.16, k * 1.5, 0);
-        const s = 0.35 + k * 1.15;
+        puff.position.set(Math.sin(k * 5 + puff.userData.phase) * 0.13, k * 1.05, 0);
+        const s = 0.2 + k * 0.62;
         puff.scale.setScalar(s);
         puff.visible = k < 0.92;
       }
@@ -1483,6 +1483,7 @@ export class World {
       if (tooClose) continue;
       placements.push({ x, z, h: this.getHeight(x, z), scale: this.rng.range(0.85, 1.55) });
     }
+    this.treeSpots = placements;
 
     const trunkGeo = this._makeTrunkGeometry();
     const branchGeo = this._makeBranchGeometry();
@@ -3261,6 +3262,11 @@ export class World {
       // Keep well clear of the mountain — its flanks are no place to park.
       if (Math.hypot(px - this.mountainX, pz - this.mountainZ) < this.mountainRadius + 8) return true;
       if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 10) return true;
+      // Don't park inside a tree. The forest is scattered long before this
+      // runs, so the only way to know is to ask where it actually went.
+      for (const t of this.treeSpots || []) {
+        if (Math.hypot(px - t.x, pz - t.z) < 4.5) return true;
+      }
       const e = 1.2;
       const grad = Math.hypot(
         this.getHeight(px + e, pz) - this.getHeight(px - e, pz),
@@ -3400,7 +3406,7 @@ export class World {
     const puffGeo = track(new THREE.SphereGeometry(0.14, 10, 8));
     const puffMat = track(createToonMaterial({ color: 0xe8e2d6, rim: { color: 0xffffff, strength: 0.4, threshold: 0.55 } }));
     puffMat.transparent = true;
-    puffMat.opacity = 0.5;
+    puffMat.opacity = 0.34;
     puffMat.depthWrite = false;
     for (let i = 0; i < 5; i++) {
       const puff = new THREE.Mesh(puffGeo, puffMat);

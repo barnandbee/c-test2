@@ -136,6 +136,16 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   **Zapped!**; taking its +40 as one of the four earns **Anti-Zapped**.
   And a badger who goes out on it on **400 or more** leaves behind
   **Electro Badger** (see the roster below).
+- **The coffee cart** — a small mobile cart parked on the long empty stretch
+  **between the transmission tower and the Escher stairs**, about **50 paces**
+  from the pylon. Green box on spoked wheels, a scalloped red canopy, an urn
+  steaming gently on the counter. Walk into it for **+30 health, once per
+  run** — the only health in the game that isn't simply *don't get hit*. It
+  is sited the same way the pylon is, fanning its bearing outward until it
+  finds flat ground clear of water, the cave, the dell, the map edge, the
+  **mountain** and, since the forest is scattered long before it exists,
+  every tree. Its lantern joins the world's lamps, so it burns through fog
+  with the rest of them.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -496,6 +506,23 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   obvious one: **water ends the run on the spot**. Cardboard and water have
   only ever had the one relationship. Unlock him by **boarding the rocket
   twice in the same run**.
+- **Tara Tapir** — a tapir who cooks. The giveaway is the snout: a tapir's
+  proboscis is a short prehensile trunk, so it is built as a tapering stack
+  that droops at the tip rather than jutting out. Tall pleated toque,
+  double-breasted **blue gingham** whites with gold studs (the check is
+  painted into the mesh as two crossed square waves), a white apron with the
+  toque-and-crossed-cutlery crest, a red neckerchief, black service shoes,
+  and a wire whisk held up in one hand. Unlock her with a **full dinner
+  service on foot**: in one run, cook the charred pickle fritter, fetch
+  **Neptune's Raisin** from the loft, take **no transport whatsoever** — no
+  hovercraft, balloon, rocket or train — and still finish on **200 or more**.
+- **Postboxer** — a Royal Mail pillar box that got tired of waiting and went
+  to deliver the post itself. Red column with the moulded plinth and collar,
+  a **blue flat cap** with its peak jutting over the letter slot (the slot is
+  his mouth), a **blue satchel** slung across on a broad strap with a spare
+  letter poking out, and an **envelope held out** in one hand, stamp and all.
+  Unlock him by scoring **400 or more as all three Errors** — #42, #43 and
+  #44 — across any runs.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

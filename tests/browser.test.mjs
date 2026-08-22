@@ -396,7 +396,101 @@ ok('only a storm electrifies the pylon',
    live.storm === true && !live.haze && !live.fog && !live.rain && !live.snow,
    JSON.stringify(live));
 
-/* == 6. save & restore, end to end ====================================== */
+/* == 6. Tara Tapir, Postboxer and the coffee cart ======================= */
+console.log('\nTara Tapir, Postboxer, the coffee cart');
+const newTraits = await page.evaluate(() => {
+  const g = window.__game; const out = {};
+  for (const c of ['tapir', 'postboxer']) {
+    g.setCharacter(c);
+    out[c] = { root: g.player.root.name, legs: (g.player.legs || []).length, arms: (g.player.arms || []).length };
+  }
+  return out;
+});
+ok('Tara Tapir builds and walks', newTraits.tapir.root === 'tapir' && newTraits.tapir.legs === 2);
+ok('Postboxer builds and walks', newTraits.postboxer.root === 'postboxer' && newTraits.postboxer.legs === 2);
+
+const site = await page.evaluate(() => {
+  const w = window.__game.world;
+  const d = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
+  return {
+    fromTower: +d(w.coffeeX, w.coffeeZ, w.towerX, w.towerZ).toFixed(1),
+    fromStairs: +d(w.coffeeX, w.coffeeZ, w.stairsX, w.stairsZ).toFixed(1),
+    towerToStairs: +d(w.towerX, w.towerZ, w.stairsX, w.stairsZ).toFixed(1),
+    fromMountain: +d(w.coffeeX, w.coffeeZ, w.mountainX, w.mountainZ).toFixed(1),
+    mountainRadius: w.mountainRadius,
+    fromCentre: +Math.hypot(w.coffeeX, w.coffeeZ).toFixed(1),
+    playable: w.playableRadius,
+    nearestTree: +Math.min(...(w.treeSpots || [{ x: 1e6, z: 1e6 }])
+      .map((t) => d(w.coffeeX, w.coffeeZ, t.x, t.z))).toFixed(1),
+    onWater: w.isNearLake(w.coffeeX, w.coffeeZ) && w.getHeight(w.coffeeX, w.coffeeZ) < w.waterLevel + 0.6
+  };
+});
+ok(`the cart is roughly 50 paces from the pylon (${site.fromTower})`, Math.abs(site.fromTower - 50) <= 12);
+ok('clear of the mountain', site.fromMountain > site.mountainRadius, JSON.stringify(site));
+ok('not parked in a tree', site.nearestTree >= 4.5, String(site.nearestTree));
+ok('not in a lake, and inside the map', !site.onWater && site.fromCentre < site.playable - 5);
+ok('on the pylon side of the stairs', site.fromStairs < site.towerToStairs);
+
+const coffee = (hp) => page.evaluate((h) => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.health = h; g.coffeeDrunk = false;
+  const w = g.world;
+  const at = { x: w.coffeeX, y: w.coffeeLevel, z: w.coffeeZ };
+  g.handleCoffee(at);
+  const first = g.health;
+  g.handleCoffee(at);
+  return { first, second: g.health };
+}, hp);
+const cup = await coffee(60);
+ok('a cup is worth +30 health', cup.first === 90, JSON.stringify(cup));
+ok('and only one cup a run', cup.second === 90);
+ok('it never pushes past 100', (await coffee(90)).first === 100);
+
+const tapirCase = (o) => page.evaluate((o) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.tapirUnlocked'); g.tapirUnlocked = false;
+  window.__freshRun('badger');
+  g.fritterCooked = o.fritter; g.raisinTaken = o.raisin;
+  g.vehiclesRidden = new Set(o.rode ? ['balloon'] : []);
+  g.stationsVisited = new Set(o.train ? ['docklands'] : []);
+  g.points = o.points;
+  g.gameOver('time');
+  return g.tapirUnlocked;
+}, o);
+const dinner = { fritter: true, raisin: true, rode: false, train: false, points: 200 };
+ok('Tapir: fritter + raisin + no transport + 200 → unlock', await tapirCase(dinner) === true);
+ok('Tapir: no fritter → no', await tapirCase({ ...dinner, fritter: false }) === false);
+ok('Tapir: no raisin → no', await tapirCase({ ...dinner, raisin: false }) === false);
+ok('Tapir: took a ride → no', await tapirCase({ ...dinner, rode: true }) === false);
+ok('Tapir: took the train → no', await tapirCase({ ...dinner, train: true }) === false);
+ok('Tapir: 199 → no', await tapirCase({ ...dinner, points: 199 }) === false);
+
+const postCase = (errors) => page.evaluate((es) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.postboxerUnlocked'); g.postboxerUnlocked = false;
+  g.scored400 = new Set(es);
+  g.checkAchievements();
+  return g.postboxerUnlocked;
+}, errors);
+ok('Postboxer: all three Errors at 400+ → unlock', await postCase(['error42', 'error43', 'error44']) === true);
+ok('Postboxer: only two → no', await postCase(['error42', 'error43']) === false);
+ok('Postboxer: other heroes do not count', await postCase(['badger', 'tudor', 'error42']) === false);
+
+// Postboxer reads scored400, so that set must keep recording after its own
+// trophy is won — it used to stop, which would have frozen him out forever.
+const stillRecording = await page.evaluate(() => {
+  const g = window.__game;
+  g.achievements.add('c400');
+  g.scored400 = new Set(['badger']);
+  window.__freshRun('error42');
+  g._markCharScore(g.scored400, 'mystic-badger.scored400', 'c400', 40);
+  return [...g.scored400];
+});
+ok('scored400 keeps recording after c400 is earned', stillRecording.includes('error42'),
+   JSON.stringify(stillRecording));
+
+/* == 7. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();

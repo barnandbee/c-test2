@@ -7400,8 +7400,11 @@ export class Player {
     root.name = 'tapir';
     const track = (r) => { this._disposables.push(r); return r; };
 
-    const hideMat = track(createToonMaterial({ color: 0x6d6660, rim: { color: 0xcfc6bb, strength: 0.3, threshold: 0.62 } }));
-    const hideDarkMat = track(createToonMaterial({ color: 0x4e4842 }));
+    const hideMat = track(createToonMaterial({ color: 0xa2978c, rim: { color: 0xcfc6bb, strength: 0.3, threshold: 0.62 } }));
+    const hideDarkMat = track(createToonMaterial({ color: 0x6f655c }));
+    // The proboscis a shade lighter again, so it reads as its own feature
+    // rather than merging into the skull.
+    const snoutMat = track(createToonMaterial({ color: 0xb4a99d, rim: { color: 0xe6dcd0, strength: 0.32, threshold: 0.6 } }));
     const whiteMat = track(createToonMaterial({ color: 0xf6f4ee, rim: { color: 0xffffff, strength: 0.3, threshold: 0.6 } }));
     const ginghamMat = track(createToonMaterial({ vertexColors: true, rim: { color: 0xdfeeff, strength: 0.28, threshold: 0.62 } }));
     const redMat = track(createToonMaterial({ color: 0xc9312b }));
@@ -7414,7 +7417,7 @@ export class Player {
 
     const body = new THREE.Group();
     body.name = 'body';
-    body.position.y = 0.78;
+    body.position.y = 0.85;
     root.add(body);
     this.bodyGroup = body;
 
@@ -7435,21 +7438,21 @@ export class Player {
     body.add(torso);
 
     // --- the apron: a long white panel, plus its bib and strings -----------
-    const apron = new THREE.Mesh(track(new THREE.BoxGeometry(0.6, 0.78, 0.06)), whiteMat);
-    apron.position.set(0, -0.28, 0.34);
+    const apron = new THREE.Mesh(track(new THREE.BoxGeometry(0.46, 0.56, 0.05)), whiteMat);
+    apron.position.set(0, -0.32, 0.33);
     apron.castShadow = true;
     body.add(apron);
-    const bib = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.34, 0.05)), whiteMat);
-    bib.position.set(0, 0.2, 0.36);
+    const bib = new THREE.Mesh(track(new THREE.BoxGeometry(0.28, 0.26, 0.04)), whiteMat);
+    bib.position.set(0, 0.08, 0.35);
     body.add(bib);
     // The printed crest — a toque over crossed cutlery, as on the real thing.
     const crest = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), whiteMat);
-    crest.position.set(0, -0.14, 0.38);
+    crest.position.set(0, -0.2, 0.37);
     crest.scale.set(1.1, 0.8, 0.3);
     body.add(crest);
     for (const lean of [-1, 1]) {
       const util = new THREE.Mesh(track(new THREE.BoxGeometry(0.035, 0.26, 0.02)), lean < 0 ? redMat : steelMat);
-      util.position.set(0, -0.26, 0.385);
+      util.position.set(0, -0.32, 0.365);
       util.rotation.z = lean * 0.5;
       body.add(util);
     }
@@ -7457,7 +7460,7 @@ export class Player {
     // --- double-breasted studs --------------------------------------------
     const studGeo = track(new THREE.SphereGeometry(0.032, 8, 6));
     for (const sx of [-0.11, 0.11]) {
-      for (const sy of [0.28, 0.15, 0.02]) {
+      for (const sy of [0.3, 0.2, 0.1]) {
         const stud = new THREE.Mesh(studGeo, goldMat);
         stud.position.set(sx, sy, 0.36);
         body.add(stud);
@@ -7494,7 +7497,7 @@ export class Player {
       { r: 0.085, l: 0.13, y: -0.32, z: 0.6, rx: 1.05 }
     ];
     for (const t of trunk) {
-      const seg = new THREE.Mesh(track(new THREE.CylinderGeometry(t.r * 0.88, t.r, t.l, 14)), hideMat);
+      const seg = new THREE.Mesh(track(new THREE.CylinderGeometry(t.r * 0.88, t.r, t.l, 14)), snoutMat);
       seg.position.set(0, t.y, t.z);
       seg.rotation.x = Math.PI / 2 - t.rx;
       seg.castShadow = true;
@@ -7636,7 +7639,7 @@ export class Player {
 
     const body = new THREE.Group();
     body.name = 'body';
-    body.position.y = 0.8;
+    body.position.y = 0.95;
     root.add(body);
     this.bodyGroup = body;
 
@@ -7741,8 +7744,8 @@ export class Player {
     const handGeo = track(new THREE.SphereGeometry(0.085, 10, 8));
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
-      pivot.position.set(side * 0.44, 0.18, 0);
-      const arm = new THREE.Mesh(armGeo, redMat);
+      pivot.position.set(side * 0.52, 0.18, 0);
+      const arm = new THREE.Mesh(armGeo, redDarkMat);
       arm.position.y = -0.19;
       arm.castShadow = true;
       pivot.add(arm);
