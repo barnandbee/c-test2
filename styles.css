@@ -3489,3 +3489,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .error44-icon::after { animation: none; }
 }
+
+/* --- Tara Tapir: toque over a grey snout, gingham blues -------------- */
+.tapir-icon {
+  background: linear-gradient(165deg, #8fbde4 0 38%, #4f8ec4 38% 62%, #6d6660 62%);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.tapir-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    /* the toque */
+    radial-gradient(ellipse 46% 24% at 50% 16%, #f6f4ee 0 100%, transparent 100%),
+    /* the neckerchief */
+    linear-gradient(#0000 0 52%, #c9312b 52% 60%, #0000 60%),
+    /* the drooping snout */
+    radial-gradient(ellipse 12% 26% at 50% 74%, #6d6660 0 100%, transparent 100%);
+}
+
+/* --- Postboxer: red pillar, blue cap, black slot -------------------- */
+.postboxer-icon {
+  background: linear-gradient(180deg, #2f62a8 0 26%, #c4241d 26%);
+  border-radius: 8px 8px 5px 5px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(142, 25, 19, 0.6);
+}
+.postboxer-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    /* the letter slot */
+    linear-gradient(#0000 0 46%, #141210 46% 54%, #0000 54%),
+    /* the envelope held out to one side */
+    linear-gradient(100deg, #0000 0 62%, #f8f6ef 62% 88%, #0000 88%);
+}

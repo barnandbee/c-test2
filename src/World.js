@@ -367,6 +367,7 @@ export class World {
     this._buildVegPatch();
     this._buildCoral();
     this._buildMountainPeak();
+    this._buildCoffeeCart();
     this._collectLamps();
   }
 
@@ -798,6 +799,21 @@ export class World {
           setSide(w.front, clz > 0.5);
           setSide(w.back, clz < -0.5);
         }
+      }
+    }
+
+    // Steam off the coffee urn.
+    if (this.coffeeSteam) {
+      // Each animated fixture keeps its own clock, so the steam needs one too.
+      this._steamTime = (this._steamTime || 0) + dt;
+      const st = this._steamTime;
+      // Puffs rise, swell and fade, then start again from the urn.
+      for (const puff of this.coffeeSteam.children) {
+        const k = ((st * 0.42 + puff.userData.phase) % 1);
+        puff.position.set(Math.sin(k * 5 + puff.userData.phase) * 0.16, k * 1.5, 0);
+        const s = 0.35 + k * 1.15;
+        puff.scale.setScalar(s);
+        puff.visible = k < 0.92;
       }
     }
 
@@ -3220,6 +3236,195 @@ export class World {
     for (const [sx, sz] of legPts) {
       this.colliders.push({ x: x + sx * BASE, z: z + sz * BASE, radius: 0.4, top: y + HEIGHT });
     }
+  }
+
+  /**
+   * A small mobile coffee cart, parked out on the long empty stretch between
+   * the transmission tower and the Escher stairs.
+   *
+   * Sited about fifty paces from the pylon along the bearing toward the
+   * stairs. That line is not guaranteed to be walkable, so the search fans
+   * the bearing outward — smallest deviation first, exactly as the pylon
+   * itself does — and rejects water, the cave, the dell, steep ground, the
+   * map edge and, as asked, the mountain: a coffee cart has no business
+   * halfway up a mountain.
+   */
+  _buildCoffeeCart() {
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const bearing = Math.atan2(this.stairsZ - this.towerZ, this.stairsX - this.towerX);
+    const unusable = (px, pz) => {
+      if (this.isNearLake(px, pz) && this.getHeight(px, pz) < this.waterLevel + 0.6) return true;
+      if (this.isNearWhirlLake(px, pz) && this.getHeight(px, pz) < this.whirlWaterLevel + 0.6) return true;
+      if (Math.hypot(px - this.caveX, pz - this.caveZ) < this.caveRadius + 4) return true;
+      if (this.dellRadius && Math.hypot(px - this.dellX, pz - this.dellZ) < this.dellRadius + 4) return true;
+      // Keep well clear of the mountain — its flanks are no place to park.
+      if (Math.hypot(px - this.mountainX, pz - this.mountainZ) < this.mountainRadius + 8) return true;
+      if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 10) return true;
+      const e = 1.2;
+      const grad = Math.hypot(
+        this.getHeight(px + e, pz) - this.getHeight(px - e, pz),
+        this.getHeight(px, pz + e) - this.getHeight(px, pz - e)
+      ) / (2 * e);
+      return grad > 0.34;   // a cart needs flatter ground than a pylon does
+    };
+
+    let x = this.towerX + Math.cos(bearing) * 50;
+    let z = this.towerZ + Math.sin(bearing) * 50;
+    let sited = false;
+    for (let step = 0; step <= 22 && !sited; step++) {
+      for (const sign of step === 0 ? [1] : [1, -1]) {
+        const a = bearing + sign * step * (7 * Math.PI / 180);
+        for (const d of [50, 47, 53, 44, 56, 41, 59]) {
+          const px = this.towerX + Math.cos(a) * d;
+          const pz = this.towerZ + Math.sin(a) * d;
+          if (unusable(px, pz)) continue;
+          x = px; z = pz; sited = true;
+          break;
+        }
+        if (sited) break;
+      }
+    }
+
+    const y = this.getHeight(x, z);
+    this.coffeeX = x;
+    this.coffeeZ = z;
+    this.coffeeLevel = y;
+    this.coffeeRadius = 2.6;
+    this.coffeePos = new THREE.Vector3(x, y, z);
+
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    // Face the cart back toward the pylon, so its serving side greets anyone
+    // walking the obvious line.
+    group.rotation.y = bearing + Math.PI / 2;
+    this.scene.add(group);
+    this.coffeeCart = group;
+
+    const bodyMat = track(createToonMaterial({ color: 0x2f6f5e, rim: { color: 0x9fe0cc, strength: 0.35, threshold: 0.6 } }));
+    const trimMat = track(createToonMaterial({ color: 0xf0e6d2 }));
+    const woodMat = track(createToonMaterial({ color: 0x8a6236 }));
+    const metalMat = track(createToonMaterial({ color: 0x9aa0a8 }));
+    const darkMat = track(createToonMaterial({ color: 0x2a2620 }));
+    const canopyMat = track(createToonMaterial({ color: 0xc9463c }));
+    const cupMat = track(createToonMaterial({ color: 0xf7f3ea }));
+    const glowMat = track(createToonMaterial({
+      color: 0xffd9a0, emissive: 0xffb45a, emissiveIntensity: 1.5,
+      pulse: { speed: 1.4, phase: 0.6 }
+    }));
+
+    // --- the cart box -------------------------------------------------------
+    const box = new THREE.Mesh(track(new THREE.BoxGeometry(2.4, 1.15, 1.25)), bodyMat);
+    box.position.y = 1.0;
+    box.castShadow = true;
+    group.add(box);
+
+    // Serving counter along the front, and a warm strip of light under it.
+    const counter = new THREE.Mesh(track(new THREE.BoxGeometry(2.6, 0.1, 1.5)), trimMat);
+    counter.position.y = 1.62;
+    counter.castShadow = true;
+    group.add(counter);
+    const strip = new THREE.Mesh(track(new THREE.BoxGeometry(2.2, 0.07, 0.05)), glowMat);
+    strip.position.set(0, 1.5, 0.66);
+    group.add(strip);
+
+    // --- two spoked wheels --------------------------------------------------
+    const wheelGeo = track(new THREE.CylinderGeometry(0.42, 0.42, 0.14, 16));
+    const hubGeo = track(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 8));
+    const spokeGeo = track(new THREE.BoxGeometry(0.05, 0.74, 0.05));
+    for (const side of [-1, 1]) {
+      const wheel = new THREE.Mesh(wheelGeo, darkMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(side * 0.95, 0.42, 0.68);
+      wheel.castShadow = true;
+      group.add(wheel);
+      const hub = new THREE.Mesh(hubGeo, metalMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.copy(wheel.position);
+      group.add(hub);
+      for (let i = 0; i < 3; i++) {
+        const spoke = new THREE.Mesh(spokeGeo, metalMat);
+        spoke.position.copy(wheel.position);
+        spoke.rotation.x = Math.PI / 2;
+        spoke.rotation.z = (i / 3) * Math.PI;
+        group.add(spoke);
+      }
+    }
+    // A single castor and a pull handle at the back — it is mobile, after all.
+    const castor = new THREE.Mesh(track(new THREE.SphereGeometry(0.18, 10, 8)), darkMat);
+    castor.position.set(0, 0.2, -0.72);
+    group.add(castor);
+    const handle = new THREE.Mesh(track(new THREE.CylinderGeometry(0.045, 0.045, 1.0, 8)), woodMat);
+    handle.position.set(0, 1.15, -1.0);
+    handle.rotation.x = 0.5;
+    group.add(handle);
+
+    // --- striped canopy -----------------------------------------------------
+    const posts = track(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 8));
+    for (const sx of [-1.05, 1.05]) {
+      const post = new THREE.Mesh(posts, metalMat);
+      post.position.set(sx, 2.2, 0.1);
+      group.add(post);
+    }
+    const canopy = new THREE.Mesh(track(new THREE.BoxGeometry(2.9, 0.09, 1.7)), canopyMat);
+    canopy.position.set(0, 2.78, 0.1);
+    canopy.rotation.x = -0.08;
+    canopy.castShadow = true;
+    group.add(canopy);
+    // Scalloped valance along the front edge.
+    const scallopGeo = track(new THREE.SphereGeometry(0.17, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2));
+    for (let i = -6; i <= 6; i++) {
+      const sc = new THREE.Mesh(scallopGeo, i % 2 === 0 ? canopyMat : trimMat);
+      sc.position.set(i * 0.22, 2.72, 0.92);
+      sc.rotation.x = Math.PI;
+      group.add(sc);
+    }
+
+    // --- an urn, a cup, and steam ------------------------------------------
+    const urn = new THREE.Mesh(track(new THREE.CylinderGeometry(0.26, 0.3, 0.6, 14)), metalMat);
+    urn.position.set(-0.66, 1.97, 0.05);
+    urn.castShadow = true;
+    group.add(urn);
+    const tap = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.07, 0.22)), darkMat);
+    tap.position.set(-0.66, 1.82, 0.34);
+    group.add(tap);
+
+    const cup = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.1, 0.22, 12)), cupMat);
+    cup.position.set(0.62, 1.78, 0.2);
+    group.add(cup);
+
+    // Steam: a few soft puffs drifting off the urn. Animated in update().
+    this.coffeeSteam = new THREE.Group();
+    this.coffeeSteam.position.set(-0.66, 2.3, 0.05);
+    group.add(this.coffeeSteam);
+    const puffGeo = track(new THREE.SphereGeometry(0.14, 10, 8));
+    const puffMat = track(createToonMaterial({ color: 0xe8e2d6, rim: { color: 0xffffff, strength: 0.4, threshold: 0.55 } }));
+    puffMat.transparent = true;
+    puffMat.opacity = 0.5;
+    puffMat.depthWrite = false;
+    for (let i = 0; i < 5; i++) {
+      const puff = new THREE.Mesh(puffGeo, puffMat);
+      puff.userData.phase = i * 0.8;
+      this.coffeeSteam.add(puff);
+    }
+
+    // --- a painted sign board ----------------------------------------------
+    const sign = new THREE.Mesh(track(new THREE.BoxGeometry(1.5, 0.5, 0.06)), woodMat);
+    sign.position.set(0, 2.35, 0.85);
+    group.add(sign);
+    const bean = new THREE.Mesh(track(new THREE.SphereGeometry(0.13, 12, 10)), track(createToonMaterial({ color: 0x54331c })));
+    bean.position.set(0, 2.35, 0.92);
+    bean.scale.set(1, 1.35, 0.5);
+    group.add(bean);
+
+    // A lantern, so it reads as somewhere open for business — and so it
+    // burns through the fog with the rest of the world's lamps.
+    const lamp = new THREE.PointLight(0xffc98a, 2.2, 12, 2);
+    lamp.position.set(0, 2.55, 0.4);
+    group.add(lamp);
+
+    // Standing on it would be odd; walking into it is the point.
+    this.colliders.push({ x, z, radius: 1.5, top: y + 1.7 });
   }
 
   /** Energise (or earth) the tower — driven by the weather. */

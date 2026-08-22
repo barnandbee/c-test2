@@ -193,6 +193,8 @@ export class Player {
     else if (this.character === 'foil') this.root = this.buildFoil();
     else if (this.character === 'error44') this.root = this.buildError44();
     else if (this.character === 'cardboard') this.root = this.buildCardboardBox();
+    else if (this.character === 'tapir') this.root = this.buildTapir();
+    else if (this.character === 'postboxer') this.root = this.buildPostboxer();
     else this.root = this.buildBadger(); // badger, badgerette, william, electro
     this.root.position.copy(this.position);
   }
@@ -7379,6 +7381,416 @@ export class Player {
 
     // No legs — it floats.
     this.legs = [];
+
+    return root;
+  }
+
+  /**
+   * Tara Tapir — a tapir who cooks. The giveaway is the snout: a tapir's
+   * proboscis is a short prehensile trunk, so it is built as a tapering
+   * stack rather than a badger's cone, drooping at the tip.
+   *
+   * Whites: a tall pleated toque, a double-breasted jacket in blue gingham
+   * with gold studs, a long white apron, a red neckerchief, black service
+   * shoes — and a wire whisk held up in one hand, because a chef standing
+   * still still has to look busy.
+   */
+  buildTapir() {
+    const root = new THREE.Group();
+    root.name = 'tapir';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const hideMat = track(createToonMaterial({ color: 0x6d6660, rim: { color: 0xcfc6bb, strength: 0.3, threshold: 0.62 } }));
+    const hideDarkMat = track(createToonMaterial({ color: 0x4e4842 }));
+    const whiteMat = track(createToonMaterial({ color: 0xf6f4ee, rim: { color: 0xffffff, strength: 0.3, threshold: 0.6 } }));
+    const ginghamMat = track(createToonMaterial({ vertexColors: true, rim: { color: 0xdfeeff, strength: 0.28, threshold: 0.62 } }));
+    const redMat = track(createToonMaterial({ color: 0xc9312b }));
+    const goldMat = track(createToonMaterial({ color: 0xe8b93c, emissive: 0x5c4408, emissiveIntensity: 0.35 }));
+    const shoeMat = track(createToonMaterial({ color: 0x1d1a17 }));
+    const steelMat = track(createToonMaterial({ color: 0xc8cdd4, rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 } }));
+    const eyeMat = track(createToonMaterial({ color: 0x14100c }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const noseMat = track(createToonMaterial({ color: 0xc98d92 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.78;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso in gingham: a woven check painted straight into the mesh ----
+    const torsoGeo = track(new THREE.CapsuleGeometry(0.38, 0.5, 8, 20));
+    paintVertexColors(torsoGeo, (n, p, c) => {
+      // Two square waves crossed — the classic gingham lattice, where the
+      // overlap is darkest, a single band mid, and neither is white.
+      const u = Math.sin(p.x * 22) > 0 ? 1 : 0;
+      const v = Math.sin(p.y * 22) > 0 ? 1 : 0;
+      const pale = new THREE.Color(0xeef4fb);
+      const mid = new THREE.Color(0x8fbde4);
+      const deep = new THREE.Color(0x4f8ec4);
+      c.copy(u && v ? deep : (u || v ? mid : pale));
+    });
+    const torso = new THREE.Mesh(torsoGeo, ginghamMat);
+    torso.castShadow = true;
+    body.add(torso);
+
+    // --- the apron: a long white panel, plus its bib and strings -----------
+    const apron = new THREE.Mesh(track(new THREE.BoxGeometry(0.6, 0.78, 0.06)), whiteMat);
+    apron.position.set(0, -0.28, 0.34);
+    apron.castShadow = true;
+    body.add(apron);
+    const bib = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.34, 0.05)), whiteMat);
+    bib.position.set(0, 0.2, 0.36);
+    body.add(bib);
+    // The printed crest — a toque over crossed cutlery, as on the real thing.
+    const crest = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), whiteMat);
+    crest.position.set(0, -0.14, 0.38);
+    crest.scale.set(1.1, 0.8, 0.3);
+    body.add(crest);
+    for (const lean of [-1, 1]) {
+      const util = new THREE.Mesh(track(new THREE.BoxGeometry(0.035, 0.26, 0.02)), lean < 0 ? redMat : steelMat);
+      util.position.set(0, -0.26, 0.385);
+      util.rotation.z = lean * 0.5;
+      body.add(util);
+    }
+
+    // --- double-breasted studs --------------------------------------------
+    const studGeo = track(new THREE.SphereGeometry(0.032, 8, 6));
+    for (const sx of [-0.11, 0.11]) {
+      for (const sy of [0.28, 0.15, 0.02]) {
+        const stud = new THREE.Mesh(studGeo, goldMat);
+        stud.position.set(sx, sy, 0.36);
+        body.add(stud);
+      }
+    }
+
+    // --- neckerchief -------------------------------------------------------
+    const scarf = new THREE.Mesh(track(new THREE.TorusGeometry(0.2, 0.06, 8, 18)), redMat);
+    scarf.position.set(0, 0.44, 0.02);
+    scarf.rotation.x = Math.PI / 2;
+    body.add(scarf);
+    const knot = new THREE.Mesh(track(new THREE.ConeGeometry(0.1, 0.2, 6)), redMat);
+    knot.position.set(0, 0.34, 0.24);
+    knot.rotation.x = Math.PI;
+    body.add(knot);
+
+    // --- head, and the snout that makes it a tapir -------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.72, 0.06);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const skull = new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 22, 18)), hideMat);
+    skull.scale.set(0.92, 1, 1.12);
+    skull.castShadow = true;
+    headGroup.add(skull);
+
+    // A tapered stack, each segment smaller and lower than the last, so the
+    // proboscis droops the way a tapir's does rather than jutting out.
+    const trunk = [
+      { r: 0.15, l: 0.2, y: -0.04, z: 0.3, rx: 0.15 },
+      { r: 0.125, l: 0.18, y: -0.1, z: 0.45, rx: 0.4 },
+      { r: 0.1, l: 0.16, y: -0.2, z: 0.55, rx: 0.75 },
+      { r: 0.085, l: 0.13, y: -0.32, z: 0.6, rx: 1.05 }
+    ];
+    for (const t of trunk) {
+      const seg = new THREE.Mesh(track(new THREE.CylinderGeometry(t.r * 0.88, t.r, t.l, 14)), hideMat);
+      seg.position.set(0, t.y, t.z);
+      seg.rotation.x = Math.PI / 2 - t.rx;
+      seg.castShadow = true;
+      headGroup.add(seg);
+    }
+    const snoutTip = new THREE.Mesh(track(new THREE.SphereGeometry(0.085, 12, 10)), noseMat);
+    snoutTip.position.set(0, -0.38, 0.62);
+    headGroup.add(snoutTip);
+
+    // Eyes, brows and ears.
+    const eyeGeo = track(new THREE.SphereGeometry(0.045, 12, 10));
+    const glintGeo = track(new THREE.SphereGeometry(0.016, 8, 6));
+    const earGeo = track(new THREE.SphereGeometry(0.09, 12, 10));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(side * 0.15, 0.05, 0.25);
+      headGroup.add(eye);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.165, 0.075, 0.285);
+      headGroup.add(glint);
+      const ear = new THREE.Mesh(earGeo, hideMat);
+      ear.position.set(side * 0.25, 0.24, -0.06);
+      ear.scale.set(0.55, 1.1, 0.5);
+      ear.castShadow = true;
+      headGroup.add(ear);
+      const inner = new THREE.Mesh(earGeo, hideDarkMat);
+      inner.position.set(side * 0.27, 0.24, -0.03);
+      inner.scale.set(0.32, 0.8, 0.3);
+      headGroup.add(inner);
+    }
+
+    // --- the toque: a pleated band under a puffed crown --------------------
+    const band = new THREE.Mesh(track(new THREE.CylinderGeometry(0.29, 0.29, 0.16, 20)), whiteMat);
+    band.position.set(0, 0.34, -0.02);
+    band.castShadow = true;
+    headGroup.add(band);
+    const pleatGeo = track(new THREE.BoxGeometry(0.03, 0.15, 0.03));
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const pleat = new THREE.Mesh(pleatGeo, whiteMat);
+      pleat.position.set(Math.sin(a) * 0.29, 0.34, Math.cos(a) * 0.29 - 0.02);
+      pleat.rotation.y = -a;
+      headGroup.add(pleat);
+    }
+    const crown = new THREE.Mesh(track(new THREE.SphereGeometry(0.33, 20, 16)), whiteMat);
+    crown.position.set(0, 0.56, -0.02);
+    crown.scale.set(1, 0.85, 1);
+    crown.castShadow = true;
+    headGroup.add(crown);
+    // A few lobes so the crown reads as pleated cloth, not a ball.
+    const lobeGeo = track(new THREE.SphereGeometry(0.14, 12, 10));
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      const lobe = new THREE.Mesh(lobeGeo, whiteMat);
+      lobe.position.set(Math.sin(a) * 0.22, 0.6, Math.cos(a) * 0.22 - 0.02);
+      headGroup.add(lobe);
+    }
+
+    // --- arms: one on the hip, one holding a whisk aloft --------------------
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.075, 0.065, 0.4, 10));
+    const cuffGeo = track(new THREE.CylinderGeometry(0.082, 0.082, 0.07, 10));
+    const handGeo = track(new THREE.SphereGeometry(0.085, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.38, 0.28, 0);
+      const arm = new THREE.Mesh(armGeo, ginghamMat);
+      arm.position.y = -0.2;
+      arm.castShadow = true;
+      pivot.add(arm);
+      const cuff = new THREE.Mesh(cuffGeo, whiteMat);
+      cuff.position.y = -0.4;
+      pivot.add(cuff);
+      const hand = new THREE.Mesh(handGeo, hideMat);
+      hand.position.y = -0.46;
+      pivot.add(hand);
+
+      // The whisk: a handle and a cage of bowed wires, on her right.
+      if (side === 1) {
+        const handle = new THREE.Mesh(track(new THREE.CylinderGeometry(0.03, 0.038, 0.22, 8)), shoeMat);
+        handle.position.y = -0.6;
+        pivot.add(handle);
+        const wireGeo = track(new THREE.TorusGeometry(0.075, 0.011, 5, 14, Math.PI));
+        for (let i = 0; i < 5; i++) {
+          const wire = new THREE.Mesh(wireGeo, steelMat);
+          wire.position.y = -0.82;
+          wire.rotation.z = Math.PI;   // bowed downward, tips meeting at the base
+          wire.rotation.y = (i / 5) * Math.PI;
+          pivot.add(wire);
+        }
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.34 });
+    }
+
+    // --- legs in dark stocking, with service shoes -------------------------
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.095, 0.085, 0.44, 10));
+    const shoeGeo = track(new THREE.BoxGeometry(0.19, 0.1, 0.3));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.17, -0.5, 0);
+      const leg = new THREE.Mesh(legGeo, hideMat);
+      leg.position.y = -0.22;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const shoe = new THREE.Mesh(shoeGeo, shoeMat);
+      shoe.position.set(0, -0.48, 0.06);
+      shoe.castShadow = true;
+      pivot.add(shoe);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
+   * Postboxer — a Royal Mail pillar box that has decided to deliver the post
+   * itself. Red column, black aperture, the raised collection plate, a domed
+   * cap with the flat cap sitting on top of it, a blue satchel slung across
+   * the body, and an envelope held out in one hand.
+   */
+  buildPostboxer() {
+    const root = new THREE.Group();
+    root.name = 'postboxer';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const redMat = track(createToonMaterial({ color: 0xc4241d, rim: { color: 0xff9a86, strength: 0.3, threshold: 0.62 } }));
+    const redDarkMat = track(createToonMaterial({ color: 0x8e1913 }));
+    const blackMat = track(createToonMaterial({ color: 0x141210 }));
+    const capMat = track(createToonMaterial({ color: 0x2f62a8, rim: { color: 0x9fc4f0, strength: 0.32, threshold: 0.6 } }));
+    const bagMat = track(createToonMaterial({ color: 0x27528f }));
+    const paperMat = track(createToonMaterial({ color: 0xf8f6ef, rim: { color: 0xffffff, strength: 0.35, threshold: 0.58 } }));
+    const inkMat = track(createToonMaterial({ color: 0x3a3630 }));
+    const goldMat = track(createToonMaterial({ color: 0xd8ad3a, emissive: 0x4c3a06, emissiveIntensity: 0.35 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14100c }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.8;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the pillar --------------------------------------------------------
+    const pillar = new THREE.Mesh(track(new THREE.CylinderGeometry(0.42, 0.45, 1.25, 24)), redMat);
+    pillar.castShadow = true;
+    body.add(pillar);
+    // The moulded band around the foot.
+    const plinth = new THREE.Mesh(track(new THREE.CylinderGeometry(0.5, 0.52, 0.12, 24)), redDarkMat);
+    plinth.position.y = -0.62;
+    body.add(plinth);
+    // The collar under the cap.
+    const collar = new THREE.Mesh(track(new THREE.CylinderGeometry(0.47, 0.47, 0.08, 24)), redDarkMat);
+    collar.position.y = 0.63;
+    body.add(collar);
+
+    // --- the head of the box: dome, then the flat cap on top ---------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.68, 0);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const dome = new THREE.Mesh(
+      track(new THREE.SphereGeometry(0.44, 22, 14, 0, Math.PI * 2, 0, Math.PI / 2)), redMat);
+    dome.scale.set(1, 0.62, 1);
+    dome.castShadow = true;
+    headGroup.add(dome);
+
+    // The flat cap: a shallow crown with a peak jutting forward.
+    const crown = new THREE.Mesh(track(new THREE.SphereGeometry(0.4, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2)), capMat);
+    crown.position.y = 0.24;
+    crown.scale.set(1.02, 0.5, 1.02);
+    crown.castShadow = true;
+    headGroup.add(crown);
+    const capBand = new THREE.Mesh(track(new THREE.CylinderGeometry(0.41, 0.41, 0.07, 20)), capMat);
+    capBand.position.y = 0.24;
+    headGroup.add(capBand);
+    const peak = new THREE.Mesh(track(new THREE.CylinderGeometry(0.38, 0.38, 0.04, 20, 1, false, -0.9, 1.8)), capMat);
+    peak.position.set(0, 0.24, 0.2);
+    peak.scale.set(1, 1, 1.5);
+    peak.castShadow = true;
+    headGroup.add(peak);
+    const button = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), capMat);
+    button.position.y = 0.44;
+    headGroup.add(button);
+
+    // --- the face: the letter slot IS the mouth ----------------------------
+    const slot = new THREE.Mesh(track(new THREE.BoxGeometry(0.44, 0.09, 0.06)), blackMat);
+    slot.position.set(0, -0.16, 0.4);
+    headGroup.add(slot);
+    const slotHood = new THREE.Mesh(track(new THREE.BoxGeometry(0.5, 0.05, 0.09)), redDarkMat);
+    slotHood.position.set(0, -0.09, 0.41);
+    headGroup.add(slotHood);
+
+    const eyeGeo = track(new THREE.SphereGeometry(0.075, 14, 12));
+    const pupilGeo = track(new THREE.SphereGeometry(0.038, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.016, 8, 6));
+    for (const side of [-1, 1]) {
+      const white = new THREE.Mesh(eyeGeo, paperMat);
+      white.position.set(side * 0.16, 0.03, 0.34);
+      white.scale.set(1, 1.1, 0.7);
+      headGroup.add(white);
+      const pupil = new THREE.Mesh(pupilGeo, eyeMat);
+      pupil.position.set(side * 0.17, 0.02, 0.4);
+      headGroup.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.19, 0.055, 0.425);
+      headGroup.add(glint);
+    }
+
+    // --- the collection plate, and a cypher --------------------------------
+    const plate = new THREE.Mesh(track(new THREE.BoxGeometry(0.36, 0.22, 0.04)), redDarkMat);
+    plate.position.set(0, -0.28, 0.42);
+    body.add(plate);
+    const cypher = new THREE.Mesh(track(new THREE.TorusGeometry(0.07, 0.018, 6, 14)), goldMat);
+    cypher.position.set(0, 0.16, 0.43);
+    body.add(cypher);
+
+    // --- the satchel, slung on a broad strap -------------------------------
+    const strap = new THREE.Mesh(track(new THREE.TorusGeometry(0.44, 0.045, 8, 22)), bagMat);
+    strap.position.set(0, 0.16, 0);
+    strap.rotation.set(Math.PI / 2, 0, 0.62);
+    body.add(strap);
+    const satchel = new THREE.Mesh(track(new THREE.BoxGeometry(0.42, 0.32, 0.2)), bagMat);
+    satchel.position.set(-0.46, -0.24, -0.06);
+    satchel.rotation.z = 0.18;
+    satchel.castShadow = true;
+    body.add(satchel);
+    const flap = new THREE.Mesh(track(new THREE.BoxGeometry(0.44, 0.16, 0.22)), bagMat);
+    flap.position.set(-0.46, -0.08, -0.06);
+    flap.rotation.z = 0.18;
+    body.add(flap);
+    // A letter poking out of the bag, and the corner of another.
+    const spare = new THREE.Mesh(track(new THREE.BoxGeometry(0.2, 0.14, 0.02)), paperMat);
+    spare.position.set(-0.5, 0.0, 0.02);
+    spare.rotation.set(0.3, 0, 0.5);
+    body.add(spare);
+
+    // --- arms: one held out with a letter, one resting -----------------------
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.055, 0.38, 10));
+    const handGeo = track(new THREE.SphereGeometry(0.085, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.44, 0.18, 0);
+      const arm = new THREE.Mesh(armGeo, redMat);
+      arm.position.y = -0.19;
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, redDarkMat);
+      hand.position.y = -0.4;
+      pivot.add(hand);
+
+      // The letter, held out for collection.
+      if (side === 1) {
+        const letter = new THREE.Mesh(track(new THREE.BoxGeometry(0.34, 0.23, 0.02)), paperMat);
+        letter.position.set(0.06, -0.5, 0.12);
+        letter.rotation.set(0.35, 0, -0.25);
+        letter.castShadow = true;
+        pivot.add(letter);
+        // The envelope's flap, drawn as two creases.
+        for (const lean of [-1, 1]) {
+          const crease = new THREE.Mesh(track(new THREE.BoxGeometry(0.2, 0.012, 0.01)), inkMat);
+          crease.position.set(0.06, -0.485, 0.132);
+          crease.rotation.set(0.35, 0, -0.25 + lean * 0.62);
+          pivot.add(crease);
+        }
+        const stamp = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.06, 0.01)), goldMat);
+        stamp.position.set(0.17, -0.44, 0.135);
+        stamp.rotation.set(0.35, 0, -0.25);
+        pivot.add(stamp);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.42 });
+    }
+
+    // --- stubby legs, so a pillar box can run an errand ---------------------
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.07, 0.062, 0.3, 8));
+    const bootGeo = track(new THREE.BoxGeometry(0.18, 0.09, 0.26));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.18, -0.66, 0);
+      const leg = new THREE.Mesh(legGeo, blackMat);
+      leg.position.y = -0.15;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const boot = new THREE.Mesh(bootGeo, blackMat);
+      boot.position.set(0, -0.33, 0.05);
+      boot.castShadow = true;
+      pivot.add(boot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
 
     return root;
   }

@@ -129,5 +129,7 @@ export const CHARACTER_UNLOCKS = [
   { key: 'electro', name: 'Electro Badger', how: 'Playing as any badger, walk into the live transmission tower during a storm on a score of 400 or more and let it take you to zero health.' },
   { key: 'foil', name: 'Foil', how: 'In one run: open the cottage fridge, and clear every marshmallow cloud AND every star.' },
   { key: 'error44', name: 'Error #44', how: 'Complete a run in Mystic mode — the rare monochrome wash.' },
-  { key: 'cardboard', name: "Ol' Cardboard Box", how: 'Board the rocket twice in the same run.' }
+  { key: 'cardboard', name: "Ol' Cardboard Box", how: 'Board the rocket twice in the same run.' },
+  { key: 'tapir', name: 'Tara Tapir', how: 'In one run: cook the charred pickle fritter, collect Neptune\u2019s Raisin, use no transport at all (no hovercraft, balloon, rocket or train) and finish on 200 or more.' },
+  { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' }
 ];

@@ -139,6 +139,11 @@ const STORAGE_ELECTRO = 'mystic-badger.electroUnlocked';
 const STORAGE_FOIL = 'mystic-badger.foilUnlocked';
 const STORAGE_ERROR44 = 'mystic-badger.error44Unlocked';
 const STORAGE_CARDBOARD = 'mystic-badger.cardboardUnlocked';
+const STORAGE_TAPIR = 'mystic-badger.tapirUnlocked';
+const STORAGE_POSTBOXER = 'mystic-badger.postboxerUnlocked';
+const TAPIR_SCORE = 200;            // Tara Tapir's full-dinner-service threshold
+const POSTBOXER_ERRORS = ['error42', 'error43', 'error44'];
+const COFFEE_HEALTH = 30;           // what a cup at the cart is worth
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
@@ -373,6 +378,8 @@ export class Game {
     this.foilUnlocked = readStorage(STORAGE_FOIL) === '1';
     this.error44Unlocked = readStorage(STORAGE_ERROR44) === '1';
     this.cardboardUnlocked = readStorage(STORAGE_CARDBOARD) === '1';
+    this.tapirUnlocked = readStorage(STORAGE_TAPIR) === '1';
+    this.postboxerUnlocked = readStorage(STORAGE_POSTBOXER) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -501,6 +508,7 @@ export class Game {
     this.fridgeOpenedThisRun = false;      // Foil: was the fridge opened this run?
     this.rocketRides = 0;                  // Ol' Cardboard Box: launches this run
     this.boxPickle = false;                // the Box is carrying a pickle bare-handed
+    this.coffeeDrunk = false;              // taken a cup at the cart this run?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -988,6 +996,34 @@ export class Game {
     return true;
   }
 
+  /**
+   * The coffee cart. Walk into it and it pours you one: +30 health, once a
+   * run. It is a long way out past the pylon, so the walk has to be worth
+   * something — and it is the only health in the game that isn't simply
+   * "don't get hit".
+   */
+  handleCoffee(center) {
+    const w = this.world;
+    if (!w.coffeePos || this.coffeeDrunk) return;
+    const dx = center.x - w.coffeeX;
+    const dz = center.z - w.coffeeZ;
+    if (dx * dx + dz * dz > w.coffeeRadius * w.coffeeRadius) return;
+    if (Math.abs(center.y - w.coffeeLevel) > 4) return;
+
+    this.coffeeDrunk = true;
+    const before = this.health;
+    this.health = Math.min(100, this.health + COFFEE_HEALTH);
+    this.ui.setHealth(this.health);
+    this.audio.play('collect', 1);
+    const gained = Math.round(this.health - before);
+    this.ui.showTimeToast(gained > 0 ? `☕ ONE COFFEE — +${gained} HEALTH` : '☕ ONE COFFEE. LOVELY.');
+    this.particles.spawnBurst(
+      this._playerCenter.set(w.coffeeX, w.coffeeLevel + 2.2, w.coffeeZ),
+      0xffc98a,
+      { count: 26, speed: 3.2, size: 40, upBias: 0.9, life: 0.9 }
+    );
+  }
+
   handleHazards() {
     if (this.invulnTimer > 0) return;
     const center = this.player.getColliderCenter(this._playerCenter);
@@ -1169,6 +1205,8 @@ export class Game {
     if (name === 'foil') return this.foilUnlocked;
     if (name === 'error44') return this.error44Unlocked;
     if (name === 'cardboard') return this.cardboardUnlocked;
+    if (name === 'tapir') return this.tapirUnlocked;
+    if (name === 'postboxer') return this.postboxerUnlocked;
     return name === 'badger';
   }
 
@@ -1279,7 +1317,9 @@ export class Game {
       electro: this.electroUnlocked,
       foil: this.foilUnlocked,
       error44: this.error44Unlocked,
-      cardboard: this.cardboardUnlocked
+      cardboard: this.cardboardUnlocked,
+      tapir: this.tapirUnlocked,
+      postboxer: this.postboxerUnlocked
     };
   }
 
@@ -1523,6 +1563,16 @@ export class Game {
     if (unlocked >= 1) this.awardAchievement('unlock1');
     if (unlocked >= 5) this.awardAchievement('unlock5');
     if (unlocked >= 10) this.awardAchievement('unlock10');
+
+    // Postboxer: all three Errors have posted a 400 at some point. Read
+    // straight off the scored400 set, which is why that set has to keep
+    // recording after its own trophy is won.
+    if (!this.postboxerUnlocked && POSTBOXER_ERRORS.every((e) => this.scored400.has(e))) {
+      this.postboxerUnlocked = true;
+      writeStorage(STORAGE_POSTBOXER, '1');
+      this.runUnlockNames.push('Postboxer');
+      this.ui.showTimeToast('★ POSTBOXER UNLOCKED! 📮');
+    }
 
     // Play-count trophies: distinct heroes ever taken into a run.
     const played = Object.keys(this.charUsage).length;
@@ -1774,7 +1824,6 @@ export class Game {
    * award the trophy once `need` distinct characters have cleared that bar.
    */
   _markCharScore(set, storageKey, achId, need) {
-    if (this.achievements.has(achId)) return;
     if (!set.has(this.characterName)) {
       set.add(this.characterName);
       writeStorage(storageKey, [...set].join(','));
@@ -2116,6 +2165,7 @@ export class Game {
     ) {
       this.fritterCooked = true;
       this.boxPickle = false;
+    this.coffeeDrunk = false;
       this.holdingPan = false;
       this.pickleInPan = false;
       w.setPanPickle(false);
@@ -2795,6 +2845,23 @@ export class Game {
     // Boffington may already be in runUnlockNames (earned mid-run at the
     // sixth tower); the other two are judged here at the bell.
     const newlyUnlockedNames = [...this.runUnlockNames];
+
+    // Tara Tapir: a full dinner service on foot. The fritter cooked, the
+    // Raisin fetched from the loft, not a single ride taken all run, and
+    // still 200 on the board at the bell.
+    if (
+      !this.tapirUnlocked &&
+      this.fritterCooked &&
+      this.raisinTaken &&
+      this.vehiclesRidden.size === 0 &&
+      this.stationsVisited.size === 0 &&
+      this.points >= TAPIR_SCORE
+    ) {
+      this.tapirUnlocked = true;
+      writeStorage(STORAGE_TAPIR, '1');
+      newlyUnlockedNames.push('Tara Tapir');
+    }
+
     if (!this.badgeretteUnlocked && this.points > UNLOCK_SCORE) {
       this.badgeretteUnlocked = true;
       writeStorage(STORAGE_UNLOCKED, '1');
@@ -3289,6 +3356,7 @@ export class Game {
       if (this.cpu) this.cpu.update(dt);
       this.handlePickups();
       this.handleHazards();
+      this.handleCoffee(this.player.getColliderCenter(this._playerCenter));
       this.handleClockTower();
       this.handleRedOctober();
       this.maybeSpawnBalloon();
