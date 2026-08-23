@@ -3490,41 +3490,80 @@ body {
   .error44-icon::after { animation: none; }
 }
 
-/* --- Tara Tapir: toque over a grey snout, gingham blues -------------- */
+/* --- Tara Tapir: a hatted head, read as a SHAPE ----------------------
+   The first version was a three-band diagonal gradient, which is exactly the
+   Error characters' visual language. These two are silhouettes on a plain
+   ground instead, so they read as objects rather than as glitches. */
 .tapir-icon {
-  background: linear-gradient(165deg, #8fbde4 0 38%, #4f8ec4 38% 62%, #6d6660 62%);
-  border-radius: 8px;
+  background:
+    /* the head — darker than the ground, so the white hat has something to
+       sit against */
+    radial-gradient(ellipse 30% 26% at 50% 66%, #6b6058 0 100%, transparent 100%),
+    linear-gradient(#f0dfbe, #cfae7c);   /* a warm kitchen ground, distinct
+       from Postboxer's cool green — they were added together and had ended up
+       looking like a matched pair */
   position: relative;
   overflow: hidden;
 }
+/* The toque: ONE puffed dome sitting on the head. The first attempt drew its
+   band as a second shape below the crown, which at 44px read as two stacked
+   blobs — a mushroom rather than a hat. */
+.tapir-icon::before {
+  content: '';
+  position: absolute;
+  left: 22%;
+  top: 14%;
+  width: 56%;
+  height: 34%;
+  border-radius: 54% 54% 22% 22%;
+  background: #fbfaf6;
+  box-shadow: 0 0 0 1px rgba(90, 84, 76, 0.35);
+}
+/* The proboscis: a tapir's tell. Long, angled down and forward off the head,
+   with the pink tip at the end of it. */
 .tapir-icon::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background:
-    /* the toque */
-    radial-gradient(ellipse 46% 24% at 50% 16%, #f6f4ee 0 100%, transparent 100%),
-    /* the neckerchief */
-    linear-gradient(#0000 0 52%, #c9312b 52% 60%, #0000 60%),
-    /* the drooping snout */
-    radial-gradient(ellipse 12% 26% at 50% 74%, #6d6660 0 100%, transparent 100%);
+  left: 52%;
+  top: 62%;
+  width: 12%;
+  height: 30%;
+  border-radius: 34% 34% 55% 55%;
+  background: linear-gradient(#6b6058 0 58%, #c98d92 58%);
+  transform: rotate(24deg);
+  transform-origin: 50% 0;
 }
 
-/* --- Postboxer: red pillar, blue cap, black slot -------------------- */
+/* --- Postboxer: a pillar box, read as a SHAPE ------------------------ */
 .postboxer-icon {
-  background: linear-gradient(180deg, #2f62a8 0 26%, #c4241d 26%);
-  border-radius: 8px 8px 5px 5px;
+  background: linear-gradient(#cdd7c4, #9fae95);   /* a plain ground, no bands */
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(142, 25, 19, 0.6);
 }
+/* The red column, domed at the top, with the letter slot cut into it. */
+.postboxer-icon::before {
+  content: '';
+  position: absolute;
+  left: 28%;
+  top: 24%;
+  width: 44%;
+  height: 68%;
+  border-radius: 48% 48% 10% 10%;
+  background:
+    linear-gradient(#0000 0 30%, #17140f 30% 40%, #0000 40%),   /* the slot */
+    linear-gradient(96deg, #e33a30 0 58%, #b0201a 58%);
+}
+/* The blue flat cap sitting across the dome, peak to the front. */
 .postboxer-icon::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background:
-    /* the letter slot */
-    linear-gradient(#0000 0 46%, #141210 46% 54%, #0000 54%),
-    /* the envelope held out to one side */
-    linear-gradient(100deg, #0000 0 62%, #f8f6ef 62% 88%, #0000 88%);
+  left: 19%;
+  top: 17%;
+  width: 62%;
+  height: 15%;
+  border-radius: 60% 60% 26% 26%;
+  background: #3670c0;
+  box-shadow: 0 3px 0 -1px #244d8a;
 }
+
+
