@@ -144,6 +144,8 @@ const STORAGE_POSTBOXER = 'mystic-badger.postboxerUnlocked';
 const TAPIR_SCORE = 200;            // Tara Tapir's full-dinner-service threshold
 const POSTBOXER_ERRORS = ['error42', 'error43', 'error44'];
 const COFFEE_HEALTH = 30;           // what a cup at the cart is worth
+const POSTBOXER_SPRINT = 3;         // his pace while the score divides by 3
+const BAYEUX_POINTS = 22.2;         // William's reward for framing a picture
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
@@ -509,6 +511,9 @@ export class Game {
     this.rocketRides = 0;                  // Ol' Cardboard Box: launches this run
     this.boxPickle = false;                // the Box is carrying a pickle bare-handed
     this.coffeeDrunk = false;              // taken a cup at the cart this run?
+    this.pickleMultiplier = 1;             // Tara doubles pickles after the sad sandwich
+    this.tapirSawSandwich = false;         // …and she only despairs at it once
+    this._postSprintTaught = false;        // Postboxer's ×3 explained yet?
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -776,7 +781,11 @@ export class Game {
       // Sparkle up — a grander shimmer for the big golden pickups.
       this.audio.play('collect', item.value >= 10 ? 1 : 0);
       const scoreBefore = this.points;
-      this.points += item.value;
+      // Tara's pickles pay double once the BLT has disappointed her. Only
+      // the payout is scaled — item.value itself still identifies the
+      // species for every check below.
+      const gain = item.value === PICKLE_VALUE ? item.value * this.pickleMultiplier : item.value;
+      this.points += gain;
       this.ui.setPoints(this.points);
 
       // Pickle Stick: grab the fridge-summoned pickle on 100+ to unlock it.
@@ -792,7 +801,7 @@ export class Game {
             this.ui.showTimeToast('OH, PICKLE STICKS! (COME BACK AT 100+)');
           }
         } else {
-          this.ui.showTimeToast('OH, PICKLE STICKS! +8.8');
+          this.ui.showTimeToast(`OH, PICKLE STICKS! +${Math.round(PICKLE_VALUE * this.pickleMultiplier * 10) / 10}`);
         }
         // Ol' Cardboard Box has no hands to speak of but plenty of inside,
         // so a pickle simply goes in him — no pan, no trip to the Nook.
@@ -994,6 +1003,25 @@ export class Game {
       this.gameOver('health');
     }
     return true;
+  }
+
+  /**
+   * Postboxer runs his round in threes: while the score is a whole number
+   * divisible by 3, he moves at triple pace, and the moment it isn't he
+   * drops back to a walk. A fractional score never counts — 63.14159 is not
+   * a multiple of anything — and zero does, so he starts every run sprinting
+   * until the first pine cone spoils it.
+   */
+  updatePostboxerSprint() {
+    if (this.characterName !== 'postboxer' || !this.player) return;
+    const onTheRound = Number.isInteger(this.points) && this.points % 3 === 0;
+    this.player.moveScale = onTheRound ? POSTBOXER_SPRINT : 1;
+    // Taught once, the first time it happens, rather than announced on every
+    // third pine cone for three minutes.
+    if (onTheRound && !this._postSprintTaught) {
+      this._postSprintTaught = true;
+      this.ui.showTimeToast('📮 ON THE ROUND! ×3 SPEED WHILE YOUR SCORE DIVIDES BY 3');
+    }
   }
 
   /**
@@ -2071,6 +2099,22 @@ export class Game {
           } else {
             this.ui.showTimeToast('ALREADY PERFECTLY DRESSED');
           }
+        } else if (this.characterName === 'tapir') {
+          // A professional looks at this sandwich and something in her dies.
+          // It costs her a point — but she reaches for the pickles instead,
+          // and for the rest of the run they are worth double.
+          if (!this.tapirSawSandwich) {
+            this.tapirSawSandwich = true;
+            this.points -= 1;
+            this.ui.setPoints(this.points);
+            this.pickleMultiplier = 2;
+            this.audio.play('whirl');
+            this.ui.showTimeToast(
+              "You're a professional chef, the state of this dry sandwich makes you sad. −1 — but PICKLES ARE NOW DOUBLE 🥒×2"
+            );
+          } else {
+            this.ui.showTimeToast('STILL DRY. STILL SAD. PICKLES STILL DOUBLE 🥒×2');
+          }
         } else {
           this.ui.showTimeToast("IT'S A BLT, BUT IT'S A BIT TOO DRY…");
         }
@@ -2165,7 +2209,6 @@ export class Game {
     ) {
       this.fritterCooked = true;
       this.boxPickle = false;
-    this.coffeeDrunk = false;
       this.holdingPan = false;
       this.pickleInPan = false;
       w.setPanPickle(false);
@@ -2744,6 +2787,14 @@ export class Game {
     const tc = document.getElementById('touch-controls');
     if (tc) tc.classList.remove('hidden');
     if (result === 'complete') {
+      // William the Conqueror has form with a long embroidered picture of
+      // his own achievements. Once per run, and before paintingComplete is
+      // set, so a second framing pays nothing.
+      if (this.characterName === 'william' && !this.paintingComplete) {
+        this.points += BAYEUX_POINTS;
+        this.ui.setPoints(this.points);
+        this.ui.showTimeToast(`🪡 BAYEUX TAPESTRY BONUS!!!! +${BAYEUX_POINTS}`);
+      }
       this.paintingComplete = true;
       this.audio.play('trophy');
       this.ui.showTimeToast('A MASTERPIECE! THE BADGER IS FRAMED 🖼️');
@@ -3145,6 +3196,10 @@ export class Game {
     this.fridgeOpenedThisRun = false;
     this.rocketRides = 0;
     this.boxPickle = false;
+    this.coffeeDrunk = false;
+    this.pickleMultiplier = 1;
+    this.tapirSawSandwich = false;
+    this._postSprintTaught = false;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -3357,6 +3412,7 @@ export class Game {
       this.handlePickups();
       this.handleHazards();
       this.handleCoffee(this.player.getColliderCenter(this._playerCenter));
+      this.updatePostboxerSprint();
       this.handleClockTower();
       this.handleRedOctober();
       this.maybeSpawnBalloon();

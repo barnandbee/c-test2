@@ -225,7 +225,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   to put down.
 - **YOU GOT THE MAGNA CARTA, BABY!** — that's what it says, and
   grabbing one also unlocks **William the Conqueror**: the badger in a
-  golden crown with a royal red cape that streams behind him at speed.
+  golden crown with a royal red cape that streams behind him at speed. A man
+  with form when it comes to long embroidered pictures of his own
+  achievements, he collects a **Bayeux Tapestry Bonus!!!! (+22.2)** for
+  finishing a painting at Neptune's Nook — once per run.
 - **Rhombus the Hat** — finish with a score of **exactly 90, 180, 270
   or 360** (any right angle will do) to unlock the seventh hero: a
   resolutely 2D pink rhombus in a top hat, who waddle-rocks along his
@@ -518,13 +521,21 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   service on foot**: in one run, cook the charred pickle fritter, fetch
   **Neptune's Raisin** from the loft, take **no transport whatsoever** — no
   hovercraft, balloon, rocket or train — and still finish on **200 or more**.
+  Double-tapping the cave BLT as Tara gets her a professional's verdict —
+  *"You're a professional chef, the state of this dry sandwich makes you
+  sad"* — and costs her **1 point**, once. She reaches for the pickles
+  instead: for the rest of that run **every pickle is worth double**.
 - **Postboxer** — a Royal Mail pillar box that got tired of waiting and went
   to deliver the post itself. Red column with the moulded plinth and collar,
   a **blue flat cap** with its peak jutting over the letter slot (the slot is
   his mouth), a **blue satchel** slung across on a broad strap with a spare
   letter poking out, and an **envelope held out** in one hand, stamp and all.
   Unlock him by scoring **400 or more as all three Errors** — #42, #43 and
-  #44 — across any runs.
+  #44 — across any runs. On the round he moves at **×3 speed whenever his
+  score is a whole number divisible by 3**, dropping back to a walk the
+  moment it isn't. Zero counts, so he starts every run sprinting until the
+  first pine cone spoils it — and a fractional score counts for nothing,
+  since 63.14159 is a multiple of exactly nothing.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

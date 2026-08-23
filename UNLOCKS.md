@@ -69,6 +69,17 @@ each one is earned. This is the single source of truth for unlock conditions
 | 51 | **Tara Tapir** | In **one run**: cook the **charred pickle fritter**, collect **Neptune's Raisin**, use **no transport at all** (no hovercraft, balloon, rocket or train) and finish on **200 or more**. A tapir chef — toque, blue gingham whites, apron and whisk. |
 | 52 | **Postboxer** | Score **400 or more** as **all three Errors** — #42, #43 **and** #44 — across any runs. A pillar box in a blue flat cap with a satchel and a letter in hand. |
 
+> **Hero quirks added since:**
+> **Postboxer** moves at **×3 speed whenever his score is a whole number
+> divisible by 3** — which includes zero, so he starts every run sprinting
+> until the first pine cone spoils it. A fractional score never counts.
+> **William the Conqueror** earns a **Bayeux Tapestry Bonus!!!! (+22.2)** for
+> completing a painting at the Nook's easel — once per run.
+> **Tara Tapir** double-tapping the cave BLT is told *"You're a professional
+> chef, the state of this dry sandwich makes you sad"* and loses **1 point**
+> (once) — but from then on **pickles are worth double** for the rest of that
+> run.
+
 > **All-time points ladder:** Jam (1,000) → Night Eye (10,000) →
 > Glass Badger (20,000) → Vapour Badger (40,000) →
 > Spirit of the Forest Badger (100,000).

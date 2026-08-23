@@ -500,7 +500,108 @@ const stillRecording = await page.evaluate(() => {
 ok('scored400 keeps recording after c400 is earned', stillRecording.includes('error42'),
    JSON.stringify(stillRecording));
 
-/* == 7. save & restore, end to end ====================================== */
+/* == 7. per-hero quirks, and per-run resets ============================= */
+console.log('\nPostboxer, William and Tara');
+
+const speeds = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('postboxer');
+  const out = {};
+  for (const p of [0, 1, 3, 5, 9, 99, 100, 63.14159, 8.8]) {
+    g.points = p; g.updatePostboxerSprint();
+    out[p] = g.player.moveScale;
+  }
+  return out;
+});
+ok('Postboxer runs ×3 while the score divides by 3',
+   speeds[0] === 3 && speeds[3] === 3 && speeds[9] === 3 && speeds[99] === 3, JSON.stringify(speeds));
+ok('…and walks when it does not',
+   speeds[1] === 1 && speeds[5] === 1 && speeds[100] === 1, JSON.stringify(speeds));
+// Scores here carry π-flavoured decimals, and a fraction is a multiple of
+// nothing — so the check has to be integer-aware, not just a modulo.
+ok('a fractional score never counts', speeds[63.14159] === 1 && speeds[8.8] === 1, JSON.stringify(speeds));
+const untouched = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('frosch');
+  const built = g.player.moveScale;
+  g.points = 9; g.updatePostboxerSprint();
+  return [built, g.player.moveScale];
+});
+ok('nobody else is sped up by it', untouched[0] === untouched[1], JSON.stringify(untouched));
+
+const bayeux = (c) => page.evaluate((c) => {
+  const g = window.__game;
+  window.__freshRun(c);
+  g.points = 50; g.paintingComplete = false;
+  g.paintingGame = { dispose() {} };
+  g.endPainting('complete');
+  const first = g.points;
+  g.paintingGame = { dispose() {} };
+  g.endPainting('complete');
+  return { first, second: g.points };
+}, c);
+const will = await bayeux('william');
+ok('William gets the Bayeux Tapestry Bonus (+22.2)', Math.abs(will.first - 72.2) < 0.001, JSON.stringify(will));
+ok('and only once a run', Math.abs(will.second - 72.2) < 0.001, JSON.stringify(will));
+ok('nobody else gets it', (await bayeux('badger')).first === 50);
+
+const blt = (c) => page.evaluate((c) => {
+  const g = window.__game;
+  window.__freshRun(c);
+  g.points = 20;
+  const sp = g.world.sandwichPos;
+  window.__tapAt({ x: sp.x, y: sp.y, z: sp.z }, 'double');
+  const after = g.points;
+  window.__tapAt({ x: sp.x, y: sp.y, z: sp.z }, 'double');
+  return { after, again: g.points, mult: g.pickleMultiplier };
+}, c);
+const tara = await blt('tapir');
+ok('the dry BLT costs Tara a point, once', tara.after === 19 && tara.again === 19, JSON.stringify(tara));
+ok('and doubles her pickles for the run', tara.mult === 2);
+const plainBadger = await blt('badger');
+ok('a badger is merely told it is dry', plainBadger.after === 20 && plainBadger.mult === 1, JSON.stringify(plainBadger));
+
+const pickleWorth = (m) => page.evaluate(async (mult) => {
+  const g = window.__game;
+  window.__freshRun('tapir');
+  g.points = 0; g.pickleMultiplier = mult;
+  const { PickleStick } = await import('./src/Entities.js');
+  const pickle = new PickleStick(g.scene, g.player.position.clone());
+  g.collectibles.push(pickle);
+  g.handlePickups();
+  return g.points;
+}, m);
+ok('a pickle is normally 8.8', Math.abs(await pickleWorth(1) - 8.8) < 0.001);
+ok('and 17.6 for a sad Tara', Math.abs(await pickleWorth(2) - 17.6) < 0.001);
+
+// Four per-run flags were once reset inside handlePan instead of restart, so
+// the coffee cart could only be used once per page load. Assert the whole set
+// survives a restart rather than trusting where the lines happen to sit.
+const resets = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('tapir');
+  Object.assign(g, {
+    coffeeDrunk: true, pickleMultiplier: 2, tapirSawSandwich: true,
+    _postSprintTaught: true, boxPickle: true, fritterCooked: true,
+    raisinTaken: true, towerCharged: true, rocketRides: 2, fridgeOpenedThisRun: true
+  });
+  window.__freshRun('badger');
+  return {
+    coffeeDrunk: g.coffeeDrunk, pickleMultiplier: g.pickleMultiplier,
+    tapirSawSandwich: g.tapirSawSandwich, postSprint: g._postSprintTaught,
+    boxPickle: g.boxPickle, fritterCooked: g.fritterCooked, raisinTaken: g.raisinTaken,
+    towerCharged: g.towerCharged, rocketRides: g.rocketRides, fridgeOpened: g.fridgeOpenedThisRun
+  };
+});
+ok('every per-run flag is cleared by a restart',
+   resets.coffeeDrunk === false && resets.pickleMultiplier === 1 &&
+   resets.tapirSawSandwich === false && resets.postSprint === false &&
+   resets.boxPickle === false && resets.fritterCooked === false &&
+   resets.raisinTaken === false && resets.towerCharged === false &&
+   resets.rocketRides === 0 && resets.fridgeOpened === false,
+   JSON.stringify(resets));
+
+/* == 8. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();
