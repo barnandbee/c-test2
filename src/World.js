@@ -3253,15 +3253,35 @@ export class World {
   _buildCoffeeCart() {
     const track = (r) => { this._disposables.push(r); return r; };
 
-    const bearing = Math.atan2(this.stairsZ - this.towerZ, this.stairsX - this.towerX);
+    // Out on the rim, on the bearing pointing directly AWAY from WOODOO'S —
+    // which is to say the far side of the world from it, measured from the
+    // centre rather than from Woodoos itself, so it lands opposite rather
+    // than merely distant.
+    const bearing = Math.atan2(-this.woodoosZ, -this.woodoosX);
     const unusable = (px, pz) => {
       if (this.isNearLake(px, pz) && this.getHeight(px, pz) < this.waterLevel + 0.6) return true;
       if (this.isNearWhirlLake(px, pz) && this.getHeight(px, pz) < this.whirlWaterLevel + 0.6) return true;
-      if (Math.hypot(px - this.caveX, pz - this.caveZ) < this.caveRadius + 4) return true;
-      if (this.dellRadius && Math.hypot(px - this.dellX, pz - this.dellZ) < this.dellRadius + 4) return true;
-      // Keep well clear of the mountain — its flanks are no place to park.
-      if (Math.hypot(px - this.mountainX, pz - this.mountainZ) < this.mountainRadius + 8) return true;
-      if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 10) return true;
+      if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 4) return true;
+      // Everything the forest refuses to grow on, a cart has no business
+      // parking on either — the putting green above all, which is where it
+      // ended up the first time for want of this line.
+      const clears = [
+        [this.greenCenterX, this.greenCenterZ, this.greenRadius + 6],
+        [this.caveX, this.caveZ, this.caveRadius + 6],
+        [this.dellX, this.dellZ, this.dellRadius + 6],
+        [this.mountainX, this.mountainZ, this.mountainRadius + 8],
+        [this.desertX, this.desertZ, this.desertRadius + 4],
+        [this.cottageX, this.cottageZ, this.cottageRadius + 4],
+        [this.neptuneX, this.neptuneZ, (this.neptuneRadius || 0) + 4],
+        [this.towerX, this.towerZ, (this.towerRadius || 0) + 5],
+        [this.helterX, this.helterZ, this.helterRadius + 5],
+        [this.woodoosX, this.woodoosZ, this.woodoosRadius + 5],
+        [this.vegPatchX, this.vegPatchZ, this.vegPatchRadius + 4]
+      ];
+      for (const [cx, cz, r] of clears) {
+        if (cx === undefined) continue;
+        if (Math.hypot(px - cx, pz - cz) < r) return true;
+      }
       // Don't park inside a tree. The forest is scattered long before this
       // runs, so the only way to know is to ask where it actually went.
       for (const t of this.treeSpots || []) {
@@ -3275,21 +3295,24 @@ export class World {
       return grad > 0.34;   // a cart needs flatter ground than a pylon does
     };
 
-    let x = this.towerX + Math.cos(bearing) * 50;
-    let z = this.towerZ + Math.sin(bearing) * 50;
+    const rim = PLAYABLE_RADIUS - 8;
+    let x = Math.cos(bearing) * rim;
+    let z = Math.sin(bearing) * rim;
     let sited = false;
-    for (let step = 0; step <= 22 && !sited; step++) {
-      for (const sign of step === 0 ? [1] : [1, -1]) {
-        const a = bearing + sign * step * (7 * Math.PI / 180);
-        for (const d of [50, 47, 53, 44, 56, 41, 59]) {
-          const px = this.towerX + Math.cos(a) * d;
-          const pz = this.towerZ + Math.sin(a) * d;
+    // Fan the bearing outward, smallest deviation first, and only creep in
+    // from the rim if the whole arc at that radius is unusable.
+    for (const d of [rim, rim - 5, rim - 10, rim - 16, rim - 24]) {
+      for (let step = 0; step <= 26 && !sited; step++) {
+        for (const sign of step === 0 ? [1] : [1, -1]) {
+          const a = bearing + sign * step * (6 * Math.PI / 180);
+          const px = Math.cos(a) * d;
+          const pz = Math.sin(a) * d;
           if (unusable(px, pz)) continue;
           x = px; z = pz; sited = true;
           break;
         }
-        if (sited) break;
       }
+      if (sited) break;
     }
 
     const y = this.getHeight(x, z);
@@ -3301,9 +3324,8 @@ export class World {
 
     const group = new THREE.Group();
     group.position.set(x, y, z);
-    // Face the cart back toward the pylon, so its serving side greets anyone
-    // walking the obvious line.
-    group.rotation.y = bearing + Math.PI / 2;
+    // Face the serving side inward, toward the world it is serving.
+    group.rotation.y = Math.atan2(-x, -z);
     this.scene.add(group);
     this.coffeeCart = group;
 

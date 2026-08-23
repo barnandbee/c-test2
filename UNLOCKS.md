@@ -276,13 +276,16 @@ Three unlocks hang off that live frame:
 
 ## The coffee cart
 
-A small mobile coffee cart is parked out on the long empty stretch **between
-the transmission tower and the Escher stairs** — roughly **50 paces from the
-pylon**, on flat ground, clear of the mountain and never inside a tree.
+A small mobile coffee cart is parked out on the **far rim of the world**, on
+the bearing pointing directly away from **WOODOO'S** — the opposite side of
+the map from it, a few paces short of the boundary. It sits on flat ground,
+clear of the mountain, the putting green and every other landmark, and never
+inside a tree.
 
 Walk into it and it pours you one: **+30 health, once per run** (it never
 takes you past 100). It is the only health in the game that isn't simply
-*don't get hit* — but it is a long way out, so the trip has to be worth it.
+*don't get hit* — but it is right out at the edge of the world, so the trip
+is a real expedition.
 
 Its lantern counts as one of the world's lamps, so in **fog** it burns
 brighter and further along with every other light, and can be steered by.

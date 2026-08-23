@@ -412,24 +412,34 @@ ok('Postboxer builds and walks', newTraits.postboxer.root === 'postboxer' && new
 const site = await page.evaluate(() => {
   const w = window.__game.world;
   const d = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
+  // Degrees between "cart seen from the centre" and "Woodoos seen from the
+  // centre". 180 means the cart is directly opposite it.
+  const opposite = Math.abs(((
+    (Math.atan2(w.coffeeZ, w.coffeeX) - Math.atan2(w.woodoosZ, w.woodoosX)) * 180 / Math.PI
+  ) + 540) % 360 - 180);
   return {
-    fromTower: +d(w.coffeeX, w.coffeeZ, w.towerX, w.towerZ).toFixed(1),
-    fromStairs: +d(w.coffeeX, w.coffeeZ, w.stairsX, w.stairsZ).toFixed(1),
-    towerToStairs: +d(w.towerX, w.towerZ, w.stairsX, w.stairsZ).toFixed(1),
-    fromMountain: +d(w.coffeeX, w.coffeeZ, w.mountainX, w.mountainZ).toFixed(1),
-    mountainRadius: w.mountainRadius,
     fromCentre: +Math.hypot(w.coffeeX, w.coffeeZ).toFixed(1),
     playable: w.playableRadius,
+    oppositeWoodoos: +opposite.toFixed(1),
+    fromWoodoos: +d(w.coffeeX, w.coffeeZ, w.woodoosX, w.woodoosZ).toFixed(1),
+    fromGreen: +d(w.coffeeX, w.coffeeZ, w.greenCenterX, w.greenCenterZ).toFixed(1),
+    greenRadius: w.greenRadius,
+    fromMountain: +d(w.coffeeX, w.coffeeZ, w.mountainX, w.mountainZ).toFixed(1),
+    mountainRadius: w.mountainRadius,
     nearestTree: +Math.min(...(w.treeSpots || [{ x: 1e6, z: 1e6 }])
       .map((t) => d(w.coffeeX, w.coffeeZ, t.x, t.z))).toFixed(1),
     onWater: w.isNearLake(w.coffeeX, w.coffeeZ) && w.getHeight(w.coffeeX, w.coffeeZ) < w.waterLevel + 0.6
   };
 });
-ok(`the cart is roughly 50 paces from the pylon (${site.fromTower})`, Math.abs(site.fromTower - 50) <= 12);
-ok('clear of the mountain', site.fromMountain > site.mountainRadius, JSON.stringify(site));
+ok(`the cart is out near the boundary (${site.fromCentre} of ${site.playable})`,
+   site.fromCentre > site.playable * 0.8 && site.fromCentre < site.playable - 3);
+ok(`it is on the far side from WOODOO'S (${site.oppositeWoodoos}° round)`,
+   site.oppositeWoodoos > 140);
+// The green is what it landed on the first time, so this one is the point.
+ok('not on the putting green', site.fromGreen > site.greenRadius + 5, JSON.stringify(site));
+ok('clear of the mountain', site.fromMountain > site.mountainRadius);
 ok('not parked in a tree', site.nearestTree >= 4.5, String(site.nearestTree));
-ok('not in a lake, and inside the map', !site.onWater && site.fromCentre < site.playable - 5);
-ok('on the pylon side of the stairs', site.fromStairs < site.towerToStairs);
+ok('not in a lake, and inside the map', !site.onWater && site.fromCentre < site.playable - 3);
 
 const coffee = (hp) => page.evaluate((h) => {
   const g = window.__game;

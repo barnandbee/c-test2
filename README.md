@@ -136,16 +136,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   **Zapped!**; taking its +40 as one of the four earns **Anti-Zapped**.
   And a badger who goes out on it on **400 or more** leaves behind
   **Electro Badger** (see the roster below).
-- **The coffee cart** — a small mobile cart parked on the long empty stretch
-  **between the transmission tower and the Escher stairs**, about **50 paces**
-  from the pylon. Green box on spoked wheels, a scalloped red canopy, an urn
-  steaming gently on the counter. Walk into it for **+30 health, once per
-  run** — the only health in the game that isn't simply *don't get hit*. It
-  is sited the same way the pylon is, fanning its bearing outward until it
-  finds flat ground clear of water, the cave, the dell, the map edge, the
-  **mountain** and, since the forest is scattered long before it exists,
-  every tree. Its lantern joins the world's lamps, so it burns through fog
-  with the rest of them.
+- **The coffee cart** — a small mobile cart parked out on the **far rim of
+  the world**, on the bearing pointing directly away from **WOODOO'S** — the
+  opposite side of the map from it, a few paces short of the boundary. Green
+  box on spoked wheels, a scalloped red canopy, an urn steaming gently on the
+  counter. Walk into it for **+30 health, once per run** — the only health in
+  the game that isn't simply *don't get hit*, and a genuine expedition to
+  reach. It is sited the way the pylon is, fanning its bearing outward until
+  it finds flat ground, and refuses water, the map edge, the mountain, every
+  tree, and every landmark the forest itself refuses to grow on — the
+  **putting green** included, which is precisely where it parked the first
+  time for want of that check. Its lantern joins the world's lamps, so it
+  burns through fog with the rest of them.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
