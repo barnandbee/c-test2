@@ -271,6 +271,7 @@
       </p>
       <button id="menu-achievements-btn" type="button">🏆 Achievements</button>
       <button id="menu-save-btn" type="button">💾 Save &amp; Restore</button>
+      <button id="menu-about-btn" type="button">ⓘ About</button>
     </div>
     <button id="about-btn" type="button" aria-label="About this game">&#9432;</button>
   </div>
@@ -280,7 +281,6 @@
     <div id="about-card">
       <button id="about-close" type="button" aria-label="Close">&times;</button>
       <h2 id="about-title">Badger of the Mystic Forest</h2>
-      <p id="about-credit">Game by <b>barnaby@futurereferenced.com</b></p>
       <div id="about-how">
         <h3>How to play</h3>
         <ul>
@@ -309,7 +309,45 @@
             choose <b>Simple Seeds</b> (gentle) or <b>Nefarious Nuts</b>
             (fast, cunning, rides the train).</li>
         </ul>
+
+        <h3>Things worth knowing</h3>
+        <ul>
+          <li><b>You don't have to walk.</b> There is more than one way to
+            get about — some of it flies, some of it runs on rails, and one
+            of them only turns up if the score is right. Finding them is
+            half of it.</li>
+          <li><b>Some heroes are earned by combinations, not by scores.</b>
+            A single run that does two or three unrelated things is often
+            worth more than a big number. Try finishing a run in an odd
+            state and see who notices.</li>
+          <li><b>Who you play as matters.</b> Several of the forest's
+            fixtures react differently depending on who walks up to them,
+            and a few heroes can do things nobody else can.</li>
+          <li><b>The weather is rolled once a run</b> and mostly leaves you
+            alone — but not always, and not everything out there is safe in
+            every forecast.</li>
+          <li><b>Look twice at the scenery.</b> Buildings have insides,
+            insides have upstairs, and a few things can be picked up and
+            carried somewhere else entirely.</li>
+          <li><b>Odd numbers are not an accident.</b> If a score lands on
+            something suspiciously round, or suspiciously not, that may be
+            the point.</li>
+          <li><b>Everything is saved locally</b> — use
+            <b>💾 Save &amp; Restore</b> to take a code away with you, or
+            your progress lives and dies with this browser.</li>
+        </ul>
       </div>
+      <div id="about-studio">
+        <!-- Drop the supplied logo in here and the wordmark below can go:
+             <img id="about-logo" src="assets/bass-moultapps.png"
+                  alt="Bass Moultapps" /> -->
+        <p id="about-wordmark">BASS<span>MOULTAPPS</span></p>
+        <p id="about-studio-line">
+          A <b>Bass Moultapps</b> game &middot;
+          <a href="mailto:bassmoultapps@futurereferenced.com">bassmoultapps@futurereferenced.com</a>
+        </p>
+      </div>
+
     </div>
   </div>
 
@@ -707,6 +745,7 @@
       <button id="ach-close" type="button" aria-label="Close">&times;</button>
       <h2>Achievements</h2>
       <p id="ach-progress">0 / 0 trophies</p>
+      <p id="ach-char-progress">0 / 0 characters unlocked</p>
       <div id="ach-stats">
         <div class="ach-stat">
           <span class="ach-stat-value" id="ach-total">0</span>

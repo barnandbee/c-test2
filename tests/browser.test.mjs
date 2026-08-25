@@ -601,7 +601,47 @@ ok('every per-run flag is cleared by a restart',
    resets.rocketRides === 0 && resets.fridgeOpened === false,
    JSON.stringify(resets));
 
-/* == 8. save & restore, end to end ====================================== */
+/* == 8. the About page, and the roster count =========================== */
+console.log('\nAbout page and roster count');
+// Everything above this point leaves the game mid-run, and the menu is
+// hidden then — so come back to the menu before asking what is on it.
+await page.reload();
+await ready();
+ok('the menu carries an About button', await page.isVisible('#menu-about-btn'));
+await page.click('#menu-about-btn');
+await page.waitForSelector('#about-panel:not(.hidden)', { timeout: 5000 });
+const aboutText = await page.textContent('#about-panel');
+ok('it credits Bass Moultapps with a working mailto',
+   /Bass Moultapps/.test(aboutText) &&
+   (await page.getAttribute('#about-studio-line a', 'href')) === 'mailto:bassmoultapps@futurereferenced.com');
+ok('it still explains how to play', /How to play/.test(aboutText) && /3-minute/.test(aboutText));
+ok('and hints at the deeper game', /Things worth knowing/.test(aboutText));
+// The hints are meant to tempt, not to tell. Naming a specific unlock here
+// would undo the "locked entries keep their secrets" rule next door.
+const leaked = ['Electro Badger', 'Tara Tapir', 'Postboxer', 'Neptune', 'Bayeux', 'Cactus Junction']
+  .filter((w) => aboutText.includes(w));
+ok('the hints give no specific secret away', leaked.length === 0, leaked.join(', '));
+await page.click('#about-close');
+ok('it closes again', await page.isHidden('#about-panel'));
+
+await page.evaluate(() => {
+  localStorage.clear();
+  for (const k of ['badgerette', 'hughes', 'william']) {
+    localStorage.setItem('mystic-badger.' + k + 'Unlocked', '1');
+  }
+});
+await page.reload();
+await ready();
+await page.click('#menu-achievements-btn');
+await page.waitForSelector('#achievements-panel:not(.hidden)', { timeout: 5000 });
+const rosterLine = (await page.textContent('#ach-char-progress')).trim();
+const rosterTotal = Number(rosterLine.match(/\/ (\d+)/)[1]);
+ok(`the achievements page counts the roster (${rosterLine})`,
+   rosterLine.startsWith('4 / '), rosterLine);
+ok('and counts against the whole roster', rosterTotal >= 52, String(rosterTotal));
+await page.click('#ach-close');
+
+/* == 9. save & restore, end to end ====================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();

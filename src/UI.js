@@ -42,6 +42,7 @@ export class UI {
     this.achievementsPanel = document.getElementById('achievements-panel');
     this.achClose = document.getElementById('ach-close');
     this.achProgress = document.getElementById('ach-progress');
+    this.achCharProgress = document.getElementById('ach-char-progress');
     this.achTotal = document.getElementById('ach-total');
     this.achFav = document.getElementById('ach-fav');
     this.achTrophies = document.getElementById('ach-trophies');
@@ -78,10 +79,13 @@ export class UI {
 
     // The about / how-to-play modal is self-contained: wire it here.
     this.aboutBtn = document.getElementById('about-btn');
+    this.menuAboutBtn = document.getElementById('menu-about-btn');
     this.aboutPanel = document.getElementById('about-panel');
     this.aboutClose = document.getElementById('about-close');
-    if (this.aboutBtn && this.aboutPanel) {
-      this.aboutBtn.addEventListener('click', () => this.aboutPanel.classList.remove('hidden'));
+    if (this.aboutPanel) {
+      const openAbout = () => this.aboutPanel.classList.remove('hidden');
+      if (this.aboutBtn) this.aboutBtn.addEventListener('click', openAbout);
+      if (this.menuAboutBtn) this.menuAboutBtn.addEventListener('click', openAbout);
       if (this.aboutClose) {
         this.aboutClose.addEventListener('click', () => this.aboutPanel.classList.add('hidden'));
       }
@@ -333,6 +337,13 @@ export class UI {
   showAchievements(view) {
     if (!this.achievementsPanel) return;
     this.achProgress.textContent = `${view.earnedCount} / ${view.total} trophies earned`;
+    // The roster is half the game, so it gets its own line rather than being
+    // inferred from scrolling the list.
+    if (this.achCharProgress) {
+      const owned = view.characters.filter((c) => c.unlocked).length;
+      this.achCharProgress.textContent =
+        `${owned} / ${view.characters.length} characters unlocked`;
+    }
 
     // Lifetime stats: all-time points banked and the most-played hero.
     if (this.achTotal) this.achTotal.textContent = formatScore(Math.round(view.totalScore || 0));

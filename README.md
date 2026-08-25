@@ -20,10 +20,16 @@ import map — no npm install, no bundler.
 
 ## About
 
-A tiny **ⓘ** button in the corner of the start screen opens the about
-modal — game credit (barnaby@futurereferenced.com) and a compact
-how-to-play guide covering the goal, controls, health, landmarks,
-character unlocks and versus mode.
+An **ⓘ About** button on the menu — and the small **ⓘ** in the corner of the
+start screen — opens the about page: a compact **how-to-play** covering the
+goal, controls, health, landmarks, character unlocks and versus mode, then a
+**Things worth knowing** section that points at the deeper game without
+giving any of it away (that there is more than one way to travel, that many
+heroes are earned by *combinations* rather than scores, that who you play as
+changes how the world reacts, that the weather is rolled per run, that
+buildings have insides and things can be carried, and that odd-looking
+numbers are rarely an accident). It closes with the studio credit — a
+**Bass Moultapps** game, bassmoultapps@futurereferenced.com.
 
 ## Controls
 

@@ -1423,6 +1423,7 @@ body {
 #achievements-btn,
 #menu-achievements-btn,
 #menu-save-btn,
+#menu-about-btn,
 #gameover-save-btn,
 .ghost-btn {
   font-family: var(--font-stack);
@@ -1446,6 +1447,7 @@ body {
 #achievements-btn:hover,
 #menu-achievements-btn:hover,
 #menu-save-btn:hover,
+#menu-about-btn:hover,
 #gameover-save-btn:hover,
 .ghost-btn:hover {
   background: rgba(255, 255, 255, 0.12);
@@ -3385,7 +3387,8 @@ body {
 
 /* Both menu pills sit on the same line under the controls. */
 #menu-achievements-btn,
-#menu-save-btn {
+#menu-save-btn,
+#menu-about-btn {
   margin-left: 4px;
   margin-right: 4px;
 }
@@ -3567,3 +3570,64 @@ body {
 }
 
 
+
+/* The roster count sits under the trophy count, quieter than it. */
+#ach-char-progress {
+  font-size: 13px;
+  color: rgba(243, 239, 255, 0.6);
+  margin-top: -10px;
+  margin-bottom: 14px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  About — the studio credit                                          */
+/* ------------------------------------------------------------------ */
+
+/* A studio credit belongs at the foot of the page, not stacked under the
+   game's own title where the two compete. */
+#about-studio {
+  margin: 22px 0 2px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 212, 79, 0.16);
+  text-align: center;
+}
+
+/* A typographic wordmark, standing in until the real logo is supplied.
+   Replacing it is a one-line swap: uncomment the <img id="about-logo"> in
+   index.html and delete this paragraph. */
+#about-wordmark {
+  font-family: var(--font-logo), var(--font-stack);
+  font-size: 26px;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+
+#about-wordmark span {
+  display: block;
+  font-size: 15px;
+  letter-spacing: 0.34em;
+  color: rgba(243, 239, 255, 0.72);
+  margin-top: 3px;
+}
+
+#about-logo {
+  display: block;
+  max-width: 190px;
+  max-height: 76px;
+  margin: 0 auto 10px;
+}
+
+#about-studio-line {
+  font-size: 13px;
+  color: rgba(243, 239, 255, 0.66);
+}
+
+#about-studio-line a {
+  color: var(--accent-gold);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 212, 79, 0.35);
+}
+
+#about-studio-line a:hover { filter: brightness(1.15); }
