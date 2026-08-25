@@ -24,8 +24,11 @@ export const TROPHIES = [
   { id: 'cloud', medal: '☁️', title: 'Up in the Clouds', desc: 'Collect a marshmallow cloud.' },
   { id: 'rip', medal: '💀', title: 'R.I.P.', desc: 'Let your health reach zero.' },
   { id: 'unlock1', medal: '🎭', title: 'Recruiter', desc: 'Unlock a character.' },
-  { id: 'unlock5', medal: '🎪', title: 'Talent Scout', desc: 'Unlock 5 characters.' },
-  { id: 'unlock10', medal: '🎡', title: 'Impresario', desc: 'Unlock 10 characters.' },
+  { id: 'unlock5', medal: '🎪', title: 'Unlocked, High Five!', desc: 'Unlock 5 characters.' },
+  { id: 'unlock10', medal: '🎡', title: 'Unlock It In A Docket', desc: 'Unlock 10 or more characters.' },
+  { id: 'unlock20', medal: '🎢', title: 'Unlock It In Your Pocket', desc: 'Unlock 20 or more characters.' },
+  { id: 'unlock50', medal: '🚪', title: "Unlock, Lock, Locking On Heaven's Door", desc: 'Unlock 50 or more characters.' },
+  { id: 'unlockroll', medal: '🎳', title: "Unlock 'N' Roll", desc: 'Unlock a character who rolls or slides rather than walking.' },
   { id: 'allstars', medal: '🌌', title: 'Star Cleaner', desc: 'Collect every star in a run.' },
   { id: 'allclouds', medal: '🌥️', title: 'Cloud Cleaner', desc: 'Collect every marshmallow cloud in a run.' },
   { id: 'allcherries', medal: '🍒', title: 'Cherry Cleaner', desc: 'Collect every atomic cherry in a run.' },
@@ -131,5 +134,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'error44', name: 'Error #44', how: 'Complete a run in Mystic mode — the rare monochrome wash.' },
   { key: 'cardboard', name: "Ol' Cardboard Box", how: 'Board the rocket twice in the same run.' },
   { key: 'tapir', name: 'Tara Tapir', how: 'In one run: cook the charred pickle fritter, collect Neptune\u2019s Raisin, use no transport at all (no hovercraft, balloon, rocket or train) and finish on 200 or more.' },
-  { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' }
+  { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' },
+  { key: 'pcork', name: 'P. Cork', how: 'Tap the Bass Moultapps logo on the About page with a lifetime score of 1,000 or more.' }
 ];

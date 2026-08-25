@@ -141,6 +141,12 @@ const STORAGE_ERROR44 = 'mystic-badger.error44Unlocked';
 const STORAGE_CARDBOARD = 'mystic-badger.cardboardUnlocked';
 const STORAGE_TAPIR = 'mystic-badger.tapirUnlocked';
 const STORAGE_POSTBOXER = 'mystic-badger.postboxerUnlocked';
+const STORAGE_PCORK = 'mystic-badger.pcorkUnlocked';
+const PCORK_LIFETIME = 1000;        // lifetime score the logo asks to see
+// Everyone who rolls or slides instead of walking. Player.rollsOrSlides is
+// the authority — this list only exists so the check is a lookup rather than
+// building fifty heroes, and the suite asserts the two agree.
+const ROLLING_CHARACTERS = ['marblella', 'foil', 'snappy'];
 const TAPIR_SCORE = 200;            // Tara Tapir's full-dinner-service threshold
 const POSTBOXER_ERRORS = ['error42', 'error43', 'error44'];
 const COFFEE_HEALTH = 30;           // what a cup at the cart is worth
@@ -382,6 +388,7 @@ export class Game {
     this.cardboardUnlocked = readStorage(STORAGE_CARDBOARD) === '1';
     this.tapirUnlocked = readStorage(STORAGE_TAPIR) === '1';
     this.postboxerUnlocked = readStorage(STORAGE_POSTBOXER) === '1';
+    this.pcorkUnlocked = readStorage(STORAGE_PCORK) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -581,6 +588,9 @@ export class Game {
       () => this.ui.showAchievements(this.getAchievementsView()),
       () => this.ui.hideAchievements()
     );
+    // The studio logo on the About page is a door, for anyone who has put
+    // in the miles to be told so.
+    this.ui.bindLogoTap(() => this.tapStudioLogo());
     this.ui.bindSave({
       onOpen: () => this.openSavePanel(),
       onClose: () => this.ui.hideSave(),
@@ -1006,6 +1016,30 @@ export class Game {
   }
 
   /**
+   * P. Cork lives behind the Bass Moultapps logo on the About page. Tapping
+   * it does nothing at all until a lifetime score of 1,000 has been banked —
+   * and then, once, it hands over the peacock.
+   */
+  tapStudioLogo() {
+    if (this.pcorkUnlocked) {
+      this.ui.setAboutLogoNote('P. Cork is already yours. 🦚');
+      return;
+    }
+    if (this.totalScore < PCORK_LIFETIME) {
+      // Say nothing about what is behind it — only that something is.
+      this.ui.setAboutLogoNote('…the peacock does not stir. (Not yet.)');
+      return;
+    }
+    this.pcorkUnlocked = true;
+    writeStorage(STORAGE_PCORK, '1');
+    this.audio.resume();
+    this.audio.play('unlock');
+    this.ui.setAboutLogoNote('★ P. CORK UNLOCKED! 🦚');
+    this.ui.showTimeToast('★ P. CORK UNLOCKED! 🦚');
+    this.ui.setRoster(this.getUnlockedMap(), this.characterName);
+  }
+
+  /**
    * Postboxer runs his round in threes: while the score is a whole number
    * divisible by 3, he moves at triple pace, and the moment it isn't he
    * drops back to a walk. A fractional score never counts — 63.14159 is not
@@ -1235,6 +1269,7 @@ export class Game {
     if (name === 'cardboard') return this.cardboardUnlocked;
     if (name === 'tapir') return this.tapirUnlocked;
     if (name === 'postboxer') return this.postboxerUnlocked;
+    if (name === 'pcork') return this.pcorkUnlocked;
     return name === 'badger';
   }
 
@@ -1347,7 +1382,8 @@ export class Game {
       error44: this.error44Unlocked,
       cardboard: this.cardboardUnlocked,
       tapir: this.tapirUnlocked,
-      postboxer: this.postboxerUnlocked
+      postboxer: this.postboxerUnlocked,
+      pcork: this.pcorkUnlocked
     };
   }
 
@@ -1591,6 +1627,12 @@ export class Game {
     if (unlocked >= 1) this.awardAchievement('unlock1');
     if (unlocked >= 5) this.awardAchievement('unlock5');
     if (unlocked >= 10) this.awardAchievement('unlock10');
+    if (unlocked >= 20) this.awardAchievement('unlock20');
+    if (unlocked >= 50) this.awardAchievement('unlock50');
+    // Unlock 'N' Roll: any one of the heroes who rolls or slides.
+    if (ROLLING_CHARACTERS.some((k) => this.isCharacterAllowed(k))) {
+      this.awardAchievement('unlockroll');
+    }
 
     // Postboxer: all three Errors have posted a 400 at some point. Read
     // straight off the scored400 set, which is why that set has to keep

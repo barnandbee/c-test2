@@ -3631,3 +3631,56 @@ body {
 }
 
 #about-studio-line a:hover { filter: brightness(1.15); }
+
+/* The studio logo is a button, but should not look like one until pressed. */
+#about-logo-btn {
+  display: block;
+  margin: 0 auto 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+#about-logo-btn:hover { transform: scale(1.04); filter: brightness(1.06); }
+#about-logo-btn:active { transform: scale(0.97); }
+
+#about-logo {
+  display: block;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+#about-logo-note {
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+/* --- P. Cork: the roundel's peacock — a fan of rings on navy --------- */
+.pcork-icon {
+  background:
+    conic-gradient(from 200deg at 50% 78%,
+      #24365f 0 12%, #4a6a99 12% 24%, #24365f 24% 36%,
+      #4a6a99 36% 48%, #24365f 48% 60%, #4a6a99 60% 72%, #24365f 72% 100%),
+    #24365f;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px #1b2947;
+}
+/* The bird's silhouette in front of its fan, and one eye-of-the-tail. */
+.pcork-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 26%, #93b3d6 0 8%, transparent 9%),   /* crest tip */
+    radial-gradient(circle at 72% 34%, #efe9db 0 9%, #24365f 9% 13%, transparent 14%),
+    radial-gradient(ellipse 15% 26% at 40% 62%, #93b3d6 0 100%, transparent 100%);
+}

@@ -101,7 +101,8 @@ export const VOCAB_TROPHIES = [
   'afkc', 'charredmeander', 'farmervspig', 'mysticsquared', 'frogs50',
   'frogs100', 'mysticcubed', 'pointproved', 'lifetime10k', 'lifetime50k',
   'lifetime100k', 'frogspawn', 'zapped', 'antizapped',
-  'play40', 'total50', 'total100', 'c400'
+  'play40', 'total50', 'total100', 'c400',
+  'unlock20', 'unlock50', 'unlockroll'
 ];
 
 export const VOCAB_CHARACTERS = [
@@ -114,7 +115,7 @@ export const VOCAB_CHARACTERS = [
   'spirit', 'chimpy', 'owl', 'snappy', 'bacon', 'robofarmer', 'frosch',
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
-  'tapir', 'postboxer'
+  'tapir', 'postboxer', 'pcork'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -139,7 +140,7 @@ export const SCHEMA_BOOLS = [
   'error43Unlocked', 'nucleusUnlocked', 'tudorUnlocked', 'electroUnlocked',
   'muted', 'bloom',
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
-  'tapirUnlocked', 'postboxerUnlocked'
+  'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked'
 ];
 
 /** Whole numbers, stored as varints. */

@@ -124,6 +124,10 @@ export class Player {
     // of names so a hero routed through buildBadger later (as William and
     // Electro Badger are) counts as one without anybody remembering to.
     this.isBadger = false;
+    // Set by the builders of anyone who rolls or slides instead of walking.
+    // Kept here rather than in a list of names, for the same reason isBadger
+    // is: a hero who starts rolling later counts without anyone remembering.
+    this.rollsOrSlides = false;
     this.waterSink = 0;      // Top Hat Snappy rides this far below the surface
     this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
     this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
@@ -195,6 +199,7 @@ export class Player {
     else if (this.character === 'cardboard') this.root = this.buildCardboardBox();
     else if (this.character === 'tapir') this.root = this.buildTapir();
     else if (this.character === 'postboxer') this.root = this.buildPostboxer();
+    else if (this.character === 'pcork') this.root = this.buildPCork();
     else this.root = this.buildBadger(); // badger, badgerette, william, electro
     this.root.position.copy(this.position);
   }
@@ -4555,6 +4560,7 @@ export class Player {
 
     // Powers: slides around (low friction, gentle accel), rides the water
     // half-submerged, and can only manage a modest jump.
+    this.rollsOrSlides = true;   // Snappy slides
     this.frictionScale = 0.14;
     this.accelScale = 0.55;
     this.walksOnWater = true;
@@ -6606,6 +6612,7 @@ export class Player {
     marble.position.y = 0; // center of the sphere sits at bodyGroup height
     body.add(marble);
     this.marbleMesh = marble;
+    this.rollsOrSlides = true;   // Marblella rolls
 
     // Inner swirl first (drawn through the translucent shell): two
     // interleaved ribbons, the classic cat's-eye twist.
@@ -7386,6 +7393,191 @@ export class Player {
   }
 
   /**
+   * P. Cork — the peacock from the Bass Moultapps roundel, stood up in three
+   * dimensions. Everything about him is drawn from that logo: two blues and
+   * a near-navy, a fan of straight tail rays behind him rather than feathers,
+   * and eyes-of-the-tail rendered as flat CONCENTRIC RINGS instead of the
+   * usual iridescent ovals. The body is faceted for the same reason — the
+   * original is built from arcs and segments, so nothing on him is organic.
+   */
+  buildPCork() {
+    const root = new THREE.Group();
+    root.name = 'pcork';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    // Straight off the roundel: a deep navy, a mid slate and a pale wash.
+    const navyMat = track(createToonMaterial({ color: 0x24365f, rim: { color: 0x8fb0dd, strength: 0.35, threshold: 0.6 } }));
+    const slateMat = track(createToonMaterial({ color: 0x4a6a99, rim: { color: 0xa8c4e6, strength: 0.32, threshold: 0.6 } }));
+    const paleMat = track(createToonMaterial({ color: 0x93b3d6 }));
+    const creamMat = track(createToonMaterial({ color: 0xefe9db }));
+    const inkMat = track(createToonMaterial({ color: 0x18243f }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.86;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the fan, built first so the bird stands in front of it ------------
+    // Rays alternate navy and slate, each one a long flat wedge, exactly as
+    // the logo's tail is drawn.
+    const fan = new THREE.Group();
+    fan.position.set(0, 0.12, -0.34);
+    fan.rotation.x = -0.22;      // leans back over him
+    body.add(fan);
+
+    const RAYS = 15;
+    const rayGeo = track(new THREE.BoxGeometry(0.09, 1.45, 0.05));
+    const eyeOuterGeo = track(new THREE.CylinderGeometry(0.15, 0.15, 0.035, 18));
+    const eyeMidGeo = track(new THREE.CylinderGeometry(0.1, 0.1, 0.04, 16));
+    const eyeCoreGeo = track(new THREE.CylinderGeometry(0.05, 0.05, 0.045, 14));
+    for (let i = 0; i < RAYS; i++) {
+      const t = i / (RAYS - 1);
+      const angle = (t - 0.5) * Math.PI * 1.02;   // a wide, near-flat sweep
+      const ray = new THREE.Mesh(rayGeo, i % 2 ? slateMat : navyMat);
+      ray.position.set(Math.sin(angle) * 0.72, Math.cos(angle) * 0.72, 0);
+      ray.rotation.z = -angle;
+      ray.castShadow = true;
+      fan.add(ray);
+
+      // The eye of the tail: three flat rings, largest behind.
+      const r = 1.42;
+      const ex = Math.sin(angle) * r;
+      const ey = Math.cos(angle) * r;
+      for (const [geo, mat, z] of [
+        [eyeOuterGeo, paleMat, 0.0],
+        [eyeMidGeo, navyMat, 0.03],
+        [eyeCoreGeo, slateMat, 0.06]
+      ]) {
+        const ring = new THREE.Mesh(geo, mat);
+        ring.position.set(ex, ey, z);
+        ring.rotation.x = Math.PI / 2;
+        fan.add(ring);
+      }
+    }
+    // The roundel's outer hoop, arcing over the whole fan.
+    const hoop = new THREE.Mesh(
+      track(new THREE.TorusGeometry(1.62, 0.045, 8, 40, Math.PI * 1.15)), navyMat);
+    hoop.rotation.z = -Math.PI * 1.08;
+    fan.add(hoop);
+
+    // --- the bird: a faceted teardrop body ---------------------------------
+    const torso = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.42, 1)), slateMat);
+    torso.scale.set(0.82, 1.05, 0.78);
+    torso.castShadow = true;
+    body.add(torso);
+    // A pale breast plate, flat-faced like the logo's segments.
+    const breast = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.26, 0)), paleMat);
+    breast.position.set(0, -0.1, 0.26);
+    breast.scale.set(0.9, 1.15, 0.6);
+    body.add(breast);
+
+    // The long neck: a stack of narrowing segments curving up and forward.
+    const neck = [
+      { r: 0.15, y: 0.3, z: 0.12, tilt: 0.28 },
+      { r: 0.13, y: 0.52, z: 0.2, tilt: 0.2 },
+      { r: 0.115, y: 0.72, z: 0.26, tilt: 0.1 },
+      { r: 0.1, y: 0.9, z: 0.28, tilt: 0.0 }
+    ];
+    for (const n of neck) {
+      const seg = new THREE.Mesh(track(new THREE.CylinderGeometry(n.r * 0.9, n.r, 0.22, 10)), navyMat);
+      seg.position.set(0, n.y, n.z);
+      seg.rotation.x = n.tilt;
+      seg.castShadow = true;
+      body.add(seg);
+    }
+
+    // --- head, crest and beak ----------------------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.06, 0.3);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const head = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.16, 1)), navyMat);
+    head.scale.set(0.9, 1, 1.05);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // The white eye-patch and ringed eye the logo gives him.
+    for (const side of [-1, 1]) {
+      const patch = new THREE.Mesh(track(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 14)), creamMat);
+      patch.position.set(side * 0.1, 0.02, 0.1);
+      patch.rotation.set(Math.PI / 2, 0, 0);
+      patch.rotation.z = side * 0.3;
+      headGroup.add(patch);
+      const iris = new THREE.Mesh(track(new THREE.CylinderGeometry(0.038, 0.038, 0.04, 12)), inkMat);
+      iris.position.set(side * 0.11, 0.02, 0.12);
+      iris.rotation.x = Math.PI / 2;
+      headGroup.add(iris);
+      const glint = new THREE.Mesh(track(new THREE.SphereGeometry(0.014, 8, 6)), glintMat);
+      glint.position.set(side * 0.125, 0.05, 0.145);
+      headGroup.add(glint);
+    }
+
+    const beak = new THREE.Mesh(track(new THREE.ConeGeometry(0.055, 0.22, 4)), paleMat);
+    beak.position.set(0, -0.02, 0.24);
+    beak.rotation.x = Math.PI / 2;
+    beak.rotation.z = Math.PI / 4;   // a squared-off, geometric bill
+    headGroup.add(beak);
+
+    // The three-quill crest, each tipped with its own little ring.
+    for (const lean of [-0.34, 0, 0.34]) {
+      const quill = new THREE.Mesh(track(new THREE.CylinderGeometry(0.012, 0.012, 0.2, 6)), navyMat);
+      quill.position.set(Math.sin(lean) * 0.09, 0.24, -Math.abs(lean) * 0.03);
+      quill.rotation.z = -lean;
+      headGroup.add(quill);
+      const tip = new THREE.Mesh(track(new THREE.CylinderGeometry(0.036, 0.036, 0.022, 12)), paleMat);
+      tip.position.set(Math.sin(lean) * 0.15, 0.34, -Math.abs(lean) * 0.05);
+      tip.rotation.x = Math.PI / 2;
+      headGroup.add(tip);
+    }
+
+    // --- wing: one flat faceted plate against each flank --------------------
+    this.arms = [];
+    const wingGeo = track(new THREE.CylinderGeometry(0.26, 0.26, 0.05, 6));
+    const handGeo = track(new THREE.SphereGeometry(0.05, 8, 6));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.34, 0.14, 0);
+      const wing = new THREE.Mesh(wingGeo, paleMat);
+      wing.position.set(side * 0.06, -0.16, -0.02);
+      wing.rotation.set(0, 0, Math.PI / 2);
+      wing.scale.set(1, 1, 1.5);
+      wing.castShadow = true;
+      pivot.add(wing);
+      const tipMesh = new THREE.Mesh(handGeo, navyMat);
+      tipMesh.position.set(side * 0.08, -0.4, -0.04);
+      pivot.add(tipMesh);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.2 });
+    }
+
+    // --- legs: thin and straight, on flat splayed feet ----------------------
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.045, 0.04, 0.5, 8));
+    const toeGeo = track(new THREE.BoxGeometry(0.05, 0.035, 0.19));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.15, -0.4, 0);
+      const leg = new THREE.Mesh(legGeo, paleMat);
+      leg.position.y = -0.25;
+      leg.castShadow = true;
+      pivot.add(leg);
+      for (const spread of [-0.28, 0, 0.28]) {
+        const toe = new THREE.Mesh(toeGeo, paleMat);
+        toe.position.set(Math.sin(spread) * 0.08, -0.51, 0.07);
+        toe.rotation.y = spread;
+        pivot.add(toe);
+      }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /**
    * Tara Tapir — a tapir who cooks. The giveaway is the snout: a tapir's
    * proboscis is a short prehensile trunk, so it is built as a tapering
    * stack rather than a badger's cone, drooping at the tip.
@@ -7867,6 +8059,7 @@ export class Player {
     body.add(ball);
     // Rolls at a speed matched to the ground, via the shared marble rig.
     this.marbleMesh = ball;
+    this.rollsOrSlides = true;   // Foil rolls
     this._rollRadius = R;
 
     // --- eyes, which emphatically do NOT roll -------------------------------

@@ -80,6 +80,8 @@ export class UI {
     // The about / how-to-play modal is self-contained: wire it here.
     this.aboutBtn = document.getElementById('about-btn');
     this.menuAboutBtn = document.getElementById('menu-about-btn');
+    this.aboutLogoBtn = document.getElementById('about-logo-btn');
+    this.aboutLogoNote = document.getElementById('about-logo-note');
     this.aboutPanel = document.getElementById('about-panel');
     this.aboutClose = document.getElementById('about-close');
     if (this.aboutPanel) {
@@ -115,6 +117,16 @@ export class UI {
       if (this._onCharacterToggle) this._onCharacterToggle(changed);
     };
     for (const card of this.charCards) card.addEventListener('click', this._onCardClick);
+  }
+
+  /** A line under the logo — what the tap did, if anything. */
+  setAboutLogoNote(text) {
+    if (this.aboutLogoNote) this.aboutLogoNote.textContent = text;
+  }
+
+  /** Someone has tapped the studio logo on the About page. */
+  bindLogoTap(cb) {
+    if (this.aboutLogoBtn) this.aboutLogoBtn.addEventListener('click', cb);
   }
 
   /** Wire a callback fired when a character card is clicked (menu + game
