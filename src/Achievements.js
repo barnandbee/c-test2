@@ -79,6 +79,7 @@ export const TROPHIES = [
   { id: 'play40', medal: '🎢', title: 'Standing Room Only', desc: 'Play as 40 different characters.' },
   { id: 'total50', medal: '🏵️', title: 'Half Centurion', desc: 'Amass 50 achievements in total — trophies earned plus characters unlocked.' },
   { id: 'total100', medal: '🎖️', title: 'Centurion', desc: 'Amass 100 achievements in total — trophies earned plus characters unlocked.' },
+  { id: 'doppelganger', medal: '🔴', title: 'Feathered Doppelgänger', desc: 'Complete a run as W. Wolk — play as P. Cork and have the weather turn foul on you.' },
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

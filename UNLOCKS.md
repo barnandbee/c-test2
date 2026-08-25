@@ -94,7 +94,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (72)
+## Trophies (73)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -194,6 +194,7 @@ milestone counts your best past run automatically.
 | 🎖️ **Centurion** | Amass **100 achievements in total** — trophies earned **plus** characters unlocked. |
 | ⚡ **Zapped!** | Let the **transmission tower** take your health to zero during a storm — any character. |
 | 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt** — the four heroes it feeds instead of frying. |
+| 🔴 **Feathered Doppelgänger** | Complete a run as **W. Wolk** — play as **P. Cork** and have the forecast turn foul (rain, storm, snow, fog or purple haze). He goes red for the whole run. |
 
 ---
 

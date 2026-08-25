@@ -3592,33 +3592,6 @@ body {
   text-align: center;
 }
 
-/* A typographic wordmark, standing in until the real logo is supplied.
-   Replacing it is a one-line swap: uncomment the <img id="about-logo"> in
-   index.html and delete this paragraph. */
-#about-wordmark {
-  font-family: var(--font-logo), var(--font-stack);
-  font-size: 26px;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  color: var(--accent-gold);
-  margin-bottom: 8px;
-}
-
-#about-wordmark span {
-  display: block;
-  font-size: 15px;
-  letter-spacing: 0.34em;
-  color: rgba(243, 239, 255, 0.72);
-  margin-top: 3px;
-}
-
-#about-logo {
-  display: block;
-  max-width: 190px;
-  max-height: 76px;
-  margin: 0 auto 10px;
-}
-
 #about-studio-line {
   font-size: 13px;
   color: rgba(243, 239, 255, 0.66);
@@ -3632,15 +3605,25 @@ body {
 
 #about-studio-line a:hover { filter: brightness(1.15); }
 
-/* The studio logo is a button, but should not look like one until pressed. */
+/* The studio logo is a button, but should not look like one until pressed.
+   The artwork is a roundel that runs right to the edge of its square, so a
+   circular mask cut at the same diameter shaves the outer ring and the tops
+   of the letters. The button is therefore a slightly LARGER circle than the
+   image, filled with the artwork's own cream, and the image sits inside it
+   whole (object-fit: contain, no mask of its own). The square's four cream
+   corners are all the circle takes, and they are the same cream as the
+   ground behind them, so nothing of the logo is lost. */
 #about-logo-btn {
   display: block;
+  width: 148px;
+  height: 148px;
   margin: 0 auto 10px;
-  padding: 0;
+  padding: 6px;
   border: none;
-  background: none;
+  background: #f6efdd;   /* sampled from the artwork's own ground */
   cursor: pointer;
   border-radius: 50%;
+  overflow: hidden;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
@@ -3649,10 +3632,9 @@ body {
 
 #about-logo {
   display: block;
-  width: 132px;
-  height: 132px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 #about-logo-note {

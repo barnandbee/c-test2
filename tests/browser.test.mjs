@@ -688,6 +688,81 @@ const cork = await page.evaluate(() => {
 ok('the peacock builds and walks', cork.root === 'pcork' && cork.legs === 2, JSON.stringify(cork));
 await page.click('#about-close');
 
+// --- W. Wolk: P. Cork turns red when the sky turns on him ---------------
+// The materials outlive the forecast that changed them, so this checks both
+// directions: foul weather reddens him, and clear weather MUST put the blues
+// back — otherwise the first storm would leave him red for good.
+const wolk = await page.evaluate(() => {
+  const g = window.__game;
+  g.setCharacter('pcork');
+  const hexes = () => g.player.plumage.map((m) => m.color.getHex());
+  const rims = () => g.player.plumage
+    .map((m) => (m.userData.uniforms && m.userData.uniforms.uRimColor)
+      ? m.userData.uniforms.uRimColor.value.getHex() : null)
+    .filter((v) => v !== null);
+  // Red channel above blue is the whole claim: he is warm, not cool.
+  const isRed = (list) => list.every((h) => ((h >> 16) & 255) > (h & 255));
+  const isBlue = (list) => list.every((h) => (h & 255) > ((h >> 16) & 255));
+  const out = { kinds: {} };
+  for (const k of ['clear', 'rain', 'storm', 'snow', 'fog', 'haze']) {
+    g.weather.set(k);
+    g.applyWolk(k);
+    out.kinds[k] = { flag: g.isWolk, red: isRed(hexes()) };
+    if (k === 'storm') out.rimRed = isRed(rims());
+  }
+  // …and back to a lovely evening.
+  g.weather.set('clear');
+  g.applyWolk('clear');
+  out.restored = { flag: g.isWolk, blue: isBlue(hexes()) };
+  out.rimBlue = isBlue(rims());
+  // Nobody else has plumage to repaint, and asking must not throw.
+  g.setCharacter('badger');
+  out.badgerSafe = g.player.setStormPlumage(true) === false;
+  return out;
+});
+for (const k of ['rain', 'storm', 'snow', 'fog', 'haze']) {
+  ok(`${k} turns P. Cork into W. Wolk`,
+     wolk.kinds[k].flag === true && wolk.kinds[k].red === true, JSON.stringify(wolk.kinds[k]));
+}
+ok('a clear sky leaves him as P. Cork',
+   wolk.kinds.clear.flag === false && wolk.kinds.clear.red === false, JSON.stringify(wolk.kinds.clear));
+ok('the rim light reddens with him', wolk.rimRed === true);
+ok('and clear weather puts every blue back',
+   wolk.restored.flag === false && wolk.restored.blue === true && wolk.rimBlue === true,
+   JSON.stringify(wolk.restored));
+ok('asking a non-peacock to change costs nothing', wolk.badgerSafe === true);
+
+// Feathered Doppelgänger: awarded at the bell, and only to a red run.
+const dopp = await page.evaluate(() => {
+  const g = window.__game;
+  const run = (flag) => {
+    g.achievements.delete('doppelganger');
+    g.isWolk = flag;
+    g.gameOver('time');
+    return g.achievements.has('doppelganger');
+  };
+  return { asWolk: run(true), asCork: run(false) };
+});
+ok('finishing as W. Wolk earns Feathered Doppelganger', dopp.asWolk === true);
+ok('finishing as anyone else does not', dopp.asCork === false);
+
+// restart() clears a pile of per-run flags AFTER rollWeather has run. If
+// isWolk ever joins that block the trophy dies silently, so pin it here.
+const survives = await page.evaluate(() => {
+  const g = window.__game;
+  g.ui._selectedCharacter = 'pcork';   // restart re-reads the selection
+  const cls = g.weather.constructor;
+  const real = cls.roll;
+  cls.roll = () => 'storm';            // force foul weather
+  g.restart(false, 'easy');
+  const after = { flag: g.isWolk, who: g.characterName };
+  cls.roll = real;
+  return after;
+});
+ok('isWolk survives restart() rather than being cleared after the roll',
+   survives.flag === true && survives.who === 'pcork', JSON.stringify(survives));
+
+
 const tierAt = (count) => page.evaluate((n) => {
   const g = window.__game;
   // Field names do not all match roster keys, so read the real ones off the

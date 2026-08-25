@@ -552,6 +552,12 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   nothing about him is organic. Unlock him by **tapping the logo on the
   About page** with a **lifetime score of 1,000 or more**; below that it
   hints that something is there without saying what.
+
+  **W. Wolk.** P. Cork does not care for weather. Roll into a run with him
+  under **rain, storm, snow, fog or the purple haze** and every blue on the
+  bird burns over to **red** — body, neck, head, wings, legs and the whole
+  fan — for the rest of the run. See it out to the bell and you take the
+  **🔴 Feathered Doppelgänger** trophy.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

@@ -128,6 +128,9 @@ export class Player {
     // Kept here rather than in a list of names, for the same reason isBadger
     // is: a hero who starts rolling later counts without anyone remembering.
     this.rollsOrSlides = false;
+    // P. Cork's three blues, recorded by his builder so setStormPlumage can
+    // repaint them. Null for everyone else, who stay the colour they were.
+    this.plumage = null;
     this.waterSink = 0;      // Top Hat Snappy rides this far below the surface
     this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
     this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
@@ -7413,6 +7416,11 @@ export class Player {
     const inkMat = track(createToonMaterial({ color: 0x18243f }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 }));
 
+    // Every blue on the bird, kept together so bad weather can repaint the
+    // lot in one go. See setStormPlumage() — foul skies turn him red and he
+    // answers to W. Wolk for the rest of the run.
+    this.plumage = [navyMat, slateMat, paleMat];
+
     const body = new THREE.Group();
     body.name = 'body';
     body.position.y = 0.86;
@@ -7456,11 +7464,6 @@ export class Player {
         fan.add(ring);
       }
     }
-    // The roundel's outer hoop, arcing over the whole fan.
-    const hoop = new THREE.Mesh(
-      track(new THREE.TorusGeometry(1.38, 0.05, 8, 44, Math.PI * 0.86)), navyMat);
-    hoop.rotation.z = Math.PI * 0.57;   // centred over the fan's own sweep
-    fan.add(hoop);
 
     // --- the bird: a faceted teardrop body ---------------------------------
     const torso = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.42, 1)), slateMat);
@@ -7575,6 +7578,30 @@ export class Player {
     }
 
     return root;
+  }
+
+  /**
+   * W. Wolk — P. Cork after the sky turns on him. Rain, snow, storm, fog or
+   * the purple haze and every blue on the bird burns over to red: body, neck,
+   * head, wings, legs and the whole fan behind him.
+   *
+   * The repaint is three material colours plus their rim lights, so it costs
+   * nothing per frame and nothing in geometry — the same bird, in a temper.
+   * Returns false for anyone who isn't P. Cork, so callers can ask blindly.
+   */
+  setStormPlumage(on) {
+    if (!this.plumage) return false;
+    // navy, slate, pale — in the order buildPCork recorded them.
+    const scheme = on
+      ? [[0x8c2434, 0xffa08c], [0xc44a44, 0xffbfa4], [0xf0b6a0, null]]
+      : [[0x405d94, 0x8fb0dd], [0x7597c6, 0xa8c4e6], [0xbcd4ec, null]];
+    this.plumage.forEach((mat, i) => {
+      const [body, rim] = scheme[i];
+      mat.color.setHex(body);
+      const u = mat.userData.uniforms;
+      if (rim !== null && u && u.uRimColor) u.uRimColor.value.setHex(rim);
+    });
+    return true;
   }
 
   /**

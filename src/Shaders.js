@@ -214,6 +214,10 @@ function patchMaterial(material, extraUniforms = {}) {
   // eagerly so callers can flip it before the shader ever compiles.
   const keepColor = { value: 0 };
   material.userData.uKeepColor = keepColor;
+  // The rim/sway/pulse uniforms are handed to the shader by reference, so
+  // publishing them here lets a caller retune a material after it has been
+  // built — P. Cork's storm plumage repaints its rim light this way.
+  material.userData.uniforms = extraUniforms;
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = SharedUniforms.uTime;
     shader.uniforms.uFogBase = SharedUniforms.uFogBase;

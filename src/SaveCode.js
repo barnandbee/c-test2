@@ -102,7 +102,7 @@ export const VOCAB_TROPHIES = [
   'frogs100', 'mysticcubed', 'pointproved', 'lifetime10k', 'lifetime50k',
   'lifetime100k', 'frogspawn', 'zapped', 'antizapped',
   'play40', 'total50', 'total100', 'c400',
-  'unlock20', 'unlock50', 'unlockroll'
+  'unlock20', 'unlock50', 'unlockroll', 'doppelganger'
 ];
 
 export const VOCAB_CHARACTERS = [

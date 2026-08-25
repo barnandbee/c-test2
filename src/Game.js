@@ -152,6 +152,9 @@ const POSTBOXER_ERRORS = ['error42', 'error43', 'error44'];
 const COFFEE_HEALTH = 30;           // what a cup at the cart is worth
 const POSTBOXER_SPRINT = 3;         // his pace while the score divides by 3
 const BAYEUX_POINTS = 22.2;         // William's reward for framing a picture
+// Weather foul enough to turn P. Cork. Anything that isn't 'clear', named out
+// in full so a future forecast has to be considered rather than swept in.
+const WOLK_WEATHER = ['rain', 'storm', 'snow', 'fog', 'haze'];
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
@@ -521,6 +524,7 @@ export class Game {
     this.pickleMultiplier = 1;             // Tara doubles pickles after the sad sandwich
     this.tapirSawSandwich = false;         // …and she only despairs at it once
     this._postSprintTaught = false;        // Postboxer's ×3 explained yet?
+    this.isWolk = false;                   // P. Cork gone red for the weather
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -1309,7 +1313,35 @@ export class Game {
     const kind = this.weather.set(Weather.roll());
     const label = this.weather.label;
     if (label) this.ui.showTimeToast(label);
+    this.applyWolk(kind);
     return kind;
+  }
+
+  /**
+   * P. Cork does not care for weather. Rain, storm, snow, fog or the purple
+   * haze and he goes over red for the whole run — same bird, different name.
+   *
+   * Called from rollWeather, which is the one gate every run passes through,
+   * so this needs no separate wiring in beginRun and restart.
+   */
+  applyWolk(kind) {
+    const turned = this.characterName === 'pcork' && WOLK_WEATHER.includes(kind);
+    this.isWolk = turned;
+    if (!this.player || !this.player.setStormPlumage) return turned;
+    // Told either way: a clear-sky run must put the blues back, since the
+    // materials outlive the forecast that changed them.
+    this.player.setStormPlumage(turned);
+    if (turned) {
+      // The forecast toast went up a moment ago and toasts replace rather
+      // than queue, so hold this one back until that one has been read.
+      window.clearTimeout(this._wolkToast);
+      this._wolkToast = window.setTimeout(() => {
+        if (!this.isWolk) return;   // weather re-rolled under us; say nothing
+        this.audio.play('trophy');
+        this.ui.showTimeToast('🔴 P. CORK TRANSFORMED WITH THE BAD WEATHER INTO W. WOLK!');
+      }, 1800);
+    }
+    return turned;
   }
 
   /** Turn the greyscale Mystic wash on or off for the current run. */
@@ -2923,6 +2955,9 @@ export class Game {
     ) {
       this.awardAchievement('frogspawn');
     }
+    // Feathered Doppelgänger: saw the run out as W. Wolk, red from the first
+    // bad forecast to the bell.
+    if (this.isWolk) this.awardAchievement('doppelganger');
     // Mystic Cubed: monochrome AND rode the line to Mystic Forest Central.
     if (wasMystic && this.stationsVisited.has('copse')) {
       this.awardAchievement('mysticcubed');
@@ -3242,6 +3277,8 @@ export class Game {
     this.pickleMultiplier = 1;
     this.tapirSawSandwich = false;
     this._postSprintTaught = false;
+    // isWolk is NOT cleared here: rollWeather() ran further up and has
+    // already set it for this run. Clearing it now would undo that.
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
