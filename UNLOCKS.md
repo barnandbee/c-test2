@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (52)
+## Characters (53)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -68,6 +68,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 50 | **Ol' Cardboard Box** | **Board the rocket twice in the same run.** A box with arms and legs. He is a container, so a **pickle goes straight in him** and travels to the stove with no pan needed — but **water ends the run on the spot**. |
 | 51 | **Tara Tapir** | In **one run**: cook the **charred pickle fritter**, collect **Neptune's Raisin**, use **no transport at all** (no hovercraft, balloon, rocket or train) and finish on **200 or more**. A tapir chef — toque, blue gingham whites, apron and whisk. |
 | 52 | **Postboxer** | Score **400 or more** as **all three Errors** — #42, #43 **and** #44 — across any runs. A pillar box in a blue flat cap with a satchel and a letter in hand. |
+| 53 | **P. Cork** | **Tap the Bass Moultapps logo** on the About page with a **lifetime score of 1,000 or more**. The geometric peacock from the studio roundel — fanned tail of straight rays, ringed eyes, three-quill crest. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number
@@ -93,7 +94,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (69)
+## Trophies (72)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -150,8 +151,11 @@ milestone counts your best past run automatically.
 | Trophy | How to unlock |
 |--------|---------------|
 | 🎭 **Recruiter** | Unlock a character. |
-| 🎪 **Talent Scout** | Unlock 5 characters. |
-| 🎡 **Impresario** | Unlock 10 characters. |
+| 🎪 **Unlocked, High Five!** | Unlock **5** characters. |
+| 🎡 **Unlock It In A Docket** | Unlock **10 or more** characters. |
+| 🎢 **Unlock It In Your Pocket** | Unlock **20 or more** characters. |
+| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 52 unlockable, so this is very nearly the lot). |
+| 🎳 **Unlock 'N' Roll** | Unlock a character who **rolls or slides** rather than walking — Marblella, Foil or Top Hat Snappy. |
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |
 | 🎠 **The Whole Menagerie** | Play as 20 different characters. |

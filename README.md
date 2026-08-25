@@ -29,7 +29,9 @@ heroes are earned by *combinations* rather than scores, that who you play as
 changes how the world reacts, that the weather is rolled per run, that
 buildings have insides and things can be carried, and that odd-looking
 numbers are rarely an accident). It closes with the studio credit — a
-**Bass Moultapps** game, bassmoultapps@futurereferenced.com.
+**Bass Moultapps** game, bassmoultapps@futurereferenced.com — under the
+studio roundel. The logo is also a door: tap it with a **lifetime score of
+1,000 or more** and the peacock on it steps off and joins the roster.
 
 ## Controls
 
@@ -542,6 +544,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   moment it isn't. Zero counts, so he starts every run sprinting until the
   first pine cone spoils it — and a fractional score counts for nothing,
   since 63.14159 is a multiple of exactly nothing.
+- **P. Cork** — the peacock from the Bass Moultapps roundel, stood up in
+  three dimensions. Everything is taken from the mark: two blues and a
+  near-navy, a fan of **straight rays** rather than feathers, and the
+  eyes-of-the-tail drawn as flat **concentric rings**. The body is faceted
+  for the same reason — the original is built from arcs and segments, so
+  nothing about him is organic. Unlock him by **tapping the logo on the
+  About page** with a **lifetime score of 1,000 or more**; below that it
+  hints that something is there without saying what.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

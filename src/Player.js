@@ -7406,9 +7406,9 @@ export class Player {
     const track = (r) => { this._disposables.push(r); return r; };
 
     // Straight off the roundel: a deep navy, a mid slate and a pale wash.
-    const navyMat = track(createToonMaterial({ color: 0x24365f, rim: { color: 0x8fb0dd, strength: 0.35, threshold: 0.6 } }));
-    const slateMat = track(createToonMaterial({ color: 0x4a6a99, rim: { color: 0xa8c4e6, strength: 0.32, threshold: 0.6 } }));
-    const paleMat = track(createToonMaterial({ color: 0x93b3d6 }));
+    const navyMat = track(createToonMaterial({ color: 0x405d94, rim: { color: 0x8fb0dd, strength: 0.35, threshold: 0.6 } }));
+    const slateMat = track(createToonMaterial({ color: 0x7597c6, rim: { color: 0xa8c4e6, strength: 0.32, threshold: 0.6 } }));
+    const paleMat = track(createToonMaterial({ color: 0xbcd4ec }));
     const creamMat = track(createToonMaterial({ color: 0xefe9db }));
     const inkMat = track(createToonMaterial({ color: 0x18243f }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 }));
@@ -7428,21 +7428,21 @@ export class Player {
     body.add(fan);
 
     const RAYS = 15;
-    const rayGeo = track(new THREE.BoxGeometry(0.09, 1.45, 0.05));
+    const rayGeo = track(new THREE.BoxGeometry(0.17, 1.15, 0.05));
     const eyeOuterGeo = track(new THREE.CylinderGeometry(0.15, 0.15, 0.035, 18));
     const eyeMidGeo = track(new THREE.CylinderGeometry(0.1, 0.1, 0.04, 16));
     const eyeCoreGeo = track(new THREE.CylinderGeometry(0.05, 0.05, 0.045, 14));
     for (let i = 0; i < RAYS; i++) {
       const t = i / (RAYS - 1);
-      const angle = (t - 0.5) * Math.PI * 1.02;   // a wide, near-flat sweep
+      const angle = (t - 0.5) * Math.PI * 0.82;   // a broad arc, not a full wheel
       const ray = new THREE.Mesh(rayGeo, i % 2 ? slateMat : navyMat);
-      ray.position.set(Math.sin(angle) * 0.72, Math.cos(angle) * 0.72, 0);
+      ray.position.set(Math.sin(angle) * 0.62, Math.cos(angle) * 0.62, 0);
       ray.rotation.z = -angle;
       ray.castShadow = true;
       fan.add(ray);
 
       // The eye of the tail: three flat rings, largest behind.
-      const r = 1.42;
+      const r = 1.18;
       const ex = Math.sin(angle) * r;
       const ey = Math.cos(angle) * r;
       for (const [geo, mat, z] of [
@@ -7458,8 +7458,8 @@ export class Player {
     }
     // The roundel's outer hoop, arcing over the whole fan.
     const hoop = new THREE.Mesh(
-      track(new THREE.TorusGeometry(1.62, 0.045, 8, 40, Math.PI * 1.15)), navyMat);
-    hoop.rotation.z = -Math.PI * 1.08;
+      track(new THREE.TorusGeometry(1.38, 0.05, 8, 44, Math.PI * 0.86)), navyMat);
+    hoop.rotation.z = Math.PI * 0.57;   // centred over the fan's own sweep
     fan.add(hoop);
 
     // --- the bird: a faceted teardrop body ---------------------------------

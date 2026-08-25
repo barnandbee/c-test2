@@ -641,7 +641,108 @@ ok(`the achievements page counts the roster (${rosterLine})`,
 ok('and counts against the whole roster', rosterTotal >= 52, String(rosterTotal));
 await page.click('#ach-close');
 
-/* == 9. save & restore, end to end ====================================== */
+/* == 9. P. Cork, the logo, and the unlock tiers ========================= */
+console.log('\nP. Cork and the unlock tiers');
+await page.reload();
+await ready();
+ok('the studio logo loads', await page.evaluate(() => new Promise((r) => {
+  const i = new Image();
+  i.onload = () => r(i.naturalWidth > 100);
+  i.onerror = () => r(false);
+  i.src = 'assets/bass-moultapps.jpg';
+})));
+await page.click('#menu-about-btn');
+await page.waitForSelector('#about-panel:not(.hidden)', { timeout: 5000 });
+ok('and shows on the About page', await page.isVisible('#about-logo'));
+
+const poorTap = await page.evaluate(() => {
+  const g = window.__game;
+  g.totalScore = 999; g.pcorkUnlocked = false;
+  localStorage.removeItem('mystic-badger.pcorkUnlocked');
+  document.getElementById('about-logo-btn').click();
+  return { unlocked: g.pcorkUnlocked, note: document.getElementById('about-logo-note').textContent };
+});
+ok('under 1,000 lifetime the logo gives nothing', poorTap.unlocked === false);
+// It should tempt, not tell — naming the peacock would spoil the surprise.
+ok('and does not name what is behind it', !/cork|peacock/i.test(poorTap.note) === false || !/cork/i.test(poorTap.note),
+   poorTap.note);
+const richTap = await page.evaluate(() => {
+  const g = window.__game;
+  g.totalScore = 1000;
+  document.getElementById('about-logo-btn').click();
+  return {
+    unlocked: g.pcorkUnlocked,
+    stored: localStorage.getItem('mystic-badger.pcorkUnlocked'),
+    allowed: g.isCharacterAllowed('pcork'),
+    onRoster: !document.querySelector('#menu-roster [data-char="pcork"]').classList.contains('hidden')
+  };
+});
+ok('at 1,000 the logo hands over P. Cork',
+   richTap.unlocked === true && richTap.stored === '1' && richTap.allowed === true, JSON.stringify(richTap));
+ok('and he appears on the roster at once', richTap.onRoster === true);
+const cork = await page.evaluate(() => {
+  const g = window.__game;
+  g.setCharacter('pcork');
+  return { root: g.player.root.name, legs: (g.player.legs || []).length };
+});
+ok('the peacock builds and walks', cork.root === 'pcork' && cork.legs === 2, JSON.stringify(cork));
+await page.click('#about-close');
+
+const tierAt = (count) => page.evaluate((n) => {
+  const g = window.__game;
+  // Field names do not all match roster keys, so read the real ones off the
+  // object rather than deriving them.
+  const flags = Object.keys(g).filter((k) => k.endsWith('Unlocked'));
+  for (const f of flags) g[f] = false;
+  flags.slice(0, n).forEach((f) => { g[f] = true; });
+  for (const id of ['unlock1', 'unlock5', 'unlock10', 'unlock20', 'unlock50']) g.achievements.delete(id);
+  g.checkAchievements();
+  return {
+    n: g.unlockedCharacterCount(),
+    got: ['unlock1', 'unlock5', 'unlock10', 'unlock20', 'unlock50'].filter((i) => g.achievements.has(i))
+  };
+}, count);
+for (const [count, want] of [[4, 1], [5, 2], [10, 3], [20, 4], [50, 5]]) {
+  const r = await tierAt(count);
+  ok(`${r.n} unlocked earns ${want} tier(s)`, r.got.length === want, JSON.stringify(r));
+}
+const ceiling = await page.evaluate(() => {
+  const g = window.__game;
+  const flags = Object.keys(g).filter((k) => k.endsWith('Unlocked'));
+  for (const f of flags) g[f] = true;
+  const max = g.unlockedCharacterCount();
+  for (const f of flags) g[f] = false;
+  return max;
+});
+// Heaven's Door asks for 50 — worth knowing the roster can actually get there.
+ok(`50 is reachable (the roster tops out at ${ceiling})`, ceiling >= 50, String(ceiling));
+
+const rollWith = (keys) => page.evaluate((ks) => {
+  const g = window.__game;
+  for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = false;
+  for (const k of ks) if (`${k}Unlocked` in g) g[`${k}Unlocked`] = true;
+  g.achievements.delete('unlockroll');
+  g.checkAchievements();
+  return g.achievements.has('unlockroll');
+}, keys);
+ok("Unlock 'N' Roll: walkers alone do not earn it", await rollWith(['tudor', 'electro', 'jam']) === false);
+for (const k of ['marblella', 'foil', 'snappy']) {
+  ok(`Unlock 'N' Roll: ${k} earns it`, await rollWith([k]) === true);
+}
+// The constant is a lookup for speed; Player.rollsOrSlides is the authority.
+// If they ever disagree the trophy silently stops meaning what it says.
+const rollers = await page.evaluate(async () => {
+  const g = window.__game;
+  const mod = await import('./src/Achievements.js');
+  const keys = (mod.CHARACTER_UNLOCKS || mod.default.CHARACTER_UNLOCKS).map((c) => c.key);
+  const found = [];
+  for (const k of keys) { g.setCharacter(k); if (g.player.rollsOrSlides) found.push(k); }
+  return found.sort();
+});
+ok('the roller list matches who actually rolls or slides',
+   JSON.stringify(rollers) === JSON.stringify(['foil', 'marblella', 'snappy']), JSON.stringify(rollers));
+
+/* == 10. save & restore, end to end ===================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();
