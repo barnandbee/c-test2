@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (53)
+## Characters (54)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -69,6 +69,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 51 | **Tara Tapir** | In **one run**: cook the **charred pickle fritter**, collect **Neptune's Raisin**, use **no transport at all** (no hovercraft, balloon, rocket or train) and finish on **200 or more**. A tapir chef — toque, blue gingham whites, apron and whisk. |
 | 52 | **Postboxer** | Score **400 or more** as **all three Errors** — #42, #43 **and** #44 — across any runs. A pillar box in a blue flat cap with a satchel and a letter in hand. |
 | 53 | **P. Cork** | **Tap the Bass Moultapps logo** on the About page with a **lifetime score of 1,000 or more**. The geometric peacock from the studio roundel — fanned tail of straight rays, ringed eyes, three-quill crest. |
+| 54 | **W. Wolk** | Playing as **W. Wolk** — that is, as **P. Cork with the weather against you** — **enter the whirlpool on a score of 200 or more**. Judged on what you bring to the whirlpool, before its fortune is rolled, so a lucky spin can't carry you over the bar. Once he is yours he plays as himself: red under any sky, brows and all. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number
@@ -154,7 +155,7 @@ milestone counts your best past run automatically.
 | 🎪 **Unlocked, High Five!** | Unlock **5** characters. |
 | 🎡 **Unlock It In A Docket** | Unlock **10 or more** characters. |
 | 🎢 **Unlock It In Your Pocket** | Unlock **20 or more** characters. |
-| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 52 unlockable, so this is very nearly the lot). |
+| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 53 unlockable, so this is very nearly the lot). |
 | 🎳 **Unlock 'N' Roll** | Unlock a character who **rolls or slides** rather than walking — Marblella, Foil or Top Hat Snappy. |
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |
@@ -194,7 +195,7 @@ milestone counts your best past run automatically.
 | 🎖️ **Centurion** | Amass **100 achievements in total** — trophies earned **plus** characters unlocked. |
 | ⚡ **Zapped!** | Let the **transmission tower** take your health to zero during a storm — any character. |
 | 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt** — the four heroes it feeds instead of frying. |
-| 🔴 **Feathered Doppelgänger** | Complete a run as **W. Wolk** — play as **P. Cork** and have the forecast turn foul (rain, storm, snow, fog or purple haze). He goes red for the whole run. |
+| 🔴 **Feathered Doppelgänger** | Complete a run as **W. Wolk** — either as **P. Cork** with the forecast turned foul (rain, storm, snow, fog or purple haze), or as the red bird himself once he is unlocked. |
 
 ---
 

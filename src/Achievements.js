@@ -79,7 +79,7 @@ export const TROPHIES = [
   { id: 'play40', medal: '🎢', title: 'Standing Room Only', desc: 'Play as 40 different characters.' },
   { id: 'total50', medal: '🏵️', title: 'Half Centurion', desc: 'Amass 50 achievements in total — trophies earned plus characters unlocked.' },
   { id: 'total100', medal: '🎖️', title: 'Centurion', desc: 'Amass 100 achievements in total — trophies earned plus characters unlocked.' },
-  { id: 'doppelganger', medal: '🔴', title: 'Feathered Doppelgänger', desc: 'Complete a run as W. Wolk — play as P. Cork and have the weather turn foul on you.' },
+  { id: 'doppelganger', medal: '🔴', title: 'Feathered Doppelgänger', desc: 'Complete a run as W. Wolk — as P. Cork with the weather against you, or as the red bird himself.' },
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -136,5 +136,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'cardboard', name: "Ol' Cardboard Box", how: 'Board the rocket twice in the same run.' },
   { key: 'tapir', name: 'Tara Tapir', how: 'In one run: cook the charred pickle fritter, collect Neptune\u2019s Raisin, use no transport at all (no hovercraft, balloon, rocket or train) and finish on 200 or more.' },
   { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' },
-  { key: 'pcork', name: 'P. Cork', how: 'Tap the Bass Moultapps logo on the About page with a lifetime score of 1,000 or more.' }
+  { key: 'pcork', name: 'P. Cork', how: 'Tap the Bass Moultapps logo on the About page with a lifetime score of 1,000 or more.' },
+  { key: 'wolk', name: 'W. Wolk', how: 'Playing as W. Wolk \u2014 that is, as P. Cork with the weather against you \u2014 enter the whirlpool on a score of 200 or more.' }
 ];

@@ -115,7 +115,7 @@ export const VOCAB_CHARACTERS = [
   'spirit', 'chimpy', 'owl', 'snappy', 'bacon', 'robofarmer', 'frosch',
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
-  'tapir', 'postboxer', 'pcork'
+  'tapir', 'postboxer', 'pcork', 'wolk'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -140,7 +140,7 @@ export const SCHEMA_BOOLS = [
   'error43Unlocked', 'nucleusUnlocked', 'tudorUnlocked', 'electroUnlocked',
   'muted', 'bloom',
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
-  'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked'
+  'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked'
 ];
 
 /** Whole numbers, stored as varints. */

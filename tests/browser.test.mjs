@@ -762,6 +762,80 @@ const survives = await page.evaluate(() => {
 ok('isWolk survives restart() rather than being cleared after the roll',
    survives.flag === true && survives.who === 'pcork', JSON.stringify(survives));
 
+// W. Wolk as a hero in his own right: red whatever the sky is doing, and
+// wearing the brows P. Cork never does.
+const asHero = await page.evaluate(() => {
+  const g = window.__game;
+  g.wolkUnlocked = true;
+  g.setCharacter('wolk');
+  g.weather.set('clear');
+  g.applyWolk('clear');           // a lovely evening must NOT wash him blue
+  const hexes = g.player.plumage.map((m) => m.color.getHex());
+  return {
+    allowed: g.isCharacterAllowed('wolk'),
+    name: g.player.root.name,
+    legs: (g.player.legs || []).length,
+    red: hexes.every((h) => ((h >> 16) & 255) > (h & 255)),
+    flag: g.isWolk,
+    brows: g.player.brows.length,
+    browsShown: g.player.brows.every((b) => b.visible === true),
+    inRandomPool: g.randomCharacterPool().includes('wolk')
+  };
+});
+ok('W. Wolk builds and walks', asHero.name === 'wolk' && asHero.legs === 2, JSON.stringify(asHero));
+ok('and stays red under a clear sky', asHero.red === true && asHero.flag === true, JSON.stringify(asHero));
+ok('he wears two brows', asHero.brows === 2 && asHero.browsShown === true, JSON.stringify(asHero));
+ok('and joins the random pool once unlocked', asHero.inRandomPool === true);
+const corkBrows = await page.evaluate(() => {
+  const g = window.__game;
+  g.setCharacter('pcork');
+  g.weather.set('clear');
+  g.applyWolk('clear');
+  const hidden = g.player.brows.every((b) => b.visible === false);
+  g.weather.set('storm');
+  g.applyWolk('storm');
+  return { hiddenWhenBlue: hidden, shownWhenRed: g.player.brows.every((b) => b.visible === true) };
+});
+ok('P. Cork keeps his brows off until the weather turns',
+   corkBrows.hiddenWhenBlue === true && corkBrows.shownWhenRed === true, JSON.stringify(corkBrows));
+
+// The unlock: 200+ on the board and down the whirlpool, as W. Wolk.
+const whirl = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  g.wolkUnlocked = false;
+  localStorage.removeItem('mystic-badger.wolkUnlocked');
+  if (g.inMenu) { g.setCharacter(opt.character); g.beginRun(false, 'easy'); }
+  else { g.restart(false, 'easy'); }
+  g.setCharacter(opt.character);
+  g.weather.set(opt.weather);
+  g.applyWolk(opt.weather);
+  g.points = opt.points;
+  g.runUnlockNames = [];
+  g._inWhirl = false;
+  const w = g.world;
+  // Drop him straight down the throat of it.
+  g.player.position.set(w.whirlX, w.whirlWaterLevel, w.whirlZ);
+  g.inMenu = false;
+  g.isGameOver = false;
+  g.tick();          // tick() reads its own delta; the whirl check lives in it
+  return {
+    unlocked: g.wolkUnlocked,
+    stored: localStorage.getItem('mystic-badger.wolkUnlocked'),
+    named: g.runUnlockNames.includes('W. Wolk')
+  };
+}, o);
+const won = await whirl({ character: 'pcork', weather: 'storm', points: 200 });
+ok('200 down the whirlpool as W. Wolk hands him over',
+   won.unlocked === true && won.stored === '1' && won.named === true, JSON.stringify(won));
+const tooLow = await whirl({ character: 'pcork', weather: 'storm', points: 199 });
+ok('199 is not enough', tooLow.unlocked === false, JSON.stringify(tooLow));
+const notRed = await whirl({ character: 'pcork', weather: 'clear', points: 400 });
+ok('and a blue P. Cork gets nothing, whatever the score', notRed.unlocked === false, JSON.stringify(notRed));
+await page.evaluate(() => {
+  window.__game.wolkUnlocked = false;
+  localStorage.removeItem('mystic-badger.wolkUnlocked');
+});
+
 
 const tierAt = (count) => page.evaluate((n) => {
   const g = window.__game;

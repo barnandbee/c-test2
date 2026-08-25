@@ -3666,3 +3666,40 @@ body {
     radial-gradient(circle at 72% 34%, #efe9db 0 9%, #24365f 9% 13%, transparent 14%),
     radial-gradient(ellipse 15% 26% at 40% 62%, #93b3d6 0 100%, transparent 100%);
 }
+
+/* --- W. Wolk: the same bird, red, and cross about it ----------------- */
+.wolk-icon {
+  background:
+    conic-gradient(from 200deg at 50% 78%,
+      #6b1622 0 12%, #b8464a 12% 24%, #6b1622 24% 36%,
+      #b8464a 36% 48%, #6b1622 48% 60%, #b8464a 60% 72%, #6b1622 72% 100%),
+    #6b1622;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px #4a0d16;
+}
+/* Crest, eye and body as P. Cork has them — plus the brow, angled down
+   toward the beak, which is the whole point of him. */
+.wolk-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 26%, #f0b6a0 0 8%, transparent 9%),   /* crest tip */
+    radial-gradient(circle at 72% 34%, #efe9db 0 9%, #6b1622 9% 13%, transparent 14%),
+    radial-gradient(ellipse 15% 26% at 40% 62%, #f0b6a0 0 100%, transparent 100%);
+}
+.wolk-icon::before {
+  content: '';
+  position: absolute;
+  left: 57%;
+  top: 14%;
+  width: 30%;
+  height: 9%;
+  background: #2b070c;
+  border-radius: 1px;
+  /* Sits just ABOVE the eye at 72%/34%, not across it — a brow resting on
+     the eye reads as a half-shut lid at 44px. */
+  transform: rotate(20deg);   /* inner end dipped, the way a scowl works */
+  z-index: 1;
+}

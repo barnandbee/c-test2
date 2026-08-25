@@ -553,11 +553,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   About page** with a **lifetime score of 1,000 or more**; below that it
   hints that something is there without saying what.
 
-  **W. Wolk.** P. Cork does not care for weather. Roll into a run with him
+- **W. Wolk** — P. Cork does not care for weather. Roll into a run with him
   under **rain, storm, snow, fog or the purple haze** and every blue on the
   bird burns over to **red** — body, neck, head, wings, legs and the whole
-  fan — for the rest of the run. See it out to the bell and you take the
-  **🔴 Feathered Doppelgänger** trophy.
+  fan — and he grows a pair of heavy **brows**, inner ends dipped toward the
+  beak, which P. Cork never wears. That lasts the rest of the run; see it out
+  to the bell and you take the **🔴 Feathered Doppelgänger** trophy.
+
+  He is also playable in his own right. Unlock him by **entering the
+  whirlpool on a score of 200 or more while you are W. Wolk** — i.e. as
+  P. Cork with the sky against you. The score is judged on what you bring
+  *to* the whirlpool, before its fortune is rolled, so a lucky spin can't
+  carry you over the bar. Once he's yours he stays red under any sky.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

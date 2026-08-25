@@ -155,6 +155,8 @@ const BAYEUX_POINTS = 22.2;         // William's reward for framing a picture
 // Weather foul enough to turn P. Cork. Anything that isn't 'clear', named out
 // in full so a future forecast has to be considered rather than swept in.
 const WOLK_WEATHER = ['rain', 'storm', 'snow', 'fog', 'haze'];
+const STORAGE_WOLK = 'mystic-badger.wolkUnlocked';
+const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
 const STORAGE_SANDWICH_DRESSERS = 'mystic-badger.sandwichDressers';
@@ -392,6 +394,7 @@ export class Game {
     this.tapirUnlocked = readStorage(STORAGE_TAPIR) === '1';
     this.postboxerUnlocked = readStorage(STORAGE_POSTBOXER) === '1';
     this.pcorkUnlocked = readStorage(STORAGE_PCORK) === '1';
+    this.wolkUnlocked = readStorage(STORAGE_WOLK) === '1';
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -1274,6 +1277,7 @@ export class Game {
     if (name === 'tapir') return this.tapirUnlocked;
     if (name === 'postboxer') return this.postboxerUnlocked;
     if (name === 'pcork') return this.pcorkUnlocked;
+    if (name === 'wolk') return this.wolkUnlocked;
     return name === 'badger';
   }
 
@@ -1325,13 +1329,15 @@ export class Game {
    * so this needs no separate wiring in beginRun and restart.
    */
   applyWolk(kind) {
-    const turned = this.characterName === 'pcork' && WOLK_WEATHER.includes(kind);
-    this.isWolk = turned;
-    if (!this.player || !this.player.setStormPlumage) return turned;
+    // Two ways to be W. Wolk: P. Cork caught out by the sky, or the bird
+    // himself, once unlocked — he stays red whatever the forecast says.
+    const transformed = this.characterName === 'pcork' && WOLK_WEATHER.includes(kind);
+    this.isWolk = transformed || this.characterName === 'wolk';
+    if (!this.player || !this.player.setStormPlumage) return this.isWolk;
     // Told either way: a clear-sky run must put the blues back, since the
     // materials outlive the forecast that changed them.
-    this.player.setStormPlumage(turned);
-    if (turned) {
+    this.player.setStormPlumage(this.isWolk);
+    if (transformed) {
       // The forecast toast went up a moment ago and toasts replace rather
       // than queue, so hold this one back until that one has been read.
       window.clearTimeout(this._wolkToast);
@@ -1341,7 +1347,7 @@ export class Game {
         this.ui.showTimeToast('🔴 P. CORK TRANSFORMED WITH THE BAD WEATHER INTO W. WOLK!');
       }, 1800);
     }
-    return turned;
+    return this.isWolk;
   }
 
   /** Turn the greyscale Mystic wash on or off for the current run. */
@@ -1415,7 +1421,8 @@ export class Game {
       cardboard: this.cardboardUnlocked,
       tapir: this.tapirUnlocked,
       postboxer: this.postboxerUnlocked,
-      pcork: this.pcorkUnlocked
+      pcork: this.pcorkUnlocked,
+      wolk: this.wolkUnlocked
     };
   }
 
@@ -3591,6 +3598,15 @@ export class Game {
             writeStorage(STORAGE_SNAPPY, '1');
             this.runUnlockNames.push('Top Hat Snappy');
             this.ui.showTimeToast('★ TOP HAT SNAPPY UNLOCKED! SNAP SNAP! 🐊');
+          }
+          // W. Wolk: the red bird goes down the throat of the thing on a
+          // score. Judged on what you brought TO the whirlpool, before its
+          // fortune is rolled — so a lucky spin can't carry you over the bar.
+          if (!this.wolkUnlocked && this.isWolk && this.points >= WOLK_SCORE) {
+            this.wolkUnlocked = true;
+            writeStorage(STORAGE_WOLK, '1');
+            this.runUnlockNames.push('W. Wolk');
+            this.ui.showTimeToast('★ W. WOLK UNLOCKED! 🔴🦚');
           }
           const spin = Math.round((Math.random() * 2 - 1) * WHIRLPOOL_MAX * 100) / 100;
           this.points += spin;

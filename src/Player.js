@@ -131,6 +131,7 @@ export class Player {
     // P. Cork's three blues, recorded by his builder so setStormPlumage can
     // repaint them. Null for everyone else, who stay the colour they were.
     this.plumage = null;
+    this.brows = [];         // W. Wolk's menacing pair; empty for everyone else
     this.waterSink = 0;      // Top Hat Snappy rides this far below the surface
     this.accelScale = 1;     // ground-accel multiplier (Snappy slides in slowly)
     this.frictionScale = 1;  // ground-friction multiplier (Snappy glides on release)
@@ -203,6 +204,13 @@ export class Player {
     else if (this.character === 'tapir') this.root = this.buildTapir();
     else if (this.character === 'postboxer') this.root = this.buildPostboxer();
     else if (this.character === 'pcork') this.root = this.buildPCork();
+    // W. Wolk is P. Cork with the storm already in him — same bird, built
+    // once and then repainted, so the two can never drift apart.
+    else if (this.character === 'wolk') {
+      this.root = this.buildPCork();
+      this.root.name = 'wolk';
+      this.setStormPlumage(true);
+    }
     else this.root = this.buildBadger(); // badger, badgerette, william, electro
     this.root.position.copy(this.position);
   }
@@ -7415,6 +7423,9 @@ export class Player {
     const creamMat = track(createToonMaterial({ color: 0xefe9db }));
     const inkMat = track(createToonMaterial({ color: 0x18243f }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 }));
+    // Only ever seen on W. Wolk, so it is a warm near-black rather than the
+    // navy the rest of the bird is drawn in.
+    const browMat = track(createToonMaterial({ color: 0x3a0f14 }));
 
     // Every blue on the bird, kept together so bad weather can repaint the
     // lot in one go. See setStormPlumage() — foul skies turn him red and he
@@ -7519,10 +7530,36 @@ export class Player {
     }
 
     const beak = new THREE.Mesh(track(new THREE.ConeGeometry(0.055, 0.22, 4)), paleMat);
-    beak.position.set(0, -0.02, 0.24);
+    beak.position.set(0, -0.01, 0.19);
+    // The roll has to be rotation.Y, not Z. Three's default Euler order is
+    // XYZ, which builds Rx·Ry·Rz — so a Z term is applied BEFORE the tilt and
+    // swings the whole bill off to one side, while a Y term spins the cone
+    // about its own axis first and survives the tilt intact. Base sits inside
+    // the skull at z=0.08; the head's face is at about z=0.17.
     beak.rotation.x = Math.PI / 2;
-    beak.rotation.z = Math.PI / 4;   // a squared-off, geometric bill
+    beak.rotation.y = Math.PI / 4;   // a squared-off, geometric bill
     headGroup.add(beak);
+
+    // Brows, worn only by W. Wolk. Two heavy bars above the eyes, each with
+    // its INNER end dipped toward the beak, which is the whole of what makes
+    // a face look like it means it. Built now and hidden, so the storm has
+    // nothing to construct — see setStormPlumage.
+    this.brows = [];
+    const browGeo = track(new THREE.BoxGeometry(0.115, 0.03, 0.034));
+    for (const side of [-1, 1]) {
+      const brow = new THREE.Mesh(browGeo, browMat);
+      // Sat on the top edge of the eye patch (centre y 0.02, radius 0.075, so
+      // its top is y 0.095) and just proud of its face. Any higher and the
+      // skull has narrowed away beneath them and they read as horns.
+      brow.position.set(side * 0.1, 0.104, 0.128);
+      // side * 0.42 lifts the OUTER end in both cases: at x=-0.105 the inner
+      // end is the +x one, and at x=+0.105 it is the -x one.
+      brow.rotation.z = side * 0.42;
+      brow.visible = false;
+      brow.castShadow = true;
+      headGroup.add(brow);
+      this.brows.push(brow);
+    }
 
     // The three-quill crest, each tipped with its own little ring.
     for (const lean of [-0.34, 0, 0.34]) {
@@ -7591,6 +7628,8 @@ export class Player {
    */
   setStormPlumage(on) {
     if (!this.plumage) return false;
+    // The brows come out with the red and go away with it.
+    for (const brow of this.brows) brow.visible = on;
     // navy, slate, pale — in the order buildPCork recorded them.
     const scheme = on
       ? [[0x8c2434, 0xffa08c], [0xc44a44, 0xffbfa4], [0xf0b6a0, null]]
