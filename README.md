@@ -565,6 +565,16 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   P. Cork with the sky against you. The score is judged on what you bring
   *to* the whirlpool, before its fortune is rolled, so a lucky spin can't
   carry you over the bar. Once he's yours he stays red under any sky.
+- **Neptune's Muffin** — a blueberry muffin in a fluted blue paper case,
+  crown risen and overhanging the rim, studded with fruit, carrying a blue
+  **trident**. Baked, the story goes, with the sea god's entire raisin
+  supply. Unlock him by collecting **20 Neptune's Raisins** across all your
+  runs — there is one in the cottage loft each run, so it is a long haul.
+
+  **He should stay away from the oven.** Touch the cottage stove while
+  playing as him and he goes up: **−1 health every second** for the rest of
+  the run, and nothing puts it out. Three minutes of that is more health
+  than anybody has, so a run that starts burning is a run against the clock.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

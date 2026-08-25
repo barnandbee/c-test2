@@ -115,7 +115,7 @@ export const VOCAB_CHARACTERS = [
   'spirit', 'chimpy', 'owl', 'snappy', 'bacon', 'robofarmer', 'frosch',
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
-  'tapir', 'postboxer', 'pcork', 'wolk'
+  'tapir', 'postboxer', 'pcork', 'wolk', 'muffin'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -140,10 +140,21 @@ export const SCHEMA_BOOLS = [
   'error43Unlocked', 'nucleusUnlocked', 'tudorUnlocked', 'electroUnlocked',
   'muted', 'bloom',
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
-  'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked'
+  'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked',
+  'muffinUnlocked'
 ];
 
-/** Whole numbers, stored as varints. */
+/**
+ * Whole numbers, stored as varints.
+ *
+ * DO NOT APPEND TO THIS LIST. Unlike the bools, trophies, characters and
+ * char-sets, this section carries no length in the v2 header — the reader
+ * takes exactly SCHEMA_INTS.length varints — so adding one here misreads
+ * every code already issued. A new counter needs no entry anyway: any
+ * mystic-badger.* key this schema doesn't know is swept into `extras` and
+ * round-trips verbatim (raisinsAllTime is carried that way). Growing this
+ * list properly means a format v3 with an int count in the header.
+ */
 export const SCHEMA_INTS = [
   'frogHitsAllTime', 'summitVisits', 'helterVisits', 'fridgeClicks',
   'whirlEntries'

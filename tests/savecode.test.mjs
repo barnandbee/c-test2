@@ -186,9 +186,20 @@ eq('describe summarises a save', describe(mid),
 const gameSrc = readFileSync(join(ROOT, 'src/Game.js'), 'utf8');
 const known = new Set([...SCHEMA_BOOLS, ...SCHEMA_INTS, ...SCHEMA_FLOATS,
   ...SCHEMA_CHAR_SETS, 'achievements', 'charUsage', 'character']);
+// Keys held OUT of the schema on purpose, and why. SCHEMA_INTS carries no
+// length in the v2 header, so appending to it misreads every code already
+// issued; a counter added since v2 shipped therefore rides in `extras`,
+// which costs a few characters and breaks nothing. Adding a name here is a
+// decision, not a way to quiet the check.
+const DELIBERATE_EXTRAS = new Set(['raisinsAllTime']);
 const uncovered = [...new Set([...gameSrc.matchAll(/'mystic-badger\.([A-Za-z0-9_]+)'/g)].map((m) => m[1]))]
-  .filter((k) => !known.has(k));
+  .filter((k) => !known.has(k) && !DELIBERATE_EXTRAS.has(k));
 ok('every key Game.js stores is in the schema', uncovered.length === 0, `uncovered: ${uncovered.join(', ')}`);
+// …and the ones held out must genuinely survive the round trip.
+for (const k of DELIBERATE_EXTRAS) {
+  const trip = decode(encode({ [k]: '17', highScore: '1' }));
+  ok(`${k} round-trips through extras`, trip[k] === '17', JSON.stringify(trip[k]));
+}
 
 const achSrc = readFileSync(join(ROOT, 'src/Achievements.js'), 'utf8');
 const liveTrophies = [...achSrc.matchAll(/\{ id: '([^']+)'/g)].map((m) => m[1]);

@@ -836,6 +836,150 @@ await page.evaluate(() => {
   localStorage.removeItem('mystic-badger.wolkUnlocked');
 });
 
+console.log("\nNeptune's Muffin");
+
+// Twenty raisins, across any runs, bakes him.
+const raisinAt = (start) => page.evaluate((n) => {
+  const g = window.__game;
+  g.muffinUnlocked = false;
+  localStorage.removeItem('mystic-badger.muffinUnlocked');
+  g.raisinsAllTime = n;
+  g.runUnlockNames = [];
+  g.raisinTaken = false;
+  if (g.inMenu) { g.beginRun(false, 'easy'); }
+  g.isGameOver = false;
+  // Put the raisin out and walk into it.
+  const w = g.world;
+  w.resetRaisin();
+  if (w.neptuneRaisin) w.neptuneRaisin.visible = true;
+  const rp = w.neptuneRaisinPos;
+  g.player.position.set(rp.x, rp.y, rp.z);
+  g.tick();
+  return {
+    taken: g.raisinTaken,
+    count: g.raisinsAllTime,
+    unlocked: g.muffinUnlocked,
+    stored: localStorage.getItem('mystic-badger.muffinUnlocked'),
+    named: g.runUnlockNames.includes("Neptune's Muffin")
+  };
+}, start);
+const short = await raisinAt(5);
+ok('the raisin is counted all-time', short.taken === true && short.count === 6, JSON.stringify(short));
+ok('and six is not twenty', short.unlocked === false, JSON.stringify(short));
+const twenty = await raisinAt(19);
+ok('the twentieth raisin bakes the muffin',
+   twenty.count === 20 && twenty.unlocked === true && twenty.stored === '1' && twenty.named === true,
+   JSON.stringify(twenty));
+
+const muffin = await page.evaluate(() => {
+  const g = window.__game;
+  g.muffinUnlocked = true;
+  g.setCharacter('muffin');
+  let tridentProngs = 0;
+  g.player.root.traverse((o) => {
+    if (o.geometry && o.geometry.type === 'ConeGeometry') tridentProngs += 1;
+  });
+  return {
+    allowed: g.isCharacterAllowed('muffin'),
+    name: g.player.root.name,
+    legs: (g.player.legs || []).length,
+    arms: (g.player.arms || []).length,
+    tridentProngs
+  };
+});
+ok('the muffin builds and walks',
+   muffin.name === 'muffin' && muffin.legs === 2 && muffin.arms === 2, JSON.stringify(muffin));
+ok('and carries a three-pronged trident', muffin.tridentProngs === 3, JSON.stringify(muffin));
+
+// The oven. -1 health a second, and nothing puts it out.
+const burn = await page.evaluate(() => {
+  const g = window.__game;
+  g.muffinUnlocked = true;
+  if (g.inMenu) { g.setCharacter('muffin'); g.beginRun(false, 'easy'); }
+  else { g.restart(false, 'easy'); }
+  g.setCharacter('muffin');
+  g.isGameOver = false;
+  g.health = 100;
+  g.muffinAblaze = false;
+  g._burnAccum = 0;
+  // Stand at the stove and touch it.
+  const st = g.world.cottage.stove;
+  g.player.position.set(st.x, st.y, st.z);
+  const lit = g.handleCottage();
+  const before = g.health;
+  // Driven through tick(), not updateMuffinBurn directly: a burn helper that
+  // works but is never called from the loop would pass the easy version of
+  // this test. rAF stalls under SwiftShader, so the loop is turned by hand
+  // with a fixed delta and rendering stubbed out.
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  const realBloom = g.bloomEnabled;
+  g.clock.getDelta = () => 1 / 60;
+  g.bloomEnabled = false;
+  g.renderer.render = () => {};
+  for (let i = 0; i < 120; i++) g.tick();
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  g.bloomEnabled = realBloom;
+  const after = g.health;
+  // A second touch must not double him up.
+  g.handleCottage();
+  return { lit, ablaze: g.muffinAblaze, before, after, still: g.muffinAblaze };
+});
+ok('the oven sets Neptune’s Muffin alight', burn.ablaze === true, JSON.stringify(burn));
+ok('and he loses exactly one health a second, through the real loop',
+   burn.before === 100 && burn.after === 98, JSON.stringify(burn));
+
+// Nobody else catches fire, and the hob keeps its old line.
+const safe = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(false, 'easy');
+  g.setCharacter('badger');
+  g.muffinAblaze = false;
+  g.health = 100;
+  const st = g.world.cottage.stove;
+  g.player.position.set(st.x, st.y, st.z);
+  g.handleCottage();
+  for (let i = 0; i < 150; i++) g.updateMuffinBurn(1 / 60);
+  return { ablaze: g.muffinAblaze, health: g.health };
+});
+ok('a badger at the same hob is fine', safe.ablaze === false && safe.health === 100, JSON.stringify(safe));
+
+// Burning to zero ends the run.
+const burnedOut = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(false, 'easy');
+  g.setCharacter('muffin');
+  g.isGameOver = false;
+  g.health = 2;
+  g.muffinAblaze = true;
+  g._burnAccum = 0;
+  for (let i = 0; i < 240; i++) g.updateMuffinBurn(1 / 60);
+  return { health: g.health, over: g.isGameOver };
+});
+ok('burning to zero ends the run',
+   burnedOut.health <= 0 && burnedOut.over === true, JSON.stringify(burnedOut));
+
+// The burn must not survive into the next run.
+const freshRun = await page.evaluate(() => {
+  const g = window.__game;
+  g.muffinAblaze = true;
+  g._burnAccum = 0.9;
+  g.restart(false, 'easy');
+  return { ablaze: g.muffinAblaze, accum: g._burnAccum };
+});
+ok('and a restart puts the fire out', freshRun.ablaze === false && freshRun.accum === 0,
+   JSON.stringify(freshRun));
+
+await page.evaluate(() => {
+  const g = window.__game;
+  g.muffinUnlocked = false;
+  g.raisinsAllTime = 0;
+  localStorage.removeItem('mystic-badger.muffinUnlocked');
+  localStorage.removeItem('mystic-badger.raisinsAllTime');
+});
+
 
 const tierAt = (count) => page.evaluate((n) => {
   const g = window.__game;

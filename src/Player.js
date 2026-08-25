@@ -204,6 +204,7 @@ export class Player {
     else if (this.character === 'tapir') this.root = this.buildTapir();
     else if (this.character === 'postboxer') this.root = this.buildPostboxer();
     else if (this.character === 'pcork') this.root = this.buildPCork();
+    else if (this.character === 'muffin') this.root = this.buildMuffin();
     // W. Wolk is P. Cork with the storm already in him — same bird, built
     // once and then repainted, so the two can never drift apart.
     else if (this.character === 'wolk') {
@@ -7641,6 +7642,213 @@ export class Player {
       if (rim !== null && u && u.uRimColor) u.uRimColor.value.setHex(rim);
     });
     return true;
+  }
+
+  /**
+   * Neptune's Muffin — a blueberry muffin baked, so the story goes, with the
+   * whole of the sea god's raisin supply, and armed accordingly.
+   *
+   * Built the way a muffin actually is: a fluted paper case, then a crown
+   * that has risen over the rim and overhangs it, domed and cracked and
+   * studded with fruit. The face goes on the case, under the overhang, so
+   * the crown reads as a hat rather than a head. Trident in the right hand.
+   */
+  buildMuffin() {
+    const root = new THREE.Group();
+    root.name = 'muffin';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const paperMat = track(createToonMaterial({
+      color: 0x3f6bb8, rim: { color: 0x9dc4f5, strength: 0.3, threshold: 0.62 }
+    }));
+    const pleatMat = track(createToonMaterial({ color: 0x5c8bd8 }));
+    const crownMat = track(createToonMaterial({
+      color: 0xc79a5e, rim: { color: 0xffdca6, strength: 0.28, threshold: 0.66 }
+    }));
+    const crustMat = track(createToonMaterial({ color: 0xa2743d }));
+    const berryMat = track(createToonMaterial({ color: 0x38357e }));
+    const bloomMat = track(createToonMaterial({ color: 0x6f77c0 }));
+    const eyeMat = track(createToonMaterial({ color: 0x1b1730 }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 }));
+    const limbMat = track(createToonMaterial({ color: 0x8a6234 }));
+    const seaMat = track(createToonMaterial({
+      color: 0x2f7fd0, rim: { color: 0x8fd8ff, strength: 0.45, threshold: 0.55 }
+    }));
+    const prongMat = track(createToonMaterial({
+      color: 0x7fd2ff, emissive: 0x2b6f9e, emissiveIntensity: 0.45
+    }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.78;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the paper case ------------------------------------------------
+    const caseGeo = track(new THREE.CylinderGeometry(0.40, 0.28, 0.52, 16));
+    const paperCase = new THREE.Mesh(caseGeo, paperMat);
+    paperCase.position.y = -0.16;
+    paperCase.castShadow = true;
+    body.add(paperCase);
+
+    // Its flutes: thin panels stood proud of the wall, splayed with it so
+    // they follow the taper instead of crossing it.
+    const FLUTES = 14;
+    const fluteGeo = track(new THREE.BoxGeometry(0.055, 0.53, 0.03));
+    for (let i = 0; i < FLUTES; i++) {
+      const a = (i / FLUTES) * Math.PI * 2;
+      const flute = new THREE.Mesh(fluteGeo, pleatMat);
+      flute.position.set(Math.sin(a) * 0.345, -0.16, Math.cos(a) * 0.345);
+      flute.rotation.y = a;
+      flute.rotation.x = Math.sin(a) * 0.115;
+      flute.rotation.z = -Math.cos(a) * 0.115;   // lean out with the wall
+      body.add(flute);
+    }
+
+    // --- the crown, risen over the rim ---------------------------------
+    const crown = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.5, 2)), crownMat);
+    crown.scale.set(1, 0.66, 1);
+    crown.position.y = 0.18;
+    crown.castShadow = true;
+    body.add(crown);
+    // The overhang: a lip where the batter spilled over the paper.
+    const lip = new THREE.Mesh(track(new THREE.TorusGeometry(0.44, 0.075, 8, 20)), crustMat);
+    lip.rotation.x = Math.PI / 2;
+    lip.position.y = 0.1;
+    body.add(lip);
+
+    // --- the fruit ------------------------------------------------------
+    const berryGeo = track(new THREE.IcosahedronGeometry(0.082, 0));
+    const bloomGeo = track(new THREE.CylinderGeometry(0.03, 0.03, 0.012, 8));
+    const berries = [
+      [0.30, 0.42, 0.16], [-0.28, 0.42, 0.18], [0.02, 0.54, 0.22],
+      [-0.36, 0.30, -0.14], [0.34, 0.32, -0.22], [-0.06, 0.50, -0.30],
+      [0.40, 0.20, 0.20], [-0.20, 0.22, -0.36], [-0.42, 0.20, -0.02]
+    ];
+    for (const [x, y, z] of berries) {
+      const berry = new THREE.Mesh(berryGeo, berryMat);
+      berry.position.set(x, y, z);
+      berry.rotation.set(x * 3, y * 3, z * 3);   // no two sit the same way
+      berry.castShadow = true;
+      body.add(berry);
+      // The pale star where the calyx was, facing out of the crumb.
+      const bloom = new THREE.Mesh(bloomGeo, bloomMat);
+      const len = Math.hypot(x, y - 0.18, z) || 1;
+      bloom.position.set(
+        x + (x / len) * 0.055,
+        y + ((y - 0.18) / len) * 0.055,
+        z + (z / len) * 0.055
+      );
+      bloom.lookAt(x * 3, (y - 0.18) * 3 + 0.18, z * 3);
+      bloom.rotateX(Math.PI / 2);
+      body.add(bloom);
+    }
+
+    // --- the face, on the front of the crown -----------------------------
+    // NOT on the paper case: the crown overhangs it by a clear 0.1, so a face
+    // down there sits in its own shadow and is invisible from every angle.
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.14, 0.4);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const scleraGeo = track(new THREE.SphereGeometry(0.085, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.048, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.019, 8, 6));
+    for (const side of [-1, 1]) {
+      // Dark eyes alone would vanish into a browned crumb, so each gets its
+      // own pale ground to sit on.
+      const sclera = new THREE.Mesh(scleraGeo, glintMat);
+      sclera.position.set(side * 0.15, 0.03, 0.05);
+      sclera.scale.set(1, 1.05, 0.55);
+      headGroup.add(sclera);
+      const pupil = new THREE.Mesh(pupilGeo, eyeMat);
+      pupil.position.set(side * 0.155, 0.03, 0.11);
+      pupil.scale.set(1, 1, 0.7);
+      headGroup.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.175, 0.06, 0.145);
+      headGroup.add(glint);
+    }
+    const mouth = new THREE.Mesh(track(new THREE.TorusGeometry(0.085, 0.019, 6, 14, Math.PI)), eyeMat);
+    mouth.position.set(0, -0.11, 0.07);
+    mouth.rotation.z = Math.PI;   // corners up
+    headGroup.add(mouth);
+
+    // --- arms, the right one carrying the trident ------------------------
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.045, 0.04, 0.38, 8));
+    const handGeo = track(new THREE.SphereGeometry(0.072, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.47, -0.06, 0.02);
+      const arm = new THREE.Mesh(armGeo, limbMat);
+      arm.position.y = -0.2;
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, limbMat);
+      hand.position.y = -0.41;
+      pivot.add(hand);
+      if (side === 1) pivot.add(this._buildTrident(track, seaMat, prongMat));
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.4 });
+    }
+
+    // --- legs -------------------------------------------------------------
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.05, 0.045, 0.34, 8));
+    const footGeo = track(new THREE.BoxGeometry(0.17, 0.085, 0.25));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.15, -0.42, 0);
+      const leg = new THREE.Mesh(legGeo, limbMat);
+      leg.position.y = -0.17;
+      leg.castShadow = true;
+      pivot.add(leg);
+      const foot = new THREE.Mesh(footGeo, limbMat);
+      foot.position.set(0, -0.37, 0.05);
+      foot.castShadow = true;
+      pivot.add(foot);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /** Neptune's trident, sized for a muffin's fist. Prongs up, held at rest. */
+  _buildTrident(track, shaftMat, prongMat) {
+    const trident = new THREE.Group();
+    // Through the fist, not beside it — the hand sits at y -0.41 on the arm.
+    trident.position.set(0, -0.41, 0.05);
+    trident.rotation.z = -0.1;    // canted out of the walk cycle's way
+
+    const shaft = new THREE.Mesh(track(new THREE.CylinderGeometry(0.024, 0.024, 1.18, 8)), shaftMat);
+    shaft.position.y = 0.22;
+    shaft.castShadow = true;
+    trident.add(shaft);
+
+    // The crossbar the three prongs stand on.
+    const bar = new THREE.Mesh(track(new THREE.BoxGeometry(0.28, 0.045, 0.045)), shaftMat);
+    bar.position.y = 0.74;
+    trident.add(bar);
+
+    const prongGeo = track(new THREE.ConeGeometry(0.032, 0.3, 4));
+    for (const x of [-0.12, 0, 0.12]) {
+      // The outer two rise from the ends of the bar, so they need a stem to
+      // stand on; the middle one is simply the shaft carrying on upward.
+      if (x !== 0) {
+        const stem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.019, 0.019, 0.16, 6)), shaftMat);
+        stem.position.set(x, 0.82, 0);
+        trident.add(stem);
+      }
+      const prong = new THREE.Mesh(prongGeo, prongMat);
+      prong.position.set(x, x === 0 ? 1.0 : 1.05, 0);
+      prong.rotation.z = x * 1.1;   // the outer pair splay outward
+      prong.castShadow = true;
+      trident.add(prong);
+    }
+    return trident;
   }
 
   /**

@@ -137,5 +137,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'tapir', name: 'Tara Tapir', how: 'In one run: cook the charred pickle fritter, collect Neptune\u2019s Raisin, use no transport at all (no hovercraft, balloon, rocket or train) and finish on 200 or more.' },
   { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' },
   { key: 'pcork', name: 'P. Cork', how: 'Tap the Bass Moultapps logo on the About page with a lifetime score of 1,000 or more.' },
-  { key: 'wolk', name: 'W. Wolk', how: 'Playing as W. Wolk \u2014 that is, as P. Cork with the weather against you \u2014 enter the whirlpool on a score of 200 or more.' }
+  { key: 'wolk', name: 'W. Wolk', how: 'Playing as W. Wolk \u2014 that is, as P. Cork with the weather against you \u2014 enter the whirlpool on a score of 200 or more.' },
+  { key: 'muffin', name: "Neptune's Muffin", how: "Collect 20 Neptune's Raisins across all your runs (one is hidden in the cottage loft each run)." }
 ];

@@ -3689,6 +3689,48 @@ body {
     radial-gradient(circle at 72% 34%, #efe9db 0 9%, #6b1622 9% 13%, transparent 14%),
     radial-gradient(ellipse 15% 26% at 40% 62%, #f0b6a0 0 100%, transparent 100%);
 }
+/* --- Neptune's Muffin: a browned crown over a blue paper case -------- */
+.muffin-icon {
+  /* The case below, the crown above — a hard line where the batter sat. */
+  /* The crown takes the greater share: a muffin is read by its top, and a
+     50/50 split makes it a barrel with a lid. */
+  background: linear-gradient(180deg, #c79a5e 0 57%, #a2743d 57% 64%, #3f6bb8 64% 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px #2c4a80;
+}
+/* Blueberries in the crown, pleats in the paper. */
+.muffin-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 28% 26%, #38357e 0 11%, transparent 12%),
+    radial-gradient(circle at 55% 15%, #38357e 0 9%, transparent 10%),
+    radial-gradient(circle at 74% 40%, #38357e 0 10%, transparent 11%),
+    radial-gradient(circle at 40% 45%, #38357e 0 8%, transparent 9%),
+    repeating-linear-gradient(90deg,
+      transparent 0 9%, rgba(146, 184, 240, 0.55) 9% 13%);
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 100%;
+  background-size: auto, auto, auto, auto, 100% 36%;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+}
+/* The trident. Drawn as glyph rather than geometry: three prongs built from
+   box-shadows collapse into one bar at 44px, and nothing smaller than the
+   emoji reads as a trident at this size. */
+.muffin-icon::before {
+  content: '🔱';
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 15px;
+  line-height: 1;
+  /* The glyph ships gold, which fights the blue. Rotated round to Neptune's
+     end of the wheel it sits against the browned crown instead. */
+  filter: hue-rotate(185deg) saturate(1.5) drop-shadow(0 0 2px rgba(10, 20, 45, 0.85));
+  z-index: 1;
+}
+
 .wolk-icon::before {
   content: '';
   position: absolute;

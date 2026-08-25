@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (54)
+## Characters (55)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -70,6 +70,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 52 | **Postboxer** | Score **400 or more** as **all three Errors** — #42, #43 **and** #44 — across any runs. A pillar box in a blue flat cap with a satchel and a letter in hand. |
 | 53 | **P. Cork** | **Tap the Bass Moultapps logo** on the About page with a **lifetime score of 1,000 or more**. The geometric peacock from the studio roundel — fanned tail of straight rays, ringed eyes, three-quill crest. |
 | 54 | **W. Wolk** | Playing as **W. Wolk** — that is, as **P. Cork with the weather against you** — **enter the whirlpool on a score of 200 or more**. Judged on what you bring to the whirlpool, before its fortune is rolled, so a lucky spin can't carry you over the bar. Once he is yours he plays as himself: red under any sky, brows and all. |
+| 55 | **Neptune's Muffin** | Collect **20 Neptune's Raisins** across all your runs — one is hidden in the cottage loft each run, so this is a long haul. A blueberry muffin in a fluted blue paper case, baked (the story goes) with the sea god's entire raisin supply and armed with his trident. **Careful with the oven:** touch the cottage stove while playing as him and he catches fire, losing **1 health every second** for the rest of the run. Nothing puts it out. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number
@@ -155,7 +156,7 @@ milestone counts your best past run automatically.
 | 🎪 **Unlocked, High Five!** | Unlock **5** characters. |
 | 🎡 **Unlock It In A Docket** | Unlock **10 or more** characters. |
 | 🎢 **Unlock It In Your Pocket** | Unlock **20 or more** characters. |
-| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 53 unlockable, so this is very nearly the lot). |
+| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 54 unlockable, so this is very nearly the lot). |
 | 🎳 **Unlock 'N' Roll** | Unlock a character who **rolls or slides** rather than walking — Marblella, Foil or Top Hat Snappy. |
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |

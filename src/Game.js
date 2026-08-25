@@ -156,6 +156,12 @@ const BAYEUX_POINTS = 22.2;         // William's reward for framing a picture
 // in full so a future forecast has to be considered rather than swept in.
 const WOLK_WEATHER = ['rain', 'storm', 'snow', 'fog', 'haze'];
 const STORAGE_WOLK = 'mystic-badger.wolkUnlocked';
+const STORAGE_MUFFIN = 'mystic-badger.muffinUnlocked';
+// All-time Neptune's Raisins. Deliberately NOT in SaveCode's SCHEMA_INTS —
+// that section has no length in the header, so it rides in `extras`.
+const STORAGE_RAISINS = 'mystic-badger.raisinsAllTime';
+const MUFFIN_RAISINS = 20;          // raisins the muffin was baked with
+const MUFFIN_BURN_DPS = 1;          // health per second, once he is alight
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -395,6 +401,9 @@ export class Game {
     this.postboxerUnlocked = readStorage(STORAGE_POSTBOXER) === '1';
     this.pcorkUnlocked = readStorage(STORAGE_PCORK) === '1';
     this.wolkUnlocked = readStorage(STORAGE_WOLK) === '1';
+    this.muffinUnlocked = readStorage(STORAGE_MUFFIN) === '1';
+    // All-time count of Neptune's Raisins; 20 bakes the muffin.
+    this.raisinsAllTime = parseInt(readStorage(STORAGE_RAISINS, '0'), 10) || 0;
     // All-time tally of toxic-frog bruises (across every run).
     this.frogHitsAllTime = parseInt(readStorage(STORAGE_FROG_HITS, '0'), 10) || 0;
     // All-time set of which sandwich-dressers have actually dressed the BLT.
@@ -528,6 +537,9 @@ export class Game {
     this.tapirSawSandwich = false;         // …and she only despairs at it once
     this._postSprintTaught = false;        // Postboxer's ×3 explained yet?
     this.isWolk = false;                   // P. Cork gone red for the weather
+    this.muffinAblaze = false;             // Neptune's Muffin met the oven
+    this._burnAccum = 0;                   // …seconds banked toward the next -1
+    this._burnPuffIn = 0;                  // …and toward the next puff of flame
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
     this._guavaDropped = false;
     this.alarmRung = false;
@@ -1278,6 +1290,7 @@ export class Game {
     if (name === 'postboxer') return this.postboxerUnlocked;
     if (name === 'pcork') return this.pcorkUnlocked;
     if (name === 'wolk') return this.wolkUnlocked;
+    if (name === 'muffin') return this.muffinUnlocked;
     return name === 'badger';
   }
 
@@ -1348,6 +1361,51 @@ export class Game {
       }, 1800);
     }
     return this.isWolk;
+  }
+
+  /**
+   * Neptune's Muffin goes into the oven. Health drains by MUFFIN_BURN_DPS
+   * every second from here to the bell, and nothing puts it out.
+   */
+  igniteMuffin() {
+    this.muffinAblaze = true;
+    this._burnAccum = 0;
+    this._burnPuffIn = 0;
+    this.world.igniteStove();
+    this.audio.play('whirl');
+    this.ui.flashDamage();
+    this.ui.showTimeToast('🔥 THE OVEN! NEPTUNE’S MUFFIN IS ALIGHT — −1 HEALTH A SECOND');
+    this.particles.spawnBurst(
+      this.player.getColliderCenter(this._playerCenter), 0xff8a2b,
+      { count: 40, speed: 4.4, size: 46, upBias: 0.9, life: 0.8 }
+    );
+  }
+
+  /**
+   * Burn down the muffin. Whole points on whole seconds, in a loop rather
+   * than a single subtraction, so a long frame still costs exactly its own
+   * worth of health instead of one tick.
+   */
+  updateMuffinBurn(dt) {
+    if (!this.muffinAblaze || this.isGameOver) return;
+    this._burnPuffIn -= dt;
+    if (this._burnPuffIn <= 0) {
+      this._burnPuffIn = 0.16;
+      this.particles.spawnBurst(
+        this.player.getColliderCenter(this._playerCenter), 0xff9a3c,
+        { count: 5, speed: 2.2, size: 34, upBias: 1.4, life: 0.5 }
+      );
+    }
+    this._burnAccum += dt;
+    while (this._burnAccum >= 1) {
+      this._burnAccum -= 1;
+      this.health -= MUFFIN_BURN_DPS;
+      this.ui.setHealth(this.health);
+      if (this.health <= 0) {
+        this.gameOver('health');
+        return;
+      }
+    }
   }
 
   /** Turn the greyscale Mystic wash on or off for the current run. */
@@ -1422,7 +1480,8 @@ export class Game {
       tapir: this.tapirUnlocked,
       postboxer: this.postboxerUnlocked,
       pcork: this.pcorkUnlocked,
-      wolk: this.wolkUnlocked
+      wolk: this.wolkUnlocked,
+      muffin: this.muffinUnlocked
     };
   }
 
@@ -2414,7 +2473,15 @@ export class Game {
         this.ui.showTimeToast('THE CLOCK HAS RUNG ITSELF HOARSE');
       }
     } else if (hit === 'stove') {
-      this.ui.showTimeToast('THE HOB IS BARELY WARM. PORRIDGE, RECENTLY.');
+      // A muffin has no business near an oven. Once alight he burns for the
+      // rest of the run — there is no putting him out.
+      if (this.characterName === 'muffin' && !this.muffinAblaze) {
+        this.igniteMuffin();
+      } else if (this.muffinAblaze) {
+        this.ui.showTimeToast('YOU ARE ALREADY ON FIRE. THE OVEN CANNOT HELP.');
+      } else {
+        this.ui.showTimeToast('THE HOB IS BARELY WARM. PORRIDGE, RECENTLY.');
+      }
     } else if (hit === 'fridge') {
       this.fridgeOpenedThisRun = true;   // Foil only needs it opened once
       // Ten pokes at the fridge and the message turns — a Pickle Stick is
@@ -3286,6 +3353,9 @@ export class Game {
     this._postSprintTaught = false;
     // isWolk is NOT cleared here: rollWeather() ran further up and has
     // already set it for this run. Clearing it now would undo that.
+    this.muffinAblaze = false;
+    this._burnAccum = 0;
+    this._burnPuffIn = 0;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -3499,6 +3569,7 @@ export class Game {
       this.handleHazards();
       this.handleCoffee(this.player.getColliderCenter(this._playerCenter));
       this.updatePostboxerSprint();
+      this.updateMuffinBurn(dt);
       this.handleClockTower();
       this.handleRedOctober();
       this.maybeSpawnBalloon();
@@ -3655,6 +3726,16 @@ export class Game {
         const rdx = c.x - rp.x, rdy = c.y - rp.y, rdz = c.z - rp.z;
         if (rdx * rdx + rdy * rdy + rdz * rdz < 1.1 * 1.1) {
           this.raisinTaken = true;
+          // Neptune's Muffin was baked with the god's entire raisin supply.
+          // Twenty of them, across any runs, and he comes out of the oven.
+          this.raisinsAllTime += 1;
+          writeStorage(STORAGE_RAISINS, String(this.raisinsAllTime));
+          if (!this.muffinUnlocked && this.raisinsAllTime >= MUFFIN_RAISINS) {
+            this.muffinUnlocked = true;
+            writeStorage(STORAGE_MUFFIN, '1');
+            this.runUnlockNames.push("Neptune's Muffin");
+            this.ui.showTimeToast("★ NEPTUNE'S MUFFIN UNLOCKED! 🧁🔱");
+          }
           const worth = [8, 16, 24][Math.floor(Math.random() * 3)];
           this.points += worth;
           this.ui.setPoints(this.points);
