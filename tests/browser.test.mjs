@@ -972,6 +972,87 @@ const freshRun = await page.evaluate(() => {
 ok('and a restart puts the fire out', freshRun.ablaze === false && freshRun.accum === 0,
    JSON.stringify(freshRun));
 
+// The lakes put him out — however he gets to the water.
+const douse = (lake) => page.evaluate((which) => {
+  const g = window.__game;
+  const w = g.world;
+  g.muffinUnlocked = true;
+  g.restart(false, 'easy');
+  g.setCharacter('muffin');
+  g.isGameOver = false;
+  g.health = 100;
+  g.muffinAblaze = true;
+  g._burnAccum = 0;
+  const at = which === 'whirl'
+    ? { x: w.whirlX, y: w.whirlWaterLevel, z: w.whirlZ }
+    : { x: w.lakeCenterX, y: w.waterLevel, z: w.lakeCenterZ };
+  g.player.position.set(at.x, at.y, at.z);
+  g.updateMuffinBurn(1 / 60);
+  const out = g.muffinAblaze;
+  // …and stays out: another two seconds must cost nothing.
+  for (let i = 0; i < 120; i++) g.updateMuffinBurn(1 / 60);
+  return { out, health: g.health, ablaze: g.muffinAblaze };
+}, lake);
+const mainLake = await douse('main');
+ok('the main lake puts the fire out',
+   mainLake.out === false && mainLake.ablaze === false, JSON.stringify(mainLake));
+ok('and he stops losing health once out', mainLake.health === 100, JSON.stringify(mainLake));
+const whirlLake = await douse('whirl');
+ok('the whirlpool lake does too',
+   whirlLake.ablaze === false && whirlLake.health === 100, JSON.stringify(whirlLake));
+
+// Dry land must NOT put him out, or the douse check is worthless.
+const dryLand = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(false, 'easy');
+  g.setCharacter('muffin');
+  g.isGameOver = false;
+  g.health = 100;
+  g.muffinAblaze = true;
+  g._burnAccum = 0;
+  const st = g.world.cottage.stove;
+  g.player.position.set(st.x, st.y, st.z);
+  for (let i = 0; i < 120; i++) g.updateMuffinBurn(1 / 60);
+  return { ablaze: g.muffinAblaze, health: g.health };
+});
+ok('standing on dry land does not', dryLand.ablaze === true && dryLand.health === 98,
+   JSON.stringify(dryLand));
+
+console.log('\nVersus mode is mothballed');
+const versus = await page.evaluate(() => {
+  const shut = (id) => {
+    const el = document.getElementById(id);
+    return !el || el.classList.contains('hidden') || el.offsetParent === null;
+  };
+  return {
+    startVs: shut('start-vs-btn'),
+    startRow: shut('vs-difficulty-row'),
+    restartVs: shut('restart-vs-btn'),
+    restartRow: shut('restart-difficulty-row'),
+    // The solo door must still be open.
+    solo: !document.getElementById('start-btn').classList.contains('hidden'),
+    // …and the About panel must not advertise what nobody can reach.
+    aboutMentions: /versus/i.test(document.getElementById('about-panel').textContent)
+  };
+});
+ok('the menu has no versus door', versus.startVs === true && versus.startRow === true,
+   JSON.stringify(versus));
+ok('nor does the game-over card', versus.restartVs === true && versus.restartRow === true,
+   JSON.stringify(versus));
+ok('the solo door is untouched', versus.solo === true);
+ok('and About no longer mentions it', versus.aboutMentions === false);
+// The code itself must survive: a versus run still starts if asked directly.
+const stillThere = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(true, 'hard');
+  const out = { versus: g.versus, hasCpu: !!g.cpu, name: g.cpuDisplayName() };
+  g.restart(false, 'easy');   // put it back
+  return out;
+});
+ok('but the mode still works when called directly',
+   stillThere.versus === true && stillThere.hasCpu === true && stillThere.name.length > 0,
+   JSON.stringify(stillThere));
+
 await page.evaluate(() => {
   const g = window.__game;
   g.muffinUnlocked = false;

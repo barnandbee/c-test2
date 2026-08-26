@@ -5,6 +5,19 @@
  * lives in styles.css.
  */
 
+/**
+ * Versus mode — racing a CPU rival for the same items — is MOTHBALLED, not
+ * deleted. Every part of it still works: Bot.js, the rival spawner, the
+ * split HUD, the difficulty choice, the game-over verdict, and Game's
+ * `versus` argument all remain exactly as they were. This one flag hides its
+ * two doors (the menu button and the game-over button, each with its
+ * difficulty row), so nothing in the live game can reach it.
+ *
+ * Flip this to true to have it back. There is nothing else to undo, beyond
+ * restoring the line about it in the About panel in index.html.
+ */
+export const VERSUS_ENABLED = false;
+
 /** Scores may carry π-flavored decimals (thanks, Red October). */
 function formatScore(value) {
   if (Number.isInteger(value)) return String(value);
@@ -76,6 +89,15 @@ export class UI {
     this.vsName = document.getElementById('vs-name');
     this.vsScore = document.getElementById('vs-score');
     this.vsResult = document.getElementById('vs-result');
+
+    // Shut the doors on versus mode while it is mothballed. Hidden here in
+    // JS rather than deleted from the HTML so putting it back is one flag.
+    if (!VERSUS_ENABLED) {
+      for (const el of [this.startVsBtn, this.vsDiffRow,
+                        this.restartVsBtn, this.restartDiffRow]) {
+        if (el) el.classList.add('hidden');
+      }
+    }
 
     // The about / how-to-play modal is self-contained: wire it here.
     this.aboutBtn = document.getElementById('about-btn');
@@ -553,6 +575,7 @@ export class UI {
    * `callback` receives 'easy' or 'hard'.
    */
   bindStartVersus(callback) {
+    if (!VERSUS_ENABLED) return;   // mothballed — see VERSUS_ENABLED
     if (this.startVsBtn && this.vsDiffRow) {
       this.startVsBtn.addEventListener('click', () => {
         this.vsDiffRow.classList.toggle('hidden');
@@ -592,6 +615,7 @@ export class UI {
 
   /** Same difficulty choice, at the game-over card. */
   bindRestartVersus(callback) {
+    if (!VERSUS_ENABLED) return;   // mothballed — see VERSUS_ENABLED
     if (this.restartVsBtn && this.restartDiffRow) {
       this.restartVsBtn.addEventListener('click', () => {
         this.restartDiffRow.classList.toggle('hidden');

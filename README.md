@@ -22,7 +22,7 @@ import map — no npm install, no bundler.
 
 An **ⓘ About** button on the menu — and the small **ⓘ** in the corner of the
 start screen — opens the about page: a compact **how-to-play** covering the
-goal, controls, health, landmarks, character unlocks and versus mode, then a
+goal, controls, health, landmarks and character unlocks, then a
 **Things worth knowing** section that points at the deeper game without
 giving any of it away (that there is more than one way to travel, that many
 heroes are earned by *combinations* rather than scores, that who you play as
@@ -80,26 +80,34 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 
 ## Gameplay
 
-- **Two ways in** — the menu offers **Enter the Forest Alone** (the classic
-  solo run) or **Enter the Forest Against**: a head-to-head race against a
-  **CPU rival** who roams the same map, hunting the same items. The rival's
-  hero is drawn at random from the **full roster — locked characters
-  included** (consider it a teaser of who's still out there). It's a greedy
-  forager: it weighs every ground-reachable item by value-per-metre and
-  beelines for the best one, hopping obstacles and leaving the treetop
-  cherries and sky-high stars to you. Whatever it grabs first is **gone for
-  good** — its running score sits in a chip at the top right, and the
-  game-over card declares the winner. Restarting a versus run summons a
-  fresh, freshly-drawn rival. (The CPU can't be hurt by hazards and doesn't
-  earn achievements — it's purely there to out-collect you.) Picking a
-  versus door reveals **two rivals to choose from**: **🌱 Simple Seeds**,
-  the mild forager, and **🥜 Nefarious Nuts** — who thinks faster, prizes
-  the big-ticket items harder, hustles a little quicker, wears little 😈
-  horns on the scoreboard, and **rides the Mystic Line** between the cave,
-  Docklands and the copse when the good stuff is a long haul away. Either
-  way the rival now keeps a grudge list: any prize it can't actually get
-  to (walls happen) is abandoned and left off the menu for a while, so it
-  never stands around grinding its nose against the cottage.
+- **One way in** — **Enter the Forest**: a three-minute solo run.
+
+  <details>
+  <summary><b>Versus mode is mothballed</b> (still in the repo, currently
+  unreachable)</summary>
+
+  A head-to-head race against a **CPU rival** who roams the same map hunting
+  the same items used to sit alongside the solo run. Every part of it still
+  works — `Bot.js`, the rival spawner, the split HUD, the difficulty choice
+  and the game-over verdict — but its two doors are shut so the live game
+  stays focused on the solo run. **`VERSUS_ENABLED` in `src/UI.js` is the
+  only switch**; flip it to `true` and both doors reopen. The one thing that
+  is not automatic is the line describing it in the About panel in
+  `index.html`, which was removed rather than hidden.
+
+  What it does when it is on: the rival's hero is drawn at random from the
+  full roster, locked characters included. It's a greedy forager — it weighs
+  every ground-reachable item by value-per-metre and beelines for the best
+  one, hopping obstacles and leaving the treetop cherries and sky-high stars
+  to you. Whatever it grabs first is gone for good. Picking a versus door
+  reveals two rivals: **🌱 Simple Seeds**, the mild forager, and **🥜
+  Nefarious Nuts** — who thinks faster, prizes the big-ticket items harder,
+  wears little 😈 horns on the scoreboard, and rides the Mystic Line when
+  the good stuff is a long haul away. Either keeps a grudge list: any prize
+  it can't actually reach (walls happen) is abandoned for a while, so it
+  never stands around grinding its nose against the cottage. The CPU can't
+  be hurt by hazards and doesn't earn achievements.
+  </details>
 - **Weather** — a forecast is rolled at the start of every run. It's
   usually exactly the lovely twilight it has always been (**70%**), but
   there's a **10%** chance of **rain**, **5%** of a **storm**, **5%** of
@@ -572,9 +580,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   runs — there is one in the cottage loft each run, so it is a long haul.
 
   **He should stay away from the oven.** Touch the cottage stove while
-  playing as him and he goes up: **−1 health every second** for the rest of
-  the run, and nothing puts it out. Three minutes of that is more health
-  than anybody has, so a run that starts burning is a run against the clock.
+  playing as him and he goes up: **−1 health every second** until he finds
+  water. Three minutes of that is more health than anybody has, so a burning
+  run is a run against the clock — **get to a lake**. Either lake puts him
+  out (the main one or the whirlpool's), however he reaches it: bounced off
+  the surface, ridden there on the hovercraft, or simply fallen in. He comes
+  out soggy rather than charred, and stops losing health — but whatever the
+  oven already took, it keeps.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by
@@ -800,7 +812,8 @@ src/
   SaveCode.js       packs the whole save into a short, checksummed code
   Weather.js        rain / storm / snow: scene grading + GPU precipitation
   Bloom.js          the optional bloom post-pass
-  Bot.js            the versus-mode CPU rival (greedy-collector brain
+  Bot.js            the versus-mode CPU rival — mothballed, see
+                    VERSUS_ENABLED (greedy-collector brain
                     feeding a synthetic input into a second Player)
   Particles.js      GPU burst pool, gold aura, poison cloud point systems
   Shaders.js        toon/rim/sway/pulse material patches, exponential

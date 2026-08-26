@@ -162,6 +162,7 @@ const STORAGE_MUFFIN = 'mystic-badger.muffinUnlocked';
 const STORAGE_RAISINS = 'mystic-badger.raisinsAllTime';
 const MUFFIN_RAISINS = 20;          // raisins the muffin was baked with
 const MUFFIN_BURN_DPS = 1;          // health per second, once he is alight
+const MUFFIN_DOUSE_REACH = 1.4;     // how close to a lake's surface puts him out
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -1382,12 +1383,39 @@ export class Game {
   }
 
   /**
+   * A lake puts the fire out. The muffin comes out soggy rather than
+   * charred, and stops losing health — but he is not made whole again:
+   * whatever the oven took, it keeps.
+   */
+  douseMuffin() {
+    if (!this.muffinAblaze) return;
+    this.muffinAblaze = false;
+    this._burnAccum = 0;
+    this._burnPuffIn = 0;
+    this.world.douseStove();
+    this.audio.play('squelch');   // there is no 'splash'; wet is wet
+    this.ui.showTimeToast('💧 THE LAKE PUTS YOU OUT. SOGGY, BUT NO LONGER ON FIRE.');
+    this.particles.spawnBurst(
+      this.player.getColliderCenter(this._playerCenter), 0xd6ecff,
+      { count: 34, speed: 3.6, size: 44, upBias: 1.1, life: 0.9 }
+    );
+  }
+
+  /**
    * Burn down the muffin. Whole points on whole seconds, in a loop rather
    * than a single subtraction, so a long frame still costs exactly its own
    * worth of health instead of one tick.
    */
   updateMuffinBurn(dt) {
     if (!this.muffinAblaze || this.isGameOver) return;
+    // The lakes put him out. Checked here on the player's own position rather
+    // than hung off the splash event, so it works however he reaches the
+    // water — bounced off it, ridden onto it on the hovercraft, or fallen in.
+    const wl = this.world.waterAt(this.player.position.x, this.player.position.z);
+    if (wl !== undefined && this.player.position.y <= wl + MUFFIN_DOUSE_REACH) {
+      this.douseMuffin();
+      return;
+    }
     this._burnPuffIn -= dt;
     if (this._burnPuffIn <= 0) {
       this._burnPuffIn = 0.16;
