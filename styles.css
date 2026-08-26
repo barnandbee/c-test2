@@ -3467,6 +3467,106 @@ body {
   90%, 100%{ transform: translateX(0); opacity: 1; }
 }
 
+/* --- Error #45: the next ten, down one seam, glitching like the rest -- */
+.error45-icon {
+  background:
+    linear-gradient(105deg,
+      #4e8f52 0 11%,   /* Cactus Balloon  */
+      #6d8fc4 11% 21%, /* Negative Nelly  */
+      #3c3a44 21% 31%, /* Triangle        */
+      #2a3350 31% 41%, /* Parsley O'Riley */
+      #cfe4f2 41% 51%, /* Vapour Badger   */
+      #5d8a3c 51% 61%, /* Spirit Badger   */
+      #7a5136 61% 71%, /* Chimpy          */
+      #d7a75a 71% 81%, /* Pastry Owl      */
+      #4a7a3e 81% 91%, /* Top Hat Snappy  */
+      #f2a5b8 91% 100% /* Bacon           */
+    );
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+/* The spirit-light still burning, and a torn scanline — the family tic. */
+.error45-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 58% 38%, #ff8a10 0 9%, transparent 10%),
+    linear-gradient(#0000 0 58%, rgba(255, 255, 255, 0.7) 58% 64%, #0000 64%);
+  animation: error45-tear 3.1s steps(1) infinite;
+}
+@keyframes error45-tear {
+  0%, 68%  { transform: translateX(0); opacity: 1; }
+  72%      { transform: translateX(-5px); opacity: 0.65; }
+  76%      { transform: translateX(3px); opacity: 1; }
+  81%      { transform: translateX(-2px); opacity: 0.8; }
+  85%, 100%{ transform: translateX(0); opacity: 1; }
+}
+
+/* --- Wagnus Warter: Magnus's silhouette, gone over to the other side -- */
+.wagnus-icon {
+  background: none;
+  border-color: transparent;
+  position: relative;
+}
+/* The same tunic triangle Magnus wears, in his double's purple. */
+.wagnus-icon::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 24px solid #4a2a5e;
+}
+/* Head, black cap with its ember band — and two red eyes. */
+.wagnus-icon::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 26px;
+  background:
+    radial-gradient(circle at 38% 76%, #ff3a2a 0 1.6px, transparent 2px),
+    radial-gradient(circle at 62% 76%, #ff3a2a 0 1.6px, transparent 2px),
+    radial-gradient(circle at 50% 72%, #9fae90 0 8px, transparent 8.5px),
+    linear-gradient(180deg, transparent 0 2px, #1d1a22 2px 12px, #7a1a24 12px 15px, transparent 15px);
+  background-repeat: no-repeat;
+}
+
+/* --- Raspberry Reindeer: the fruit, wearing antlers ------------------- */
+.reindeer-icon {
+  background: radial-gradient(circle at 50% 62%, #8a6142 0 40%, #6d4a32 100%);
+  position: relative;
+  overflow: hidden;
+}
+/* The drupelet cluster, and a pair of pale antlers above it. */
+.reindeer-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 38% 60%, #c42a55 0 15%, transparent 16%),
+    radial-gradient(circle at 62% 60%, #c42a55 0 15%, transparent 16%),
+    radial-gradient(circle at 50% 48%, #c42a55 0 15%, transparent 16%),
+    radial-gradient(circle at 32% 76%, #8e1a3c 0 13%, transparent 14%),
+    radial-gradient(circle at 68% 76%, #8e1a3c 0 13%, transparent 14%),
+    radial-gradient(circle at 50% 70%, #8e1a3c 0 15%, transparent 16%),
+    /* the antler beams */
+    linear-gradient(24deg, transparent 0 46%, #bba884 46% 52%, transparent 52%),
+    linear-gradient(-24deg, transparent 0 46%, #bba884 46% 52%, transparent 52%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%,
+                   100% 100%, 46% 40%, 46% 40%;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 4% 2%, 96% 2%;
+  background-repeat: no-repeat;
+}
+
 /* --- Ol' Cardboard Box: corrugated, taped, and looking at you -------- */
 .cardboard-icon {
   background:

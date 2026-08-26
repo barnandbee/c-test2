@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (55)
+## Characters (58)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -71,6 +71,9 @@ each one is earned. This is the single source of truth for unlock conditions
 | 53 | **P. Cork** | **Tap the Bass Moultapps logo** on the About page with a **lifetime score of 1,000 or more**. The geometric peacock from the studio roundel — fanned tail of straight rays, ringed eyes, three-quill crest. |
 | 54 | **W. Wolk** | Playing as **W. Wolk** — that is, as **P. Cork with the weather against you** — **enter the whirlpool on a score of 200 or more**. Judged on what you bring to the whirlpool, before its fortune is rolled, so a lucky spin can't carry you over the bar. Once he is yours he plays as himself: red under any sky, brows and all. |
 | 55 | **Neptune's Muffin** | Collect **20 Neptune's Raisins** across all your runs — one is hidden in the cottage loft each run, so this is a long haul. A blueberry muffin in a fluted blue paper case, baked (the story goes) with the sea god's entire raisin supply and armed with his trident. **Careful with the oven:** touch the cottage stove while playing as him and he catches fire, losing **1 health every second** until he reaches water. **Either lake puts him out** — the main one or the whirlpool's — however he gets there. He stops burning, but does not get back what the oven took. |
+| 56 | **Error #45** | Finish a run on a **PRIME NUMBER** score while playing as **Error #42, #43 or #44**. The loader falls over a fourth time, mashing the ten heroes after Candy Florence — Cactus Balloon, Negative Nelly, Triangle the Fedora, Parsley O'Riley, Vapour Badger, Spirit of the Forest Badger, Chimpy Henderson, Pastry Owl, Top Hat Snappy and Bacon. The Errors sit this one out; a family does not eat its own. |
+| 57 | **Wagnus Warter** | Get run over by the **golf cart 6 times in one run**, survive to the bell, and finish on **more than 50**. Magnus Carter's evil double: same elf, purple tunic, black cap, red eyes, brows, goatee, and a frown where the grin was. Six hits is 120 damage against 100 health, so this needs the **coffee cart's +30** spent at the right moment — four hits, a coffee, then two more leaves you on 10. |
+| 58 | **Raspberry Reindeer** | Complete a run on **full health** as **Pineapple Penguin or Polar Pear**, in **SNOW**. A reindeer whose head is a raspberry — the fruit itself, drupelets and calyx, with antlers growing out of it. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number
@@ -96,7 +99,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (73)
+## Trophies (74)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -156,7 +159,7 @@ milestone counts your best past run automatically.
 | 🎪 **Unlocked, High Five!** | Unlock **5** characters. |
 | 🎡 **Unlock It In A Docket** | Unlock **10 or more** characters. |
 | 🎢 **Unlock It In Your Pocket** | Unlock **20 or more** characters. |
-| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 54 unlockable, so this is very nearly the lot). |
+| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 57 unlockable, so this is very nearly the lot). |
 | 🎳 **Unlock 'N' Roll** | Unlock a character who **rolls or slides** rather than walking — Marblella, Foil or Top Hat Snappy. |
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |
@@ -197,6 +200,7 @@ milestone counts your best past run automatically.
 | ⚡ **Zapped!** | Let the **transmission tower** take your health to zero during a storm — any character. |
 | 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt** — the four heroes it feeds instead of frying. |
 | 🔴 **Feathered Doppelgänger** | Complete a run as **W. Wolk** — either as **P. Cork** with the forecast turned foul (rain, storm, snow, fog or purple haze), or as the red bird himself once he is unlocked. |
+| 🍳 **Charred Is Hard** | **Cook a charred pickle fritter** and finish that **same run on a whole number**. The fritter pays **88.8**, so it leaves a stubborn `.8` on your score — landing back on a whole number means finding another fraction to complete it. William's **22.2** Bayeux bonus does it exactly; so does a pair of **55.5** sandwiches, or two whirlpool spins that cancel. |
 
 ---
 

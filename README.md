@@ -587,6 +587,32 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   the surface, ridden there on the hovercraft, or simply fallen in. He comes
   out soggy rather than charred, and stops losing health — but whatever the
   oven already took, it keeps.
+- **Error #45** — the loader falls over a fourth time. #42 took the ten
+  heroes before it, #43 the ten after, #44 the ten after that; #45 gets the
+  next ten, and the Errors sit this one out because a family does not eat
+  its own: **Cactus Balloon, Negative Nelly, Triangle the Fedora, Parsley
+  O'Riley, Vapour Badger, Spirit of the Forest Badger, Chimpy Henderson,
+  Pastry Owl, Top Hat Snappy and Bacon**. Fused down one seam — cactus and
+  pig split left and right, an elephant's trunk on one side and a gator's
+  snout on the other, **four hats stacked** because the loader could not
+  choose, and a patch still rendering as vapour where it never finished.
+  Unlock it by finishing a run on a **prime number** score while playing as
+  **Error #42, #43 or #44**.
+- **Wagnus Warter** — Magnus Carter's evil double, and deliberately the
+  *same build*: one function makes both, the way Finn and Flynn Boddington
+  work, so the two can never drift into different people. Purple tunic,
+  black cap with an ember band, sickly green skin, **glowing red eyes**,
+  heavy brows, a goatee, longer sharper ears, and a frown where the grin
+  was. Unlock him by being **run over by the golf cart 6 times in one run**,
+  surviving to the bell, and finishing on **more than 50**. Six hits is 120
+  damage against 100 health, so it needs the **coffee cart's +30** spent at
+  the right moment.
+- **Raspberry Reindeer** — a reindeer whose head is a raspberry. Not a red
+  nose and not a berry hat: the head *is* the fruit, built the way a
+  raspberry actually is — a clustered dome of individual drupelets with a
+  green calyx where it was picked — and the antlers grow straight out of
+  it. Unlock it by completing a run on **full health** as **Pineapple
+  Penguin or Polar Pear**, in **snow**.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

@@ -162,6 +162,7 @@ export class Player {
     else if (this.character === 'rhombus') this.root = this.buildRhombus();
     else if (this.character === 'ginsberg') this.root = this.buildGinsberg();
     else if (this.character === 'magnus') this.root = this.buildMagnus();
+    else if (this.character === 'wagnus') this.root = this.buildMagnus('wagnus');
     else if (this.character === 'error42') this.root = this.buildError42();
     else if (this.character === 'error43') this.root = this.buildError43();
     else if (this.character === 'nucleus') this.root = this.buildNucleus();
@@ -200,11 +201,13 @@ export class Player {
     else if (this.character === 'sweatshirt') this.root = this.buildSweatshirt();
     else if (this.character === 'foil') this.root = this.buildFoil();
     else if (this.character === 'error44') this.root = this.buildError44();
+    else if (this.character === 'error45') this.root = this.buildError45();
     else if (this.character === 'cardboard') this.root = this.buildCardboardBox();
     else if (this.character === 'tapir') this.root = this.buildTapir();
     else if (this.character === 'postboxer') this.root = this.buildPostboxer();
     else if (this.character === 'pcork') this.root = this.buildPCork();
     else if (this.character === 'muffin') this.root = this.buildMuffin();
+    else if (this.character === 'reindeer') this.root = this.buildReindeer();
     // W. Wolk is P. Cork with the storm already in him — same bird, built
     // once and then repainted, so the two can never drift apart.
     else if (this.character === 'wolk') {
@@ -1539,9 +1542,14 @@ export class Player {
    * Green tunic with a belt and buckle, pointed ears, a red cap with a
    * white pom, and the smug grin of a man with zero driving convictions.
    */
-  buildMagnus() {
+  buildMagnus(variant = 'magnus') {
+    // Wagnus Warter is Magnus's evil double, so he is the SAME BUILD with a
+    // different palette and four small additions — brows, a goatee, a frown
+    // and longer ears. Built through one function, the way Finn and Flynn
+    // Boffington are, so the two can never drift into different people.
+    const evil = variant === 'wagnus';
     const root = new THREE.Group();
-    root.name = 'magnus';
+    root.name = evil ? 'wagnus' : 'magnus';
 
     const track = (resource) => {
       this._disposables.push(resource);
@@ -1549,29 +1557,38 @@ export class Player {
     };
 
     const skinMat = track(createToonMaterial({
-      color: 0xf0c090,
-      rim: { color: 0xffe0c0, strength: 0.35, threshold: 0.62 }
+      color: evil ? 0x9fae90 : 0xf0c090,
+      rim: evil
+        ? { color: 0xc8dcb8, strength: 0.3, threshold: 0.64 }
+        : { color: 0xffe0c0, strength: 0.35, threshold: 0.62 }
     }));
     const suitMat = track(createToonMaterial({
-      color: 0x3f8f3f,
-      rim: { color: 0xa0e8a0, strength: 0.4, threshold: 0.6 }
+      color: evil ? 0x4a2a5e : 0x3f8f3f,
+      rim: evil
+        ? { color: 0xb98ad6, strength: 0.4, threshold: 0.6 }
+        : { color: 0xa0e8a0, strength: 0.4, threshold: 0.6 }
     }));
-    const suitDarkMat = track(createToonMaterial({ color: 0x2f6f2f }));
+    const suitDarkMat = track(createToonMaterial({ color: evil ? 0x331c42 : 0x2f6f2f }));
     const hatMat = track(createToonMaterial({
-      color: 0xc03038,
-      rim: { color: 0xff9a8a, strength: 0.4, threshold: 0.58 }
+      color: evil ? 0x1d1a22 : 0xc03038,
+      rim: evil
+        ? { color: 0x8a5a9a, strength: 0.4, threshold: 0.58 }
+        : { color: 0xff9a8a, strength: 0.4, threshold: 0.58 }
     }));
-    const pomMat = track(createToonMaterial({ color: 0xf2f0e8 }));
-    const beltMat = track(createToonMaterial({ color: 0x2a2018 }));
+    // Magnus's white trim goes over to a dark ember on Wagnus.
+    const pomMat = track(createToonMaterial({ color: evil ? 0x7a1a24 : 0xf2f0e8 }));
+    const beltMat = track(createToonMaterial({ color: evil ? 0x181318 : 0x2a2018 }));
     const buckleMat = track(createToonMaterial({
-      color: 0xf5c542,
-      emissive: 0x4a3300,
+      color: evil ? 0x8a3a2a : 0xf5c542,
+      emissive: evil ? 0x5a0a00 : 0x4a3300,
       emissiveIntensity: 1.0
     }));
-    const eyeMat = track(createToonMaterial({ color: 0x101014 }));
+    const eyeMat = track(createToonMaterial(evil
+      ? { color: 0xff3a2a, emissive: 0xff1a08, emissiveIntensity: 1.6 }
+      : { color: 0x101014 }));
     const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
-    const mouthMat = track(createToonMaterial({ color: 0x6a2a20 }));
-    const shoeMat = track(createToonMaterial({ color: 0x4a3018 }));
+    const mouthMat = track(createToonMaterial({ color: evil ? 0x3a1018 : 0x6a2a20 }));
+    const shoeMat = track(createToonMaterial({ color: evil ? 0x24181c : 0x4a3018 }));
 
     const body = new THREE.Group();
     body.name = 'body';
@@ -1613,23 +1630,43 @@ export class Player {
       const eye = new THREE.Mesh(eyeGeo, eyeMat);
       eye.position.set(side * 0.075, 0.91, 0.18);
       body.add(eye);
-      const glint = new THREE.Mesh(glintGeo, glintMat);
-      glint.position.set(side * 0.065, 0.925, 0.2);
-      body.add(glint);
+      // A glint is a friendly thing. Wagnus gets a heavy brow instead,
+      // inner end dipped toward the nose.
+      if (evil) {
+        const brow = new THREE.Mesh(
+          track(new THREE.BoxGeometry(0.085, 0.024, 0.026)), suitDarkMat);
+        brow.position.set(side * 0.08, 0.955, 0.185);
+        brow.rotation.z = side * 0.44;
+        body.add(brow);
+      } else {
+        const glint = new THREE.Mesh(glintGeo, glintMat);
+        glint.position.set(side * 0.065, 0.925, 0.2);
+        body.add(glint);
+      }
     }
 
-    // The grin of the untouchable.
+    // The grin of the untouchable — turned upside down on the double.
     const mouthGeo = track(new THREE.TorusGeometry(0.05, 0.011, 6, 10, Math.PI));
     const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-    mouth.position.set(0, 0.81, 0.185);
-    mouth.rotation.z = Math.PI;
+    mouth.position.set(0, evil ? 0.79 : 0.81, 0.185);
+    mouth.rotation.z = evil ? 0 : Math.PI;
     body.add(mouth);
 
-    const earGeo = track(new THREE.ConeGeometry(0.035, 0.14, 6));
+    if (evil) {
+      // A goatee, because of course.
+      const beard = new THREE.Mesh(track(new THREE.ConeGeometry(0.038, 0.12, 6)), suitDarkMat);
+      beard.position.set(0, 0.71, 0.13);
+      beard.rotation.x = 0.3;
+      beard.rotation.z = Math.PI;   // point downward
+      body.add(beard);
+    }
+
+    // Longer, sharper ears on the double.
+    const earGeo = track(new THREE.ConeGeometry(0.035, evil ? 0.2 : 0.14, 6));
     for (const side of [-1, 1]) {
       const ear = new THREE.Mesh(earGeo, skinMat);
       ear.position.set(side * 0.22, 0.92, 0);
-      ear.rotation.z = side * -(Math.PI / 2 + 0.35);
+      ear.rotation.z = side * -(Math.PI / 2 + (evil ? 0.6 : 0.35));
       body.add(ear);
     }
 
@@ -7642,6 +7679,503 @@ export class Player {
       if (rim !== null && u && u.uRimColor) u.uRimColor.value.setHex(rim);
     });
     return true;
+  }
+
+  /**
+   * Error #45 — the loader falls over a fourth time. #42 took the ten heroes
+   * before it, #43 the ten after, #44 the ten after that; #45 gets the next
+   * ten, and the Errors sit this one out (a family does not eat its own):
+   * Cactus Balloon, Negative Nelly, Triangle the Fedora, Parsley O'Riley,
+   * Vapour Badger, Spirit of the Forest Badger, Chimpy Henderson, Pastry
+   * Owl, Top Hat Snappy and Bacon.
+   *
+   * Fused down one seam like its siblings — cactus and pig split left and
+   * right, an elephant's trunk on one side and a gator's snout on the other,
+   * four hats stacked because the loader could not choose, and a patch of
+   * the body still rendering as vapour where it never finished loading.
+   */
+  buildError45() {
+    const root = new THREE.Group();
+    root.name = 'error45';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    this.isGlitchy = true;   // the family's intermittent reality problem
+
+    const cactusMat = track(createToonMaterial({
+      color: 0x4e8f52, rim: { color: 0xa8e6a0, strength: 0.4, threshold: 0.6 }
+    }));
+    const porkMat = track(createToonMaterial({
+      color: 0xf2a5b8, rim: { color: 0xffd4de, strength: 0.35, threshold: 0.62 }
+    }));
+    const porkDeepMat = track(createToonMaterial({ color: 0xd9788f }));
+    const elephantMat = track(createToonMaterial({ color: 0x6d8fc4 }));
+    const gatorMat = track(createToonMaterial({ color: 0x4a7a3e }));
+    const pastryMat = track(createToonMaterial({
+      color: 0xd7a75a, rim: { color: 0xffdfa2, strength: 0.35, threshold: 0.6 }
+    }));
+    const chocMat = track(createToonMaterial({ color: 0x3a2418 }));
+    const mossMat = track(createToonMaterial({ color: 0x5d8a3c }));
+    const bloomMat = track(createToonMaterial({ color: 0xe8a0c8 }));
+    const amberMat = track(createToonMaterial({
+      color: 0xffb63c, emissive: 0xff8a10, emissiveIntensity: 1.5, pulse: { speed: 2.6, phase: 1.1 }
+    }));
+    const feltMat = track(createToonMaterial({ color: 0x3c3a44 }));
+    const tricorneMat = track(createToonMaterial({ color: 0x1c1a20 }));
+    const featherMat = track(createToonMaterial({ color: 0xc22f34 }));
+    const navyMat = track(createToonMaterial({ color: 0x2a3350 }));
+    const shirtMat = track(createToonMaterial({ color: 0xf4f2ea }));
+    const tieMat = track(createToonMaterial({ color: 0xb02a34 }));
+    const parsleyMat = track(createToonMaterial({ color: 0x6fae3e }));
+    const monkeyMat = track(createToonMaterial({ color: 0x7a5136 }));
+    const bananaMat = track(createToonMaterial({ color: 0xf2d24a }));
+    const capMat = track(createToonMaterial({ color: 0xd94f3a }));
+    const clockMat = track(createToonMaterial({ color: 0xf6f1e0 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14161c }));
+    const vapourMat = track(createToonMaterial({
+      color: 0xcfe4f2, emissive: 0x9fc4dd, emissiveIntensity: 0.5,
+      rim: { color: 0xffffff, strength: 0.8, threshold: 0.4 }
+    }));
+    vapourMat.transparent = true; vapourMat.opacity = 0.32; vapourMat.depthWrite = false;
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.7;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- torso: ribbed cactus left, pig right, split down the seam --------
+    const cactus = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.3, 0.36, 6, 14)), cactusMat);
+    cactus.position.set(-0.14, 0, 0);
+    cactus.scale.set(0.9, 1, 0.92);
+    cactus.castShadow = true;
+    body.add(cactus);
+    // Its ribs, only on the half that is cactus.
+    const ribGeo = track(new THREE.BoxGeometry(0.035, 0.62, 0.035));
+    for (let i = 0; i < 5; i++) {
+      const a = Math.PI * 0.55 + (i / 4) * Math.PI * 0.9;
+      const rib = new THREE.Mesh(ribGeo, mossMat);
+      rib.position.set(-0.14 + Math.sin(a) * 0.28, 0, Math.cos(a) * 0.28);
+      body.add(rib);
+    }
+    const pig = new THREE.Mesh(track(new THREE.SphereGeometry(0.36, 18, 14)), porkMat);
+    pig.position.set(0.18, 0.02, 0);
+    pig.scale.set(0.92, 0.94, 0.9);
+    pig.castShadow = true;
+    body.add(pig);
+    // The seam itself: a raw edge of unrendered vapour where the two meet.
+    const seam = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.82, 0.5)), vapourMat);
+    seam.position.set(0.01, 0, 0);
+    body.add(seam);
+
+    // Parsley's suit lapels and red tie, worn over whichever of them is front.
+    const lapel = new THREE.Mesh(track(new THREE.BoxGeometry(0.3, 0.34, 0.05)), navyMat);
+    lapel.position.set(0.1, 0.06, 0.31);
+    lapel.rotation.z = 0.12;
+    body.add(lapel);
+    const shirt = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.3, 0.04)), shirtMat);
+    shirt.position.set(0.1, 0.06, 0.34);
+    body.add(shirt);
+    const tie = new THREE.Mesh(track(new THREE.BoxGeometry(0.05, 0.22, 0.03)), tieMat);
+    tie.position.set(0.1, 0.02, 0.37);
+    body.add(tie);
+
+    // Spirit Badger's botany, creeping over the cactus half.
+    for (const spot of [[-0.3, 0.3, 0.16], [-0.24, -0.16, 0.26], [-0.34, 0.05, -0.16]]) {
+      const moss = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.085, 0)), mossMat);
+      moss.position.set(spot[0], spot[1], spot[2]);
+      moss.scale.set(1, 0.6, 1);
+      body.add(moss);
+    }
+    const flower = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.05, 0)), bloomMat);
+    flower.position.set(-0.3, 0.34, 0.2);
+    body.add(flower);
+
+    // --- head: half pastry owl, half pig, with a trunk and a snout --------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.62, 0.06);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    const owlHalf = new THREE.Mesh(track(new THREE.SphereGeometry(0.26, 16, 14)), pastryMat);
+    owlHalf.position.x = -0.1;
+    owlHalf.scale.set(0.82, 1, 0.92);
+    owlHalf.castShadow = true;
+    headGroup.add(owlHalf);
+    const pigHalf = new THREE.Mesh(track(new THREE.SphereGeometry(0.25, 16, 14)), porkMat);
+    pigHalf.position.x = 0.11;
+    pigHalf.scale.set(0.86, 0.96, 0.9);
+    pigHalf.castShadow = true;
+    headGroup.add(pigHalf);
+
+    // Pastry Owl's croissant ear-tufts, on the pastry side only.
+    for (const lean of [0.3, 0.7]) {
+      const tuft = new THREE.Mesh(track(new THREE.ConeGeometry(0.05, 0.17, 5)), pastryMat);
+      tuft.position.set(-0.1 - Math.sin(lean) * 0.12, 0.24, -0.02);
+      tuft.rotation.z = lean;
+      headGroup.add(tuft);
+    }
+    // Bacon's floppy triangular ear, on the pig side.
+    const flop = new THREE.Mesh(track(new THREE.ConeGeometry(0.09, 0.2, 3)), porkDeepMat);
+    flop.position.set(0.22, 0.16, 0.02);
+    flop.rotation.set(0.4, 0, -2.5);
+    headGroup.add(flop);
+
+    // Eyes: a chocolate drop from the owl, an amber spirit-light from the
+    // badger. They do not match, and that is the joke.
+    const drop = new THREE.Mesh(track(new THREE.SphereGeometry(0.055, 10, 8)), chocMat);
+    drop.position.set(-0.12, 0.05, 0.21);
+    headGroup.add(drop);
+    const spark = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 10, 8)), amberMat);
+    spark.position.set(0.11, 0.06, 0.21);
+    headGroup.add(spark);
+
+    // Negative Nelly's drooping trunk, hanging off the left.
+    let tx = -0.14, ty = -0.1, tz = 0.2;
+    for (let i = 0; i < 5; i++) {
+      const seg = new THREE.Mesh(
+        track(new THREE.CylinderGeometry(0.055 - i * 0.008, 0.048 - i * 0.008, 0.11, 8)), elephantMat);
+      seg.position.set(tx, ty, tz);
+      seg.rotation.x = 0.9 + i * 0.16;
+      headGroup.add(seg);
+      ty -= 0.09; tz += 0.015 - i * 0.012;
+    }
+    // …and Snappy's gator snout off the right, because both arrived at once.
+    const snout = new THREE.Mesh(track(new THREE.BoxGeometry(0.13, 0.09, 0.3)), gatorMat);
+    snout.position.set(0.16, -0.06, 0.26);
+    snout.rotation.y = -0.2;
+    headGroup.add(snout);
+    const toothGeo = track(new THREE.ConeGeometry(0.017, 0.05, 4));
+    for (let i = 0; i < 4; i++) {
+      const tooth = new THREE.Mesh(toothGeo, clockMat);
+      tooth.position.set(0.13 + (i % 2) * 0.06, -0.11, 0.18 + i * 0.05);
+      tooth.rotation.z = Math.PI;
+      headGroup.add(tooth);
+    }
+    // Bacon's snout disc, sitting where the two faces disagree.
+    const disc = new THREE.Mesh(track(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 12)), porkDeepMat);
+    disc.position.set(0.04, -0.02, 0.26);
+    disc.rotation.x = Math.PI / 2;
+    headGroup.add(disc);
+    for (const side of [-1, 1]) {
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.016, 6, 5)), chocMat);
+      nostril.position.set(0.04 + side * 0.028, -0.02, 0.29);
+      headGroup.add(nostril);
+    }
+
+    // --- four hats, because the loader could not pick one ------------------
+    // Triangle's fedora, then Chimpy's tricorne, then Snappy's clock-faced
+    // top hat, then Cactus Balloon's backwards cap on the very top.
+    // Kept low and overlapping: at full height these read as a chimney with
+    // the head somewhere underneath it, rather than as four hats at once.
+    const brim = new THREE.Mesh(track(new THREE.CylinderGeometry(0.3, 0.3, 0.022, 16)), feltMat);
+    brim.position.y = 0.23;
+    headGroup.add(brim);
+    const crown = new THREE.Mesh(track(new THREE.CylinderGeometry(0.16, 0.19, 0.11, 12)), feltMat);
+    crown.position.y = 0.29;
+    headGroup.add(crown);
+
+    const tricorne = new THREE.Mesh(track(new THREE.CylinderGeometry(0.22, 0.22, 0.045, 3)), tricorneMat);
+    tricorne.position.y = 0.36;
+    tricorne.rotation.y = 0.4;
+    headGroup.add(tricorne);
+    const feather = new THREE.Mesh(track(new THREE.ConeGeometry(0.026, 0.18, 4)), featherMat);
+    feather.position.set(0.15, 0.44, -0.05);
+    feather.rotation.z = -0.55;
+    headGroup.add(feather);
+
+    const topHat = new THREE.Mesh(track(new THREE.CylinderGeometry(0.125, 0.135, 0.17, 12)), tricorneMat);
+    topHat.position.y = 0.46;
+    topHat.castShadow = true;
+    headGroup.add(topHat);
+    const face = new THREE.Mesh(track(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 14)), clockMat);
+    face.position.set(0, 0.47, 0.135);
+    face.rotation.x = Math.PI / 2;
+    headGroup.add(face);
+
+    const cap = new THREE.Mesh(track(new THREE.SphereGeometry(0.115, 12, 10,
+      0, Math.PI * 2, 0, Math.PI / 2)), capMat);
+    cap.position.y = 0.55;
+    headGroup.add(cap);
+    const peak = new THREE.Mesh(track(new THREE.CylinderGeometry(0.11, 0.11, 0.022, 12,
+      1, false, 0, Math.PI)), capMat);
+    peak.position.set(0, 0.555, -0.09);   // backwards, as Cactus Balloon wears it
+    headGroup.add(peak);
+
+    // --- the balloon's string, still trailing from a body with legs -------
+    const string = new THREE.Mesh(track(new THREE.CylinderGeometry(0.008, 0.008, 0.7, 5)), clockMat);
+    string.position.set(-0.3, -0.5, -0.14);
+    string.rotation.z = 0.28;
+    body.add(string);
+
+    // --- arms: a monkey's on one side holding a banana, a wing on the other
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.045, 0.04, 0.42, 8));
+    armGeo.translate(0, -0.21, 0);
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.4, 0.16, 0);
+      if (side === 1) {
+        const arm = new THREE.Mesh(armGeo, monkeyMat);
+        arm.castShadow = true;
+        pivot.add(arm);
+        const hand = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 10, 8)), monkeyMat);
+        hand.position.y = -0.43;
+        pivot.add(hand);
+        const banana = new THREE.Mesh(track(new THREE.TorusGeometry(0.09, 0.024, 6, 10, Math.PI * 0.8)), bananaMat);
+        banana.position.set(0.05, -0.45, 0.04);
+        banana.rotation.set(0, 0.6, 1.9);
+        pivot.add(banana);
+      } else {
+        // A croissant wing — the owl's, which never finished becoming an arm.
+        const wing = new THREE.Mesh(track(new THREE.TorusGeometry(0.17, 0.06, 6, 12, Math.PI)), pastryMat);
+        wing.position.set(-0.02, -0.2, 0);
+        wing.rotation.set(0, Math.PI / 2, 0.4);
+        wing.castShadow = true;
+        pivot.add(wing);
+      }
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: -side * 0.3 });
+    }
+
+    // Chimpy's long curling tail, off the back.
+    let cx = 0, cy = -0.28, cz = -0.36;
+    for (let i = 0; i < 7; i++) {
+      const seg = new THREE.Mesh(track(new THREE.SphereGeometry(0.045 - i * 0.004, 8, 6)), monkeyMat);
+      seg.position.set(cx, cy, cz);
+      body.add(seg);
+      cx += Math.sin(i * 0.9) * 0.07;
+      cy += 0.06 + i * 0.012;
+      cz -= 0.05;
+    }
+
+    // --- legs: one gator's, one pig's -------------------------------------
+    this.legs = [];
+    const legGeo = track(new THREE.CylinderGeometry(0.06, 0.05, 0.4, 8));
+    legGeo.translate(0, -0.2, 0);
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.17, -0.36, 0);
+      const leg = new THREE.Mesh(legGeo, side === -1 ? gatorMat : porkMat);
+      leg.castShadow = true;
+      pivot.add(leg);
+      if (side === -1) {
+        // A clawed gator foot.
+        const foot = new THREE.Mesh(track(new THREE.BoxGeometry(0.17, 0.06, 0.24)), gatorMat);
+        foot.position.set(0, -0.42, 0.05);
+        foot.castShadow = true;
+        pivot.add(foot);
+      } else {
+        // A trotter.
+        const hoofL = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.08, 0.13)), porkDeepMat);
+        hoofL.position.set(-0.035, -0.43, 0.03);
+        pivot.add(hoofL);
+        const hoofR = new THREE.Mesh(track(new THREE.BoxGeometry(0.06, 0.08, 0.13)), porkDeepMat);
+        hoofR.position.set(0.035, -0.43, 0.03);
+        pivot.add(hoofR);
+      }
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    // A sprig of Parsley's ruff, still growing out of the seam.
+    for (const sprig of [[-0.02, 0.42, 0.2], [0.06, 0.46, 0.1], [-0.08, 0.44, 0.02]]) {
+      const leaf = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.06, 0)), parsleyMat);
+      leaf.position.set(sprig[0], sprig[1], sprig[2]);
+      body.add(leaf);
+    }
+
+    return root;
+  }
+
+  /**
+   * Raspberry Reindeer — a reindeer whose head is a raspberry. Not a red
+   * nose, not a berry hat: the head itself is the fruit, built the way a
+   * raspberry actually is, as a clustered dome of individual drupelets with
+   * a green calyx where it was picked. Antlers grow straight out of it.
+   *
+   * The body stays honestly deer: a fawn-brown barrel, a pale bib, a white
+   * scut and four slim legs.
+   */
+  buildReindeer() {
+    const root = new THREE.Group();
+    root.name = 'reindeer';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const coatMat = track(createToonMaterial({
+      color: 0x8a6142, rim: { color: 0xd8b189, strength: 0.3, threshold: 0.63 }
+    }));
+    const bibMat = track(createToonMaterial({ color: 0xe2d3bd }));
+    const berryMat = track(createToonMaterial({
+      color: 0xc42a55, rim: { color: 0xff89ad, strength: 0.4, threshold: 0.58 }
+    }));
+    const berryDeepMat = track(createToonMaterial({ color: 0x8e1a3c }));
+    const calyxMat = track(createToonMaterial({ color: 0x4f8f3a }));
+    const antlerMat = track(createToonMaterial({ color: 0xbba884 }));
+    const hoofMat = track(createToonMaterial({ color: 0x2e2620 }));
+    const eyeMat = track(createToonMaterial({ color: 0x14100f }));
+    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.8;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- barrel body, chest bib and scut ---------------------------------
+    const barrel = new THREE.Mesh(track(new THREE.SphereGeometry(0.36, 18, 14)), coatMat);
+    barrel.scale.set(0.92, 0.86, 1.18);
+    barrel.castShadow = true;
+    body.add(barrel);
+
+    const bib = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 14, 12)), bibMat);
+    bib.position.set(0, -0.08, 0.3);
+    bib.scale.set(0.85, 1.05, 0.5);
+    body.add(bib);
+
+    const scut = new THREE.Mesh(track(new THREE.SphereGeometry(0.09, 10, 8)), bibMat);
+    scut.position.set(0, 0.12, -0.42);
+    scut.scale.set(0.8, 1.2, 0.7);
+    body.add(scut);
+
+    // --- neck ------------------------------------------------------------
+    const neck = new THREE.Mesh(track(new THREE.CylinderGeometry(0.11, 0.14, 0.34, 10)), coatMat);
+    neck.position.set(0, 0.32, 0.16);
+    neck.rotation.x = -0.34;
+    neck.castShadow = true;
+    body.add(neck);
+
+    // --- the head: a raspberry ---------------------------------------------
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.58, 0.28);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+
+    // The drupelets. Laid out on rings of latitude so they tile the dome the
+    // way a real raspberry's do, rather than scattered at random — an even
+    // cluster is what makes it read as a raspberry and not a lumpy ball.
+    const drupeGeo = track(new THREE.SphereGeometry(0.062, 8, 6));
+    const RINGS = [
+      { lat: 0.15, n: 3, r: 0.06 },
+      { lat: 0.52, n: 7, r: 0.155 },
+      { lat: 0.95, n: 9, r: 0.2 },
+      { lat: 1.38, n: 8, r: 0.175 }
+    ];
+    for (let ri = 0; ri < RINGS.length; ri++) {
+      const ring = RINGS[ri];
+      const y = Math.cos(ring.lat) * 0.21;
+      for (let i = 0; i < ring.n; i++) {
+        const a = (i / ring.n) * Math.PI * 2 + ri * 0.4;
+        const drupe = new THREE.Mesh(drupeGeo, ri % 2 ? berryMat : berryDeepMat);
+        drupe.position.set(Math.sin(a) * ring.r, y, Math.cos(a) * ring.r);
+        drupe.castShadow = true;
+        headGroup.add(drupe);
+      }
+    }
+    // A core under the drupelets, so no gap between them shows daylight.
+    const core = new THREE.Mesh(track(new THREE.SphereGeometry(0.185, 14, 12)), berryDeepMat);
+    headGroup.add(core);
+
+    // The calyx, where the berry left the plant — five leaves at the back.
+    const leafGeo = track(new THREE.ConeGeometry(0.05, 0.14, 4));
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const leaf = new THREE.Mesh(leafGeo, calyxMat);
+      leaf.position.set(Math.sin(a) * 0.13, 0.05, -0.19 + Math.cos(a) * 0.04);
+      leaf.rotation.set(Math.PI / 2 - 0.5, 0, -a);
+      headGroup.add(leaf);
+    }
+
+    // Eyes, set into the fruit.
+    const eyeGeo = track(new THREE.SphereGeometry(0.042, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.014, 6, 5));
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(side * 0.11, 0.03, 0.19);
+      headGroup.add(eye);
+      const glint = new THREE.Mesh(glintGeo, glintMat);
+      glint.position.set(side * 0.125, 0.06, 0.22);
+      headGroup.add(glint);
+    }
+    // A small muzzle, so he has something to be a reindeer with.
+    const muzzle = new THREE.Mesh(track(new THREE.SphereGeometry(0.075, 10, 8)), bibMat);
+    muzzle.position.set(0, -0.09, 0.2);
+    muzzle.scale.set(1, 0.8, 0.9);
+    headGroup.add(muzzle);
+    for (const side of [-1, 1]) {
+      const nostril = new THREE.Mesh(track(new THREE.SphereGeometry(0.016, 6, 5)), eyeMat);
+      nostril.position.set(side * 0.03, -0.09, 0.27);
+      headGroup.add(nostril);
+    }
+
+    // --- antlers, growing straight out of the fruit -----------------------
+    // Each antler is its own GROUP, tilted once, with the beam running up
+    // from the group's origin and the tines branching off points ALONG it.
+    // Placing tines in head space instead leaves them hanging in mid-air.
+    const beamGeo = track(new THREE.CylinderGeometry(0.021, 0.028, 0.36, 6));
+    beamGeo.translate(0, 0.18, 0);          // grow upward from the origin
+    const tineGeo = track(new THREE.CylinderGeometry(0.013, 0.018, 0.18, 6));
+    tineGeo.translate(0, 0.09, 0);          // …and so do the tines
+    for (const side of [-1, 1]) {
+      const antler = new THREE.Group();
+      antler.position.set(side * 0.1, 0.14, -0.02);
+      antler.rotation.z = side * 0.4;
+      antler.rotation.x = -0.16;
+      headGroup.add(antler);
+
+      const beam = new THREE.Mesh(beamGeo, antlerMat);
+      beam.castShadow = true;
+      antler.add(beam);
+
+      // Branch points measured along the beam, which runs 0 → 0.36.
+      for (const t of [{ at: 0.12, rz: 0.95, rx: -0.5 },
+                       { at: 0.24, rz: 0.6, rx: -0.25 },
+                       { at: 0.34, rz: 0.28, rx: 0.0 }]) {
+        const tine = new THREE.Mesh(tineGeo, antlerMat);
+        tine.position.y = t.at;
+        tine.rotation.z = side * t.rz;
+        tine.rotation.x = t.rx;
+        tine.castShadow = true;
+        antler.add(tine);
+      }
+    }
+
+    // --- limbs: front pair as "arms", back pair as legs -------------------
+    // The walk rig swings arms and legs in opposition, which is exactly what
+    // a four-legged trot does, so the front pair go in `arms`.
+    this.arms = [];
+    const foreGeo = track(new THREE.CylinderGeometry(0.043, 0.036, 0.44, 8));
+    foreGeo.translate(0, -0.22, 0);
+    const hoofGeo = track(new THREE.CylinderGeometry(0.055, 0.05, 0.07, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.19, -0.16, 0.22);
+      const fore = new THREE.Mesh(foreGeo, coatMat);
+      fore.castShadow = true;
+      pivot.add(fore);
+      const hoof = new THREE.Mesh(hoofGeo, hoofMat);
+      hoof.position.y = -0.46;
+      pivot.add(hoof);
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0, splay: 0 });
+    }
+
+    this.legs = [];
+    const hindGeo = track(new THREE.CylinderGeometry(0.048, 0.038, 0.46, 8));
+    hindGeo.translate(0, -0.23, 0);
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.2, -0.16, -0.2);
+      const hind = new THREE.Mesh(hindGeo, coatMat);
+      hind.castShadow = true;
+      pivot.add(hind);
+      const hoof = new THREE.Mesh(hoofGeo, hoofMat);
+      hoof.position.y = -0.48;
+      pivot.add(hoof);
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
   }
 
   /**

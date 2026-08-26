@@ -102,7 +102,7 @@ export const VOCAB_TROPHIES = [
   'frogs100', 'mysticcubed', 'pointproved', 'lifetime10k', 'lifetime50k',
   'lifetime100k', 'frogspawn', 'zapped', 'antizapped',
   'play40', 'total50', 'total100', 'c400',
-  'unlock20', 'unlock50', 'unlockroll', 'doppelganger'
+  'unlock20', 'unlock50', 'unlockroll', 'doppelganger', 'charredishard'
 ];
 
 export const VOCAB_CHARACTERS = [
@@ -115,7 +115,8 @@ export const VOCAB_CHARACTERS = [
   'spirit', 'chimpy', 'owl', 'snappy', 'bacon', 'robofarmer', 'frosch',
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
-  'tapir', 'postboxer', 'pcork', 'wolk', 'muffin'
+  'tapir', 'postboxer', 'pcork', 'wolk', 'muffin',
+  'error45', 'wagnus', 'reindeer'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -141,7 +142,7 @@ export const SCHEMA_BOOLS = [
   'muted', 'bloom',
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
   'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked',
-  'muffinUnlocked'
+  'muffinUnlocked', 'error45Unlocked', 'wagnusUnlocked', 'reindeerUnlocked'
 ];
 
 /**

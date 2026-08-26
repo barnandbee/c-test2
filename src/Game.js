@@ -163,6 +163,15 @@ const STORAGE_RAISINS = 'mystic-badger.raisinsAllTime';
 const MUFFIN_RAISINS = 20;          // raisins the muffin was baked with
 const MUFFIN_BURN_DPS = 1;          // health per second, once he is alight
 const MUFFIN_DOUSE_REACH = 1.4;     // how close to a lake's surface puts him out
+const STORAGE_ERROR45 = 'mystic-badger.error45Unlocked';
+const STORAGE_WAGNUS = 'mystic-badger.wagnusUnlocked';
+const STORAGE_REINDEER = 'mystic-badger.reindeerUnlocked';
+// The three Errors who can summon the fourth. #45 cannot summon itself.
+const ERROR45_SUMMONERS = ['error42', 'error43', 'error44'];
+const WAGNUS_HITS = 6;              // cart hits in one run to raise the double
+const WAGNUS_SCORE = 50;            // …and the score he wants to see for it
+// Whoever can bring the reindeer in from the snow.
+const REINDEER_HEROES = ['pinepenguin', 'polarpear'];
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -267,6 +276,20 @@ const MAGNUS_HITS_REQUIRED = 4;
 const MAGNUS_MIN_SCORE = 50;
 
 /** localStorage can throw (private browsing, disabled storage) — shrug it off. */
+/**
+ * The score AS THE PLAYER SEES IT. UI.formatScore displays points rounded to
+ * five decimal places, and the raw float does not always agree: adding the
+ * game's fractional values in the wrong order leaves residue, so a run that
+ * reads 204 on screen can hold 204.00000000000003. Testing such a score for
+ * whole-ness directly fails about one time in 130 — invisibly, and with the
+ * player looking at a whole number wondering why nothing happened.
+ *
+ * Anything judging a score against an exact number should judge this one.
+ */
+function shownScore(points) {
+  return Math.round(points * 100000) / 100000;
+}
+
 function readStorage(key, fallback = null) {
   try {
     const v = window.localStorage.getItem(key);
@@ -403,6 +426,9 @@ export class Game {
     this.pcorkUnlocked = readStorage(STORAGE_PCORK) === '1';
     this.wolkUnlocked = readStorage(STORAGE_WOLK) === '1';
     this.muffinUnlocked = readStorage(STORAGE_MUFFIN) === '1';
+    this.error45Unlocked = readStorage(STORAGE_ERROR45) === '1';
+    this.wagnusUnlocked = readStorage(STORAGE_WAGNUS) === '1';
+    this.reindeerUnlocked = readStorage(STORAGE_REINDEER) === '1';
     // All-time count of Neptune's Raisins; 20 bakes the muffin.
     this.raisinsAllTime = parseInt(readStorage(STORAGE_RAISINS, '0'), 10) || 0;
     // All-time tally of toxic-frog bruises (across every run).
@@ -1292,6 +1318,9 @@ export class Game {
     if (name === 'pcork') return this.pcorkUnlocked;
     if (name === 'wolk') return this.wolkUnlocked;
     if (name === 'muffin') return this.muffinUnlocked;
+    if (name === 'error45') return this.error45Unlocked;
+    if (name === 'wagnus') return this.wagnusUnlocked;
+    if (name === 'reindeer') return this.reindeerUnlocked;
     return name === 'badger';
   }
 
@@ -1509,7 +1538,10 @@ export class Game {
       postboxer: this.postboxerUnlocked,
       pcork: this.pcorkUnlocked,
       wolk: this.wolkUnlocked,
-      muffin: this.muffinUnlocked
+      muffin: this.muffinUnlocked,
+      error45: this.error45Unlocked,
+      wagnus: this.wagnusUnlocked,
+      reindeer: this.reindeerUnlocked
     };
   }
 
@@ -2562,6 +2594,24 @@ export class Game {
   }
 
   /**
+   * Error #45's summons: a prime final score. Trial division by 6k±1, which
+   * is ample — the biggest score anyone has ever finished on is in the low
+   * thousands, and this runs once, at the bell.
+   *
+   * A fractional score is not a prime; neither is 1, nor anything negative.
+   */
+  isPrimeScore() {
+    const n = this.points;
+    if (!Number.isInteger(n) || n < 2) return false;
+    if (n < 4) return true;               // 2 and 3
+    if (n % 2 === 0 || n % 3 === 0) return false;
+    for (let f = 5; f * f <= n; f += 6) {
+      if (n % f === 0 || n % (f + 2) === 0) return false;
+    }
+    return true;
+  }
+
+  /**
    * Down on the 'Cottage Lane' platform: the ticket machine has an
    * opinion, and the WAY OUT stairs teleport you back up to the rug.
    * Returns true when the tap was spent underground.
@@ -3060,6 +3110,13 @@ export class Game {
     // Feathered Doppelgänger: saw the run out as W. Wolk, red from the first
     // bad forecast to the bell.
     if (this.isWolk) this.awardAchievement('doppelganger');
+    // Charred Is Hard: the fritter pays 88.8, so cooking one puts a stubborn
+    // .8 on your score. Landing back on a whole number by the bell means
+    // finding another fraction that completes it — William's 22.2 Bayeux
+    // bonus, a pair of 55.5 sandwiches, two whirlpool spins that cancel.
+    if (this.fritterCooked && Number.isInteger(shownScore(this.points))) {
+      this.awardAchievement('charredishard');
+    }
     // Mystic Cubed: monochrome AND rode the line to Mystic Forest Central.
     if (wasMystic && this.stationsVisited.has('copse')) {
       this.awardAchievement('mysticcubed');
@@ -3090,6 +3147,46 @@ export class Game {
       this.tapirUnlocked = true;
       writeStorage(STORAGE_TAPIR, '1');
       newlyUnlockedNames.push('Tara Tapir');
+    }
+
+    // Error #45: the loader falls over a fourth time, and only a prime
+    // number will call it. Any of the other three Errors can do the calling.
+    if (
+      !this.error45Unlocked &&
+      ERROR45_SUMMONERS.includes(this.characterName) &&
+      this.isPrimeScore()
+    ) {
+      this.error45Unlocked = true;
+      writeStorage(STORAGE_ERROR45, '1');
+      newlyUnlockedNames.push('Error #45');
+    }
+
+    // Wagnus Warter: six trips under the golf cart in one run and still
+    // standing at the bell with a score. Six hits is 120 damage against 100
+    // health, so this needs the coffee cart's +30 spent at the right moment.
+    if (
+      !this.wagnusUnlocked &&
+      this.cartHits >= WAGNUS_HITS &&
+      reason === 'time' &&
+      this.health > 0 &&
+      this.points > WAGNUS_SCORE
+    ) {
+      this.wagnusUnlocked = true;
+      writeStorage(STORAGE_WAGNUS, '1');
+      newlyUnlockedNames.push('Wagnus Warter');
+    }
+
+    // Raspberry Reindeer: comes in from the snow, and only for the two who
+    // belong in it — untouched, at the bell, in a snowy run.
+    if (
+      !this.reindeerUnlocked &&
+      REINDEER_HEROES.includes(this.characterName) &&
+      this.weather && this.weather.kind === 'snow' &&
+      reason === 'time' && this.health >= 100
+    ) {
+      this.reindeerUnlocked = true;
+      writeStorage(STORAGE_REINDEER, '1');
+      newlyUnlockedNames.push('Raspberry Reindeer');
     }
 
     if (!this.badgeretteUnlocked && this.points > UNLOCK_SCORE) {

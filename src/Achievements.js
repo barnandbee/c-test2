@@ -80,6 +80,7 @@ export const TROPHIES = [
   { id: 'total50', medal: '🏵️', title: 'Half Centurion', desc: 'Amass 50 achievements in total — trophies earned plus characters unlocked.' },
   { id: 'total100', medal: '🎖️', title: 'Centurion', desc: 'Amass 100 achievements in total — trophies earned plus characters unlocked.' },
   { id: 'doppelganger', medal: '🔴', title: 'Feathered Doppelgänger', desc: 'Complete a run as W. Wolk — as P. Cork with the weather against you, or as the red bird himself.' },
+  { id: 'charredishard', medal: '🍳', title: 'Charred Is Hard', desc: 'Cook a charred pickle fritter AND finish that same run on a whole number. The fritter pays 88.8, so you will need another fraction to complete it.' },
 ];
 
 /** Every hero and the deed that earns them, in roster order. */
@@ -138,5 +139,8 @@ export const CHARACTER_UNLOCKS = [
   { key: 'postboxer', name: 'Postboxer', how: 'Score 400 or more as all three Errors \u2014 #42, #43 and #44 \u2014 across any runs.' },
   { key: 'pcork', name: 'P. Cork', how: 'Tap the Bass Moultapps logo on the About page with a lifetime score of 1,000 or more.' },
   { key: 'wolk', name: 'W. Wolk', how: 'Playing as W. Wolk \u2014 that is, as P. Cork with the weather against you \u2014 enter the whirlpool on a score of 200 or more.' },
-  { key: 'muffin', name: "Neptune's Muffin", how: "Collect 20 Neptune's Raisins across all your runs (one is hidden in the cottage loft each run)." }
+  { key: 'muffin', name: "Neptune's Muffin", how: "Collect 20 Neptune's Raisins across all your runs (one is hidden in the cottage loft each run)." },
+  { key: 'error45', name: 'Error #45', how: 'Finish a run on a PRIME NUMBER score while playing as Error #42, #43 or #44.' },
+  { key: 'wagnus', name: 'Wagnus Warter', how: 'Get run over by the golf cart 6 times in one run, survive to the bell, and finish on more than 50.' },
+  { key: 'reindeer', name: 'Raspberry Reindeer', how: 'Complete a run on full health as Pineapple Penguin or Polar Pear, in SNOW.' }
 ];

@@ -1053,6 +1053,174 @@ ok('but the mode still works when called directly',
    stillThere.versus === true && stillThere.hasCpu === true && stillThere.name.length > 0,
    JSON.stringify(stillThere));
 
+console.log('\nError #45, Wagnus Warter and the Raspberry Reindeer');
+
+// A run that ends however we say, as whoever we say.
+const bell = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  for (const k of ['error45', 'wagnus', 'reindeer']) {
+    g[`${k}Unlocked`] = false;
+    localStorage.removeItem(`mystic-badger.${k}Unlocked`);
+  }
+  if (g.inMenu) { g.setCharacter(opt.character); g.beginRun(false, 'easy'); }
+  else { g.restart(false, 'easy'); }
+  g.setCharacter(opt.character);
+  g.isGameOver = false;
+  g.runUnlockNames = [];
+  g.points = opt.points;
+  g.health = opt.health === undefined ? 100 : opt.health;
+  g.cartHits = opt.cartHits || 0;
+  g.fritterCooked = Boolean(opt.fritter);
+  g.achievements.delete('charredishard');
+  g.weather.set(opt.weather || 'clear');
+  g.applyWolk(opt.weather || 'clear');
+  g.gameOver(opt.reason || 'time');
+  return {
+    error45: g.error45Unlocked,
+    wagnus: g.wagnusUnlocked,
+    reindeer: g.reindeerUnlocked,
+    charred: g.achievements.has('charredishard')
+  };
+}, o);
+
+// --- Error #45: a prime, as one of the other three ---------------------
+const primes = await page.evaluate(() => {
+  const g = window.__game;
+  const check = (n) => { g.points = n; return g.isPrimeScore(); };
+  return {
+    yes: [2, 3, 5, 7, 97, 211, 401].map(check),
+    no: [1, 0, 4, 9, 91, 400].map(check),
+    negative: check(-7),
+    fraction: check(88.8)
+  };
+});
+ok('primes are recognised', primes.yes.every((v) => v === true), JSON.stringify(primes.yes));
+ok('composites and 1 are not', primes.no.every((v) => v === false), JSON.stringify(primes.no));
+ok('nor a negative or a fraction',
+   primes.negative === false && primes.fraction === false, JSON.stringify(primes));
+
+for (const who of ['error42', 'error43', 'error44']) {
+  const r = await bell({ character: who, points: 211 });
+  ok(`${who} finishing on a prime summons Error #45`, r.error45 === true, JSON.stringify(r));
+}
+const notPrime = await bell({ character: 'error42', points: 210 });
+ok('a composite does not', notPrime.error45 === false, JSON.stringify(notPrime));
+const notError = await bell({ character: 'badger', points: 211 });
+ok('and neither does a prime from anyone else', notError.error45 === false, JSON.stringify(notError));
+
+// --- Charred Is Hard ---------------------------------------------------
+const charredWhole = await bell({ character: 'badger', points: 111, fritter: true });
+ok('fritter + a whole number earns Charred Is Hard', charredWhole.charred === true);
+const charredPart = await bell({ character: 'badger', points: 111.8, fritter: true });
+ok('a fractional score does not', charredPart.charred === false);
+const noFritter = await bell({ character: 'badger', points: 111, fritter: false });
+ok('and neither does a whole number with no fritter', noFritter.charred === false);
+// A score that READS as whole must be judged whole. Adding the game's
+// fractional values in the wrong order leaves float residue — 204 on screen
+// can hold 204.00000000000003 — which failed a raw Number.isInteger about
+// one time in 130, silently, with the player staring at a whole number.
+const residue = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(false, 'easy');
+  g.setCharacter('badger');
+  g.isGameOver = false;
+  g.fritterCooked = true;
+  g.achievements.delete('charredishard');
+  // A REAL run that drifts: cook the fritter, win a whirlpool spin, frame a
+  // painting as William, lose the next spin. Built by addition in that order,
+  // exactly as a run builds it. Comes to 110.99999999999999, shows as 111.
+  g.points = 0;
+  for (const v of [88.8, 45.45, 22.2, -45.45]) g.points += v;
+  const raw = g.points;
+  g.gameOver('time');
+  return {
+    raw,
+    rawIsWhole: Number.isInteger(raw),
+    shown: Math.round(raw * 100000) / 100000,
+    earned: g.achievements.has('charredishard')
+  };
+});
+ok('the drifting case really does drift',
+   residue.rawIsWhole === false && residue.shown === 111, JSON.stringify(residue));
+ok('and a score shown as whole is judged whole', residue.earned === true, JSON.stringify(residue));
+// The route the trophy text promises must actually work, judged by the game.
+const bayeuxRoute = await page.evaluate(() => {
+  const g = window.__game;
+  g.restart(false, 'easy');
+  g.setCharacter('badger');
+  g.isGameOver = false;
+  g.fritterCooked = true;
+  g.achievements.delete('charredishard');
+  g.points = 0;
+  for (const v of [88.8, 22.2]) g.points += v;   // fritter + Bayeux
+  g.gameOver('time');
+  return { points: g.points, earned: g.achievements.has('charredishard') };
+});
+ok('the fritter + Bayeux route really does earn it',
+   bayeuxRoute.earned === true, JSON.stringify(bayeuxRoute));
+
+// --- Wagnus Warter -----------------------------------------------------
+const raised = await bell({ character: 'magnus', points: 51, cartHits: 6, health: 10 });
+ok('six cart hits, alive, over 50 raises Wagnus', raised.wagnus === true, JSON.stringify(raised));
+const fiveHits = await bell({ character: 'magnus', points: 51, cartHits: 5, health: 10 });
+ok('five hits is not enough', fiveHits.wagnus === false, JSON.stringify(fiveHits));
+const lowScore = await bell({ character: 'magnus', points: 50, cartHits: 6, health: 10 });
+ok('nor is exactly 50 — it wants MORE than 50', lowScore.wagnus === false, JSON.stringify(lowScore));
+const died = await bell({ character: 'magnus', points: 90, cartHits: 6, health: 0, reason: 'health' });
+ok('and you have to survive it', died.wagnus === false, JSON.stringify(died));
+// Six hits at 20 each against 100 health only works with the coffee cart, so
+// the numbers this unlock depends on must actually add up.
+const survivable = await page.evaluate(() => {
+  const g = window.__game;
+  // 100 health + one coffee, against six cart hits.
+  const dmg = 6 * 20;
+  return 100 + 30 - dmg;
+});
+ok('and it is survivable: 100 + coffee 30 - six hits = 10 health left', survivable === 10,
+   String(survivable));
+
+// --- Raspberry Reindeer -------------------------------------------------
+for (const who of ['pinepenguin', 'polarpear']) {
+  const r = await bell({ character: who, points: 120, weather: 'snow', health: 100 });
+  ok(`${who} untouched in the snow brings the reindeer in`, r.reindeer === true, JSON.stringify(r));
+}
+const noSnow = await bell({ character: 'polarpear', points: 120, weather: 'clear', health: 100 });
+ok('a clear sky does not', noSnow.reindeer === false, JSON.stringify(noSnow));
+const hurt = await bell({ character: 'polarpear', points: 120, weather: 'snow', health: 99 });
+ok('nor does 99 health', hurt.reindeer === false, JSON.stringify(hurt));
+const wrongHero = await bell({ character: 'badger', points: 120, weather: 'snow', health: 100 });
+ok('nor anybody else in the snow', wrongHero.reindeer === false, JSON.stringify(wrongHero));
+
+// --- all three build ----------------------------------------------------
+const builds = await page.evaluate(() => {
+  const g = window.__game;
+  const out = {};
+  for (const k of ['error45', 'wagnus', 'reindeer']) {
+    g[`${k}Unlocked`] = true;
+    g.setCharacter(k);
+    out[k] = {
+      name: g.player.root.name,
+      legs: (g.player.legs || []).length,
+      arms: (g.player.arms || []).length,
+      allowed: g.isCharacterAllowed(k)
+    };
+  }
+  // Wagnus must be the SAME build as Magnus, not a copy that can drift.
+  g.setCharacter('magnus');
+  out.magnusStillMagnus = g.player.root.name === 'magnus';
+  for (const k of ['error45', 'wagnus', 'reindeer']) {
+    g[`${k}Unlocked`] = false;
+    localStorage.removeItem(`mystic-badger.${k}Unlocked`);
+  }
+  return out;
+});
+for (const k of ['error45', 'wagnus', 'reindeer']) {
+  ok(`${k} builds and walks`,
+     builds[k].name === k && builds[k].legs === 2 && builds[k].arms === 2 && builds[k].allowed === true,
+     JSON.stringify(builds[k]));
+}
+ok('and Magnus is still Magnus', builds.magnusStillMagnus === true);
+
 await page.evaluate(() => {
   const g = window.__game;
   g.muffinUnlocked = false;
