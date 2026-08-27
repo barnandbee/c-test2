@@ -615,26 +615,41 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   Penguin or Polar Pear**, in **snow**.
 
 **Fourteen trophies that only one hero can reach.** The Boffington twins get
-a **Travelcard** for riding the Mystic Line to all four stations in one run;
+a **Travelcard** for riding the Mystic Line to all three original stations in
+one run;
 Billy Rocketfingers or Alien Ginsberg get **Fingers On The Buzzer** for
 sweeping every star on 400+. **Gary Takes The Air** wants Gary Mountain on
 the summit by balloon or rocket rather than on foot — arriving within a few
 seconds of stepping off one counts, which is the only way a rocket ever
 could, since it throws you clear before you land. Candy Florence gets
 **Florence Goes Round Again** for the helter skelter's fling; Negative Nelly
-gets **Told You So** for five bad whirlpool spins in a run (they need not be
-consecutive — that is a different trophy). Parsley O'Riley arriving at the
+gets **Told You So** for three bad whirlpool spins in a row — the same feat as
+**In A Spin**, narrowed to the hero it belongs to, so expect both at once. Parsley O'Riley arriving at the
 BLT on 500+ is told **"Absolutely no chance, get that Parsley out of here"**;
 'Crisp Packet' Hughes arriving on 400+ is told everything is better with
-crisps, and paid **+40** for it. McDonovan gets **The Usual** at the coffee
-cart. Tara Tapir gets **Twice The Pickle** for one taken while her double
+crisps, and paid **+40** for it. McDonovan gets **The Usual** for taking the coffee cart's
++30 — it has to actually land, so a full-health sip does not count. Tara Tapir gets **Twice The Pickle** for one taken while her double
 deal runs. Postboxer, Edith McCombe, Prunella and Ol' Cardboard Box together
 are, it turns out, **These Guys Are Pretty Weird**. Triangle the Fedora
-finishing on exactly **180** with no balloon and no rocket takes **One
-Hundred And Eighty**. The cart running Wagnus Warter over is **Nemesis**.
+finishing on exactly **180** with no rocket takes **One Hundred And Eighty**
+(the balloon is fine). The cart running Wagnus Warter over is **Nemesis**.
 The Nucleus at five clock towers on 300+ has **All The Time In The World**.
 And Julie, having ridden the rocket, cleared every star, taken the Platinum
 Guava and come home to solid ground, gets **Laika's Return**.
+
+**And nine more.** Julie also gets **Julie Sweeps The Board** for clearing
+every golden pine cone. **Cactus Balloon Balloon** wants Cactus Balloon to
+collect something *from the basket* — being aboard, not merely having ridden
+one. **Night Vision** puts Night Eye on 400+ in fog, purple haze or a storm.
+**Tudor Rose** is the lizard's own trick — a perfectly round hundred — done
+by the lizard. **Meet Your Maker** asks Neptune's Muffin for a Raisin and a
+touch of the cottage stove in the same run, either order; mind that the stove
+*sets him alight*, which is rather the point. **400 Bad Request** gives Error
+#45 a trophy of his own at the family's 400 bar. **Live Wire** wants Electro
+Badger to touch the pylon in a storm and still be standing at the bell on
+300+. **Third Class Post** wants Postboxer above 300 on a multiple of three.
+And **Raspberry Blue Rain** wants the Raspberry Reindeer out in the rain,
+having sheltered in Neptune's Nook along the way.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

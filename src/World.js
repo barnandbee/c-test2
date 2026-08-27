@@ -564,6 +564,24 @@ export class World {
     return dx * dx + dz * dz < this.whirlRadius * this.whirlRadius;
   }
 
+  /**
+   * Inside Neptune's Nook. The building is rotated to face the whirlpool, so
+   * the point is taken into the Nook's own axes first — neptuneDoor{X,Z} is
+   * that facing as a unit vector, and the swap below rotates by it.
+   *
+   * Used both by the dollhouse cutaway (which lifts the roof when you step
+   * in) and by anything that wants to know you were in there. One definition,
+   * so the roof and the rest of the game can never disagree about it.
+   */
+  isInsideNook(x, y, z) {
+    if (this.neptuneX === undefined) return false;
+    const dx = x - this.neptuneX;
+    const dz = z - this.neptuneZ;
+    const lx = dx * this.neptuneDoorZ - dz * this.neptuneDoorX;
+    const lz = dx * this.neptuneDoorX + dz * this.neptuneDoorZ;
+    return Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && y < this.neptuneLevel + 5.5;
+  }
+
   /** The water level covering (x,z) — main lake or whirlpool lake — or
    *  undefined on dry land. The one water query physics should use. */
   waterAt(x, z) {
@@ -774,12 +792,7 @@ export class World {
       this.cottageRoof.visible = !inside;
     }
     if (this.neptuneRoof) {
-      const dx = focus.x - this.neptuneX;
-      const dz = focus.z - this.neptuneZ;
-      const lx = dx * this.neptuneDoorZ - dz * this.neptuneDoorX;
-      const lz = dx * this.neptuneDoorX + dz * this.neptuneDoorZ;
-      const inside =
-        Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && focus.y < this.neptuneLevel + 5.5;
+      const inside = this.isInsideNook(focus.x, focus.y, focus.z);
       this.neptuneRoof.visible = !inside;
       // A two-storey box needs more than a lifted roof: cut away the wall(s)
       // facing the camera while you're inside, so the character stays visible.

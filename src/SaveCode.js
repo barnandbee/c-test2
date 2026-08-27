@@ -105,7 +105,9 @@ export const VOCAB_TROPHIES = [
   'unlock20', 'unlock50', 'unlockroll', 'doppelganger', 'charredishard',
   'boffline', 'starbilly', 'garyair', 'candyslide', 'nellyfive',
   'parsleyout', 'crisps', 'mcdcoffee', 'taradouble', 'prettyweird',
-  'fedora180', 'nemesis', 'nucleustime', 'laika'
+  'fedora180', 'nemesis', 'nucleustime', 'laika',
+  'juliecones', 'cactusair', 'nightvision', 'tudorround', 'meetmaker',
+  'badrequest', 'livewire', 'thirdclass', 'blueberryrain'
 ];
 
 export const VOCAB_CHARACTERS = [

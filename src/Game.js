@@ -175,7 +175,7 @@ const REINDEER_HEROES = ['pinepenguin', 'polarpear'];
 // --- the character-flavoured trophies -------------------------------
 const BOFFINGTONS = ['boffington', 'boddington'];
 const STAR_ROCKETEERS = ['billy', 'ginsberg'];
-const NELLY_NEGATIVE_SPINS = 5;     // negative whirlpool spins in one run
+const NELLY_NEGATIVE_STREAK = 3;    // negative whirlpool spins IN A ROW
 const PARSLEY_REJECT_SCORE = 500;   // …and the BLT wants nothing to do with her
 const CRISPS_SCORE = 400;           // what the BLT asks of Hughes
 const CRISPS_POINTS = 40;           // …and pays him for it
@@ -190,6 +190,11 @@ const SKY_RIDES = ['balloon', 'rocket'];
 // Held as a countdown rather than a timestamp: no clock to compare against,
 // and "is there grace left?" is the question the summit actually asks.
 const SKY_SUMMIT_GRACE = 6;
+const NIGHTEYE_WEATHER = ['fog', 'haze', 'storm'];  // the murk Night Eye sees through
+const NIGHTEYE_SCORE = 400;
+const LIVEWIRE_SCORE = 300;         // Electro Badger, having leaned on the pylon
+const THIRDCLASS_SCORE = 300;       // Postboxer, on a score above this AND divisible by 3
+const BADREQUEST_SCORE = 400;       // Error #45 — the family's own bar
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -587,6 +592,10 @@ export class Game {
     this._skyGrace = 0;                    // seconds left in which a summit counts as flown
     this._crispsClaimed = false;           // Hughes's +40 is once per run
     this.parsleyRejected = false;          // …and so is her marching order
+    this.enteredNook = false;              // stepped inside Neptune's Nook?
+    this.touchedStove = false;             // …and laid a hand on the cottage stove?
+    this.towerTouched = false;             // …and leaned on the live pylon?
+    this.balloonPickup = false;            // …and collected something from the balloon?
     this._burnAccum = 0;                   // …seconds banked toward the next -1
     this._burnPuffIn = 0;                  // …and toward the next puff of flame
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
@@ -856,6 +865,15 @@ export class Game {
       if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
 
       item.startCollect();
+      // Cactus Balloon Balloon: something snaffled from the basket. Judged
+      // on actually being aboard, not merely on having ridden one.
+      if (
+        this.characterName === 'cactusballoon' &&
+        this.player.vehicle && this.player.vehicle.kind === 'balloon'
+      ) {
+        this.balloonPickup = true;
+        this.awardAchievement('cactusair');
+      }
       // Sparkle up — a grander shimmer for the big golden pickups.
       this.audio.play('collect', item.value >= 10 ? 1 : 0);
       const scoreBefore = this.points;
@@ -1041,6 +1059,7 @@ export class Game {
     if (Math.abs(center.y - w.towerLevel) > 6) return false;
 
     this.invulnTimer = INVULN_TIME;
+    this.towerTouched = true;   // noted whether it pays out, fries or ignores you
     const burstAt = this._playerCenter.set(center.x, center.y, center.z);
     if (TOWER_CONDUCTORS.includes(this.characterName)) {
       // The pylon pays out once a run. After that a conductor is still immune
@@ -1145,11 +1164,15 @@ export class Game {
     if (Math.abs(center.y - w.coffeeLevel) > 4) return;
 
     this.coffeeDrunk = true;
-    // A private eye runs on the stuff.
-    if (this.characterName === 'mcdonovan') this.awardAchievement('mcdcoffee');
     const before = this.health;
     this.health = Math.min(100, this.health + COFFEE_HEALTH);
     this.ui.setHealth(this.health);
+    // A private eye runs on the stuff — but the trophy is for TAKING the
+    // health, so it waits until some has actually landed. Walking up on 100
+    // and sipping it does not count.
+    if (this.characterName === 'mcdonovan' && this.health > before) {
+      this.awardAchievement('mcdcoffee');
+    }
     this.audio.play('collect', 1);
     const gained = Math.round(this.health - before);
     this.ui.showTimeToast(gained > 0 ? `☕ ONE COFFEE — +${gained} HEALTH` : '☕ ONE COFFEE. LOVELY.');
@@ -1895,6 +1918,10 @@ export class Game {
     if (allStars && this.points >= 400 && STAR_ROCKETEERS.includes(this.characterName)) {
       this.awardAchievement('starbilly');
     }
+    // Julie Sweeps The Board: every golden pine cone, as her.
+    if (allEggs && this.characterName === 'julie') {
+      this.awardAchievement('juliecones');
+    }
 
     // Billy Rocketfingers: clear every star AND ride to all three stations
     // in the same run.
@@ -2355,7 +2382,7 @@ export class Game {
           if (!this.parsleyRejected) {
             this.parsleyRejected = true;
             this.audio.play('sonar');
-            this.ui.showTimeToast('Absolutely no chance, get that Parsley out of here');
+            this.ui.showTimeToast('Absolutely no chance. Get that Parsley out of here.');
             this.awardAchievement('parsleyout');
           } else {
             this.ui.showTimeToast('STILL NO PARSLEY. STILL NOT NEGOTIABLE.');
@@ -2595,6 +2622,12 @@ export class Game {
         this.ui.showTimeToast('THE CLOCK HAS RUNG ITSELF HOARSE');
       }
     } else if (hit === 'stove') {
+      this.touchedStove = true;
+      // Meet Your Maker: the muffin, the god's raisin, and the oven that
+      // made him. The stove will set him alight — that is the price.
+      if (this.characterName === 'muffin' && this.raisinTaken) {
+        this.awardAchievement('meetmaker');
+      }
       // A muffin has no business near an oven. Once alight he burns for the
       // rest of the run — there is no putting him out.
       if (this.characterName === 'muffin' && !this.muffinAblaze) {
@@ -3195,9 +3228,11 @@ export class Game {
 
     // Boffington's Travelcard: all four stops of the Mystic Line, as either
     // half of the Boffington/Boddington pair.
+    // CORE_STATIONS is the original three — cave, lake, copse. Cactus
+    // Junction came later and is deliberately not asked for here.
     if (
       BOFFINGTONS.includes(this.characterName) &&
-      ALL_STATIONS.every((st) => this.stationsVisited.has(st))
+      CORE_STATIONS.every((st) => this.stationsVisited.has(st))
     ) {
       this.awardAchievement('boffline');
     }
@@ -3213,7 +3248,6 @@ export class Game {
     if (
       this.characterName === 'trifedora' &&
       shownScore(this.points) === FEDORA_SCORE &&
-      !this.vehiclesRidden.has('balloon') &&
       !this.vehiclesRidden.has('rocket')
     ) {
       this.awardAchievement('fedora180');
@@ -3226,6 +3260,59 @@ export class Game {
       this.points >= NUCLEUS_SCORE
     ) {
       this.awardAchievement('nucleustime');
+    }
+
+    // Night Vision: the one hero built for the dark, out in the worst of it.
+    if (
+      this.characterName === 'nighteye' &&
+      this.weather && NIGHTEYE_WEATHER.includes(this.weather.kind) &&
+      this.points >= NIGHTEYE_SCORE
+    ) {
+      this.awardAchievement('nightvision');
+    }
+
+    // Tudor Rose: the lizard's own trick, done by the lizard. Judged on the
+    // score as SHOWN — a raw % 100 would miss a run holding 300.00000000000006.
+    const shown = shownScore(this.points);
+    if (
+      this.characterName === 'tudor' &&
+      shown > 0 && Number.isInteger(shown) && shown % 100 === 0
+    ) {
+      this.awardAchievement('tudorround');
+    }
+
+    // 400 Bad Request: #45 answering to the same bar as the rest of them.
+    if (this.characterName === 'error45' && this.points >= BADREQUEST_SCORE) {
+      this.awardAchievement('badrequest');
+    }
+
+    // Live Wire: leaned on the live pylon and lived to tell it.
+    if (
+      this.characterName === 'electro' &&
+      this.towerTouched &&
+      this.weather && this.weather.kind === 'storm' &&
+      reason === 'time' && this.health > 0 &&
+      this.points >= LIVEWIRE_SCORE
+    ) {
+      this.awardAchievement('livewire');
+    }
+
+    // Third Class Post: above 300, and divisible by three.
+    if (
+      this.characterName === 'postboxer' &&
+      shown > THIRDCLASS_SCORE && Number.isInteger(shown) && shown % 3 === 0
+    ) {
+      this.awardAchievement('thirdclass');
+    }
+
+    // Raspberry Blue Rain: the reindeer, out in the rain, having sheltered
+    // in the Nook at some point along the way.
+    if (
+      this.characterName === 'reindeer' &&
+      this.weather && this.weather.kind === 'rain' &&
+      this.enteredNook
+    ) {
+      this.awardAchievement('blueberryrain');
     }
 
     // Laika's Return: up in the rocket, every star swept, the Guava aboard —
@@ -3601,6 +3688,10 @@ export class Game {
     this._skyGrace = 0;
     this._crispsClaimed = false;
     this.parsleyRejected = false;
+    this.enteredNook = false;
+    this.touchedStove = false;
+    this.towerTouched = false;
+    this.balloonPickup = false;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -3815,6 +3906,12 @@ export class Game {
       this.handleCoffee(this.player.getColliderCenter(this._playerCenter));
       this.updatePostboxerSprint();
       this.updateMuffinBurn(dt);
+      // Noted the moment you cross the threshold, since the run may end
+      // anywhere and the trophy only asks that you went in.
+      if (!this.enteredNook && this.world.isInsideNook(
+        this.player.position.x, this.player.position.y, this.player.position.z)) {
+        this.enteredNook = true;
+      }
       this.handleClockTower();
       this.handleRedOctober();
       this.maybeSpawnBalloon();
@@ -3947,11 +4044,15 @@ export class Game {
             this._whirlNegStreak += 1;
             this._whirlPosStreak = 0;
             if (this._whirlNegStreak >= 3) this.awardAchievement('inaspin');
-            // Told You So: five bad spins in one run, counted whether or not
-            // they came one after another — the streak above is a different
-            // thing and must not be reused for this.
+            // Told You So: three bad spins IN A ROW, which is the same streak
+            // In A Spin counts — this is that feat, narrowed to the one hero
+            // it belongs to. The run tally is kept alongside it because it
+            // costs nothing and the next idea in this area will want it.
             this._whirlNegRun += 1;
-            if (this.characterName === 'nelly' && this._whirlNegRun >= NELLY_NEGATIVE_SPINS) {
+            if (
+              this.characterName === 'nelly' &&
+              this._whirlNegStreak >= NELLY_NEGATIVE_STREAK
+            ) {
               this.awardAchievement('nellyfive');
             }
           }
@@ -3986,6 +4087,11 @@ export class Game {
         const rdx = c.x - rp.x, rdy = c.y - rp.y, rdz = c.z - rp.z;
         if (rdx * rdx + rdy * rdy + rdz * rdz < 1.1 * 1.1) {
           this.raisinTaken = true;
+          // …and the other half of Meet Your Maker, for a muffin who found
+          // the oven first. Checked on both sides so the order never matters.
+          if (this.characterName === 'muffin' && this.touchedStove) {
+            this.awardAchievement('meetmaker');
+          }
           // Neptune's Muffin was baked with the god's entire raisin supply.
           // Twenty of them, across any runs, and he comes out of the oven.
           this.raisinsAllTime += 1;

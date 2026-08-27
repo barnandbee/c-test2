@@ -99,7 +99,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (88)
+## Trophies (97)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -207,20 +207,29 @@ Fourteen trophies that only one hero (or one pair) can reach.
 
 | Trophy | How to unlock |
 |--------|---------------|
-| 🎟️ **Boffington's Travelcard** | As **Finn Boffington or Flynn Boddington**: ride the Mystic Line to **all four** stations in one run. |
+| 🎟️ **Boffington's Travelcard** | As **Finn Boffington or Flynn Boddington**: ride the Mystic Line to **all three original** stations — the cave, the lakeshore and the copse — in one run. Cactus Junction on top is fine, but not required. |
 | 🌟 **Fingers On The Buzzer** | As **Billy Rocketfingers or Alien Ginsberg**: clear **every star** AND finish on **400 or more** in one run. |
 | 🪂 **Gary Takes The Air** | As **Gary Mountain**: reach the mountain summit **by balloon or rocket** rather than climbing it. Arriving within a few seconds of stepping off one counts — which is the only way a rocket ever could, since it throws you clear before you land. |
 | 🎡 **Florence Goes Round Again** | As **Candy Florence**: ride the helter skelter. Standing beside it flings her skyward, and that fling is the ride. |
-| 📉 **Told You So** | As **Negative Nelly**: take **five negative whirlpool spins** in the same run. They need not be consecutive — that is a different trophy. |
+| 📉 **Told You So** | As **Negative Nelly**: take **three negative whirlpool spins in a row** in one run. Same feat as **In A Spin**, narrowed to the one hero it belongs to — expect both at once. |
 | 🌿 **Get That Parsley Out Of Here** | As **Parsley O'Riley**: reach the cave's **BLT with 500 or more**, and be told exactly where to go. |
 | 🥔 **Always Better With Crisps** | As **'Crisp Packet' Hughes**: reach the cave's **BLT with 400 or more**. Worth **+40**, once per run. |
-| ☕ **The Usual** | As **McDonovan**: visit the **coffee cart**. A private eye runs on the stuff. |
+| ☕ **The Usual** | As **McDonovan**: take the coffee cart's **+30 health**. Walking up on full health and sipping it does not count — the health has to land. |
 | 🥒 **Twice The Pickle** | As **Tara Tapir**: collect a pickle **while her double-pickle deal is running** — i.e. after the dry sandwich has disappointed her. |
 | 👾 **These Guys Are Pretty Weird** | Complete a run as **all four** of **Postboxer, Edith McCombe, Prunella Registered Voter and Ol' Cardboard Box**. Across any runs. |
-| 🎯 **One Hundred And Eighty** | As **Triangle the Fedora**: finish on **exactly 180**, having used **no balloon and no rocket** all run. The hovercraft and the train are fine. |
+| 🎯 **One Hundred And Eighty** | As **Triangle the Fedora**: finish on **exactly 180**, having used **no rocket** all run. The balloon, hovercraft and train are all fine. |
 | 😈 **Nemesis** | As **Wagnus Warter**: get run over by the **golf cart**. The cart knows what he did. |
 | ⏳ **All The Time In The World** | As **The Nucleus Of Time Itself**: visit the **clock tower 5 or more times** and finish on **300 or more**. |
 | 🛰️ **Laika's Return** | As **Julie**: ride the **rocket**, clear **every star**, take the **Platinum Guava**, and — unlike the dog — finish the run **back on solid ground**. |
+| 🌾 **Julie Sweeps The Board** | As **Julie**: collect **every golden pine cone** in a run. |
+| 🎈 **Cactus Balloon Balloon** | As **Cactus Balloon**: board the balloon and **collect something while airborne in it**. Judged on actually being in the basket, not merely on having ridden one. |
+| 🌑 **Night Vision** | As **Night Eye**: finish on **400 or more** in **fog, purple haze or a storm**. |
+| 🌹 **Tudor Rose** | As **Tudor Lizard**: finish on a **perfectly round hundred** — 100, 200, 300… The lizard's own trick, done by the lizard. |
+| 🧁 **Meet Your Maker** | As **Neptune's Muffin**: collect a **Neptune's Raisin** AND touch the **cottage stove** in the same run, in either order. Note that the stove **sets him alight** — that is the price of meeting the god who baked you. |
+| 📟 **400 Bad Request** | As **Error #45**: finish on **400 or more** — the same bar Postboxer asks of the rest of the family. |
+| ⚡ **Live Wire** | As **Electro Badger**: touch the **transmission tower during a storm**, survive to the bell, and finish on **300 or more**. |
+| 📮 **Third Class Post** | As **Postboxer**: finish **above 300** on a score that also **divides by 3**. |
+| 🌘 **Raspberry Blue Rain** | As **Raspberry Reindeer**: complete a run in the **rain**, having stepped inside **Neptune's Nook** during it. |
 
 ---
 
