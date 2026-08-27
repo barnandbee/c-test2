@@ -195,6 +195,9 @@ const NIGHTEYE_SCORE = 400;
 const LIVEWIRE_SCORE = 300;         // Electro Badger, having leaned on the pylon
 const THIRDCLASS_SCORE = 300;       // Postboxer, on a score above this AND divisible by 3
 const BADREQUEST_SCORE = 400;       // Error #45 — the family's own bar
+const STORAGE_PHANTOM = 'mystic-badger.phantomUnlocked';
+// The Phantom brings his own weather. Everyone else rolls MYSTIC_CHANCE.
+const PHANTOM_MYSTIC_CHANCE = 0.14;
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -452,6 +455,7 @@ export class Game {
     this.error45Unlocked = readStorage(STORAGE_ERROR45) === '1';
     this.wagnusUnlocked = readStorage(STORAGE_WAGNUS) === '1';
     this.reindeerUnlocked = readStorage(STORAGE_REINDEER) === '1';
+    this.phantomUnlocked = readStorage(STORAGE_PHANTOM) === '1';
     // All-time count of Neptune's Raisins; 20 bakes the muffin.
     this.raisinsAllTime = parseInt(readStorage(STORAGE_RAISINS, '0'), 10) || 0;
     // All-time tally of toxic-frog bruises (across every run).
@@ -1374,6 +1378,7 @@ export class Game {
     if (name === 'error45') return this.error45Unlocked;
     if (name === 'wagnus') return this.wagnusUnlocked;
     if (name === 'reindeer') return this.reindeerUnlocked;
+    if (name === 'phantom') return this.phantomUnlocked;
     return name === 'badger';
   }
 
@@ -1397,10 +1402,45 @@ export class Game {
    * her in the first place.
    */
   resolveRandomCharacter() {
-    this.mysticRun = Math.random() < MYSTIC_CHANCE;
-    if (Math.random() < ERROR43_CHANCE) return 'error43';
-    const pool = this.randomCharacterPool();
-    return pool[Math.floor(Math.random() * pool.length)];
+    // The hero is drawn FIRST, then the wash is rolled against them: a
+    // random draw that lands on the Phantom gets his odds, not everyone
+    // else's. (The two draws are independent, so the order is free.)
+    const chosen = Math.random() < ERROR43_CHANCE
+      ? 'error43'
+      : (() => {
+          const pool = this.randomCharacterPool();
+          return pool[Math.floor(Math.random() * pool.length)];
+        })();
+    this.rollMystic(chosen);
+    return chosen;
+  }
+
+  /**
+   * Roll this run's Mystic wash for a given hero. Rare for everybody —
+   * except Phantom Badger, who is made of the stuff and brings it on ten
+   * times as often.
+   */
+  rollMystic(character) {
+    const chance = character === 'phantom' ? PHANTOM_MYSTIC_CHANCE : MYSTIC_CHANCE;
+    this.mysticRun = Math.random() < chance;
+    return this.mysticRun;
+  }
+
+  /**
+   * Say what this run is, once the hero is settled. A random draw announces
+   * itself; a deliberately chosen Phantom Badger rolls his own wash here,
+   * because otherwise nothing would ever roll it for him — the Mystic wash
+   * has only ever been a side effect of the random draw.
+   */
+  announceRun(chosen, wasRandom) {
+    if (wasRandom) { this.announceRandomRun(chosen); return; }
+    if (chosen !== 'phantom') return;
+    this.rollMystic(chosen);
+    if (this.mysticRun) {
+      this.setMystic(true);
+      this.audio.play('trophy');
+      this.ui.showTimeToast('✨ THE PHANTOM WALKS — MYSTIC ✨');
+    }
   }
 
   /**
@@ -1594,7 +1634,8 @@ export class Game {
       muffin: this.muffinUnlocked,
       error45: this.error45Unlocked,
       wagnus: this.wagnusUnlocked,
-      reindeer: this.reindeerUnlocked
+      reindeer: this.reindeerUnlocked,
+      phantom: this.phantomUnlocked
     };
   }
 
@@ -1918,10 +1959,6 @@ export class Game {
     if (allStars && this.points >= 400 && STAR_ROCKETEERS.includes(this.characterName)) {
       this.awardAchievement('starbilly');
     }
-    // Julie Sweeps The Board: every golden pine cone, as her.
-    if (allEggs && this.characterName === 'julie') {
-      this.awardAchievement('juliecones');
-    }
 
     // Billy Rocketfingers: clear every star AND ride to all three stations
     // in the same run.
@@ -2133,7 +2170,7 @@ export class Game {
     if (chosen !== this.characterName && (wasRandom || this.isCharacterAllowed(chosen))) {
       this.setCharacter(chosen);
     }
-    if (wasRandom) this.announceRandomRun(chosen);
+    this.announceRun(chosen, wasRandom);
     this.recordCharacterUse(); // tally this run against the chosen hero
     this.rollWeather();
     this.versus = versus;
@@ -3197,6 +3234,14 @@ export class Game {
     if (wasMystic) this.awardAchievement('mysticsquared');
     // Error #44: the loader falls over again, and only the monochrome run
     // ever sees it happen.
+    // Phantom Badger: a badger who saw a run out in monochrome. isBadger is
+    // set by whichever builder actually makes a badger, so William and
+    // Electro count without anybody maintaining a list.
+    if (wasMystic && !this.phantomUnlocked && this.player && this.player.isBadger) {
+      this.phantomUnlocked = true;
+      writeStorage(STORAGE_PHANTOM, '1');
+      this.runUnlockNames.push('Phantom Badger');
+    }
     if (wasMystic && !this.error44Unlocked) {
       this.error44Unlocked = true;
       writeStorage(STORAGE_ERROR44, '1');
@@ -3622,7 +3667,7 @@ export class Game {
     if (chosen !== this.characterName && (wasRandom || this.isCharacterAllowed(chosen))) {
       this.setCharacter(chosen);
     }
-    if (wasRandom) this.announceRandomRun(chosen);
+    this.announceRun(chosen, wasRandom);
     this.recordCharacterUse(); // tally this run against the chosen hero
     this.rollWeather();
 

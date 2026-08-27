@@ -31,7 +31,8 @@ const ok = (name, cond, detail = '') => {
 // them, so getting this set wrong makes him unearnable for whoever is missing
 // — which is exactly what happened to William the Conqueror once.
 const EXPECTED_BADGERS = new Set([
-  'badger', 'badgerette', 'william', 'glassbadger', 'vapour', 'spirit', 'electro'
+  'badger', 'badgerette', 'william', 'glassbadger', 'vapour', 'spirit', 'electro',
+  'phantom'
 ]);
 
 const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -1233,6 +1234,23 @@ for (const k of ['error45', 'wagnus', 'reindeer']) {
 }
 ok('and Magnus is still Magnus', builds.magnusStillMagnus === true);
 
+// Julie Sweeps The Board was withdrawn after one release. Its id must stay
+// in SaveCode's positional vocabulary (removing it would shift every id
+// after it) but nothing in the game may award it any more.
+const withdrawn = await page.evaluate(async () => {
+  const mod = await import('./src/Achievements.js');
+  const list = mod.TROPHIES || mod.default.TROPHIES;
+  const save = await import('./src/SaveCode.js');
+  const vocab = save.VOCAB_TROPHIES || save.default.VOCAB_TROPHIES;
+  return {
+    gone: list.every((t) => t.id !== 'juliecones'),
+    slotKept: vocab.includes('juliecones')
+  };
+});
+ok('Julie Sweeps The Board is gone from the trophy list', withdrawn.gone === true);
+ok('but its save-code slot is kept, so old codes still read straight',
+   withdrawn.slotKept === true);
+
 console.log('\nCharacter trophies');
 
 // One run, set up however we like, ended at the bell.
@@ -1675,30 +1693,6 @@ ok('isInsideNook knows the inside from the outside',
    nookGeometry.inside === true && nookGeometry.farOff === false
    && nookGeometry.highAbove === false, JSON.stringify(nookGeometry));
 
-// Julie Sweeps The Board (mid-run, via checkAchievements)
-const cones = (who) => page.evaluate((k) => {
-  const g = window.__game;
-  g.achievements.delete('juliecones');
-  g.setCharacter(k);
-  g.spawnedEggs = 8;
-  g.eggsCollected = 8;
-  g.checkAchievements();
-  return g.achievements.has('juliecones');
-}, who);
-ok('Julie clearing every golden pine cone sweeps the board',
-   (await cones('julie')) === true);
-ok('and it is hers', (await cones('badger')) === false);
-const partCones = await page.evaluate(() => {
-  const g = window.__game;
-  g.achievements.delete('juliecones');
-  g.setCharacter('julie');
-  g.spawnedEggs = 8;
-  g.eggsCollected = 7;
-  g.checkAchievements();
-  return g.achievements.has('juliecones');
-});
-ok('seven of eight is not every one', partCones === false);
-
 // Cactus Balloon Balloon — a pickup taken while actually aboard
 const balloonGrab = (o) => page.evaluate((opt) => {
   const g = window.__game;
@@ -1759,6 +1753,139 @@ ok('and the other way round works too — order must not matter',
    stoveFirst.earned === true, JSON.stringify(stoveFirst));
 const notMuffin = await maker({ character: 'badger', order: 'raisin-first' });
 ok('nobody else has a maker to meet', notMuffin.earned === false, JSON.stringify(notMuffin));
+
+console.log('\nPhantom Badger');
+
+// Unlocked by any badger seeing a monochrome run out to the bell.
+const mysticRunAs = (who) => page.evaluate((k) => {
+  const g = window.__game;
+  g.phantomUnlocked = false;
+  localStorage.removeItem('mystic-badger.phantomUnlocked');
+  for (const f of Object.keys(g).filter((x) => x.endsWith('Unlocked') && x !== 'phantomUnlocked')) {
+    g[f] = true;
+  }
+  if (g.inMenu) { g.setCharacter(k); g.beginRun(false, 'easy'); }
+  else { g.restart(false, 'easy'); }
+  g.setCharacter(k);
+  g.isGameOver = false;
+  g.runUnlockNames = [];
+  g.setMystic(true);              // this run was run in monochrome
+  g.points = 100;
+  g.gameOver('time');
+  return {
+    unlocked: g.phantomUnlocked,
+    stored: localStorage.getItem('mystic-badger.phantomUnlocked'),
+    named: g.runUnlockNames.includes('Phantom Badger')
+  };
+}, who);
+for (const who of ['badger', 'william', 'electro', 'vapour']) {
+  const r = await mysticRunAs(who);
+  ok(`${who} completing a Mystic run raises the Phantom`,
+     r.unlocked === true && r.stored === '1' && r.named === true, JSON.stringify(r));
+}
+const notABadger = await mysticRunAs('tapir');
+ok('a Mystic run by somebody who is not a badger does not',
+   notABadger.unlocked === false, JSON.stringify(notABadger));
+const plainRun = await page.evaluate(() => {
+  const g = window.__game;
+  g.phantomUnlocked = false;
+  localStorage.removeItem('mystic-badger.phantomUnlocked');
+  g.restart(false, 'easy');
+  g.setCharacter('badger');
+  g.isGameOver = false;
+  g.setMystic(false);
+  g.points = 500;
+  g.gameOver('time');
+  return g.phantomUnlocked;
+});
+ok('and an ordinary badger run does not either', plainRun === false);
+
+// He builds, he is a badger, and he is see-through.
+const phantom = await page.evaluate(() => {
+  const g = window.__game;
+  g.phantomUnlocked = true;
+  g.setCharacter('phantom');
+  // The haze shells are the only transparent thing on him, and they must be
+  // BackSide + depthWrite:false — that is what keeps them outside the body
+  // instead of x-raying his own nested shells.
+  let haze = 0;
+  let coloured = 0;
+  let neutral = 0;
+  g.player.root.traverse((o) => {
+    const m = o.material;
+    if (!m) return;
+    if (m.transparent && m.opacity < 1) {
+      if (m.depthWrite === false) haze += 1;
+      return;
+    }
+    // Greyscale means R, G and B within a hair of each other.
+    const c = m.color;
+    const spread = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+    if (spread > 0.08) coloured += 1; else neutral += 1;
+  });
+  return {
+    name: g.player.root.name,
+    isBadger: !!g.player.isBadger,
+    legs: (g.player.legs || []).length,
+    allowed: g.isCharacterAllowed('phantom'),
+    haze, coloured, neutral,
+    vertexColours: (() => {
+      let vc = 0;
+      g.player.root.traverse((o) => { if (o.material && o.material.vertexColors) vc += 1; });
+      return vc;
+    })()
+  };
+});
+ok('the Phantom builds, walks, and counts as a badger',
+   phantom.name === 'phantom' && phantom.isBadger === true && phantom.legs === 4
+   && phantom.allowed === true, JSON.stringify(phantom));
+ok('he is drained to greyscale — nothing on him carries a hue',
+   phantom.coloured === 0 && phantom.neutral > 4, JSON.stringify(phantom));
+// The badger's painted saddle and warm cream face would leak straight
+// through a vertex-coloured material, so they must be switched off for him.
+ok('and his vertex colours are switched off', phantom.vertexColours === 0,
+   JSON.stringify(phantom));
+ok('with a haze hung outside the body', phantom.haze >= 3, JSON.stringify(phantom));
+
+// The odds: ten times everyone else's, and rolled even when he is CHOSEN
+// rather than drawn — the wash used to be a side effect of the random draw
+// alone, so a deliberately picked Phantom would never have rolled at all.
+const odds = await page.evaluate(() => {
+  const g = window.__game;
+  const measure = (character, n) => {
+    let hits = 0;
+    for (let i = 0; i < n; i++) if (g.rollMystic(character)) hits += 1;
+    return hits / n;
+  };
+  const N = 40000;
+  return { phantom: measure('phantom', N), badger: measure('badger', N) };
+});
+ok('the Phantom draws Mystic about 14% of the time',
+   Math.abs(odds.phantom - 0.14) < 0.012, JSON.stringify(odds));
+ok('and everyone else stays rare', odds.badger < 0.035, JSON.stringify(odds));
+
+const chosenNotDrawn = await page.evaluate(() => {
+  const g = window.__game;
+  g.phantomUnlocked = true;
+  g.restart(false, 'easy');
+  g.ui._selectedCharacter = 'phantom';   // deliberately picked, not random
+  const real = Math.random;
+  Math.random = () => 0.01;              // under 0.14, so the wash must land
+  g.restart(false, 'easy');
+  const out = { who: g.characterName, mystic: g.mysticRun };
+  Math.random = real;
+  return out;
+});
+ok('a deliberately chosen Phantom still rolls his wash',
+   chosenNotDrawn.who === 'phantom' && chosenNotDrawn.mystic === true,
+   JSON.stringify(chosenNotDrawn));
+await page.evaluate(() => {
+  const g = window.__game;
+  g.setMystic(false);
+  g.ui._selectedCharacter = null;
+  g.phantomUnlocked = false;
+  localStorage.removeItem('mystic-badger.phantomUnlocked');
+});
 
 await page.evaluate(() => {
   const g = window.__game;

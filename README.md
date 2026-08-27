@@ -637,8 +637,7 @@ The Nucleus at five clock towers on 300+ has **All The Time In The World**.
 And Julie, having ridden the rocket, cleared every star, taken the Platinum
 Guava and come home to solid ground, gets **Laika's Return**.
 
-**And nine more.** Julie also gets **Julie Sweeps The Board** for clearing
-every golden pine cone. **Cactus Balloon Balloon** wants Cactus Balloon to
+**And nine more.** **Cactus Balloon Balloon** wants Cactus Balloon to
 collect something *from the basket* — being aboard, not merely having ridden
 one. **Night Vision** puts Night Eye on 400+ in fog, purple haze or a storm.
 **Tudor Rose** is the lizard's own trick — a perfectly round hundred — done
@@ -650,6 +649,22 @@ Badger to touch the pylon in a storm and still be standing at the bell on
 300+. **Third Class Post** wants Postboxer above 300 on a multiple of three.
 And **Raspberry Blue Rain** wants the Raspberry Reindeer out in the rain,
 having sheltered in Neptune's Nook along the way.
+- **Phantom Badger** — the badger drained of colour and only half here.
+  He wears the same frame as every other badger, but his vertex colours are
+  switched **off** (the painted saddle and warm cream face would give the
+  game away), replaced by flat greys, a cold white rim, eyes that pulse on
+  the shader's own clock, and a haze shell hung around the outside of him.
+  That shell is deliberately *outside*: making a badger's own nested
+  torso/haunch/belly shells see-through reveals every one of them at once
+  and he stops reading as a badger at all. Unlock him by **completing a run
+  in Mystic mode as any badger**.
+
+  **He brings his own weather.** Once he is yours, a run as the Phantom
+  turns Mystic **14% of the time** rather than the usual 1.8% — and that
+  now works whether he is chosen deliberately or drawn at random, which
+  needed a change: the Mystic wash had only ever been a side effect of the
+  random draw, so a deliberately picked Phantom would never have rolled at
+  all.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

@@ -106,6 +106,9 @@ export const VOCAB_TROPHIES = [
   'boffline', 'starbilly', 'garyair', 'candyslide', 'nellyfive',
   'parsleyout', 'crisps', 'mcdcoffee', 'taradouble', 'prettyweird',
   'fedora180', 'nemesis', 'nucleustime', 'laika',
+  // 'juliecones' was withdrawn after one release. The slot STAYS: this
+  // vocabulary is positional, so removing it would shift every id after
+  // it and misread codes already issued. Nothing sets it any more.
   'juliecones', 'cactusair', 'nightvision', 'tudorround', 'meetmaker',
   'badrequest', 'livewire', 'thirdclass', 'blueberryrain'
 ];
@@ -121,7 +124,7 @@ export const VOCAB_CHARACTERS = [
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
   'tapir', 'postboxer', 'pcork', 'wolk', 'muffin',
-  'error45', 'wagnus', 'reindeer'
+  'error45', 'wagnus', 'reindeer', 'phantom'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -147,7 +150,8 @@ export const SCHEMA_BOOLS = [
   'muted', 'bloom',
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
   'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked',
-  'muffinUnlocked', 'error45Unlocked', 'wagnusUnlocked', 'reindeerUnlocked'
+  'muffinUnlocked', 'error45Unlocked', 'wagnusUnlocked', 'reindeerUnlocked',
+  'phantomUnlocked'
 ];
 
 /**

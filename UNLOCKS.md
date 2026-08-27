@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (58)
+## Characters (59)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -74,6 +74,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 56 | **Error #45** | Finish a run on a **PRIME NUMBER** score while playing as **Error #42, #43 or #44**. The loader falls over a fourth time, mashing the ten heroes after Candy Florence — Cactus Balloon, Negative Nelly, Triangle the Fedora, Parsley O'Riley, Vapour Badger, Spirit of the Forest Badger, Chimpy Henderson, Pastry Owl, Top Hat Snappy and Bacon. The Errors sit this one out; a family does not eat its own. |
 | 57 | **Wagnus Warter** | Get run over by the **golf cart 6 times in one run**, survive to the bell, and finish on **more than 50**. Magnus Carter's evil double: same elf, purple tunic, black cap, red eyes, brows, goatee, and a frown where the grin was. Six hits is 120 damage against 100 health, so this needs the **coffee cart's +30** spent at the right moment — four hits, a coffee, then two more leaves you on 10. |
 | 58 | **Raspberry Reindeer** | Complete a run on **full health** as **Pineapple Penguin or Polar Pear**, in **SNOW**. A reindeer whose head is a raspberry — the fruit itself, drupelets and calyx, with antlers growing out of it. |
+| 59 | **Phantom Badger** | Complete a run in **MYSTIC mode** as **any badger** — Badger, Badgerette, William the Conqueror, Electro, Glass, Vapour or the Spirit of the Forest. A badger drained of colour and half here: flat greys, a cold white rim, eyes that pulse, and a haze he walks around in. **And he brings his own weather** — once he is yours, a run as the Phantom turns Mystic **14% of the time** instead of the usual 1.8%, whether he is chosen or drawn at random. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number
@@ -99,7 +100,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (97)
+## Trophies (96)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -159,7 +160,7 @@ milestone counts your best past run automatically.
 | 🎪 **Unlocked, High Five!** | Unlock **5** characters. |
 | 🎡 **Unlock It In A Docket** | Unlock **10 or more** characters. |
 | 🎢 **Unlock It In Your Pocket** | Unlock **20 or more** characters. |
-| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 57 unlockable, so this is very nearly the lot). |
+| 🚪 **Unlock, Lock, Locking On Heaven's Door** | Unlock **50 or more** characters (the roster tops out at 58 unlockable, so this is very nearly the lot). |
 | 🎳 **Unlock 'N' Roll** | Unlock a character who **rolls or slides** rather than walking — Marblella, Foil or Top Hat Snappy. |
 | 🎬 **Repertory** | Play as 5 different characters. |
 | 🎟️ **Full Cast** | Play as 10 different characters. |
@@ -221,7 +222,6 @@ Fourteen trophies that only one hero (or one pair) can reach.
 | 😈 **Nemesis** | As **Wagnus Warter**: get run over by the **golf cart**. The cart knows what he did. |
 | ⏳ **All The Time In The World** | As **The Nucleus Of Time Itself**: visit the **clock tower 5 or more times** and finish on **300 or more**. |
 | 🛰️ **Laika's Return** | As **Julie**: ride the **rocket**, clear **every star**, take the **Platinum Guava**, and — unlike the dog — finish the run **back on solid ground**. |
-| 🌾 **Julie Sweeps The Board** | As **Julie**: collect **every golden pine cone** in a run. |
 | 🎈 **Cactus Balloon Balloon** | As **Cactus Balloon**: board the balloon and **collect something while airborne in it**. Judged on actually being in the basket, not merely on having ridden one. |
 | 🌑 **Night Vision** | As **Night Eye**: finish on **400 or more** in **fog, purple haze or a storm**. |
 | 🌹 **Tudor Rose** | As **Tudor Lizard**: finish on a **perfectly round hundred** — 100, 200, 300… The lizard's own trick, done by the lizard. |

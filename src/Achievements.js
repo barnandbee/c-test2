@@ -95,7 +95,6 @@ export const TROPHIES = [
   { id: 'nemesis', medal: '😈', title: 'Nemesis', desc: 'As Wagnus Warter: get run over by the golf cart. The cart knows what he did.' },
   { id: 'nucleustime', medal: '⏳', title: 'All The Time In The World', desc: 'As The Nucleus Of Time Itself: visit the clock tower 5 or more times and finish on 300 or more.' },
   { id: 'laika', medal: '🛰️', title: 'Laika’s Return', desc: 'As Julie: ride the rocket, collect every star, take the Platinum Guava, and finish the run back on solid ground.' },
-  { id: 'juliecones', medal: '🌾', title: 'Julie Sweeps The Board', desc: 'As Julie: collect EVERY golden pine cone in a run.' },
   { id: 'cactusair', medal: '🎈', title: 'Cactus Balloon Balloon', desc: 'As Cactus Balloon: board the balloon and collect something while airborne in it.' },
   { id: 'nightvision', medal: '🌑', title: 'Night Vision', desc: 'As Night Eye: finish on 400 or more in fog, purple haze or a storm.' },
   { id: 'tudorround', medal: '🌹', title: 'Tudor Rose', desc: 'As Tudor Lizard: finish on a perfectly round hundred \u2014 100, 200, 300\u2026' },
@@ -165,5 +164,6 @@ export const CHARACTER_UNLOCKS = [
   { key: 'muffin', name: "Neptune's Muffin", how: "Collect 20 Neptune's Raisins across all your runs (one is hidden in the cottage loft each run)." },
   { key: 'error45', name: 'Error #45', how: 'Finish a run on a PRIME NUMBER score while playing as Error #42, #43 or #44.' },
   { key: 'wagnus', name: 'Wagnus Warter', how: 'Get run over by the golf cart 6 times in one run, survive to the bell, and finish on more than 50.' },
-  { key: 'reindeer', name: 'Raspberry Reindeer', how: 'Complete a run on full health as Pineapple Penguin or Polar Pear, in SNOW.' }
+  { key: 'reindeer', name: 'Raspberry Reindeer', how: 'Complete a run on full health as Pineapple Penguin or Polar Pear, in SNOW.' },
+  { key: 'phantom', name: 'Phantom Badger', how: 'Complete a run in MYSTIC mode as any badger \u2014 Badger, Badgerette, William, Electro, Glass, Vapour or the Spirit of the Forest.' }
 ];

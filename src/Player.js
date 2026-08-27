@@ -215,7 +215,7 @@ export class Player {
       this.root.name = 'wolk';
       this.setStormPlumage(true);
     }
-    else this.root = this.buildBadger(); // badger, badgerette, william, electro
+    else this.root = this.buildBadger(); // badger, badgerette, william, electro, phantom
     this.root.position.copy(this.position);
   }
 
@@ -224,7 +224,7 @@ export class Player {
   /* ================================================================ */
 
   buildBadger() {
-    this.isBadger = true;   // badger, badgerette, william, electro
+    this.isBadger = true;   // badger, badgerette, william, electro, phantom
     const root = new THREE.Group();
     root.name = this.character;
 
@@ -237,27 +237,57 @@ export class Player {
     // The palette is swapped for storm colours and the emissive breathes on
     // the shader's own pulse clock, so the crackle costs nothing per frame.
     const electro = this.character === 'electro';
+    // Phantom Badger wears it too, drained of colour and half here. His
+    // vertex colours are deliberately switched OFF: the painted saddle and
+    // flank are cool but not neutral, and the warm cream face would give the
+    // game away. Flat greys instead, translucent, with a cold rim.
+    const phantom = this.character === 'phantom';
 
     const rim = electro
       ? { color: 0xaeeaff, strength: 0.9, threshold: 0.38 }
-      : { color: 0xcfe0ff, strength: 0.22, threshold: 0.74 };
+      : phantom
+        ? { color: 0xffffff, strength: 0.85, threshold: 0.34 }
+        : { color: 0xcfe0ff, strength: 0.22, threshold: 0.74 };
 
-    const furMat = track(createToonMaterial(electro
-      ? { vertexColors: true, color: 0x86c8ff, emissive: 0x2f74d8, emissiveIntensity: 0.6, pulse: { speed: 5.4, phase: 0 }, rim }
-      : { vertexColors: true, rim }));
-    const darkMat = track(createToonMaterial(electro
-      ? { color: 0x111c40, emissive: 0x2a5fd0, emissiveIntensity: 0.7, pulse: { speed: 6.1, phase: 1.7 }, rim: { color: 0x8fd4ff, strength: 0.7, threshold: 0.44 } }
-      : { color: 0x26262c, rim: { color: 0x9db4e8, strength: 0.25, threshold: 0.68 } }));
-    const creamMat = track(createToonMaterial(electro
-      ? { color: 0xeafaff, emissive: 0x7fd4ff, emissiveIntensity: 0.8, pulse: { speed: 7.3, phase: 3.1 }, rim }
-      : { color: 0xf2ecdd, rim }));
-    const noseMat = track(createToonMaterial(electro
-      ? { color: 0x0a1030, emissive: 0x4f9dff, emissiveIntensity: 0.9, rim: { color: 0xbfe8ff, strength: 0.6, threshold: 0.45 } }
-      : { color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
-    const glintMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
-    const clawMat = track(createToonMaterial(electro
-      ? { color: 0xdff4ff, emissive: 0xa8e4ff, emissiveIntensity: 1.4, pulse: { speed: 8.5, phase: 0.8 } }
-      : { color: 0xd9d2bf }));
+    // The Phantom's coat is OPAQUE, and that is deliberate. The badger frame
+    // is a dozen nested shells — torso, haunches, belly, head — and making
+    // them see-through reveals all of them at once (three sorts transparent
+    // meshes by centre, which is unstable for concentric geometry), so he
+    // stops reading as a badger and becomes a heap of bubbles. His
+    // ethereal-ness comes from the drained palette, a cold white rim, eyes
+    // that pulse, and a haze shell hung OUTSIDE the whole body further down,
+    // where transparency has nothing behind it to give away.
+
+    const furMat = track(electro
+      ? createToonMaterial({ vertexColors: true, color: 0x86c8ff, emissive: 0x2f74d8, emissiveIntensity: 0.6, pulse: { speed: 5.4, phase: 0 }, rim })
+      : phantom
+        ? createToonMaterial({ color: 0xa9adb4, emissive: 0x4a4e56, emissiveIntensity: 0.45, rim })
+        : createToonMaterial({ vertexColors: true, rim }));
+    const darkMat = track(electro
+      ? createToonMaterial({ color: 0x111c40, emissive: 0x2a5fd0, emissiveIntensity: 0.7, pulse: { speed: 6.1, phase: 1.7 }, rim: { color: 0x8fd4ff, strength: 0.7, threshold: 0.44 } })
+      : phantom
+        ? createToonMaterial({ color: 0x303338, emissive: 0x1a1c20, emissiveIntensity: 0.4, rim })
+        : createToonMaterial({ color: 0x26262c, rim: { color: 0x9db4e8, strength: 0.25, threshold: 0.68 } }));
+    const creamMat = track(electro
+      ? createToonMaterial({ color: 0xeafaff, emissive: 0x7fd4ff, emissiveIntensity: 0.8, pulse: { speed: 7.3, phase: 3.1 }, rim })
+      : phantom
+        ? createToonMaterial({ color: 0xe8eaee, emissive: 0x9096a0, emissiveIntensity: 0.5, rim })
+        : createToonMaterial({ color: 0xf2ecdd, rim }));
+    const noseMat = track(electro
+      ? createToonMaterial({ color: 0x0a1030, emissive: 0x4f9dff, emissiveIntensity: 0.9, rim: { color: 0xbfe8ff, strength: 0.6, threshold: 0.45 } })
+      : phantom
+        ? createToonMaterial({ color: 0x1c1e22, rim })
+        : createToonMaterial({ color: 0x141417, rim: { color: 0x8899cc, strength: 0.5, threshold: 0.52 } }));
+    // The eyes stay solid. A ghost still needs somewhere to look from, and
+    // the pulse is what makes him read as haunted rather than merely faint.
+    const glintMat = track(phantom
+      ? createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.6, pulse: { speed: 1.6, phase: 0 } })
+      : createToonMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    const clawMat = track(electro
+      ? createToonMaterial({ color: 0xdff4ff, emissive: 0xa8e4ff, emissiveIntensity: 1.4, pulse: { speed: 8.5, phase: 0.8 } })
+      : phantom
+        ? createToonMaterial({ color: 0xd6d9de, emissive: 0x6a6e76, emissiveIntensity: 0.5 })
+        : createToonMaterial({ color: 0xd9d2bf }));
 
     // Everything above the legs hangs off bodyGroup so bob/squash/tilt are
     // applied in one place.
@@ -493,8 +523,57 @@ export class Player {
     if (electro) {
       this._buildElectroExtras(headGroup, body, track);
     }
+    // --- Phantom Badger: the haze he walks around in -----------------------
+    if (phantom) {
+      this._buildPhantomHaze(body, headGroup, track);
+    }
 
     return root;
+  }
+
+  /**
+   * Phantom Badger's aura: two big soft shells hung around the outside of
+   * the body and head, and a low skirt of mist at his feet.
+   *
+   * Outside is the whole trick. Making the badger's own nested shells
+   * see-through reveals every one of them at once; a shell that encloses
+   * the lot has nothing behind it but the world, so it reads as haze rather
+   * than as x-ray. Back faces only, so you see the far side of the bubble
+   * and never a hard near edge across his face.
+   */
+  _buildPhantomHaze(body, headGroup, track) {
+    const haze = (opacity) => {
+      const m = createToonMaterial({
+        color: 0xdfe4ea,
+        emissive: 0x8e96a4,
+        emissiveIntensity: 0.7,
+        rim: { color: 0xffffff, strength: 1.0, threshold: 0.2 }
+      });
+      m.transparent = true;
+      m.opacity = opacity;
+      m.depthWrite = false;
+      m.side = THREE.BackSide;
+      return track(m);
+    };
+
+    const shell = new THREE.Mesh(track(new THREE.SphereGeometry(0.78, 20, 16)), haze(0.28));
+    shell.scale.set(1.06, 0.9, 1.24);
+    shell.position.set(0, -0.02, 0.02);
+    body.add(shell);
+
+    const halo = new THREE.Mesh(track(new THREE.SphereGeometry(0.42, 18, 14)), haze(0.34));
+    halo.scale.set(1.12, 1.06, 1.12);
+    headGroup.add(halo);
+
+    // He does not quite touch the ground. A skirt of mist where the feet
+    // ought to be, drifting on the shader's own clock so it costs nothing.
+    const skirtMat = haze(0.22);
+    skirtMat.side = THREE.DoubleSide;
+    const skirt = new THREE.Mesh(
+      track(new THREE.ConeGeometry(0.62, 0.5, 16, 1, true)), skirtMat);
+    skirt.position.y = -0.62;
+    skirt.rotation.x = Math.PI;   // wide end down, at the turf
+    body.add(skirt);
   }
 
   /** Electro Badger's live-wire trimmings. Everything here glows on the
