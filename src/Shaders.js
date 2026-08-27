@@ -8,6 +8,7 @@
  *   USE_RIM    — crisp fresnel rim light (the cel-shaded "pop")
  *   USE_SWAY   — wind vertex animation driven by an `aSway` attribute
  *   USE_PULSE  — emissive glow pulse (pine cones)
+ *   USE_STATIC — television static crawling over the surface (Phantom Badger)
  *
  * Every patched material also swaps three's stock fog for an EXPONENTIAL
  * HEIGHT FOG: density decays with world-space altitude, so valleys drown in
@@ -124,6 +125,11 @@ float snowNoise( vec2 p ) {
   uniform float uPulseSpeed;
   uniform float uPulsePhase;
 #endif
+#ifdef USE_STATIC
+  uniform float uStaticStrength;   // how loud the noise is
+  uniform float uStaticSpeed;      // how many times a second it re-rolls
+  uniform float uStaticScale;      // pixels per grain
+#endif
 `;
 
 const FRAGMENT_PULSE = /* glsl */ `
@@ -144,6 +150,29 @@ const FRAGMENT_RIM = /* glsl */ `
   float rimNdotV = 1.0 - saturate( dot( normal, rimViewDir ) );
   float rim = smoothstep( uRimThreshold - 0.035, uRimThreshold + 0.035, rimNdotV );
   outgoingLight += uRimColor * ( rim * uRimStrength );
+}
+#endif
+#ifdef USE_STATIC
+{
+  // Television static: SCREEN-space grain, re-rolled a fixed number of times
+  // a second rather than every frame. Screen space is what makes it read as
+  // interference rather than as a texture — it crawls over him while he
+  // moves instead of travelling with him — and quantising the clock stops it
+  // dissolving into a smooth shimmer at high frame rates.
+  float staticTick = floor( uTime * uStaticSpeed );
+  vec2 staticUv = gl_FragCoord.xy / max( uStaticScale, 1.0 );
+  float grain = snowHash( floor( staticUv ) + vec2( staticTick * 7.13, staticTick * 3.71 ) );
+  // Rolling scanlines, the other half of what makes static look like static.
+  float band = 0.5 + 0.5 * sin( gl_FragCoord.y * 0.55 - uTime * 9.0 );
+  // Centred on zero so it cuts as well as adds; a glow that only ever
+  // brightens reads as sparkle, not interference.
+  float noise = ( grain - 0.5 ) * 1.6 + ( band - 0.5 ) * 0.5;
+  // MULTIPLIED into the existing light, not added to it. Adding a fixed
+  // amount swamps whatever is dark and disappears into whatever is bright,
+  // so the shaded half of a body turns to pure snow while the lit half
+  // shows nothing. Scaling what is already there keeps the form readable
+  // and puts the interference where the glow actually is.
+  outgoingLight *= max( 1.0 + noise * uStaticStrength, 0.0 );
 }
 #endif
 // Settled snow. Deliberately OUTSIDE the rim ifdef so materials without a rim
@@ -277,6 +306,7 @@ export function getThreeToneGradientMap() {
  *   rim:   { color, strength, threshold },
  *   sway:  { strength, speed },
  *   pulse: { speed, phase },
+ *   static:{ strength, speed, scale },
  * }
  */
 export function createToonMaterial(opts = {}) {
@@ -309,6 +339,12 @@ export function createToonMaterial(opts = {}) {
     material.defines.USE_PULSE = '';
     extraUniforms.uPulseSpeed = { value: opts.pulse.speed !== undefined ? opts.pulse.speed : 3.0 };
     extraUniforms.uPulsePhase = { value: opts.pulse.phase !== undefined ? opts.pulse.phase : 0.0 };
+  }
+  if (opts.static) {
+    material.defines.USE_STATIC = '';
+    extraUniforms.uStaticStrength = { value: opts.static.strength !== undefined ? opts.static.strength : 0.18 };
+    extraUniforms.uStaticSpeed = { value: opts.static.speed !== undefined ? opts.static.speed : 14.0 };
+    extraUniforms.uStaticScale = { value: opts.static.scale !== undefined ? opts.static.scale : 3.0 };
   }
 
   return patchMaterial(material, extraUniforms);

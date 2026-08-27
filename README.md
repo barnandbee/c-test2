@@ -660,11 +660,22 @@ having sheltered in Neptune's Nook along the way.
   in Mystic mode as any badger**.
 
   **He brings his own weather.** Once he is yours, a run as the Phantom
-  turns Mystic **14% of the time** rather than the usual 1.8% — and that
+  turns Mystic **18% of the time** rather than the usual 1.8% — and that
   now works whether he is chosen deliberately or drawn at random, which
   needed a change: the Mystic wash had only ever been a side effect of the
   random draw, so a deliberately picked Phantom would never have rolled at
   all.
+
+  **And he carries a static.** `USE_STATIC` is a new shader feature
+  alongside the rim, sway and pulse: screen-space grain, re-rolled a fixed
+  number of times a second, with rolling scanlines through it. Screen space
+  is what makes it read as *interference* — it crawls over him while he
+  moves rather than travelling with him — and quantising the clock stops it
+  dissolving into a smooth shimmer at high frame rates. It **multiplies**
+  the light already there rather than adding to it, so it rides the glow and
+  leaves the form readable; adding a fixed amount swamped his shaded half
+  into pure snow while showing nothing on the lit half. It costs one hash
+  per fragment on his materials alone.
 - **McDonovan** — a film-noir private eye who happens to be a mouse: big
   round ears, whiskers and a pink rope tail under a muted trench coat
   (raised collar, belt) and a grey **fedora** tilted low. Unlock him by

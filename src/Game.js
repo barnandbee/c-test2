@@ -197,7 +197,7 @@ const THIRDCLASS_SCORE = 300;       // Postboxer, on a score above this AND divi
 const BADREQUEST_SCORE = 400;       // Error #45 — the family's own bar
 const STORAGE_PHANTOM = 'mystic-badger.phantomUnlocked';
 // The Phantom brings his own weather. Everyone else rolls MYSTIC_CHANCE.
-const PHANTOM_MYSTIC_CHANCE = 0.14;
+const PHANTOM_MYSTIC_CHANCE = 0.18;
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';

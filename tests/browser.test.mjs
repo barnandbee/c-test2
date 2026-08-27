@@ -1847,6 +1847,70 @@ ok('and his vertex colours are switched off', phantom.vertexColours === 0,
    JSON.stringify(phantom));
 ok('with a haze hung outside the body', phantom.haze >= 3, JSON.stringify(phantom));
 
+// The static. Declared on the materials, and — the part that matters —
+// actually MOVING: a shader effect that compiles but never changes is
+// indistinguishable from a texture, and a still screenshot cannot tell them
+// apart. So render the same view at two clock values and count the pixels
+// that differ.
+const staticEffect = await page.evaluate(async () => {
+  const g = window.__game;
+  const shaders = await import('./src/Shaders.js');
+  g.phantomUnlocked = true;
+  g.setCharacter('phantom');
+  g.setMystic(false);
+  let declared = 0;
+  g.player.root.traverse((o) => {
+    if (o.material && o.material.defines && 'USE_STATIC' in o.material.defines) declared += 1;
+  });
+
+  // Frame him, then render twice with the shared clock moved on.
+  g.renderer.setAnimationLoop(null);
+  const root = g.player.root;
+  root.position.set(0, 0, 0); root.rotation.set(0, 0.7, 0); root.updateMatrixWorld(true);
+  const cam = g.camera;
+  cam.position.set(0, 1.4, 3.4); cam.lookAt(0, 0.75, 0);
+  // Read back only the CENTRAL BOX of the frame. The camera is framed on the
+  // character, so that box is nearly all him — sampling the whole buffer
+  // measures mostly world, which sways on the same clock and drowns the
+  // signal out.
+  const gl = g.renderer.getContext();
+  const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+  const bw = Math.floor(W * 0.34), bh = Math.floor(H * 0.34);
+  const bx = Math.floor((W - bw) / 2), by = Math.floor((H - bh) / 2);
+  const grab = (t) => {
+    shaders.SharedUniforms.uTime.value = t;
+    g.renderer.render(g.scene, cam);
+    const buf = new Uint8Array(bw * bh * 4);
+    gl.readPixels(bx, by, bw, bh, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    return buf;
+  };
+  const churn = () => {
+    const a = grab(10.0);
+    const b = grab(10.4);        // several static ticks later
+    let differing = 0;
+    for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) > 6) differing += 1;
+    return differing / (a.length / 4);
+  };
+  const moved = churn();
+
+  // …and the control: the same box, same scene, a hero with no static in him.
+  g.setCharacter('badger');
+  root.position.set(0, 0, 0); root.rotation.set(0, 0.7, 0); root.updateMatrixWorld(true);
+  const control = churn();
+  return { declared, moved, control, box: [bw, bh] };
+});
+ok('the static is declared on his materials', staticEffect.declared >= 3,
+   JSON.stringify(staticEffect));
+ok('and it actually moves between frames', staticEffect.moved > 0.02,
+   `only ${(staticEffect.moved * 100).toFixed(2)}% of pixels changed`);
+// The control is NOT zero and should not be expected to be: the world runs
+// on the same clock, so grass sways and pine cones pulse between the two
+// renders whoever is standing there. What matters is that the Phantom moves
+// a great deal more than the same scene does without him.
+ok(`and far more than the same scene does without him (x${(staticEffect.moved / Math.max(staticEffect.control, 1e-6)).toFixed(1)})`,
+   staticEffect.moved > staticEffect.control * 5,
+   `phantom ${(staticEffect.moved * 100).toFixed(2)}% vs control ${(staticEffect.control * 100).toFixed(2)}%`);
+
 // The odds: ten times everyone else's, and rolled even when he is CHOSEN
 // rather than drawn — the wash used to be a side effect of the random draw
 // alone, so a deliberately picked Phantom would never have rolled at all.
@@ -1860,8 +1924,8 @@ const odds = await page.evaluate(() => {
   const N = 40000;
   return { phantom: measure('phantom', N), badger: measure('badger', N) };
 });
-ok('the Phantom draws Mystic about 14% of the time',
-   Math.abs(odds.phantom - 0.14) < 0.012, JSON.stringify(odds));
+ok('the Phantom draws Mystic about 18% of the time',
+   Math.abs(odds.phantom - 0.18) < 0.012, JSON.stringify(odds));
 ok('and everyone else stays rare', odds.badger < 0.035, JSON.stringify(odds));
 
 const chosenNotDrawn = await page.evaluate(() => {

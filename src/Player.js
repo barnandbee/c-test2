@@ -261,7 +261,7 @@ export class Player {
     const furMat = track(electro
       ? createToonMaterial({ vertexColors: true, color: 0x86c8ff, emissive: 0x2f74d8, emissiveIntensity: 0.6, pulse: { speed: 5.4, phase: 0 }, rim })
       : phantom
-        ? createToonMaterial({ color: 0xa9adb4, emissive: 0x4a4e56, emissiveIntensity: 0.45, rim })
+        ? createToonMaterial({ color: 0xa9adb4, emissive: 0x4a4e56, emissiveIntensity: 0.45, rim, static: { strength: 0.3, speed: 12, scale: 4 } })
         : createToonMaterial({ vertexColors: true, rim }));
     const darkMat = track(electro
       ? createToonMaterial({ color: 0x111c40, emissive: 0x2a5fd0, emissiveIntensity: 0.7, pulse: { speed: 6.1, phase: 1.7 }, rim: { color: 0x8fd4ff, strength: 0.7, threshold: 0.44 } })
@@ -271,7 +271,7 @@ export class Player {
     const creamMat = track(electro
       ? createToonMaterial({ color: 0xeafaff, emissive: 0x7fd4ff, emissiveIntensity: 0.8, pulse: { speed: 7.3, phase: 3.1 }, rim })
       : phantom
-        ? createToonMaterial({ color: 0xe8eaee, emissive: 0x9096a0, emissiveIntensity: 0.5, rim })
+        ? createToonMaterial({ color: 0xe8eaee, emissive: 0x9096a0, emissiveIntensity: 0.5, rim, static: { strength: 0.3, speed: 12, scale: 4 } })
         : createToonMaterial({ color: 0xf2ecdd, rim }));
     const noseMat = track(electro
       ? createToonMaterial({ color: 0x0a1030, emissive: 0x4f9dff, emissiveIntensity: 0.9, rim: { color: 0xbfe8ff, strength: 0.6, threshold: 0.45 } })
@@ -547,7 +547,11 @@ export class Player {
         color: 0xdfe4ea,
         emissive: 0x8e96a4,
         emissiveIntensity: 0.7,
-        rim: { color: 0xffffff, strength: 1.0, threshold: 0.2 }
+        rim: { color: 0xffffff, strength: 1.0, threshold: 0.2 },
+        // The aura is where the interference lives: loudest here, and on a
+        // slightly different clock from the coat so the two never sync up
+        // into one flat flicker.
+        static: { strength: 0.85, speed: 17, scale: 3.5 }
       });
       m.transparent = true;
       m.opacity = opacity;
