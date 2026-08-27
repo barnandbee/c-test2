@@ -583,16 +583,23 @@ const resets = await page.evaluate(() => {
   Object.assign(g, {
     coffeeDrunk: true, pickleMultiplier: 2, tapirSawSandwich: true,
     _postSprintTaught: true, boxPickle: true, fritterCooked: true,
-    raisinTaken: true, towerCharged: true, rocketRides: 2, fridgeOpenedThisRun: true
+    raisinTaken: true, towerCharged: true, rocketRides: 2, fridgeOpenedThisRun: true,
+    _whirlNegRun: 4, _skyGrace: 5, _crispsClaimed: true, parsleyRejected: true,
+    muffinAblaze: true
   });
   window.__freshRun('badger');
   return {
     coffeeDrunk: g.coffeeDrunk, pickleMultiplier: g.pickleMultiplier,
     tapirSawSandwich: g.tapirSawSandwich, postSprint: g._postSprintTaught,
     boxPickle: g.boxPickle, fritterCooked: g.fritterCooked, raisinTaken: g.raisinTaken,
-    towerCharged: g.towerCharged, rocketRides: g.rocketRides, fridgeOpened: g.fridgeOpenedThisRun
+    towerCharged: g.towerCharged, rocketRides: g.rocketRides, fridgeOpened: g.fridgeOpenedThisRun,
+    whirlNegRun: g._whirlNegRun, skyGrace: g._skyGrace, crisps: g._crispsClaimed,
+    parsleyRejected: g.parsleyRejected, ablaze: g.muffinAblaze
   };
 });
+ok('…including the ones the character trophies added',
+   resets.whirlNegRun === 0 && resets.skyGrace === 0 && resets.crisps === false &&
+   resets.parsleyRejected === false && resets.ablaze === false, JSON.stringify(resets));
 ok('every per-run flag is cleared by a restart',
    resets.coffeeDrunk === false && resets.pickleMultiplier === 1 &&
    resets.tapirSawSandwich === false && resets.postSprint === false &&
@@ -1220,6 +1227,326 @@ for (const k of ['error45', 'wagnus', 'reindeer']) {
      JSON.stringify(builds[k]));
 }
 ok('and Magnus is still Magnus', builds.magnusStillMagnus === true);
+
+console.log('\nCharacter trophies');
+
+// One run, set up however we like, ended at the bell.
+const runAs = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = true;
+  if (g.inMenu) { g.setCharacter(opt.character); g.beginRun(false, 'easy'); }
+  else { g.restart(false, 'easy'); }
+  g.setCharacter(opt.character);
+  g.isGameOver = false;
+  g.runUnlockNames = [];
+  for (const id of opt.clear || []) g.achievements.delete(id);
+  g.points = opt.points === undefined ? 0 : opt.points;
+  g.health = opt.health === undefined ? 100 : opt.health;
+  g.towerVisits = opt.towerVisits || 0;
+  g.stationsVisited = new Set(opt.stations || []);
+  g.vehiclesRidden = new Set(opt.vehicles || []);
+  if (opt.allStars) { g.spawnedStars = 10; g.starsCollected = 10; }
+  else { g.spawnedStars = 10; g.starsCollected = 0; }
+  if (opt.guava) g.itemTypesCollected.add(50);
+  else g.itemTypesCollected.delete(50);
+  if (opt.usage) for (const k of opt.usage) g.charUsage[k] = 1;
+  if (opt.dryUsage) for (const k of opt.dryUsage) delete g.charUsage[k];
+  if (opt.onWater) {
+    const w = g.world;
+    g.player.position.set(w.lakeCenterX, w.waterLevel, w.lakeCenterZ);
+  } else {
+    g.player.position.set(0, 20, 0);
+  }
+  g.gameOver('time');
+  const has = {};
+  for (const id of opt.want || []) has[id] = g.achievements.has(id);
+  return has;
+}, o);
+
+// --- Boffington's Travelcard -------------------------------------------
+for (const who of ['boffington', 'boddington']) {
+  const r = await runAs({ character: who, clear: ['boffline'], want: ['boffline'],
+    stations: ['cave', 'lake', 'copse', 'cactus'] });
+  ok(`${who} riding all four stops earns the Travelcard`, r.boffline === true, JSON.stringify(r));
+}
+const threeStops = await runAs({ character: 'boffington', clear: ['boffline'], want: ['boffline'],
+  stations: ['cave', 'lake', 'copse'] });
+ok('three stops is not four', threeStops.boffline === false, JSON.stringify(threeStops));
+const notABoffington = await runAs({ character: 'badger', clear: ['boffline'], want: ['boffline'],
+  stations: ['cave', 'lake', 'copse', 'cactus'] });
+ok('and it wants a Boffington', notABoffington.boffline === false, JSON.stringify(notABoffington));
+
+// --- Fingers On The Buzzer (awarded mid-run, so drive checkAchievements) --
+const buzzer = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  g.achievements.delete('starbilly');
+  g.setCharacter(opt.character);
+  g.points = opt.points;
+  g.spawnedStars = 10;
+  g.starsCollected = opt.stars;
+  g.checkAchievements();
+  return g.achievements.has('starbilly');
+}, o);
+for (const who of ['billy', 'ginsberg']) {
+  ok(`${who} sweeping the sky on 400 earns the Buzzer`,
+     (await buzzer({ character: who, points: 400, stars: 10 })) === true);
+}
+ok('399 is not 400', (await buzzer({ character: 'billy', points: 399, stars: 10 })) === false);
+ok('and a star left up there does not count',
+   (await buzzer({ character: 'billy', points: 500, stars: 9 })) === false);
+ok('nor does anyone else clearing it',
+   (await buzzer({ character: 'badger', points: 500, stars: 10 })) === false);
+
+// --- Nemesis: the cart, and Wagnus ---------------------------------------
+const cart = (who) => page.evaluate((k) => {
+  const g = window.__game;
+  g.achievements.delete('nemesis');
+  g.setCharacter(k);
+  g.cartHits = 0;
+  g.invulnTimer = 0;
+  g.health = 100;
+  g.isGameOver = false;   // the previous test rang the bell; the cart checks this
+  if (!g.cart) return { skipped: true };
+  // Drive the cart onto the player's COLLIDER CENTRE, which is what
+  // handleHazards measures from — not the position at his feet.
+  const c = g.player.getColliderCenter(new (g.player.position.constructor)());
+  g.cart.position.set(c.x, c.y, c.z);
+  g.handleHazards();
+  return { hits: g.cartHits, nemesis: g.achievements.has('nemesis') };
+}, who);
+const wagnusHit = await cart('wagnus');
+ok('the cart finds Wagnus and the grudge is noted',
+   wagnusHit.skipped !== true && wagnusHit.hits >= 1 && wagnusHit.nemesis === true,
+   JSON.stringify(wagnusHit));
+const magnusHit = await cart('magnus');
+ok('but Magnus keeps his own grudges', magnusHit.nemesis === false, JSON.stringify(magnusHit));
+
+// --- These Guys Are Pretty Weird ----------------------------------------
+const allFour = await runAs({ character: 'postboxer', clear: ['prettyweird'], want: ['prettyweird'],
+  usage: ['postboxer', 'edith', 'prunella', 'cardboard'] });
+ok('all four weirdos earns it', allFour.prettyweird === true, JSON.stringify(allFour));
+const threeOfFour = await runAs({ character: 'postboxer', clear: ['prettyweird'], want: ['prettyweird'],
+  usage: ['postboxer', 'edith', 'prunella'], dryUsage: ['cardboard'] });
+ok('three of the four does not', threeOfFour.prettyweird === false, JSON.stringify(threeOfFour));
+
+// --- One Hundred And Eighty ---------------------------------------------
+const oneEighty = await runAs({ character: 'trifedora', clear: ['fedora180'], want: ['fedora180'],
+  points: 180 });
+ok('the fedora finishing on 180 on foot earns it', oneEighty.fedora180 === true, JSON.stringify(oneEighty));
+const flew = await runAs({ character: 'trifedora', clear: ['fedora180'], want: ['fedora180'],
+  points: 180, vehicles: ['balloon'] });
+ok('the balloon disqualifies it', flew.fedora180 === false, JSON.stringify(flew));
+const rocketed = await runAs({ character: 'trifedora', clear: ['fedora180'], want: ['fedora180'],
+  points: 180, vehicles: ['rocket'] });
+ok('so does the rocket', rocketed.fedora180 === false, JSON.stringify(rocketed));
+const hovered = await runAs({ character: 'trifedora', clear: ['fedora180'], want: ['fedora180'],
+  points: 180, vehicles: ['hovercraft'] });
+ok('but the hovercraft is fine — only the two flying ones are barred',
+   hovered.fedora180 === true, JSON.stringify(hovered));
+const notQuite = await runAs({ character: 'trifedora', clear: ['fedora180'], want: ['fedora180'],
+  points: 181 });
+ok('181 is not 180', notQuite.fedora180 === false, JSON.stringify(notQuite));
+
+// --- All The Time In The World -------------------------------------------
+const nucleus = await runAs({ character: 'nucleus', clear: ['nucleustime'], want: ['nucleustime'],
+  points: 300, towerVisits: 5 });
+ok('the Nucleus at five towers on 300 earns it', nucleus.nucleustime === true, JSON.stringify(nucleus));
+const fewTowers = await runAs({ character: 'nucleus', clear: ['nucleustime'], want: ['nucleustime'],
+  points: 500, towerVisits: 4 });
+ok('four towers is not five', fewTowers.nucleustime === false, JSON.stringify(fewTowers));
+
+// --- Laika's Return -------------------------------------------------------
+const laika = await runAs({ character: 'julie', clear: ['laika'], want: ['laika'],
+  vehicles: ['rocket'], allStars: true, guava: true, points: 300 });
+ok("Julie's full flight earns Laika's Return", laika.laika === true, JSON.stringify(laika));
+const noGuava = await runAs({ character: 'julie', clear: ['laika'], want: ['laika'],
+  vehicles: ['rocket'], allStars: true, guava: false, points: 300 });
+ok('without the Guava it does not', noGuava.laika === false, JSON.stringify(noGuava));
+const noRocket = await runAs({ character: 'julie', clear: ['laika'], want: ['laika'],
+  vehicles: ['balloon'], allStars: true, guava: true, points: 300 });
+ok('and the balloon is not a rocket', noRocket.laika === false, JSON.stringify(noRocket));
+const ditched = await runAs({ character: 'julie', clear: ['laika'], want: ['laika'],
+  vehicles: ['rocket'], allStars: true, guava: true, points: 300, onWater: true });
+ok('coming down in the lake is not coming home', ditched.laika === false, JSON.stringify(ditched));
+
+// --- the cave BLT: two new answers from it ------------------------------
+const atSandwich = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = true;
+  if (g.inMenu) { g.beginRun(false, 'easy'); }
+  g.setCharacter(opt.character);
+  g.isGameOver = false;
+  g.achievements.delete('parsleyout');
+  g.achievements.delete('crisps');
+  g.parsleyRejected = false;
+  g._crispsClaimed = false;
+  g.points = opt.points;
+  const sw = g.world.sandwichPos;
+  g.player.position.set(sw.x, sw.y, sw.z);
+  const said = [];
+  const realToast = g.ui.showTimeToast.bind(g.ui);
+  g.ui.showTimeToast = (t) => { said.push(t); realToast(t); };
+  // handleDoubleTap consumes a real gesture off Input; hand it one.
+  const realDouble = g.input.consumeDoubleTap.bind(g.input);
+  const realTriple = g.input.consumeTripleTap.bind(g.input);
+  g.input.consumeDoubleTap = () => true;
+  g.input.consumeTripleTap = () => false;
+  g.handleDoubleTap();
+  const before = g.points;
+  g.handleDoubleTap();          // a second visit must not pay twice
+  g.input.consumeDoubleTap = realDouble;
+  g.input.consumeTripleTap = realTriple;
+  g.ui.showTimeToast = realToast;
+  return {
+    said,
+    points: g.points,
+    paidTwice: g.points !== before,
+    parsleyout: g.achievements.has('parsleyout'),
+    crisps: g.achievements.has('crisps')
+  };
+}, o);
+
+const parsley500 = await atSandwich({ character: 'parsley', points: 500 });
+ok('Parsley on 500 is shown the door',
+   parsley500.parsleyout === true
+   && parsley500.said.some((t) => /get that Parsley out of here/i.test(t)),
+   JSON.stringify(parsley500.said));
+const parsley499 = await atSandwich({ character: 'parsley', points: 499 });
+ok('on 499 the sandwich is merely dry',
+   parsley499.parsleyout === false
+   && parsley499.said.some((t) => /TOO DRY/i.test(t)), JSON.stringify(parsley499.said));
+
+const hughes400 = await atSandwich({ character: 'hughes', points: 400 });
+ok('Hughes on 400 gets his crisps and his +40',
+   hughes400.crisps === true && hughes400.points === 440
+   && hughes400.said.some((t) => /Everything is better with crisps/i.test(t)),
+   JSON.stringify(hughes400));
+ok('and the +40 is once per run, not once per tap', hughes400.paidTwice === false,
+   JSON.stringify(hughes400));
+const hughes399 = await atSandwich({ character: 'hughes', points: 399 });
+ok('on 399 he gets nothing', hughes399.crisps === false && hughes399.points === 399,
+   JSON.stringify(hughes399));
+
+// --- McDonovan's usual ---------------------------------------------------
+const coffeeAs = (who) => page.evaluate((k) => {
+  const g = window.__game;
+  g.achievements.delete('mcdcoffee');
+  g.setCharacter(k);
+  g.coffeeDrunk = false;
+  g.health = 50;
+  const w = g.world;
+  g.handleCoffee({ x: w.coffeeX, y: w.coffeeLevel, z: w.coffeeZ });
+  return { drunk: g.coffeeDrunk, earned: g.achievements.has('mcdcoffee') };
+}, who);
+const mcd = await coffeeAs('mcdonovan');
+ok('McDonovan at the coffee cart gets the trophy',
+   mcd.drunk === true && mcd.earned === true, JSON.stringify(mcd));
+const otherDrinker = await coffeeAs('badger');
+ok('anyone else just gets a coffee', otherDrinker.earned === false, JSON.stringify(otherDrinker));
+
+// --- Twice The Pickle ----------------------------------------------------
+const doublePickle = (mult) => page.evaluate((m) => {
+  const g = window.__game;
+  g.achievements.delete('taradouble');
+  g.setCharacter('tapir');
+  g.pickleMultiplier = m;
+  g.picklesCollected = 0;
+  // Put a pickle on top of her and run the collector.
+  const c = g.player.getColliderCenter(new (g.player.position.constructor)());
+  const pickle = g.collectibles.find((i) => i.value === 8.8);
+  if (!pickle) return { skipped: true };
+  pickle.state = 'idle';
+  pickle.group.position.set(c.x, c.y, c.z);
+  g.handlePickups();
+  return { picked: g.picklesCollected, earned: g.achievements.has('taradouble') };
+}, mult);
+const withDeal = await doublePickle(2);
+const withoutDeal = await doublePickle(1);
+if (withDeal.skipped || withoutDeal.skipped) {
+  ok('a pickle was available to test with', false, 'no pickle in the item list');
+} else {
+  ok('a pickle taken while the deal runs earns Twice The Pickle',
+     withDeal.earned === true, JSON.stringify(withDeal));
+  ok('and one taken before it does not', withoutDeal.earned === false, JSON.stringify(withoutDeal));
+}
+
+// --- Told You So: five bad spins, counted whether or not consecutive ------
+const spins = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  g.achievements.delete('nellyfive');
+  g.setCharacter(opt.character);
+  g._whirlNegRun = 0;
+  g._whirlNegStreak = 0;
+  g._whirlPosStreak = 0;
+  const w = g.world;
+  for (const sign of opt.pattern) {
+    g._inWhirl = false;
+    g.isGameOver = false;
+    g.inMenu = false;
+    // Force the spin's sign by pinning Math.random for that one dip.
+    const real = Math.random;
+    Math.random = () => (sign < 0 ? 0.05 : 0.95);
+    g.player.position.set(w.whirlX, w.whirlWaterLevel, w.whirlZ);
+    g.tick();
+    Math.random = real;
+  }
+  return { negatives: g._whirlNegRun, earned: g.achievements.has('nellyfive') };
+}, o);
+const fiveBad = await spins({ character: 'nelly', pattern: [-1, -1, -1, -1, -1] });
+ok('Nelly on five bad spins is proved right',
+   fiveBad.negatives >= 5 && fiveBad.earned === true, JSON.stringify(fiveBad));
+const brokenUp = await spins({ character: 'nelly', pattern: [-1, -1, 1, -1, -1, -1] });
+ok('and they need not be consecutive — the streak is a different thing',
+   brokenUp.earned === true, JSON.stringify(brokenUp));
+const fourBad = await spins({ character: 'nelly', pattern: [-1, -1, -1, -1] });
+ok('four is not five', fourBad.earned === false, JSON.stringify(fourBad));
+const notNelly = await spins({ character: 'badger', pattern: [-1, -1, -1, -1, -1] });
+ok('and it is hers alone', notNelly.earned === false, JSON.stringify(notNelly));
+
+// --- Gary Takes The Air ---------------------------------------------------
+const summit = (o) => page.evaluate((opt) => {
+  const g = window.__game;
+  g.achievements.delete('garyair');
+  g.setCharacter(opt.character);
+  g.isGameOver = false;
+  g.inMenu = false;
+  g._onSummit = false;
+  const w = g.world;
+  const y = w.getHeight(w.mountainX, w.mountainZ);
+  g.player.position.set(w.mountainX, y, w.mountainZ);
+  // Seconds of "just flew in" still on the clock. 0 means he climbed it.
+  g._skyGrace = opt.grace;
+  g.tick();
+  return g.achievements.has('garyair');
+}, o);
+const flownIn = await summit({ character: 'gary', grace: 5 });
+ok('Gary arriving a second after a sky ride earns it', flownIn === true);
+const climbedIt = await summit({ character: 'gary', grace: 0 });
+ok('Gary who walked up gets nothing', climbedIt === false);
+const longAgo = await summit({ character: 'gary', grace: 0 });
+ok('and a ride whose grace has run out does not count', longAgo === false);
+const notGary = await summit({ character: 'badger', grace: 5 });
+ok('nor does anyone else flying in', notGary === false);
+
+// --- Florence Goes Round Again -------------------------------------------
+const helter = (who) => page.evaluate((k) => {
+  const g = window.__game;
+  g.achievements.delete('candyslide');
+  g.setCharacter(k);
+  g.isGameOver = false;
+  g.inMenu = false;
+  g._onHelter = false;
+  const w = g.world;
+  g.player.position.set(w.helterX, w.getHeight(w.helterX, w.helterZ), w.helterZ);
+  g.player.grounded = true;
+  g.tick();
+  return { earned: g.achievements.has('candyslide'), flung: g.player.grounded === false };
+}, who);
+const candyRide = await helter('candy');
+ok('Candy beside the helter skelter is flung, and it counts as a ride',
+   candyRide.earned === true && candyRide.flung === true, JSON.stringify(candyRide));
+const notCandy = await helter('badger');
+ok('anyone else just stands there', notCandy.earned === false, JSON.stringify(notCandy));
 
 await page.evaluate(() => {
   const g = window.__game;

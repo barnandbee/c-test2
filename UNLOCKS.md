@@ -99,7 +99,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (74)
+## Trophies (88)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -201,6 +201,26 @@ milestone counts your best past run automatically.
 | 🔌 **Anti-Zapped** | Take the tower's **+40** as **Error #42**, **#43**, **#44** or the **Haunted Sweatshirt** — the four heroes it feeds instead of frying. |
 | 🔴 **Feathered Doppelgänger** | Complete a run as **W. Wolk** — either as **P. Cork** with the forecast turned foul (rain, storm, snow, fog or purple haze), or as the red bird himself once he is unlocked. |
 | 🍳 **Charred Is Hard** | **Cook a charred pickle fritter** and finish that **same run on a whole number**. The fritter pays **88.8**, so it leaves a stubborn `.8` on your score — landing back on a whole number means finding another fraction to complete it. William's **22.2** Bayeux bonus does it exactly; so does a pair of **55.5** sandwiches, or two whirlpool spins that cancel. |
+
+### Playing as somebody in particular
+Fourteen trophies that only one hero (or one pair) can reach.
+
+| Trophy | How to unlock |
+|--------|---------------|
+| 🎟️ **Boffington's Travelcard** | As **Finn Boffington or Flynn Boddington**: ride the Mystic Line to **all four** stations in one run. |
+| 🌟 **Fingers On The Buzzer** | As **Billy Rocketfingers or Alien Ginsberg**: clear **every star** AND finish on **400 or more** in one run. |
+| 🪂 **Gary Takes The Air** | As **Gary Mountain**: reach the mountain summit **by balloon or rocket** rather than climbing it. Arriving within a few seconds of stepping off one counts — which is the only way a rocket ever could, since it throws you clear before you land. |
+| 🎡 **Florence Goes Round Again** | As **Candy Florence**: ride the helter skelter. Standing beside it flings her skyward, and that fling is the ride. |
+| 📉 **Told You So** | As **Negative Nelly**: take **five negative whirlpool spins** in the same run. They need not be consecutive — that is a different trophy. |
+| 🌿 **Get That Parsley Out Of Here** | As **Parsley O'Riley**: reach the cave's **BLT with 500 or more**, and be told exactly where to go. |
+| 🥔 **Always Better With Crisps** | As **'Crisp Packet' Hughes**: reach the cave's **BLT with 400 or more**. Worth **+40**, once per run. |
+| ☕ **The Usual** | As **McDonovan**: visit the **coffee cart**. A private eye runs on the stuff. |
+| 🥒 **Twice The Pickle** | As **Tara Tapir**: collect a pickle **while her double-pickle deal is running** — i.e. after the dry sandwich has disappointed her. |
+| 👾 **These Guys Are Pretty Weird** | Complete a run as **all four** of **Postboxer, Edith McCombe, Prunella Registered Voter and Ol' Cardboard Box**. Across any runs. |
+| 🎯 **One Hundred And Eighty** | As **Triangle the Fedora**: finish on **exactly 180**, having used **no balloon and no rocket** all run. The hovercraft and the train are fine. |
+| 😈 **Nemesis** | As **Wagnus Warter**: get run over by the **golf cart**. The cart knows what he did. |
+| ⏳ **All The Time In The World** | As **The Nucleus Of Time Itself**: visit the **clock tower 5 or more times** and finish on **300 or more**. |
+| 🛰️ **Laika's Return** | As **Julie**: ride the **rocket**, clear **every star**, take the **Platinum Guava**, and — unlike the dog — finish the run **back on solid ground**. |
 
 ---
 

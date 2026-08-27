@@ -81,6 +81,20 @@ export const TROPHIES = [
   { id: 'total100', medal: '🎖️', title: 'Centurion', desc: 'Amass 100 achievements in total — trophies earned plus characters unlocked.' },
   { id: 'doppelganger', medal: '🔴', title: 'Feathered Doppelgänger', desc: 'Complete a run as W. Wolk — as P. Cork with the weather against you, or as the red bird himself.' },
   { id: 'charredishard', medal: '🍳', title: 'Charred Is Hard', desc: 'Cook a charred pickle fritter AND finish that same run on a whole number. The fritter pays 88.8, so you will need another fraction to complete it.' },
+  { id: 'boffline', medal: '🎟️', title: 'Boffington\'s Travelcard', desc: 'As Finn Boffington or Flynn Boddington: ride the Mystic Line to all FOUR stations in one run.' },
+  { id: 'starbilly', medal: '🌟', title: 'Fingers On The Buzzer', desc: 'As Billy Rocketfingers or Alien Ginsberg: collect every star AND finish on 400 or more in one run.' },
+  { id: 'garyair', medal: '🪂', title: 'Gary Takes The Air', desc: 'As Gary Mountain: reach the mountain summit by balloon or rocket rather than climbing it.' },
+  { id: 'candyslide', medal: '🎡', title: 'Florence Goes Round Again', desc: 'As Candy Florence: ride the helter skelter.' },
+  { id: 'nellyfive', medal: '📉', title: 'Told You So', desc: 'As Negative Nelly: take FIVE negative whirlpool spins in the same run.' },
+  { id: 'parsleyout', medal: '🌿', title: 'Get That Parsley Out Of Here', desc: 'As Parsley O’Riley: reach the cave’s BLT with 500 or more, and be told exactly where to go.' },
+  { id: 'crisps', medal: '🥔', title: 'Always Better With Crisps', desc: 'As ‘Crisp Packet’ Hughes: reach the cave’s BLT with 400 or more. Worth +40.' },
+  { id: 'mcdcoffee', medal: '☕', title: 'The Usual', desc: 'As McDonovan: visit the coffee cart. A private eye runs on it.' },
+  { id: 'taradouble', medal: '🥒', title: 'Twice The Pickle', desc: 'As Tara Tapir: collect a pickle while her double-pickle deal is running.' },
+  { id: 'prettyweird', medal: '👾', title: 'These Guys Are Pretty Weird', desc: 'Complete a run as all four of Postboxer, Edith McCombe, Prunella Registered Voter and Ol’ Cardboard Box.' },
+  { id: 'fedora180', medal: '🎯', title: 'One Hundred And Eighty', desc: 'As Triangle the Fedora: finish on EXACTLY 180, with no balloon and no rocket all run.' },
+  { id: 'nemesis', medal: '😈', title: 'Nemesis', desc: 'As Wagnus Warter: get run over by the golf cart. The cart knows what he did.' },
+  { id: 'nucleustime', medal: '⏳', title: 'All The Time In The World', desc: 'As The Nucleus Of Time Itself: visit the clock tower 5 or more times and finish on 300 or more.' },
+  { id: 'laika', medal: '🛰️', title: 'Laika’s Return', desc: 'As Julie: ride the rocket, collect every star, take the Platinum Guava, and finish the run back on solid ground.' },
 ];
 
 /** Every hero and the deed that earns them, in roster order. */

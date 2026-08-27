@@ -172,6 +172,24 @@ const WAGNUS_HITS = 6;              // cart hits in one run to raise the double
 const WAGNUS_SCORE = 50;            // …and the score he wants to see for it
 // Whoever can bring the reindeer in from the snow.
 const REINDEER_HEROES = ['pinepenguin', 'polarpear'];
+// --- the character-flavoured trophies -------------------------------
+const BOFFINGTONS = ['boffington', 'boddington'];
+const STAR_ROCKETEERS = ['billy', 'ginsberg'];
+const NELLY_NEGATIVE_SPINS = 5;     // negative whirlpool spins in one run
+const PARSLEY_REJECT_SCORE = 500;   // …and the BLT wants nothing to do with her
+const CRISPS_SCORE = 400;           // what the BLT asks of Hughes
+const CRISPS_POINTS = 40;           // …and pays him for it
+const FEDORA_SCORE = 180;           // one hundred and eighty
+const NUCLEUS_TOWERS = 5;           // clock-tower visits for the Nucleus
+const NUCLEUS_SCORE = 300;
+// The four who are, by common agreement, pretty weird.
+const WEIRD_FOUR = ['postboxer', 'edith', 'prunella', 'cardboard'];
+// Rides that can put you on the summit without climbing it.
+const SKY_RIDES = ['balloon', 'rocket'];
+// How long after stepping off one of them an arrival still counts as flown.
+// Held as a countdown rather than a timestamp: no clock to compare against,
+// and "is there grace left?" is the question the summit actually asks.
+const SKY_SUMMIT_GRACE = 6;
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
 const ROCKET_RIDES_REQUIRED = 2;  // Ol' Cardboard Box wants two launches
 const STORAGE_FROG_HITS = 'mystic-badger.frogHitsAllTime';
@@ -565,6 +583,10 @@ export class Game {
     this._postSprintTaught = false;        // Postboxer's ×3 explained yet?
     this.isWolk = false;                   // P. Cork gone red for the weather
     this.muffinAblaze = false;             // Neptune's Muffin met the oven
+    this._whirlNegRun = 0;                 // negative whirlpool spins this run
+    this._skyGrace = 0;                    // seconds left in which a summit counts as flown
+    this._crispsClaimed = false;           // Hughes's +40 is once per run
+    this.parsleyRejected = false;          // …and so is her marching order
     this._burnAccum = 0;                   // …seconds banked toward the next -1
     this._burnPuffIn = 0;                  // …and toward the next puff of flame
     this._guavaDropAt = Math.random() * 30; // seconds-remaining the guava falls
@@ -847,6 +869,10 @@ export class Game {
       // Pickle Stick: grab the fridge-summoned pickle on 100+ to unlock it.
       if (item.value === PICKLE_VALUE) {
         this.picklesCollected += 1;
+        // Twice The Pickle: one collected while her deal is actually live.
+        if (this.characterName === 'tapir' && this.pickleMultiplier > 1) {
+          this.awardAchievement('taradouble');
+        }
         if (!this.pickleStickUnlocked) {
           if (scoreBefore >= PICKLE_UNLOCK_SCORE) {
             this.pickleStickUnlocked = true;
@@ -1119,6 +1145,8 @@ export class Game {
     if (Math.abs(center.y - w.coffeeLevel) > 4) return;
 
     this.coffeeDrunk = true;
+    // A private eye runs on the stuff.
+    if (this.characterName === 'mcdonovan') this.awardAchievement('mcdcoffee');
     const before = this.health;
     this.health = Math.min(100, this.health + COFFEE_HEALTH);
     this.ui.setHealth(this.health);
@@ -1179,6 +1207,8 @@ export class Game {
     const creach = cart.hazardRadius + 0.4;
     if (cdx * cdx + cdz * cdz < creach * creach && Math.abs(cdy) < 2.4) {
       this.cartHits += 1;
+      // Nemesis: the cart has opinions about Magnus's double.
+      if (this.characterName === 'wagnus') this.awardAchievement('nemesis');
       // Magnus run over by his own cart, twice: a paradox so rude it
       // summons his nemesis twin into existence.
       if (
@@ -1844,7 +1874,7 @@ export class Game {
 
     // Clear-them-all sweeps (only meaningful once any of that species
     // has actually spawned this run).
-    const allStars = this.spawnedStars > 0 && this.starsCollected >= this.spawnedStars;
+    const allStars = this.hasAllStars();
     const allClouds = this.spawnedClouds > 0 && this.cloudsCollected >= this.spawnedClouds;
     const allCherries = this.spawnedCherries > 0 && this.cherriesCollected >= this.spawnedCherries;
     const allEggs = this.spawnedEggs > 0 && this.eggsCollected >= this.spawnedEggs;
@@ -1861,6 +1891,10 @@ export class Game {
     if (allCherries) this.awardAchievement('allcherries');
     if (allEggs) this.awardAchievement('alleggs');
     if (allStars && allClouds && allCherries) this.awardAchievement('allsky');
+    // Fingers On The Buzzer: the sky swept clean AND a real score on it.
+    if (allStars && this.points >= 400 && STAR_ROCKETEERS.includes(this.characterName)) {
+      this.awardAchievement('starbilly');
+    }
 
     // Billy Rocketfingers: clear every star AND ride to all three stations
     // in the same run.
@@ -2315,6 +2349,34 @@ export class Game {
           } else {
             this.ui.showTimeToast('STILL DRY. STILL SAD. PICKLES STILL DOUBLE 🥒×2');
           }
+        } else if (this.characterName === 'parsley' && this.points >= PARSLEY_REJECT_SCORE) {
+          // A garnish arrives at a sandwich with 500 on the board and is
+          // shown the door. Said once, then it stops rubbing it in.
+          if (!this.parsleyRejected) {
+            this.parsleyRejected = true;
+            this.audio.play('sonar');
+            this.ui.showTimeToast('Absolutely no chance, get that Parsley out of here');
+            this.awardAchievement('parsleyout');
+          } else {
+            this.ui.showTimeToast('STILL NO PARSLEY. STILL NOT NEGOTIABLE.');
+          }
+        } else if (this.characterName === 'hughes' && this.points >= CRISPS_SCORE) {
+          // Everything is better with crisps. Paid once per run.
+          if (!this._crispsClaimed) {
+            this._crispsClaimed = true;
+            this.points += CRISPS_POINTS;
+            this.ui.setPoints(this.points);
+            this.audio.play('collect', 1);
+            this.ui.showTimeToast(`Everything is better with crisps +${CRISPS_POINTS}`);
+            this.awardAchievement('crisps');
+            this.particles.spawnBurst(
+              this._playerCenter.set(sandwich.x, sandwich.y + 0.6, sandwich.z),
+              0xe8c05a,
+              { count: 34, speed: 4.0, size: 44, upBias: 0.7, life: 0.9 }
+            );
+          } else {
+            this.ui.showTimeToast('THE CRISPS ARE IN. NOTHING LEFT TO IMPROVE.');
+          }
         } else {
           this.ui.showTimeToast("IT'S A BLT, BUT IT'S A BIT TOO DRY…");
         }
@@ -2584,6 +2646,15 @@ export class Game {
       this.ui.showTimeToast('★ MARBLELLA UNLOCKED!');
     }
     return true;
+  }
+
+  /**
+   * Every star this run. Defined once because both checkAchievements (which
+   * runs mid-run) and the bell need it, and two copies of the expression
+   * would eventually disagree.
+   */
+  hasAllStars() {
+    return this.spawnedStars > 0 && this.starsCollected >= this.spawnedStars;
   }
 
   /** The trap door's lock only respects a perfectly square score. */
@@ -3122,6 +3193,51 @@ export class Game {
       this.awardAchievement('mysticcubed');
     }
 
+    // Boffington's Travelcard: all four stops of the Mystic Line, as either
+    // half of the Boffington/Boddington pair.
+    if (
+      BOFFINGTONS.includes(this.characterName) &&
+      ALL_STATIONS.every((st) => this.stationsVisited.has(st))
+    ) {
+      this.awardAchievement('boffline');
+    }
+
+    // These Guys Are Pretty Weird: a full run as each of the four. The
+    // current run already counts — recordCharacterUse ran at its start.
+    if (WEIRD_FOUR.every((k) => this.charUsage[k])) {
+      this.awardAchievement('prettyweird');
+    }
+
+    // One Hundred And Eighty: the darts score, on foot. Judged on the score
+    // as SHOWN, since the raw float can hold residue an exact === would miss.
+    if (
+      this.characterName === 'trifedora' &&
+      shownScore(this.points) === FEDORA_SCORE &&
+      !this.vehiclesRidden.has('balloon') &&
+      !this.vehiclesRidden.has('rocket')
+    ) {
+      this.awardAchievement('fedora180');
+    }
+
+    // All The Time In The World: the Nucleus, at the clock tower, repeatedly.
+    if (
+      this.characterName === 'nucleus' &&
+      this.towerVisits >= NUCLEUS_TOWERS &&
+      this.points >= NUCLEUS_SCORE
+    ) {
+      this.awardAchievement('nucleustime');
+    }
+
+    // Laika's Return: up in the rocket, every star swept, the Guava aboard —
+    // and, unlike the dog, home on solid ground at the end of it.
+    if (this.characterName === 'julie' && this.vehiclesRidden.has('rocket')) {
+      const wl = this.world.waterAt(this.player.position.x, this.player.position.z);
+      const onLand = wl === undefined || this.player.position.y > wl + 3;
+      if (this.hasAllStars() && this.itemTypesCollected.has(GUAVA_VALUE) && onLand) {
+        this.awardAchievement('laika');
+      }
+    }
+
     // Persist the high score and any character unlocks.
     const isNewHigh = this.points > this.highScore;
     if (isNewHigh) {
@@ -3481,6 +3597,10 @@ export class Game {
     this.muffinAblaze = false;
     this._burnAccum = 0;
     this._burnPuffIn = 0;
+    this._whirlNegRun = 0;
+    this._skyGrace = 0;
+    this._crispsClaimed = false;
+    this.parsleyRejected = false;
     this.world.resetRaisin();
     this._guavaDropAt = Math.random() * 30;
     this._guavaDropped = false;
@@ -3718,6 +3838,13 @@ export class Game {
           Math.abs(this.player.position.y - summitY) < 3;
         if (onSummit) {
           if (this.characterName === 'polarpear') this.awardAchievement('polarsummit');
+          // Gary Takes The Air: on the summit while still aboard a balloon or
+          // rocket, or within a few seconds of stepping off one. The grace
+          // window is what makes a rocket count — it throws you clear before
+          // you land, so "still riding" alone would never fire.
+          if (this.characterName === 'gary' && this._skyGrace > 0) {
+            this.awardAchievement('garyair');
+          }
           if (!this.reachedSummitLowHP && this.health <= POLARPEAR_HEALTH) {
             this.reachedSummitLowHP = true;
             this.ui.showTimeToast('☠ SUMMIT ON A KNIFE-EDGE — NOW SURVIVE!');
@@ -3770,6 +3897,7 @@ export class Game {
           this.player.velocity.y = CANDY_LAUNCH_SPEED;
           this.player.grounded = false;
           this.audio.play('jump');
+          this.awardAchievement('candyslide');   // the fling is the ride
         }
       }
 
@@ -3819,6 +3947,13 @@ export class Game {
             this._whirlNegStreak += 1;
             this._whirlPosStreak = 0;
             if (this._whirlNegStreak >= 3) this.awardAchievement('inaspin');
+            // Told You So: five bad spins in one run, counted whether or not
+            // they came one after another — the streak above is a different
+            // thing and must not be reused for this.
+            this._whirlNegRun += 1;
+            if (this.characterName === 'nelly' && this._whirlNegRun >= NELLY_NEGATIVE_SPINS) {
+              this.awardAchievement('nellyfive');
+            }
           }
         } else if (wd > 7) {
           this._inWhirl = false; // clear of the throat — the next dip counts
@@ -3901,6 +4036,10 @@ export class Game {
 
       // Engine beds follow whatever the player is currently riding.
       const vk = this.player.vehicle ? this.player.vehicle.kind : null;
+      // Topped up every frame aboard a balloon or rocket, and running down
+      // once you step off, so the summit can ask whether you flew in.
+      if (vk && SKY_RIDES.includes(vk)) this._skyGrace = SKY_SUMMIT_GRACE;
+      else this._skyGrace = Math.max(0, this._skyGrace - dt);
       if (vk !== this._vehicleSound) {
         this._vehicleSound = vk;
         this.audio.setVehicle(vk);
