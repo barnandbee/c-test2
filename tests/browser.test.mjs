@@ -1234,6 +1234,97 @@ for (const k of ['error45', 'wagnus', 'reindeer']) {
 }
 ok('and Magnus is still Magnus', builds.magnusStillMagnus === true);
 
+console.log('\nLimbs and trimmings that must stay visible');
+
+// Four builders once swung their arms INWARD — `rotation.z = -side * a`
+// sends an arm hanging along local -Y across the body instead of away from
+// it, so every hand ended up tucked behind the torso. The rig still swung
+// them; you simply could not see them. These pin the sign.
+const limbs = await page.evaluate(() => {
+  const g = window.__game;
+  for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = true;
+  const out = {};
+  for (const key of ['hughes', 'boffington', 'boddington', 'magnus', 'wagnus']) {
+    g.setCharacter(key);
+    const root = g.player.root;
+    root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);
+    root.updateMatrixWorld(true);
+    const armSet = new Set();
+    for (const a of g.player.arms) a.pivot.traverse((o) => armSet.add(o));
+    // Body half-width AT THE HAND'S OWN HEIGHT — comparing against the body's
+    // widest point flags every cone-bodied hero for no reason.
+    const widthAt = (y) => {
+      let w = 0;
+      root.traverse((o) => {
+        if (!o.isMesh || armSet.has(o) || !o.geometry.attributes) return;
+        o.updateMatrixWorld(true);
+        const pos = o.geometry.attributes.position, m = o.matrixWorld.elements;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i), yy = pos.getY(i), z = pos.getZ(i);
+          const wy = m[1]*x + m[5]*yy + m[9]*z + m[13];
+          if (Math.abs(wy - y) > 0.09) continue;
+          const wx = m[0]*x + m[4]*yy + m[8]*z + m[12];
+          if (Math.abs(wx) > w) w = Math.abs(wx);
+        }
+      });
+      return w;
+    };
+    const ratios = [];
+    for (const a of g.player.arms) {
+      a.pivot.updateMatrixWorld(true);
+      for (const child of a.pivot.children) {
+        if (!child.geometry || child.geometry.type !== 'SphereGeometry') continue;
+        const p = new (g.player.position.constructor)();
+        child.getWorldPosition(p);
+        const w = widthAt(p.y);
+        if (w > 0.05) ratios.push(+(Math.abs(p.x) / w).toFixed(2));
+      }
+    }
+    out[key] = ratios;
+  }
+  return out;
+});
+for (const [key, ratios] of Object.entries(limbs)) {
+  ok(`${key}'s hands are outside his body, not tucked behind it`,
+     ratios.length > 0 && ratios.every((r) => r > 1),
+     `hand/body-width ratios: ${JSON.stringify(ratios)} (want every one > 1)`);
+}
+
+// William's cape used to hang straight down THROUGH him and surface as a red
+// flap under the rump. It must clear the back.
+const cape = await page.evaluate(() => {
+  const g = window.__game;
+  g.setCharacter('william');
+  const root = g.player.root;
+  root.position.set(0, 0, 0); root.rotation.set(0, 0, 0); root.updateMatrixWorld(true);
+  const zOf = (pick) => {
+    let minZ = 1e9, maxV = 0, torsoMinZ = 1e9;
+    root.traverse((o) => {
+      if (!o.isMesh || !o.geometry.attributes) return;
+      o.updateMatrixWorld(true);
+      const pos = o.geometry.attributes.position, m = o.matrixWorld.elements;
+      let lo = 1e9, hi = -1e9, loX = 1e9, hiX = -1e9, loY = 1e9, hiY = -1e9;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        const wx = m[0]*x + m[4]*y + m[8]*z + m[12];
+        const wy = m[1]*x + m[5]*y + m[9]*z + m[13];
+        const wz = m[2]*x + m[6]*y + m[10]*z + m[14];
+        lo = Math.min(lo, wz); hi = Math.max(hi, wz);
+        loX = Math.min(loX, wx); hiX = Math.max(hiX, wx);
+        loY = Math.min(loY, wy); hiY = Math.max(hiY, wy);
+      }
+      if (o.geometry.type === 'PlaneGeometry') minZ = Math.min(minZ, lo);
+      const v = (hiX-loX) * (hiY-loY) * (hi-lo);
+      if (o.geometry.type === 'SphereGeometry' && v > maxV) { maxV = v; torsoMinZ = lo; }
+    });
+    return { capeMinZ: minZ, torsoMinZ };
+  };
+  return zOf();
+});
+ok('William’s cape trails clear of his back rather than hanging through him',
+   cape.capeMinZ < cape.torsoMinZ,
+   `cape reaches z=${cape.capeMinZ.toFixed(2)}, torso back is z=${cape.torsoMinZ.toFixed(2)}`);
+
 // Julie Sweeps The Board was withdrawn after one release. Its id must stay
 // in SaveCode's positional vocabulary (removing it would shift every id
 // after it) but nothing in the game may award it any more.

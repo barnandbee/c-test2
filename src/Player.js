@@ -707,8 +707,13 @@ export class Player {
 
     // Cape: a gently curved sheet hanging from the shoulders. Assigning
     // it to hairGroup reuses the mane animation — idle sway, lift at speed.
+    // The pivot rides on top of the shoulders. It used to sit halfway down
+    // his flank, which meant the sheet below fell vertically through a body
+    // that is a fat ellipsoid — it entered at the shoulders, crossed the
+    // middle of him, and came out under the rump as a red flap. A quadruped's
+    // cape has to lie OVER the back, not hang from it.
     const capeGroup = new THREE.Group();
-    capeGroup.position.set(0, 0.34, 0.28);
+    capeGroup.position.set(0, 0.50, -0.42);
     body.add(capeGroup);
     this.hairGroup = capeGroup;
 
@@ -726,8 +731,13 @@ export class Player {
       capeGeo.computeVertexNormals();
     }
     const cape = new THREE.Mesh(capeGeo, capeMat);
-    cape.position.set(0, -0.45, -0.1);
-    cape.rotation.x = 0.35;
+    // Hung so its TOP edge lands on the pivot, then trailing down and back.
+    // The geometry above ALREADY sweeps back by 0.85 over its own length, so
+    // it leaves the shoulders about 39 degrees off vertical before any
+    // rotation at all. The old 0.35 here compounded with that; anything much
+    // more lays the whole thing flat and it reads as a carpet, not a cape.
+    cape.position.set(0, -0.519, -0.078);
+    cape.rotation.x = 0.15;
     cape.castShadow = true;
     capeGroup.add(cape);
 
@@ -1107,7 +1117,11 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.4, 0.55, 0);
-      pivot.rotation.z = -side * 0.5; // splay out from the packet sides
+      // The sign matters: the arm hangs along local -Y, and Rz(theta) sends
+      // that to (sin theta, -cos theta). A NEGATIVE theta on the right-hand
+      // side therefore swings the arm inward, tucking both hands behind the
+      // packet where nothing can see them. side * 0.5 splays them out.
+      pivot.rotation.z = side * 0.5; // splay out from the packet sides
       const arm = new THREE.Mesh(armGeo, stickMat);
       arm.castShadow = true;
       pivot.add(arm);
@@ -1329,7 +1343,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.34, 0.5, 0);
-      pivot.rotation.z = -side * 0.45;
+      pivot.rotation.z = side * 0.45;   // outward; see the note on Hughes
       const arm = new THREE.Mesh(armGeo, limbMat);
       arm.castShadow = true;
       pivot.add(arm);
@@ -1777,7 +1791,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.24, 0.55, 0);
-      pivot.rotation.z = -side * 0.4;
+      pivot.rotation.z = side * 0.4;   // outward; see the note on Hughes
       const arm = new THREE.Mesh(armGeo, suitDarkMat);
       arm.castShadow = true;
       pivot.add(arm);
