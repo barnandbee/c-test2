@@ -1381,6 +1381,50 @@ ok('a bogus mid-rotation size is corrected by the settle pass',
    midRotation.buffer[0] === midRotation.css[0] && midRotation.buffer[1] === midRotation.css[1],
    JSON.stringify(midRotation));
 
+console.log('\nThe HUD on a narrow phone');
+
+// At 390px the three cards wanted about 524px between them — the health bar
+// alone was a fixed 190px — so the clock was clipped mid-digit and the score
+// was pushed off the edge. Checked with a WIDE score, which is the worst
+// case: a four-figure decimal is the most room the number ever asks for.
+const hudAt = async (w, h) => {
+  await page.setViewportSize({ width: w, height: h });
+  await page.evaluate(() => {
+    const g = window.__game;
+    if (g.inMenu) { g.setCharacter('badger'); g.beginRun(false, 'easy'); }
+    g.points = 1234.5; g.ui.setPoints(g.points);
+    g.health = 62; g.ui.setHealth(62);
+  });
+  await page.waitForTimeout(250);
+  return page.evaluate(() => {
+    const out = { viewport: window.innerWidth, panels: {} };
+    for (const id of ['health-panel', 'timer-panel', 'points-panel']) {
+      const r = document.getElementById(id).getBoundingClientRect();
+      out.panels[id] = { left: Math.round(r.left), right: Math.round(r.right),
+                         width: Math.round(r.width) };
+    }
+    return out;
+  });
+};
+for (const [w, h, label] of [[390, 844, 'iPhone 14 portrait'], [360, 800, 'a narrower phone']]) {
+  const hud = await hudAt(w, h);
+  const panels = Object.values(hud.panels);
+  ok(`${label}: every HUD card is on screen`,
+     panels.every((r) => r.left >= 0 && r.right <= hud.viewport),
+     JSON.stringify(hud));
+  // …and none has been squeezed to nothing to achieve it.
+  ok(`${label}: and none of them is squashed flat`,
+     panels.every((r) => r.width > 40), JSON.stringify(hud.panels));
+  // The cards must not overlap each other either.
+  const sorted = panels.slice().sort((a, b) => a.left - b.left);
+  ok(`${label}: and they do not overlap`,
+     sorted.every((r, i) => i === 0 || r.left >= sorted[i - 1].right - 1),
+     JSON.stringify(sorted));
+}
+// Back to a desktop shape so nothing downstream inherits a phone viewport.
+await page.setViewportSize({ width: 1280, height: 720 });
+await page.waitForTimeout(200);
+
 // Julie Sweeps The Board was withdrawn after one release. Its id must stay
 // in SaveCode's positional vocabulary (removing it would shift every id
 // after it) but nothing in the game may award it any more.

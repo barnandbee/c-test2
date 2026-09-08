@@ -1297,6 +1297,83 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/*  The HUD on a phone                                                 */
+/* ------------------------------------------------------------------ */
+
+/* At 390px (an iPhone 14 in portrait) the three cards wanted about 524px
+   between them and had 350px to play with, so the clock was clipped mid-digit
+   and the score was pushed off the screen entirely. The health bar was the
+   bulk of it at a fixed 190px.
+
+   The fix is to stop the health panel being a fixed size and let it take
+   whatever the other two leave: the clock and the score are the numbers you
+   actually have to READ, so they keep their room, and the bar — which is
+   judged by how full it looks, not by its length — gives way. */
+@media (max-width: 480px) {
+  #hud {
+    top: 12px;
+    left: 10px;
+    right: 10px;
+    gap: 8px;
+  }
+
+  .hud-card {
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+
+  .hud-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Absorbs the leftover width. min-width:0 is required — a flex item will
+     not shrink below its content otherwise, which is what pushed the score
+     off the edge in the first place. */
+  #health-panel {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  #health-bar {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 36px;
+  }
+
+  #health-label {
+    font-size: 13px;
+    min-width: 24px;
+  }
+
+  #timer-value {
+    font-size: 18px;
+    min-width: 48px;
+  }
+
+  #points-value {
+    font-size: 18px;
+  }
+
+  /* The cards are shorter now, so the toggles ride up to meet them. */
+  #mute-btn {
+    top: 58px;
+    right: 10px;
+  }
+
+  #bloom-btn {
+    top: 58px;
+    right: 56px;
+  }
+
+  #vs-panel {
+    top: 100px;
+    right: 10px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Damage flash                                                       */
 /* ------------------------------------------------------------------ */
 
