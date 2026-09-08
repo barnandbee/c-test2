@@ -340,7 +340,15 @@ export class Game {
     // --- renderer --------------------------------------------------------
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // The `false` is load-bearing. setSize's third argument is updateStyle,
+    // and left at its default it writes inline width/height PIXELS onto the
+    // canvas — which outrank the stylesheet's `position:fixed; inset:0`. Any
+    // dimension captured mid-rotation then becomes the canvas's real on-screen
+    // size and sticks, because nothing fires again once the rotation settles.
+    // That is how the bottom of the screen went missing after a rotate there
+    // and back. With styling left to CSS the canvas always covers the
+    // viewport, and JS only decides the resolution drawn into it.
+    this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -699,8 +707,17 @@ export class Game {
     // --- loop ---------------------------------------------------------------------
     this.clock = new THREE.Clock();
     this._playerCenter = new THREE.Vector3();
-    this._onResize = () => this.resize();
+    this._resettleTimers = [];
+    this._onResize = () => { this.resize(); this.scheduleResettle(); };
     window.addEventListener('resize', this._onResize);
+    // orientationchange does not always come with a usable resize, and on
+    // mobile the visual viewport moves under you as browser chrome slides
+    // away. Both are wired to the same settle-and-re-measure path.
+    window.addEventListener('orientationchange', this._onResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this._onResize);
+      window.visualViewport.addEventListener('scroll', this._onResize);
+    }
   }
 
   /* ================================================================ */
@@ -4329,13 +4346,39 @@ export class Game {
     }
   }
 
+  /**
+   * Match the drawing buffer to whatever size the canvas actually IS.
+   *
+   * Measuring the canvas rather than the window is the point: CSS decides how
+   * big it appears (position:fixed; inset:0), so reading it back is
+   * self-consistent no matter what the browser is doing with its address bar,
+   * safe areas or a half-finished rotation. window.innerHeight is none of
+   * those things reliably on a phone.
+   */
   resize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const canvas = this.renderer.domElement;
+    // clientWidth is 0 until it is in the document, hence the fallback.
+    const w = canvas.clientWidth || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    if (w < 1 || h < 1) return;
+    this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(w, h, false);   // false: styling stays with the CSS
     if (this.bloom) {
-      this.bloom.setSize(window.innerWidth, window.innerHeight, this.renderer.getPixelRatio());
+      this.bloom.setSize(w, h, this.renderer.getPixelRatio());
     }
+  }
+
+  /**
+   * Rotating a phone fires `resize` while the rotation is still animating, so
+   * the numbers reported are somewhere between the old shape and the new one,
+   * and nothing fires again once it settles. Re-measuring a couple of times
+   * afterwards is the only reliable fix; it is three cheap calls.
+   */
+  scheduleResettle() {
+    for (const t of this._resettleTimers) window.clearTimeout(t);
+    this._resettleTimers = [120, 350, 700].map((ms) =>
+      window.setTimeout(() => this.resize(), ms));
   }
 
   /**
@@ -4364,6 +4407,12 @@ export class Game {
   dispose() {
     this.renderer.setAnimationLoop(null);
     window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('orientationchange', this._onResize);
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', this._onResize);
+      window.visualViewport.removeEventListener('scroll', this._onResize);
+    }
+    for (const t of (this._resettleTimers || [])) window.clearTimeout(t);
     if (this.minigame) { this.minigame.dispose(); this.minigame = null; }
     if (this.veggieGame) { this.veggieGame.dispose(); this.veggieGame = null; }
     if (this.paintingGame) { this.paintingGame.dispose(); this.paintingGame = null; }

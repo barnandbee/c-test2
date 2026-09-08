@@ -1325,6 +1325,62 @@ ok('William’s cape trails clear of his back rather than hanging through him',
    cape.capeMinZ < cape.torsoMinZ,
    `cape reaches z=${cape.capeMinZ.toFixed(2)}, torso back is z=${cape.torsoMinZ.toFixed(2)}`);
 
+console.log('\nThe canvas after a rotation');
+
+// Rotating a phone and rotating back used to lose the bottom of the screen.
+// setSize() writes inline width/height PIXELS onto the canvas by default,
+// outranking the stylesheet's inset:0 — so a dimension captured while the
+// rotation was still animating became the canvas's real size and stuck.
+const rotate = async (w, h) => {
+  await page.setViewportSize({ width: w, height: h });
+  await page.waitForTimeout(900);        // past the settle re-measures
+  return page.evaluate(() => {
+    const c = window.__game.renderer.domElement;
+    const r = c.getBoundingClientRect();
+    return {
+      css: [Math.round(r.width), Math.round(r.height)],
+      viewport: [window.innerWidth, window.innerHeight],
+      inlineW: c.style.width || '(none)',
+      inlineH: c.style.height || '(none)'
+    };
+  });
+};
+const portrait = await rotate(390, 844);
+ok('portrait: the canvas fills the viewport',
+   portrait.css[0] === portrait.viewport[0] && portrait.css[1] === portrait.viewport[1],
+   JSON.stringify(portrait));
+const landscape = await rotate(844, 390);
+ok('landscape: the canvas fills the viewport',
+   landscape.css[0] === landscape.viewport[0] && landscape.css[1] === landscape.viewport[1],
+   JSON.stringify(landscape));
+// The reported bug exactly: rotate, then rotate BACK.
+const backAgain = await rotate(390, 844);
+ok('and back to portrait: no lost strip at the bottom',
+   backAgain.css[0] === backAgain.viewport[0] && backAgain.css[1] === backAgain.viewport[1],
+   JSON.stringify(backAgain));
+// The root cause, pinned directly: three must not be styling the canvas.
+ok('the canvas carries no inline size for a stale number to stick to',
+   backAgain.inlineW === '(none)' && backAgain.inlineH === '(none)',
+   `inline width=${backAgain.inlineW} height=${backAgain.inlineH}`);
+
+// A resize arriving mid-rotation (bogus dimensions, no follow-up event) must
+// still end up correct, because the settle pass re-measures.
+const midRotation = await page.evaluate(async () => {
+  const g = window.__game;
+  const c = g.renderer.domElement;
+  g.camera.aspect = 0.01;                    // as if measured mid-flip
+  g.renderer.setSize(50, 50, false);
+  window.dispatchEvent(new Event('orientationchange'));
+  await new Promise((r) => setTimeout(r, 900));
+  const buf = g.renderer.getSize(new (g.player.position.constructor)());
+  const r = c.getBoundingClientRect();
+  return { buffer: [Math.round(buf.x), Math.round(buf.y)],
+           css: [Math.round(r.width), Math.round(r.height)] };
+});
+ok('a bogus mid-rotation size is corrected by the settle pass',
+   midRotation.buffer[0] === midRotation.css[0] && midRotation.buffer[1] === midRotation.css[1],
+   JSON.stringify(midRotation));
+
 // Julie Sweeps The Board was withdrawn after one release. Its id must stay
 // in SaveCode's positional vocabulary (removing it would shift every id
 // after it) but nothing in the game may award it any more.

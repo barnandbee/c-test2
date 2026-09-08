@@ -44,6 +44,18 @@ body {
   touch-action: none;
 }
 
+/* A canvas is a REPLACED element, so `inset: 0` does not stretch it the way
+   it stretches a div — with width/height auto it falls back to its intrinsic
+   size (its width/height attributes, i.e. the drawing buffer) and ignores
+   right/bottom. These two lines are what actually make it fill the screen.
+   Without them the only thing sizing the canvas was the inline style
+   three.js writes in setSize(), which is how a dimension captured
+   mid-rotation could survive as the canvas's real size. */
+#app canvas {
+  width: 100%;
+  height: 100%;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Welcome menu                                                       */
 /* ------------------------------------------------------------------ */
