@@ -9574,7 +9574,11 @@ export class Player {
     }
 
     // ---- safety net -----------------------------------------------------------
-    if (pos.y < -40) this.respawn();
+    // Below -40 you have fallen out of the world and want rescuing — unless
+    // you are in the siding, which legitimately lives at -60. Without that
+    // exemption the fifth station threw you back on the surface on the very
+    // first frame after the train dropped you off.
+    if (pos.y < -40 && !this.world.isInsideSiding(pos.x, pos.y, pos.z)) this.respawn();
 
     // ---- water: badgers (and crisp packets) cannot swim -----------------------
     // Only actual lake water counts — low valleys elsewhere are just valleys.
@@ -9749,6 +9753,26 @@ export class Player {
       if (into < 0) {
         this.velocity.x -= into * nx;
         this.velocity.z -= into * nz;
+      }
+    }
+
+    // The siding is a sealed rock box, and its walls are geometry rather than
+    // colliders — the collider model is cylinders, which cannot make a room.
+    // So hold the player inside it by its bounds. Without this you walk
+    // straight out through the rock, and the safety net above, seeing you at
+    // sixty metres down and outside the chamber, decides you have fallen out
+    // of the world and posts you back to the surface.
+    const sd = this.world.siding;
+    if (sd && this.world.isInsideSiding(pos.x, pos.y, pos.z)) {
+      const before = { x: pos.x, z: pos.z };
+      pos.x = clamp(pos.x, sd.innerMinX + R, sd.innerMaxX - R);
+      pos.z = clamp(pos.z, sd.innerMinZ + R, sd.innerMaxZ - R);
+      if (pos.x !== before.x) this.velocity.x = 0;
+      if (pos.z !== before.z) this.velocity.z = 0;
+      // The ceiling too, or a good jump puts your head through the rock.
+      if (pos.y > sd.ceilingY - 1.2) {
+        pos.y = sd.ceilingY - 1.2;
+        if (this.velocity.y > 0) this.velocity.y = 0;
       }
     }
   }

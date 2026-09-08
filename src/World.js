@@ -583,6 +583,25 @@ export class World {
     return Math.abs(lx) < 3.5 && lz > -3.0 && lz < 3.4 && y < this.neptuneLevel + 5.5;
   }
 
+  /**
+   * Is (x,y,z) inside the siding's chamber? The chamber floor sits at -60,
+   * far below the depth at which the physics safety net assumes you have
+   * fallen out of the world — so the net has to ask this before rescuing
+   * anybody, or arriving by train looks exactly like falling through the map.
+   *
+   * Generous by a couple of metres on every side: a rescue that fires while
+   * you are stood on the floor is far worse than one that fires a moment late.
+   */
+  isInsideSiding(x, y, z) {
+    const sd = this.siding;
+    if (!sd) return false;
+    return (
+      x > sd.minX - 2 && x < sd.maxX + 2 &&
+      z > sd.minZ - 2 && z < sd.maxZ + 2 &&
+      y > sd.floorY - 6 && y < sd.floorY + 12
+    );
+  }
+
   /** The water level covering (x,z) — main lake or whirlpool lake — or
    *  undefined on dry land. The one water query physics should use. */
   waterAt(x, z) {
@@ -3651,12 +3670,21 @@ export class World {
     const F = -60;
     const cx = this.mountainX;
     const cz = this.mountainZ;
-    const HW = 9;    // half-width
-    const HD = 7;    // half-depth
+    const HW = 9;      // half-width, to the wall centre lines
+    const HD = 7;      // half-depth
+    const WALL = 0.6;  // wall thickness — the boxes below are built on it
 
     this.siding = {
       minX: cx - HW, maxX: cx + HW,
       minZ: cz - HD, maxZ: cz + HD,
+      // The inner faces of those walls. The chamber is a sealed box and the
+      // walls are geometry, not colliders — the collider model is cylinders,
+      // which could never make a room — so physics keeps the player in by
+      // clamping to these instead. Derived from the wall thickness rather
+      // than written out, so moving a wall moves the clamp with it.
+      innerMinX: cx - HW + WALL / 2, innerMaxX: cx + HW - WALL / 2,
+      innerMinZ: cz - HD + WALL / 2, innerMaxZ: cz + HD - WALL / 2,
+      ceilingY: F + 6 - WALL / 2,
       floorY: F,
       entry: new THREE.Vector3(cx - 4.5, F, cz + 2),
       roundel: new THREE.Vector3(cx + 3.4, F + 2.4, cz - HD + 0.5)
@@ -3682,12 +3710,12 @@ export class World {
 
     // Floor, ceiling and four walls — a sealed box, so nothing can be seen
     // from outside and nothing can wander out.
-    addBox(HW * 2, 0.6, HD * 2, rockMat, cx, F - 0.3, cz);
-    addBox(HW * 2, 0.6, HD * 2, rockMat, cx, F + 6, cz);
-    addBox(0.6, 6.6, HD * 2, rockMat, cx - HW, F + 3, cz);
-    addBox(0.6, 6.6, HD * 2, rockMat, cx + HW, F + 3, cz);
-    addBox(HW * 2, 6.6, 0.6, rockMat, cx, F + 3, cz - HD);
-    addBox(HW * 2, 6.6, 0.6, rockMat, cx, F + 3, cz + HD);
+    addBox(HW * 2, WALL, HD * 2, rockMat, cx, F - WALL / 2, cz);
+    addBox(HW * 2, WALL, HD * 2, rockMat, cx, F + 6, cz);
+    addBox(WALL, 6.6, HD * 2, rockMat, cx - HW, F + 3, cz);
+    addBox(WALL, 6.6, HD * 2, rockMat, cx + HW, F + 3, cz);
+    addBox(HW * 2, 6.6, WALL, rockMat, cx, F + 3, cz - HD);
+    addBox(HW * 2, 6.6, WALL, rockMat, cx, F + 3, cz + HD);
 
     // Rubble, and a few stalagmites, so it reads as a cave rather than a room.
     for (let i = 0; i < 14; i++) {

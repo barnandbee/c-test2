@@ -2308,8 +2308,112 @@ ok('touching it puts you back at the ticket machine', wayOut.atTicketMachine, JS
 ok('up at platform level, not still underground', wayOut.y > -30, String(wayOut.y));
 ok('and standing still, not mid-fall', wayOut.stillFalling === 0, String(wayOut.stillFalling));
 
+// The chamber sits at -60, and the physics safety net rescues anybody who
+// falls below -40 — so arriving by train looked exactly like falling out of
+// the world, and one frame of physics posted you straight back to the
+// surface. Arriving is not enough; you have to still be there afterwards.
+const stayed = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.openTravel();
+  g.travelTo('siding');
+  const sd = g.world.siding;
+  const start = { x: g.player.position.x, y: g.player.position.y };
+
+  // rAF stalls under SwiftShader; turn the loop by hand.
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  const realBloom = g.bloomEnabled;
+  g.clock.getDelta = () => 1 / 60;
+  g.bloomEnabled = false;
+  g.renderer.render = () => {};
+  let firstFrameY = null;
+  for (let i = 0; i < 120; i++) {
+    g.tick();
+    if (i === 0) firstFrameY = g.player.position.y;
+  }
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  g.bloomEnabled = realBloom;
+
+  const p = g.player.position;
+  return {
+    startY: start.y, firstFrameY, y: p.y,
+    inBounds: p.x > sd.minX && p.x < sd.maxX && p.z > sd.minZ && p.z < sd.maxZ,
+    onFloor: Math.abs(p.y - sd.floorY) < 1.5
+  };
+});
+ok('one frame of physics does not eject you', Math.abs(stayed.firstFrameY - stayed.startY) < 2,
+   JSON.stringify(stayed));
+ok('and after two seconds you are still down there',
+   stayed.inBounds && stayed.onFloor, JSON.stringify(stayed));
+
+// The chamber is described as sealed, so it had better hold. Its walls are
+// geometry, not colliders — the collider model is cylinders and cannot make a
+// room — so this is the only thing standing between the player and a walk out
+// through the rock (and, past the bounds, that same safety net).
+const wall = (dx, dz) => page.evaluate(([ax, az]) => {
+  const g = window.__game;
+  const sd = g.world.siding;
+  g.player.position.set(sd.entry.x, sd.floorY + 0.15, sd.entry.z);
+  for (let i = 0; i < 200; i++) {
+    g.player.position.x += ax * 0.12;
+    g.player.position.z += az * 0.12;
+    g.player.resolveColliders();
+  }
+  const p = g.player.position;
+  return p.x < sd.minX - 0.5 || p.x > sd.maxX + 0.5
+      || p.z < sd.minZ - 0.5 || p.z > sd.maxZ + 0.5;
+}, [dx, dz]);
+ok('the west wall holds', await wall(-1, 0) === false);
+ok('the east wall holds', await wall(1, 0) === false);
+ok('the north wall holds', await wall(0, -1) === false);
+ok('the south wall holds', await wall(0, 1) === false);
+
 ok('a new run forgets the visits',
    await page.evaluate(() => { window.__freshRun('badger'); return window.__game.sidingVisits; }) === 0);
+
+// The ticket machine's menu is anchored to the bottom of the screen and grows
+// UPWARD, so every destination added pushes its top edge nearer the top. The
+// fifth one sent it off the screen on any phone held in landscape. Check the
+// whole panel is on screen at the sizes people actually hold.
+console.log('  (travel panel across viewports)');
+const PHONES = [
+  ['iPhone 5 portrait', 320, 568], ['android portrait', 360, 640],
+  ['iPhone SE portrait', 375, 667], ['iPhone 12 portrait', 390, 844],
+  ['iPhone 5 landscape', 568, 320], ['small android landscape', 640, 360],
+  ['iPhone SE landscape', 667, 375], ['iPhone 12 landscape', 844, 390],
+  ['desktop', 1280, 800]
+];
+const wasViewport = page.viewportSize();
+for (const [label, vw, vh] of PHONES) {
+  await page.setViewportSize({ width: vw, height: vh });
+  await page.waitForTimeout(120);
+  const box = await page.evaluate(() => {
+    const el = document.getElementById('travel-panel');
+    el.classList.remove('hidden');   // measure it, whatever the run is doing
+    const r = el.getBoundingClientRect();
+    el.classList.add('hidden');
+    return {
+      top: Math.round(r.top), bottom: Math.round(r.bottom),
+      left: Math.round(r.left), right: Math.round(r.right),
+      h: Math.round(r.height), vh: window.innerHeight, vw: window.innerWidth
+    };
+  });
+  ok(`the travel menu fits on ${label} (${vw}x${vh}, panel ${box.h}px)`,
+     box.top >= 0 && box.bottom <= box.vh && box.left >= 0 && box.right <= box.vw,
+     JSON.stringify(box));
+}
+await page.setViewportSize(wasViewport);
+await page.waitForTimeout(120);
+
+// And the help line has to name the keys that actually exist.
+ok('the help line covers all five destinations', await page.evaluate(() => {
+  const help = document.getElementById('travel-help').textContent;
+  const count = document.querySelectorAll('#travel-options .travel-option').length;
+  return count === 5 && /1\D+5/.test(help);
+}) === true, await page.textContent('#travel-help'));
 
 /* == 11. the supporters' board ========================================== */
 console.log("\nThe Supporters' Board");
