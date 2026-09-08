@@ -454,6 +454,9 @@
       <button class="travel-option" data-dest="cactus" type="button">
         <span class="travel-letter">D</span> Cactus Junction
       </button>
+      <button class="travel-option travel-unfinished" data-dest="siding" type="button">
+        <span class="travel-letter">E</span> ??? &mdash; under construction
+      </button>
     </div>
     <p id="travel-help">tap a destination &middot; or press <b>1</b> / <b>2</b> / <b>3</b> / <b>4</b></p>
   </div>
@@ -755,6 +758,44 @@
   </div>
 
   <!-- Save & Restore -->
+  <div id="supporters-panel" class="hidden">
+    <div id="supporters-card">
+      <button id="supporters-close" type="button" aria-label="Close">&times;</button>
+      <p id="supporters-eyebrow">Chalked up outside the cart</p>
+      <h2>Supporters</h2>
+      <p id="supporters-blurb">
+        The people keeping this cart in beans. Thank you, all of you.
+      </p>
+      <ul id="supporters-list"></ul>
+    </div>
+  </div>
+
+  <div id="import-panel" class="hidden">
+    <div id="import-card">
+      <h2>This link carries a save</h2>
+      <p id="import-blurb">
+        Someone has sent you their progress. Loading it will
+        <b>replace whatever is saved in this browser</b>.
+      </p>
+      <div id="import-compare">
+        <div class="import-side">
+          <p class="import-side-label">In this browser</p>
+          <p id="import-mine" class="import-side-value"></p>
+        </div>
+        <div class="import-arrow" aria-hidden="true">→</div>
+        <div class="import-side">
+          <p class="import-side-label">On the link</p>
+          <p id="import-theirs" class="import-side-value"></p>
+        </div>
+      </div>
+      <div class="save-row">
+        <button id="import-accept" type="button">↩️ Load theirs</button>
+        <button id="import-decline" type="button">Keep mine</button>
+      </div>
+      <p id="import-status" role="status"></p>
+    </div>
+  </div>
+
   <div id="save-panel" class="hidden">
     <div id="save-card">
       <button id="save-close" type="button" aria-label="Close">&times;</button>
@@ -772,6 +813,13 @@
       <div class="save-row">
         <button id="save-copy" type="button">📋 Copy</button>
         <button id="save-download" type="button">⬇️ Download backup</button>
+      </div>
+
+      <p class="save-section-label">Or share it as a link</p>
+      <textarea id="save-link" readonly rows="2" spellcheck="false"
+                aria-label="A link carrying your save"></textarea>
+      <div class="save-row">
+        <button id="save-link-copy" type="button">🔗 Copy link</button>
       </div>
 
       <p class="save-section-label">Restore from a code</p>

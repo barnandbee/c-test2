@@ -73,6 +73,17 @@ export class UI {
     this.saveUploadBtn = document.getElementById('save-upload');
     this.saveFileInput = document.getElementById('save-file');
     this.saveStatus = document.getElementById('save-status');
+    this.saveLink = document.getElementById('save-link');
+    this.saveLinkCopy = document.getElementById('save-link-copy');
+    this.importPanel = document.getElementById('import-panel');
+    this.importMine = document.getElementById('import-mine');
+    this.importTheirs = document.getElementById('import-theirs');
+    this.importAccept = document.getElementById('import-accept');
+    this.importDecline = document.getElementById('import-decline');
+    this.importStatus = document.getElementById('import-status');
+    this.supportersPanel = document.getElementById('supporters-panel');
+    this.supportersList = document.getElementById('supporters-list');
+    this.supportersClose = document.getElementById('supporters-close');
     this.menu = document.getElementById('menu');
     this.menuRoster = document.getElementById('menu-roster');
     this.menuBestRow = document.getElementById('menu-best-row');
@@ -352,6 +363,70 @@ export class UI {
       .addEventListener('click', onClose);
   }
 
+  /** Put the shareable link in front of the player, ready to copy. */
+  setSaveLink(url) {
+    if (this.saveLink) this.saveLink.value = url;
+  }
+
+  /**
+   * Ask before overwriting. A link that silently replaced someone's save the
+   * moment they opened it would be a trap, so the two saves are shown side by
+   * side and the player chooses.
+   */
+  showImport({ mine, theirs }) {
+    if (!this.importPanel) return;
+    const line = (s) => (s
+      ? `${s.characters} characters · ${s.trophies} trophies · best ${s.highScore}`
+      : 'nothing yet');
+    if (this.importMine) this.importMine.textContent = line(mine);
+    if (this.importTheirs) this.importTheirs.textContent = line(theirs);
+    if (this.importStatus) this.importStatus.textContent = '';
+    this.importPanel.classList.remove('hidden');
+  }
+
+  hideImport() {
+    if (this.importPanel) this.importPanel.classList.add('hidden');
+  }
+
+  setImportStatus(text, good = true) {
+    if (!this.importStatus) return;
+    this.importStatus.textContent = text;
+    this.importStatus.classList.toggle('bad', !good);
+  }
+
+  /** onAccept() takes the incoming save; onDecline() throws the link away. */
+  bindImport(onAccept, onDecline) {
+    if (this.importAccept) this.importAccept.addEventListener('click', onAccept);
+    if (this.importDecline) this.importDecline.addEventListener('click', onDecline);
+  }
+
+  /** The board beside the coffee cart, with whoever is on it. */
+  showSupporters(names) {
+    if (!this.supportersPanel) return;
+    if (this.supportersList) {
+      this.supportersList.innerHTML = '';
+      for (const name of names) {
+        const li = document.createElement('li');
+        li.textContent = name;
+        this.supportersList.appendChild(li);
+      }
+    }
+    this.supportersPanel.classList.remove('hidden');
+  }
+
+  hideSupporters() {
+    if (this.supportersPanel) this.supportersPanel.classList.add('hidden');
+  }
+
+  bindSupporters(onClose) {
+    if (this.supportersClose) this.supportersClose.addEventListener('click', onClose);
+    if (this.supportersPanel) {
+      this.supportersPanel.addEventListener('click', (e) => {
+        if (e.target === this.supportersPanel) onClose();
+      });
+    }
+  }
+
   /* ---------------- achievements viewer ---------------- */
 
   bindAchievements(onOpen, onClose) {
@@ -431,6 +506,10 @@ export class UI {
       });
     }
     if (this.saveCopyBtn) this.saveCopyBtn.addEventListener('click', () => this._copyCode());
+    if (this.saveLinkCopy) {
+      this.saveLinkCopy.addEventListener('click',
+        () => this._copyFrom(this.saveLink, 'link copied — anyone who opens it gets this save'));
+    }
     if (this.saveDownloadBtn) this.saveDownloadBtn.addEventListener('click', onDownload);
     if (this.saveRestoreBtn) {
       this.saveRestoreBtn.addEventListener('click', () => {
@@ -484,17 +563,26 @@ export class UI {
 
   /** Clipboard first, with a select-all fallback for browsers that refuse. */
   _copyCode() {
-    const text = this.saveCode ? this.saveCode.value : '';
+    this._copyFrom(this.saveCode, 'copied — keep it somewhere safe');
+  }
+
+  /**
+   * Copy a textarea's contents, falling back to selecting the text when the
+   * clipboard is refused — which it is on any page not served over https,
+   * and inside some in-app browsers.
+   */
+  _copyFrom(field, okMessage) {
+    const text = field ? field.value : '';
     if (!text) return;
     const fallback = () => {
-      if (!this.saveCode) return;
-      this.saveCode.focus();
-      this.saveCode.select();
+      if (!field) return;
+      field.focus();
+      field.select();
       this.setSaveStatus('selected — press ⌘C or Ctrl+C to copy');
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
-        .then(() => this.setSaveStatus('copied — keep it somewhere safe'))
+        .then(() => this.setSaveStatus(okMessage))
         .catch(fallback);
     } else {
       fallback();

@@ -163,7 +163,9 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   tree, and every landmark the forest itself refuses to grow on — the
   **putting green** included, which is precisely where it parked the first
   time for want of that check. Its lantern joins the world's lamps, so it
-  burns through fog with the rest of them.
+  burns through fog with the rest of them. Propped beside it is a chalked
+  **A-board of supporters** — double-tap it to read the names of the people
+  keeping the cart in beans.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -315,7 +317,7 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 - **The Mystic Line** — the ticket machine operates only during the
   **morning rush (06:00–09:00 on YOUR clock)** — or for a customer
   presenting **exactly 281 points**. Exact change only. When it hums
-  into life it offers four destinations (tap, or press 1/2/3/4):
+  into life it offers five destinations (tap, or press 1/2/3/4/5):
   **A) Upper Cottage Lane** — emerges at the cave mouth, where a
   roundel sign appears, **+55.5**; **B) Docklands** — the lake shore,
   new roundel, worth the same **+63.14159** as Red October herself;
@@ -336,6 +338,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   on his crown. The MYSTIC FOREST CENTRAL roundel by the trees is the
   ride home. Fares pay out once per run each; the trains themselves
   are, naturally, invisible.
+- **E) ??? — the siding.** The fifth entry on the machine is listed as
+  *under construction*, and it is telling the truth. It goes to a rough
+  rock chamber **sixty metres below the mountain**, lit by one worklamp
+  somebody left on: rubble, three stalagmites, scaffolding poles and a
+  hazard barrier. The roundel on the wall reads **UNDER CONSTRUCTION**,
+  because the station has no name yet. There is no shaft, no doorway and
+  no sign of it anywhere on the surface — walk the whole map and you will
+  never find it; the ticket is the only way in. It is also a **sealed
+  box**, so touching the roundel is the only way out: it puts you straight
+  back at the Cottage Lane ticket machine. It pays no fare, and it is not
+  one of the stations the sweep trophies count. One day it will be named
+  after somebody.
 - **Margaret** — a classic wooden marionette with a painted face,
   buttons for eyes, string hair and the four control strings rising to
   an unseen crossbar. A demanding performance unlocks her: in a single
@@ -850,6 +864,13 @@ it into any browser on any device and everything comes back.
 
 - **📋 Copy** puts the code on the clipboard (with a select-all fallback for
   browsers that block clipboard access).
+- **🔗 Copy link** gives you the same save as a **URL**. Mail it to yourself,
+  message it, or print it on a card — opening it on any device brings the save
+  with it. The code rides in the URL's **fragment** (`#save=…`), which browsers
+  never send to a server, so nobody's progress ends up in an access log; and
+  the game **never applies a link silently**. It shows you what is already in
+  that browser next to what is on the link, and asks. The code comes off the
+  address bar the moment it is read, so a shared link can't ask twice.
 - **⬇️ Download backup** saves the same code as a dated `.json` file, for
   anyone who would rather keep a file than a string. **📂 Load backup file**
   reads one back — you can also just paste the file's whole contents into the

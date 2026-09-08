@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   encode, decode, readSave, writeSave, describe,
+  readCodeFromUrl, buildShareUrl,
   SCHEMA_BOOLS, SCHEMA_INTS, SCHEMA_FLOATS, SCHEMA_CHAR_SETS,
   VOCAB_TROPHIES, VOCAB_CHARACTERS
 } from '../src/SaveCode.js';
@@ -236,7 +237,51 @@ for (const [label, code] of Object.entries(LEGACY_CODES)) {
   eq(`${label} still opens`, got, LEGACY_SAVE);
 }
 
-/* -- 10. how big the codes actually are --------------------------------- */
+/* -- 10. sharing a save as a link --------------------------------------- */
+// The link is how a save moves between a phone and a laptop, so the code has
+// to survive the trip intact. It rides in the fragment on purpose: a fragment
+// is never sent to the server, so nobody's progress lands in an access log.
+const HERE = { origin: 'https://example.github.io', pathname: '/badger/', hash: '', search: '' };
+const shared = encode(mid);
+const link = buildShareUrl(shared, HERE);
+
+ok('the link points at where the game is served from',
+  link.startsWith('https://example.github.io/badger/'), link);
+ok('the code rides in the fragment, not the query',
+  link.includes('#save=') && !link.includes('?'), link);
+eq('a link round-trips back to the same save',
+  decode(readCodeFromUrl({ ...HERE, hash: new URL(link).hash })), mid);
+
+// A code is [0-9A-Z-]; nothing in it needs escaping, and a link full of %2D
+// would be unreadable on a printed card. Check it stayed legible.
+ok('the code is not needlessly escaped', !link.includes('%'), link);
+
+// Older links, or one typed by hand, may put the code in the query string.
+eq('a code in the query string is accepted too',
+  decode(readCodeFromUrl({ ...HERE, search: `?save=${shared}` })), mid);
+
+// Percent-encoding survives whatever a chat app or mail client does to a link.
+eq('a percent-encoded code still decodes',
+  decode(readCodeFromUrl({ ...HERE, hash: `#save=${encodeURIComponent(shared)}` })), mid);
+
+ok('no code in the URL reads as nothing to import',
+  readCodeFromUrl(HERE) === null && readCodeFromUrl({ ...HERE, hash: '#save=' }) === null
+  && readCodeFromUrl({ ...HERE, hash: '#somethingelse=ABC' }) === null);
+
+// Other things may already be living in the fragment; don't be confused by them.
+eq('a code alongside other fragment keys is still found',
+  decode(readCodeFromUrl({ ...HERE, hash: `#tab=about&save=${shared}` })), mid);
+
+// Whitespace is what a human paste actually looks like.
+eq('a link with a stray space around the code still opens',
+  decode(readCodeFromUrl({ ...HERE, hash: `#save=${encodeURIComponent(` ${shared} `)}` })), mid);
+
+ok('an empty save still makes a usable link',
+  decode(readCodeFromUrl({ ...HERE, hash: new URL(buildShareUrl(encode({}), HERE)).hash })) !== null);
+
+console.log(`      share link is ${link.length} chars for a mid-game save`);
+
+/* -- 11. how big the codes actually are --------------------------------- */
 console.log(`      code sizes — empty ${encode({}).length}, mid-game ${encode(mid).length}, maxed ${encode(full).length} chars`);
 
 console.log(`${fail === 0 ? '✅ savecode: ALL PASS' : `‼️  savecode: ${fail} FAILURE(S)`} (${pass} assertions)`);

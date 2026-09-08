@@ -167,3 +167,16 @@ export const CHARACTER_UNLOCKS = [
   { key: 'reindeer', name: 'Raspberry Reindeer', how: 'Complete a run on full health as Pineapple Penguin or Polar Pear, in SNOW.' },
   { key: 'phantom', name: 'Phantom Badger', how: 'Complete a run in MYSTIC mode as any badger \u2014 Badger, Badgerette, William, Electro, Glass, Vapour or the Spirit of the Forest.' }
 ];
+
+/**
+ * The names chalked on the supporters' board beside the coffee cart.
+ *
+ * This is the whole of it — add a line and the board shows it. Kept here
+ * rather than in the world geometry so that updating it is a text edit and
+ * nothing has to be rebuilt or re-measured.
+ */
+export const SUPPORTERS = [
+  'T. Scart',
+  'M. Carter',
+  'E. McCombe'
+];

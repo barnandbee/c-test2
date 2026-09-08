@@ -381,5 +381,12 @@ tally and preference exactly as it was.
   count toward them.
 - **Cactus Junction** only appears as an option on the ticket machine
   itself; its roundel sign appears in the desert once you've ridden there.
+- **The siding** (listed as `??? — under construction`) counts toward
+  **nothing**. It is not one of the three original stops, and *More Lines
+  Than Mondrian* does not want it either — it has no name and pays no fare.
+  It does count as **having taken the train**, so a trip there will still cost
+  you the unlocks that require you never to have ridden the Mystic Line
+  (*Tara Tapir* and *Parsley*). Touch the roundel to get back out; there is
+  no other exit.
 - The **whirlpool** pays a random −45.45…+45.45 once per dip — the easiest
   route to *Negative Nelly* (finish in the red) is a run of bad spins.

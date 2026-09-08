@@ -362,6 +362,7 @@ export class World {
     this._buildNeptunesNook();
     this._buildTransmissionTower();
     this._buildStation();
+    this._buildSiding();
     this._buildCopse();
     this._buildTubeSigns();
     this._buildVegPatch();
@@ -609,6 +610,18 @@ export class World {
       z > st.minZ && z < st.maxZ
     ) {
       return z > st.trackMinZ ? st.trackFloorY : st.floorY;
+    }
+    // …and the same again for the siding, sixty metres down under the
+    // mountain. Nothing else reaches that depth, so the bounds test is
+    // enough on its own.
+    const sd = this.siding;
+    if (
+      sd &&
+      refY < sd.floorY + 8 &&
+      x > sd.minX && x < sd.maxX &&
+      z > sd.minZ && z < sd.maxZ
+    ) {
+      return sd.floorY;
     }
     for (let i = 0; i < this.platforms.length; i++) {
       const p = this.platforms[i];
@@ -3464,6 +3477,40 @@ export class World {
     lamp.position.set(0, 2.55, 0.4);
     group.add(lamp);
 
+    // --- the supporters' board ---------------------------------------------
+    // An A-board leaning against the cart, in the style of a menu chalked up
+    // outside a cafe — except the list is of people who have kept the cart
+    // in beans. Touch it to read the names.
+    const boardGroup = new THREE.Group();
+    boardGroup.position.set(1.75, 0, 0.35);
+    boardGroup.rotation.y = -0.5;
+    group.add(boardGroup);
+
+    const slateMat = track(createToonMaterial({ color: 0x24302c }));
+    const frameMat = woodMat;
+    // Two leaves of an A-frame, hinged at the top.
+    for (const lean of [-0.16, 0.16]) {
+      const leaf = new THREE.Mesh(track(new THREE.BoxGeometry(1.0, 1.5, 0.06)), frameMat);
+      leaf.position.set(0, 0.78, Math.sin(lean) * 0.42);
+      leaf.rotation.x = lean;
+      leaf.castShadow = true;
+      boardGroup.add(leaf);
+    }
+    const slateTex = track(this._makeSignTexture('SUPPORTERS', '#24302c', '#f0e6d2', 512, 128));
+    const slate = new THREE.Mesh(
+      track(new THREE.BoxGeometry(0.86, 1.28, 0.04)),
+      track(createToonMaterial({ map: slateTex })));
+    slate.position.set(0, 0.82, 0.13);
+    slate.rotation.x = 0.16;
+    boardGroup.add(slate);
+    void slateMat;
+
+    // Its world position, for the touch test — the cart is rotated to face
+    // inward, so the offset above is meaningless until it is resolved.
+    group.updateMatrixWorld(true);
+    this.coffeeBoardPos = new THREE.Vector3();
+    boardGroup.getWorldPosition(this.coffeeBoardPos);
+
     // Standing on it would be odd; walking into it is the point.
     this.colliders.push({ x, z, radius: 1.5, top: y + 1.7 });
   }
@@ -3589,6 +3636,121 @@ export class World {
    * getGroundHeight() treats the floors as ground while you're down
    * here; the surface height field carries on 14m overhead, oblivious.
    */
+  /**
+   * The fifth stop: a rough cave chamber deep under the mountain, reachable
+   * ONLY by the Mystic Line. There is no shaft, no doorway and no sign
+   * anywhere at ground level — walk the whole map and you will never find it.
+   *
+   * Its roundel says UNDER CONSTRUCTION, because it has no name yet. Touching
+   * the roundel is the way out: it puts you back at the ticket machine, which
+   * is the only reason the chamber is not a trap.
+   */
+  _buildSiding() {
+    // Sunk well below anything the height field produces, and laterally under
+    // the mountain so even the deepest cave elsewhere cannot run into it.
+    const F = -60;
+    const cx = this.mountainX;
+    const cz = this.mountainZ;
+    const HW = 9;    // half-width
+    const HD = 7;    // half-depth
+
+    this.siding = {
+      minX: cx - HW, maxX: cx + HW,
+      minZ: cz - HD, maxZ: cz + HD,
+      floorY: F,
+      entry: new THREE.Vector3(cx - 4.5, F, cz + 2),
+      roundel: new THREE.Vector3(cx + 3.4, F + 2.4, cz - HD + 0.5)
+    };
+
+    const track = (r) => { this._disposables.push(r); return r; };
+    const group = new THREE.Group();
+    this.scene.add(group);
+    this.sidingMeshes = group;
+
+    const rockMat = track(createToonMaterial({
+      color: 0x4a4550, rim: { color: 0x9a93a8, strength: 0.25, threshold: 0.68 }
+    }));
+    const dustMat = track(createToonMaterial({ color: 0x6a6274 }));
+
+    const addBox = (w, h, d, mat, x, y, z) => {
+      const mesh = new THREE.Mesh(track(new THREE.BoxGeometry(w, h, d)), mat);
+      mesh.position.set(x, y, z);
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      return mesh;
+    };
+
+    // Floor, ceiling and four walls — a sealed box, so nothing can be seen
+    // from outside and nothing can wander out.
+    addBox(HW * 2, 0.6, HD * 2, rockMat, cx, F - 0.3, cz);
+    addBox(HW * 2, 0.6, HD * 2, rockMat, cx, F + 6, cz);
+    addBox(0.6, 6.6, HD * 2, rockMat, cx - HW, F + 3, cz);
+    addBox(0.6, 6.6, HD * 2, rockMat, cx + HW, F + 3, cz);
+    addBox(HW * 2, 6.6, 0.6, rockMat, cx, F + 3, cz - HD);
+    addBox(HW * 2, 6.6, 0.6, rockMat, cx, F + 3, cz + HD);
+
+    // Rubble, and a few stalagmites, so it reads as a cave rather than a room.
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + 0.4;
+      const r = 3 + ((i * 37) % 40) / 10;
+      const s = 0.4 + ((i * 53) % 30) / 40;
+      const rock = new THREE.Mesh(
+        track(new THREE.IcosahedronGeometry(s, 0)), i % 3 ? rockMat : dustMat);
+      rock.position.set(cx + Math.cos(a) * r, F + s * 0.5, cz + Math.sin(a) * r * 0.7);
+      rock.rotation.set(a, a * 1.7, a * 0.6);
+      group.add(rock);
+    }
+    for (const [dx, dz, h] of [[-6, -4, 2.2], [6.4, 3.2, 1.7], [-2, 4.6, 1.3]]) {
+      const spike = new THREE.Mesh(track(new THREE.ConeGeometry(0.5, h, 6)), rockMat);
+      spike.position.set(cx + dx, F + h / 2, cz + dz);
+      group.add(spike);
+    }
+
+    // A worklamp, because somebody started this and wandered off.
+    const lamp = new THREE.PointLight(0xffd08a, 1.5, 26, 1.6);
+    lamp.position.set(cx, F + 4.2, cz + 1);
+    group.add(lamp);
+    const shade = new THREE.Mesh(
+      track(new THREE.ConeGeometry(0.5, 0.5, 10, 1, true)),
+      track(createToonMaterial({ color: 0xf0c060, emissive: 0xffbf55, emissiveIntensity: 1.2 })));
+    shade.position.set(cx, F + 4.5, cz + 1);
+    group.add(shade);
+
+    // Scaffolding and a hazard barrier, the international language of "not
+    // finished". The barrier also stops the roundel looking like decoration.
+    const poleMat = track(createToonMaterial({ color: 0x8a8f9c }));
+    for (const px of [-1.6, 1.6]) {
+      const pole = new THREE.Mesh(track(new THREE.CylinderGeometry(0.08, 0.08, 4.4, 8)), poleMat);
+      pole.position.set(cx + 3.4 + px, F + 2.2, cz - HD + 1.1);
+      group.add(pole);
+    }
+    const hazardTex = track(this._makeSignTexture('▮▮▮▮▮▮▮▮', '#e0a020', '#1a1720', 512, 96));
+    const hazard = addBox(4.2, 0.34, 0.12,
+      track(createToonMaterial({ map: hazardTex })), cx + 3.4, F + 0.9, cz - HD + 1.1);
+    hazard.rotation.z = 0.02;
+
+    // --- the roundel: UNDER CONSTRUCTION -----------------------------------
+    const roundel = new THREE.Group();
+    roundel.position.copy(this.siding.roundel);
+    group.add(roundel);
+    roundel.add(new THREE.Mesh(
+      track(new THREE.TorusGeometry(0.62, 0.17, 10, 28)),
+      track(createToonMaterial({ color: 0xd1231f, emissive: 0x4a0806, emissiveIntensity: 0.5 }))));
+    const barTex = track(this._makeSignTexture('UNDER CONSTRUCTION', '#1b3f94', '#ffffff', 640, 96));
+    const bar = new THREE.Mesh(
+      track(new THREE.BoxGeometry(2.6, 0.42, 0.1)),
+      track(createToonMaterial({ map: barTex, emissive: 0x0a1430, emissiveIntensity: 0.4 })));
+    bar.position.z = 0.24;
+    roundel.add(bar);
+    // A second, smaller line under it telling you what to do about it.
+    const hintTex = track(this._makeSignTexture('TOUCH TO RETURN', '#101014', '#f4c918', 512, 96));
+    const hint = new THREE.Mesh(
+      track(new THREE.BoxGeometry(1.7, 0.3, 0.08)),
+      track(createToonMaterial({ map: hintTex, emissive: 0x2a2404, emissiveIntensity: 0.5 })));
+    hint.position.set(0, -0.85, 0.24);
+    roundel.add(hint);
+  }
+
   _buildStation() {
     const cx = this.cottageX;
     const cz = this.cottageZ;

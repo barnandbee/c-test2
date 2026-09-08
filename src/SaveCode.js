@@ -83,6 +83,36 @@ export const SAVE_PREFIX = 'mystic-badger.';
 /** Human-facing label for the code, used in the UI and the backup file. */
 export const SAVE_LABEL = 'BADGER-1';
 
+/**
+ * Sharing a save as a LINK.
+ *
+ * The code rides in the URL's fragment rather than its query string, because
+ * a fragment is never sent to the server: a link you paste into a chat is
+ * read by the browser that opens it and by nothing in between. A `?save=`
+ * query is still accepted, since anything that rewrites links may well move
+ * it there, but the fragment is what we produce.
+ */
+export const SAVE_URL_KEY = 'save';
+
+/** The code carried by a URL, or null. Tolerates either place it may sit. */
+export function readCodeFromUrl(loc) {
+  const where = loc || (typeof window !== 'undefined' ? window.location : null);
+  if (!where) return null;
+  const fromHash = new URLSearchParams(String(where.hash || '').replace(/^#/, ''));
+  const fromQuery = new URLSearchParams(String(where.search || ''));
+  const raw = fromHash.get(SAVE_URL_KEY) || fromQuery.get(SAVE_URL_KEY);
+  if (!raw) return null;
+  const code = decodeURIComponent(raw).trim();
+  return code || null;
+}
+
+/** A link that carries `code`, pointing at wherever the game is served from. */
+export function buildShareUrl(code, loc) {
+  const where = loc || (typeof window !== 'undefined' ? window.location : null);
+  const base = where ? `${where.origin}${where.pathname}` : '';
+  return `${base}#${SAVE_URL_KEY}=${encodeURIComponent(String(code || '').trim())}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Frozen vocabularies — APPEND ONLY. Reordering invalidates every    */
 /*  code ever issued. New ids may be added at the end at any time;     */

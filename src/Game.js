@@ -37,14 +37,18 @@ import {
   readSave,
   writeSave,
   describe as describeSave,
-  SAVE_LABEL
+  SAVE_LABEL,
+  readCodeFromUrl,
+  buildShareUrl
 } from './SaveCode.js';
 import { CpuRival } from './Bot.js';
 import { PuttingGame } from './PuttingGame.js';
 import { VeggieTacToe } from './VeggieTacToe.js';
 import { PaintingGame } from './PaintingGame.js';
 import { SoundFX } from './Audio.js';
-import { TROPHIES, CHARACTER_UNLOCKS } from './Achievements.js';
+import { TROPHIES, CHARACTER_UNLOCKS,
+  SUPPORTERS
+} from './Achievements.js';
 import { SharedUniforms, updateSharedTime, setMysticMode } from './Shaders.js';
 import { BloomPass } from './Bloom.js';
 import { Weather } from './Weather.js';
@@ -261,7 +265,11 @@ const CACTUS_JUNCTION_POINTS = 33.101; // the secret stop's fare rebate (+33.101
 // Billy's unlock mean THESE three; Cactus Junction is a bonus secret stop.
 const CORE_STATIONS = ['cave', 'lake', 'copse'];
 // All four stops, Cactus Junction included — the 'More Lines Than Mondrian'
-// sweep needs every one of these in a single run.
+// sweep needs every one of these in a single run. The siding is deliberately
+// NOT here: it is unfinished, has no name and pays no fare, so requiring it
+// would quietly make Mondrian harder for a stop that isn't really a stop.
+// (It does still land in stationsVisited — you did ride the train — so the
+// "never took the train" unlocks correctly refuse a siding trip.)
 const ALL_STATIONS = ['cave', 'lake', 'copse', 'cactus'];
 const PAINTING_MAX_SCORE = 100; // the easel is only workable under this score
 const MYSTIC_CHANCE = 0.018;    // 1.8% of Random-Character runs turn Mystic
@@ -601,6 +609,7 @@ export class Game {
     this.isWolk = false;                   // P. Cork gone red for the weather
     this.muffinAblaze = false;             // Neptune's Muffin met the oven
     this._whirlNegRun = 0;                 // negative whirlpool spins this run
+    this.sidingVisits = 0;                 // trips to the unfinished fifth stop
     this._skyGrace = 0;                    // seconds left in which a summit counts as flown
     this._crispsClaimed = false;           // Hughes's +40 is once per run
     this.parsleyRejected = false;          // …and so is her marching order
@@ -686,6 +695,16 @@ export class Game {
       onRestore: (text) => this.restoreFromCode(text),
       onDownload: () => this.downloadBackup()
     });
+    this.ui.bindSupporters(() => this.ui.hideSupporters());
+    this.ui.bindImport(
+      () => {
+        const code = this._pendingImport;
+        this._pendingImport = null;
+        this.ui.hideImport();
+        if (code) this.restoreFromCode(code);
+      },
+      () => { this._pendingImport = null; this.ui.hideImport(); }
+    );
     // On-screen concede for Veggie Tac Toe (mobile has no Escape key).
     this.ui.bindVeggieQuit(() => { if (this.veggieGame) this.veggieGame.abandon(); });
 
@@ -1760,7 +1779,62 @@ export class Game {
       return;
     }
     this.ui.showSave(code, describeSave(readSave(window.localStorage)));
+    this.ui.setSaveLink(buildShareUrl(code));
     this._saveNudged = true; // they have seen it; stop pestering for now
+  }
+
+  /**
+   * A link may arrive carrying somebody's save. Applying it silently would be
+   * a trap — one tap on a shared link and your own progress is gone — so the
+   * code is taken off the URL immediately (otherwise the reload that applies
+   * a save would find it again and loop) and the player is shown both saves
+   * and asked.
+   */
+  checkUrlForSave() {
+    let code = null;
+    try {
+      code = readCodeFromUrl(window.location);
+    } catch (err) {
+      return false;
+    }
+    if (!code) return false;
+    this.clearSaveFromUrl();
+
+    let theirs = null;
+    try {
+      theirs = describeSave(decodeSave(code));
+    } catch (err) {
+      // A mangled link is worth saying so about — silence would look like
+      // the link simply did nothing.
+      this.ui.showImport({ mine: this.describeCurrentSave(), theirs: null });
+      this.ui.setImportStatus(err.message || 'that link could not be read', false);
+      return true;
+    }
+    this._pendingImport = code;
+    this.ui.showImport({ mine: this.describeCurrentSave(), theirs });
+    return true;
+  }
+
+  /** What is in this browser now, or null if it cannot be read. */
+  describeCurrentSave() {
+    try {
+      const save = readSave(window.localStorage);
+      return Object.keys(save).length ? describeSave(save) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  /** Take the code back off the address bar, leaving the rest of it alone. */
+  clearSaveFromUrl() {
+    try {
+      const url = new URL(window.location.href);
+      url.hash = '';
+      url.searchParams.delete('save');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    } catch (err) {
+      /* an address bar we cannot rewrite is not worth failing the boot over */
+    }
   }
 
   /**
@@ -2477,6 +2551,12 @@ export class Game {
     // Inside the cottage: appliances answer to a double-tap.
     if (this.handleCottage()) return;
 
+    // The supporters' board beside the coffee cart.
+    if (this.handleSupportersBoard()) return;
+
+    // In the siding: the roundel is the only way back.
+    if (this.handleSidingRoundel()) return;
+
     // Down at Cottage Lane: the ticket machine and the way out.
     if (this.handleStation()) return;
 
@@ -2744,6 +2824,48 @@ export class Game {
     return this.spawnedStars > 0 && this.starsCollected >= this.spawnedStars;
   }
 
+  /** The A-board by the coffee cart: who has been keeping it in beans. */
+  handleSupportersBoard() {
+    const at = this.world.coffeeBoardPos;
+    if (!at) return false;
+    const p = this.player.position;
+    const dx = p.x - at.x;
+    const dz = p.z - at.z;
+    if (dx * dx + dz * dz > 2.4 * 2.4) return false;
+    if (Math.abs(p.y - this.world.coffeeLevel) > 4) return false;
+    this.audio.play('select');
+    this.ui.showSupporters(SUPPORTERS);
+    return true;
+  }
+
+  /**
+   * The siding's roundel. The chamber is sealed, so this is the whole of the
+   * way out — touch it and the Mystic Line puts you back at the ticket
+   * machine you left from.
+   */
+  handleSidingRoundel() {
+    const sd = this.world.siding;
+    if (!sd) return false;
+    const p = this.player.position;
+    const dx = p.x - sd.roundel.x;
+    const dz = p.z - sd.roundel.z;
+    if (dx * dx + dz * dz > 3.2 * 3.2) return false;
+    if (Math.abs(p.y - sd.floorY) > 4) return false;
+
+    const st = this.world.station;
+    this.player.position.set(st.ticket.x - 1.6, st.floorY + 0.15, st.ticket.z + 1.2);
+    this.player.velocity.set(0, 0, 0);
+    this.cameraRig.snapTo(this.player.position);
+    this.audio.play('train');
+    this.ui.showTimeToast('BACK TO COTTAGE LANE. MIND THE SCAFFOLDING.');
+    this.particles.spawnBurst(
+      this._playerCenter.copy(this.player.position).setY(this.player.position.y + 1),
+      0x9ec2ff,
+      { count: 30, speed: 4.5, size: 44, upBias: 0.7, life: 0.7 }
+    );
+    return true;
+  }
+
   /** The trap door's lock only respects a perfectly square score. */
   isSquareScore() {
     if (!Number.isInteger(this.points) || this.points <= 0) return false;
@@ -2929,6 +3051,22 @@ export class Game {
         this.runUnlockNames.push('Cactus Balloon');
         this.ui.showTimeToast('★ CACTUS BALLOON UNLOCKED! 🎈');
       }
+    } else if (dest === 'siding') {
+      // The unfinished stop. It is a sealed chamber sixty metres down with no
+      // way out on foot, so it returns early — the surface-height line below
+      // would drag the player straight back up through the rock.
+      const sd = w.siding;
+      this.player.position.set(sd.entry.x, sd.entry.y + 0.15, sd.entry.z);
+      this.player.velocity.set(0, 0, 0);
+      this.cameraRig.snapTo(this.player.position);
+      this.sidingVisits += 1;
+      this.ui.showTimeToast('…THIS STATION HAS NO NAME YET. TOUCH THE ROUNDEL TO GO BACK.');
+      this.particles.spawnBurst(
+        this._playerCenter.copy(this.player.position).setY(this.player.position.y + 1),
+        0xffd08a,
+        { count: 30, speed: 4, size: 44, upBias: 0.7, life: 0.8 }
+      );
+      return;
     } else {
       target = new THREE.Vector3(w.copsePos.x + 1.4, 0, w.copsePos.z + 0.8);
       this.ui.showTimeToast('MYSTIC FOREST CENTRAL — END OF THE LINE');
@@ -3748,6 +3886,7 @@ export class Game {
     this._burnPuffIn = 0;
     this._whirlNegRun = 0;
     this._skyGrace = 0;
+    this.sidingVisits = 0;
     this._crispsClaimed = false;
     this.parsleyRejected = false;
     this.enteredNook = false;
@@ -3834,6 +3973,8 @@ export class Game {
 
   start() {
     this.requestPersistentStorage();
+    // Before anything else: did this page open from a shared save link?
+    this.checkUrlForSave();
     this.renderer.setAnimationLoop(() => this.tick());
   }
 
@@ -3952,6 +4093,7 @@ export class Game {
         else if (this.input.keys.has('Digit2')) this.travelTo('lake');
         else if (this.input.keys.has('Digit3')) this.travelTo('copse');
         else if (this.input.keys.has('Digit4')) this.travelTo('cactus');
+        else if (this.input.keys.has('Digit5')) this.travelTo('siding');
         else {
           const t = this.world.station.ticket;
           const dx = this.player.position.x - t.x;

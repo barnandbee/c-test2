@@ -9,6 +9,8 @@
  * Everything runs in one browser launch: world generation is the slow part,
  * and it only has to happen once.
  */
+import { SUPPORTERS } from '../src/Achievements.js';
+
 const URL_ARG = process.argv[2] || 'http://127.0.0.1:8123/index.html';
 const PW = process.env.PLAYWRIGHT_PATH || '/opt/node22/lib/node_modules/playwright/index.js';
 
@@ -157,8 +159,10 @@ for (const [name, opts, want] of [
 console.log('\nFoil, Error #44 and Ol\' Cardboard Box');
 
 // Helpers installed in the page: start a run, and tap somewhere through the
-// real handleDoubleTap() path rather than poking internals.
-await page.evaluate(() => {
+// real handleDoubleTap() path rather than poking internals. A reload wipes
+// them, so this is a function — call it again after every reload that is
+// followed by a test which needs them.
+const installHelpers = (p = page) => p.evaluate(() => {
   window.__freshRun = (c) => {
     const g = window.__game;
     if (g.inMenu) { g.setCharacter(c); g.beginRun(false, 'easy'); }
@@ -173,6 +177,7 @@ await page.evaluate(() => {
     g.handleDoubleTap();
   };
 });
+await installHelpers();
 
 const traits = await page.evaluate(() => {
   const g = window.__game; const out = {};
@@ -2205,7 +2210,159 @@ const rollers = await page.evaluate(async () => {
 ok('the roller list matches who actually rolls or slides',
    JSON.stringify(rollers) === JSON.stringify(['foil', 'marblella', 'snappy']), JSON.stringify(rollers));
 
-/* == 10. save & restore, end to end ===================================== */
+/* == 10. the unfinished fifth station =================================== */
+console.log('\nThe Siding');
+await installHelpers();   // section 9 reloaded the page
+
+const siding = await page.evaluate(() => {
+  const g = window.__game;
+  const w = g.world;
+  const sd = w.siding;
+  window.__freshRun('badger');
+  g.openTravel();                 // the ticket machine; travelTo refuses without it
+  g.travelTo('siding');
+  const p = g.player.position;
+
+  // How far the chamber sits below the ground above it. Sample the height
+  // field across the whole footprint, not just the middle — the mountain is
+  // a slope, and the lowest point of it is the one that matters.
+  let lowestAbove = Infinity;
+  for (let i = 0; i <= 6; i++) {
+    for (let j = 0; j <= 6; j++) {
+      const x = sd.minX + ((sd.maxX - sd.minX) * i) / 6;
+      const z = sd.minZ + ((sd.maxZ - sd.minZ) * j) / 6;
+      lowestAbove = Math.min(lowestAbove, w.getGroundHeight(x, z));
+    }
+  }
+
+  // The highest point of anything the siding builds, in world space. THREE
+  // is not on the page, so walk the corners of each geometry through its own
+  // world matrix by hand.
+  w.sidingMeshes.updateMatrixWorld(true);
+  let ceilingTop = -Infinity;
+  w.sidingMeshes.traverse((o) => {
+    if (!o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const b = o.geometry.boundingBox;
+    const e = o.matrixWorld.elements;
+    for (const cx2 of [b.min.x, b.max.x]) {
+      for (const cy of [b.min.y, b.max.y]) {
+        for (const cz2 of [b.min.z, b.max.z]) {
+          ceilingTop = Math.max(ceilingTop, e[1] * cx2 + e[5] * cy + e[9] * cz2 + e[13]);
+        }
+      }
+    }
+  });
+
+  return {
+    floorY: sd.floorY,
+    playerY: p.y,
+    insideBounds: p.x > sd.minX && p.x < sd.maxX && p.z > sd.minZ && p.z < sd.maxZ,
+    lowestAbove,
+    ceilingTop,
+    visits: g.sidingVisits,
+    // The roundel has to be reachable on foot from where the train drops you.
+    walkToRoundel: Math.hypot(p.x - sd.roundel.x, p.z - sd.roundel.z)
+  };
+});
+ok('the train drops you inside the chamber', siding.insideBounds, JSON.stringify(siding));
+ok('on the floor of it', Math.abs(siding.playerY - siding.floorY) < 1, String(siding.playerY));
+ok('the visit is counted', siding.visits === 1, String(siding.visits));
+ok('the roundel is a short walk away', siding.walkToRoundel < 12, String(siding.walkToRoundel));
+
+// The whole point is that it cannot be found by wandering: every piece of it
+// has to sit under the terrain, with a good margin, not merely below zero.
+ok('the chamber is buried far below the surface',
+   siding.floorY < siding.lowestAbove - 40,
+   `floor ${siding.floorY} vs ground ${siding.lowestAbove}`);
+ok('and nothing it builds pokes up through the ground',
+   siding.ceilingTop < siding.lowestAbove, `top ${siding.ceilingTop} vs ground ${siding.lowestAbove}`);
+
+// The roundel is the only way out, so it must answer where you can stand and
+// stay quiet everywhere else — a roundel that fires from across the map would
+// teleport people out of the cottage.
+const roundelAt = (dx, dy, dz) => page.evaluate(([ax, ay, az]) => {
+  const g = window.__game;
+  const sd = g.world.siding;
+  g.player.position.set(sd.roundel.x + ax, sd.floorY + ay, sd.roundel.z + az);
+  return g.handleSidingRoundel();
+}, [dx, dy, dz]);
+ok('standing at the roundel, it answers', await roundelAt(0.5, 0, 0.5) === true);
+ok('from the far corner of the chamber, it does not', await roundelAt(9, 0, 7) === false);
+ok('and not from sixty metres up in the open air', await roundelAt(0, 60, 0) === false);
+
+const wayOut = await page.evaluate(() => {
+  const g = window.__game;
+  const sd = g.world.siding;
+  g.player.position.set(sd.roundel.x, sd.floorY, sd.roundel.z);
+  g.handleSidingRoundel();
+  const st = g.world.station;
+  const p = g.player.position;
+  return {
+    y: p.y,
+    atTicketMachine: Math.hypot(p.x - st.ticket.x, p.z - st.ticket.z) < 3,
+    stillFalling: g.player.velocity.length()
+  };
+});
+ok('touching it puts you back at the ticket machine', wayOut.atTicketMachine, JSON.stringify(wayOut));
+ok('up at platform level, not still underground', wayOut.y > -30, String(wayOut.y));
+ok('and standing still, not mid-fall', wayOut.stillFalling === 0, String(wayOut.stillFalling));
+
+ok('a new run forgets the visits',
+   await page.evaluate(() => { window.__freshRun('badger'); return window.__game.sidingVisits; }) === 0);
+
+/* == 11. the supporters' board ========================================== */
+console.log("\nThe Supporters' Board");
+
+const board = await page.evaluate(() => {
+  const g = window.__game;
+  const w = g.world;
+  window.__freshRun('badger');
+  const at = w.coffeeBoardPos;
+  return {
+    exists: !!at,
+    // The cart is rotated, so the board's position has to come from the world
+    // matrix rather than its local offset — check it actually landed by it.
+    fromCart: at ? Math.hypot(at.x - w.coffeeX, at.z - w.coffeeZ) : null,
+    level: w.coffeeLevel
+  };
+});
+ok('the board exists', board.exists);
+ok('and stands beside the cart, not at the origin',
+   board.fromCart > 0.3 && board.fromCart < 4, String(board.fromCart));
+
+const readBoard = (dx, dy, dz) => page.evaluate(([ax, ay, az]) => {
+  const g = window.__game;
+  const at = g.world.coffeeBoardPos;
+  g.ui.hideSupporters();
+  g.player.position.set(at.x + ax, g.world.coffeeLevel + ay, at.z + az);
+  const fired = g.handleSupportersBoard();
+  const panel = document.getElementById('supporters-panel');
+  return {
+    fired,
+    open: !!panel && !panel.classList.contains('hidden'),
+    names: [...document.querySelectorAll('#supporters-list li')].map((li) => li.textContent)
+  };
+}, [dx, dy, dz]);
+
+const nearBoard = await readBoard(0.6, 0, 0.6);
+ok('standing at the board opens it', nearBoard.fired && nearBoard.open, JSON.stringify(nearBoard));
+ok('with the supporters chalked on it',
+   nearBoard.names.length === 3 && nearBoard.names.every((n) => /\w\.\s\w/.test(n)),
+   JSON.stringify(nearBoard.names));
+ok('the names on the board are the ones the game ships, in order',
+   JSON.stringify(nearBoard.names) === JSON.stringify(SUPPORTERS),
+   `${JSON.stringify(nearBoard.names)} vs ${JSON.stringify(SUPPORTERS)}`);
+ok('from six metres away it stays shut', (await readBoard(6, 0, 0)).fired === false);
+ok('and not from the top of the transmission tower', (await readBoard(0, 40, 0)).fired === false);
+
+ok('the close button shuts it', await page.evaluate(async () => {
+  document.getElementById('supporters-close').click();
+  const panel = document.getElementById('supporters-panel');
+  return panel.classList.contains('hidden');
+}) === true);
+
+/* == 12. save & restore, end to end ===================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();
@@ -2287,6 +2444,92 @@ const other = await page2.evaluate(() => ({
 }));
 ok('the code carries the save to another browser', other.electro === true && other.high === 106.6,
    JSON.stringify(other));
+
+/* == 13. sharing a save as a link ======================================= */
+console.log('\nSharing by Link');
+
+await page2.click('#menu-save-btn');
+await page2.waitForSelector('#save-panel:not(.hidden)', { timeout: 10000 });
+const shareLink = await page2.inputValue('#save-link');
+ok('the save panel offers a link', shareLink.startsWith('http'), shareLink);
+ok('the link carries the same code that is in the box',
+   shareLink.includes(encodeURIComponent(code)) || shareLink.includes(code), shareLink);
+ok('the code rides in the fragment, so it is never sent to the server',
+   shareLink.includes('#save=') && !shareLink.includes('?save='), shareLink);
+await page2.close();
+
+const page3 = await (await browser.newContext()).newPage();
+page3.on('pageerror', (e) => errs.push(String(e)));
+await page3.goto(shareLink, { timeout: 60000 });
+await ready(page3);
+await page3.waitForTimeout(400);
+
+const arrival = await page3.evaluate(() => ({
+  panelUp: !document.getElementById('import-panel').classList.contains('hidden'),
+  mine: document.getElementById('import-mine').textContent,
+  theirs: document.getElementById('import-theirs').textContent,
+  href: window.location.href,
+  applied: window.__game.isCharacterAllowed('electro')
+}));
+ok('opening the link asks first', arrival.panelUp, JSON.stringify(arrival));
+ok('and applies nothing until it is answered', arrival.applied === false);
+ok('it shows what is on the link', /char|troph|best/i.test(arrival.theirs), arrival.theirs);
+ok('and what would be lost — nothing, in a clean browser',
+   /nothing/i.test(arrival.mine), arrival.mine);
+// The code has to come off the address bar at once. Restoring reloads the
+// page, and a code still sitting in the URL would be found again on the way
+// back up — asking forever, one link, one loop.
+ok('the code is taken off the address bar straight away',
+   !/save=/.test(arrival.href), arrival.href);
+
+await page3.click('#import-decline');
+await page3.waitForTimeout(200);
+ok('declining closes it and keeps your own save',
+   await page3.evaluate(() => document.getElementById('import-panel').classList.contains('hidden')
+     && window.__game.isCharacterAllowed('electro') === false));
+
+await page3.reload();
+await ready(page3);
+await page3.waitForTimeout(400);
+ok('and it does not ask again on the next load',
+   await page3.evaluate(() =>
+     document.getElementById('import-panel').classList.contains('hidden')) === true);
+
+// Now say yes. This is the whole point of the feature: a phone's progress
+// arriving on a laptop that has never run the game.
+//
+// The detour via about:blank is load-bearing: the page is already sitting on
+// this URL without its fragment, and a goto() that changes only the fragment
+// is a same-document navigation — no reload, no boot, nothing to test.
+await page3.goto('about:blank');
+await page3.goto(shareLink, { timeout: 60000 });
+await ready(page3);
+await page3.waitForSelector('#import-panel:not(.hidden)', { timeout: 10000 });
+await page3.click('#import-accept');
+await page3.waitForTimeout(1800);
+await ready(page3);
+const imported = await page3.evaluate(() => ({
+  electro: window.__game.isCharacterAllowed('electro'),
+  william: window.__game.isCharacterAllowed('william'),
+  high: window.__game.highScore,
+  href: window.location.href
+}));
+ok('accepting loads the shared save', imported.electro && imported.william, JSON.stringify(imported));
+ok('scores and all', imported.high === 106.6, String(imported.high));
+ok('and the reload it does leaves the address bar clean', !/save=/.test(imported.href), imported.href);
+
+// A link somebody has mangled must say so rather than fail silently.
+await page3.goto('about:blank');
+await page3.goto(`${URL_ARG}#save=NOTAREALCODE`, { timeout: 60000 });
+await ready(page3);
+await page3.waitForTimeout(400);
+const mangled = await page3.evaluate(() => ({
+  panelUp: !document.getElementById('import-panel').classList.contains('hidden'),
+  status: document.getElementById('import-status').textContent,
+  high: window.__game.highScore
+}));
+ok('a broken link says so', mangled.panelUp && mangled.status.length > 0, JSON.stringify(mangled));
+ok('and leaves the save it found alone', mangled.high === 106.6, String(mangled.high));
 
 if (errs.length) { fail++; console.log(`  ✗ page errors: ${errs.join(' | ')}`); }
 await browser.close();
