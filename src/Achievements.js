@@ -180,3 +180,47 @@ export const SUPPORTERS = [
   'M. Carter',
   'E. McCombe'
 ];
+
+/**
+ * The three sponsorship boards, and what each currently shows.
+ *
+ * Three is the whole allowance and it is deliberate: the forest can carry a
+ * few signs without becoming a billboard hoarding, and a slot is worth more
+ * when there are only three of them. Their places in the world are fixed —
+ *
+ *   nook    a framed picture on the loft wall of Neptune's Nook, above the
+ *           easel and the paints, where a picture is what the room expects
+ *   helter  a board on posts in the plaza beside the helter skelter
+ *   tube    a full billboard on the platform wall at Cottage Lane, the kind
+ *           you read on the Underground while waiting for a train
+ *
+ * — but every word on them is here. To sell a slot, change its lines; to
+ * take it back, put the defaults below back. Nothing else has to move, and
+ * the geometry is built around the board, not around the words, so a longer
+ * headline shrinks to fit rather than pushing anything out of shape.
+ *
+ * `art: true` means: draw the house painting rather than a poster. That is
+ * the Nook's resting state, so an unsold slot in there still looks like
+ * somebody's front room rather than an empty frame waiting for money.
+ */
+export const AD_BOARDS = {
+  nook: {
+    art: true,
+    headline: 'Badger at Dusk',
+    subline: 'oil on board',
+    ground: '#2a3446',
+    ink: '#f0e6d2'
+  },
+  helter: {
+    headline: 'ROUND AND ROUND',
+    subline: 'AND ROUND',
+    ground: '#d1231f',
+    ink: '#fff3d0'
+  },
+  tube: {
+    headline: "TURNIP SCART'S",
+    subline: 'TASTY TURNIP JUICE!',
+    ground: '#f2e3a8',
+    ink: '#2f5d2f'
+  }
+};

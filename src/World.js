@@ -17,6 +17,7 @@ import { SimplexNoise2D, SeededRandom } from './utils/Noise.js';
 import { smoothstep, lerp, clamp } from './utils/MathUtils.js';
 import { createToonMaterial, createSkyMaterial, createWaterMaterial, SharedUniforms } from './Shaders.js';
 import { createAuraPoints } from './Particles.js';
+import { AD_BOARDS } from './Achievements.js';
 
 const TERRAIN_SIZE = 312;       // +20% — a roomier map on all sides
 const TERRAIN_SEGMENTS = 240;   // scaled up to keep the same detail density
@@ -2143,6 +2144,39 @@ export class World {
     flag.position.set(0.03, TOWER_H + 2.55, 0);
     group.add(flag);
 
+    // --- the plaza board: sponsorship slot two ----------------------------
+    // Out past the foot of the slide on two posts, angled back toward the
+    // tower so you read it as you walk up to the ride. Levelled off one
+    // ground sample rather than two, or it stands askew on a slope.
+    const AD_Z = BOT_R + 2.4;
+    const adGY = this.getHeight(cx, cz + AD_Z) - y;
+    const helterAd = new THREE.Group();
+    helterAd.position.set(0, adGY, AD_Z);
+    helterAd.rotation.y = Math.PI;   // face away from the tower, out at the map
+    const postMat = track(createToonMaterial({ color: 0x8a6a3a }));
+    for (const sx of [-1.25, 1.25]) {
+      const post = new THREE.Mesh(
+        track(new THREE.CylinderGeometry(0.09, 0.11, 2.3, 8)), postMat);
+      // Behind the board, not level with it: the posts are 0.11 thick and the
+      // printed face stands at 0.045, so a post on the centre line pokes out
+      // in front of the very thing it is holding up.
+      //
+      // Both are levelled off ONE ground sample, taken at the board's centre,
+      // so the board hangs square instead of following the slope. That leaves
+      // the feet to be buried deep enough to cover the cross-fall; the plaza
+      // is picked for flat ground (the siting search wants a gradient under
+      // 0.3), and 0.2m of burial covers what it actually finds.
+      post.position.set(sx, 1.05, -0.16);
+      post.castShadow = true;
+      helterAd.add(post);
+    }
+    const helterFace = this._makeAdBoard('helter', 2.6, 1.1, 0xf4efe6);
+    helterFace.position.set(0, 2.0, 0);
+    helterAd.add(helterFace);
+    group.add(helterAd);
+    this.adBoardSlots = this.adBoardSlots || {};
+    this.adBoardSlots.helter = helterAd;
+
     this.scene.add(group);
     // Solid tower body (players bump off it) and camera collider so the
     // spring arm doesn't punch through.
@@ -2894,6 +2928,16 @@ export class World {
     walls.right.push(addBox(0.2, 2.0, 5.0, wallMat, 3.1, uy, 0));
     walls.front.push(addBox(6.4, 2.0, 0.2, wallMat, 0, uy, 2.6));
     walls.front.push(addBox(1.6, 1.0, 0.12, paneMat, 0, uy, 2.68)); // a loft window
+
+    // --- the loft picture: sponsorship slot one ----------------------------
+    // On the back wall of the loft, facing the room, above the height of
+    // anybody's head. Unsold it shows the house painting, which suits a
+    // house that already keeps an easel and a jar of brushes downstairs.
+    const nookAd = this._makeAdBoard('nook', 1.15, 1.45, 0x6b4a2a);
+    nookAd.position.set(1.1, LOFT + 1.05, -2.44);
+    nook.add(nookAd);
+    this.adBoardSlots = this.adBoardSlots || {};
+    this.adBoardSlots.nook = nookAd;
     walls.front.push(addBox(2.2, 0.45, 0.2, trimMat, 0, LOFT + 2.02, 2.6)); // gable trim
     // The staircase: seven steps climbing +z along the west wall to the loft.
     const stepCount = 7;
@@ -3924,6 +3968,22 @@ export class World {
       addBox(0.12, 0.5, 0.45, darkMat, cx + 5.5 + side, F + 0.25, cz - 4.1);
     }
 
+    // --- the platform billboard: sponsorship slot three --------------------
+    // On the platform wall opposite the tracks, where you read it while the
+    // train doesn't come. The wall is the inside of a cylinder, so a board
+    // stood flat against it would sink in at the top — the z is therefore
+    // derived from the arch's radius at the board's own top edge, not picked
+    // by eye. Clear of the roundel, the bench and the WAY OUT sign.
+    const AD_W = 3.2, AD_H = 1.25;
+    const adCY = F + 1.85;
+    const adTop = adCY + (AD_H + AD_H * 0.14) / 2;
+    const adZ = cz - Math.sqrt(Math.max(0, R * R - (adTop - F) ** 2)) + 0.12;
+    const tubeAd = this._makeAdBoard('tube', AD_W, AD_H, 0x2b3340);
+    tubeAd.position.set(cx - 3.5, adCY, adZ);
+    station.add(tubeAd);
+    this.adBoardSlots = this.adBoardSlots || {};
+    this.adBoardSlots.tube = tubeAd;
+
     // --- light: humming strips + warm pools ---------------------------------
     const stripMat = track(createToonMaterial({ color: 0xffffff, emissive: 0xfff6e0, emissiveIntensity: 1.3 }));
     for (const lx of [cx - 7, cx, cx + 7]) {
@@ -4002,6 +4062,184 @@ export class World {
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
+  }
+
+  /**
+   * A sponsorship board's face. Two lines of type on a colour, or — when the
+   * slot is marked `art` — the house painting, which is what hangs in the
+   * Nook when nobody has bought the wall.
+   *
+   * The type shrinks to fit rather than wrapping or spilling, so a sponsor
+   * with a long name gets small letters instead of a broken layout.
+   */
+  _makeAdTexture(cfg, w, h) {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const g = canvas.getContext('2d');
+
+    if (cfg.art) {
+      // Dusk over the forest, badger in the foreground. Painted rather than
+      // lettered, because the Nook already has an easel and a pot of brushes
+      // and an empty advertising frame in there would be a sad little thing.
+      const sky = g.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#1d2742');
+      sky.addColorStop(0.55, '#5b4a72');
+      sky.addColorStop(1, '#c98a5c');
+      g.fillStyle = sky;
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = '#f6efd8';                                   // the moon
+      g.beginPath();
+      g.arc(w * 0.74, h * 0.22, Math.min(w, h) * 0.075, 0, Math.PI * 2);
+      g.fill();
+      const hills = ['#3c3350', '#2b2640', '#1b1a2c'];           // receding
+      for (let i = 0; i < hills.length; i++) {
+        g.fillStyle = hills[i];
+        g.beginPath();
+        const base = h * (0.46 + i * 0.075);
+        g.moveTo(0, h);
+        g.lineTo(0, base);
+        for (let x = 0; x <= w; x += w / 8) {
+          g.quadraticCurveTo(
+            x + w / 16, base - h * (0.06 + 0.05 * Math.sin(x * 0.02 + i * 2)),
+            x + w / 8, base);
+        }
+        g.lineTo(w, h);
+        g.closePath();
+        g.fill();
+      }
+      // A lit foreground for the badger to stand on. Without it the animal is
+      // a dark silhouette on dark hills and disappears entirely — which is
+      // what the first two attempts at this painting looked like.
+      const fore = g.createLinearGradient(0, h * 0.66, 0, h);
+      fore.addColorStop(0, '#8a6a72');
+      fore.addColorStop(1, '#d59a66');
+      g.fillStyle = fore;
+      g.beginPath();
+      g.moveTo(0, h);
+      g.lineTo(0, h * 0.72);
+      for (let x = 0; x <= w; x += w / 6) {
+        g.quadraticCurveTo(x + w / 12, h * 0.70, x + w / 6, h * 0.72);
+      }
+      g.lineTo(w, h);
+      g.closePath();
+      g.fill();
+      // The badger: a low dark body, a head, and the two stripes that make it
+      // a badger rather than any other silhouette. It reaches nearly two body
+      // -widths left of bx (head, then stripes past the snout), so bx sits
+      // past the middle — placed at a third, the stripes ran off the canvas.
+      // Kept above the title band too, which was covering the whole animal.
+      const bx = w * 0.46, by = h * 0.79, bs = Math.min(w, h) * 0.115;
+      g.fillStyle = '#15131c';
+      g.beginPath();                                            // body
+      g.ellipse(bx, by, bs * 1.45, bs * 0.6, 0, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();                                            // head, lifted
+      g.ellipse(bx - bs * 1.35, by - bs * 0.62, bs * 0.55, bs * 0.5, 0, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();                                            // snout
+      g.ellipse(bx - bs * 1.95, by - bs * 0.5, bs * 0.34, bs * 0.24, -0.2, 0, Math.PI * 2);
+      g.fill();
+      for (const lx of [-0.55, 0.55]) {                          // ears
+        g.beginPath();
+        g.arc(bx - bs * (1.35 - lx * 0.5), by - bs * (1.0 + Math.abs(lx) * 0.1),
+              bs * 0.17, 0, Math.PI * 2);
+        g.fill();
+      }
+      // The two stripes, running the length of the head — without these it is
+      // a dark animal, with them it is a badger.
+      g.strokeStyle = '#efe7d6';
+      g.lineWidth = Math.max(2, bs * 0.13);
+      g.lineCap = 'round';
+      for (const off of [-0.3, 0.3]) {
+        g.beginPath();
+        g.moveTo(bx - bs * 2.1, by - bs * (0.5 + off * 0.5));
+        g.lineTo(bx - bs * 0.95, by - bs * (0.72 + off));
+        g.stroke();
+      }
+    } else {
+      g.fillStyle = cfg.ground;
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = cfg.ink;
+      g.lineWidth = Math.max(2, h * 0.018);
+      g.strokeRect(h * 0.05, h * 0.05, w - h * 0.1, h - h * 0.1);
+    }
+
+    // Lettering. On the painting this is the title card along the bottom;
+    // on a poster it is the whole point.
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const fit = (text, startPx, maxW) => {
+      let size = startPx;
+      do {
+        g.font = `bold ${size}px "Lilita One", "Trebuchet MS", sans-serif`;
+        size -= 2;
+      } while (g.measureText(text).width > maxW && size > 8);
+      return size;
+    };
+    const maxW = w * 0.86;
+    if (cfg.art) {
+      g.fillStyle = 'rgba(10, 9, 14, 0.62)';
+      g.fillRect(0, h * 0.84, w, h * 0.16);
+      g.fillStyle = cfg.ink;
+      fit(cfg.headline, Math.round(h * 0.085), maxW);
+      g.fillText(cfg.headline, w / 2, h * 0.905);
+    } else if (cfg.subline) {
+      g.fillStyle = cfg.ink;
+      fit(cfg.headline, Math.round(h * 0.26), maxW);
+      g.fillText(cfg.headline, w / 2, h * 0.4);
+      fit(cfg.subline, Math.round(h * 0.19), maxW);
+      g.fillText(cfg.subline, w / 2, h * 0.66);
+    } else {
+      g.fillStyle = cfg.ink;
+      fit(cfg.headline, Math.round(h * 0.3), maxW);
+      g.fillText(cfg.headline, w / 2, h * 0.52);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  /**
+   * One sponsorship board: a face in a frame, built around the board rather
+   * than around the words, so changing the copy never moves the geometry.
+   * Returns the group, positioned by the caller.
+   */
+  _makeAdBoard(slot, boardW, boardH, frameColor) {
+    const track = (r) => { this._disposables.push(r); return r; };
+    const cfg = AD_BOARDS[slot];
+    const group = new THREE.Group();
+    // Texture pixels per world unit. 96 was too coarse: the Nook's picture is
+    // only 1.15m wide, which gave a 110px canvas with no room for a badger to
+    // read as anything but a smudge.
+    const px = 220;
+    const adTex = track(this._makeAdTexture(cfg,
+      Math.round(boardW * px), Math.round(boardH * px)));
+    const face = new THREE.Mesh(
+      track(new THREE.PlaneGeometry(boardW, boardH)),
+      track(createToonMaterial({
+        map: adTex,
+        // The emissive needs the texture too. A flat white emissive lifts
+        // every pixel by the same amount, which does not brighten a picture
+        // so much as fog it — the first attempt at this turned the painting
+        // into a grey rectangle. Mapped, it lifts each colour toward itself,
+        // so the board stays readable in the tube's gloom and still looks
+        // like paint rather than a lightbox.
+        emissiveMap: adTex,
+        emissive: 0xffffff,
+        emissiveIntensity: 0.55
+      })));
+    face.position.z = 0.045;   // clear of the frame's front face, not on it
+    group.add(face);
+    const frameMat = track(createToonMaterial({ color: frameColor }));
+    const lip = boardH * 0.07;
+    const frame = new THREE.Mesh(
+      track(new THREE.BoxGeometry(boardW + lip * 2, boardH + lip * 2, 0.06)),
+      frameMat);
+    frame.castShadow = true;
+    group.add(frame);
+    return group;
   }
 
   /* ================================================================ */

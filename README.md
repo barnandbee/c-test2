@@ -166,6 +166,14 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   burns through fog with the rest of them. Propped beside it is a chalked
   **A-board of supporters** — double-tap it to read the names of the people
   keeping the cart in beans.
+- **Three sponsorship boards**, and three is the whole allowance — the forest
+  can carry a few signs without turning into a hoarding, and a slot is worth
+  more when there are only three. They are the **framed picture** on the loft
+  wall of Neptune's Nook, a **board on posts** in the plaza beside the helter
+  skelter, and a **billboard** on the platform wall at Cottage Lane, the kind
+  you read while the train doesn't come. Unsold, the Nook's frame holds the
+  house painting (*Badger at Dusk*), which is what a room with an easel in it
+  ought to have on the wall; the other two carry the forest's own notices.
 - **The clock** — you have **3 minutes**. When it runs dry, the run ends.
   Your best score is kept locally between sessions.
 - **Pine cones (+1)** — hovering, spinning, with an emissive glow pulse.
@@ -900,6 +908,30 @@ Anything the codec doesn't recognise — a key added in a later update, a trophy
 id it has never seen — is carried through verbatim in an overflow section
 rather than dropped, so an old code stays valid and a new one never silently
 loses ground.
+
+## Supporters and sponsorship boards
+
+Both live at the bottom of `src/Achievements.js`, and that is deliberate: they
+are **source**, not data the game can be told to change. Nothing in the running
+game writes to them, no save code carries them and no URL can set them, so the
+only way a name appears on a board is for somebody with push access to this
+repository to put it there. A player cannot add themselves, and neither can a
+shared link.
+
+- **`SUPPORTERS`** — the names chalked on the A-board beside the coffee cart.
+  Add a line and the board shows it; the panel is a list, so it takes as many
+  as you like without anything needing to be re-measured.
+- **`AD_BOARDS`** — the three sponsorship slots (`nook`, `helter`, `tube`) and
+  the words on each. To sell a slot, change its `headline` and `subline`; to
+  take it back, restore the default. The geometry is built around the board
+  rather than around the copy, and the type shrinks to fit, so a long sponsor
+  name gets smaller letters instead of a broken layout. Setting `art: true` on
+  a slot makes it draw the house painting instead of a poster — that is the
+  Nook's resting state, so an unsold frame in there still looks like somebody's
+  front room rather than an empty billboard.
+
+Changing either is a text edit followed by a commit. There is no admin screen,
+because an admin screen is a thing that can be broken into.
 
 ## Architecture
 

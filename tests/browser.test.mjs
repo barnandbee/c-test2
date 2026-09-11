@@ -2478,7 +2478,121 @@ ok('the close button shuts it', await page.evaluate(async () => {
   return panel.classList.contains('hidden');
 }) === true);
 
-/* == 12. save & restore, end to end ===================================== */
+/* == 12. the three sponsorship boards =================================== */
+console.log('\nSponsorship Boards');
+
+const boards = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const g = window.__game;
+  const w = g.world;
+  const slots = w.adBoardSlots || {};
+  const out = { names: Object.keys(slots).sort(), each: {} };
+
+  for (const [slot, group] of Object.entries(slots)) {
+    group.updateMatrixWorld(true);
+
+    // The face is the plane; everything else in the scene is a potential
+    // blocker. A board sunk into the wall it hangs on is the failure that
+    // matters, and it is exactly what a raycast from in front detects.
+    let face = null;
+    group.traverse((o) => {
+      if (o.isMesh && o.geometry.type === 'PlaneGeometry') face = o;
+    });
+    // Aim at the FACE's centre, not the group's. The helter skelter board
+    // hangs on two long posts, so the group's bounding box is centred down
+    // among them, a metre and a half below the sign — aiming there tests
+    // whether you can see the posts.
+    const box = new THREE.Box3().setFromObject(face || group);
+    const centre = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const fwd = new THREE.Vector3(0, 0, 1)
+      .applyQuaternion(group.getWorldQuaternion(new THREE.Quaternion())).normalize();
+
+    const scene = [];
+    w.scene.traverse((o) => { if (o.isMesh && o.geometry) scene.push(o); });
+    const ray = new THREE.Raycaster();
+    let seen = 0, tried = 0;
+    // Aim across the WHOLE face, not just its middle. The tube board hangs on
+    // the inside of a cylinder, so the way it fails is by its top edge sinking
+    // into the curve while the centre still stands clear — a centre-only probe
+    // let a board pushed 0.04 into the wall pass with full marks.
+    const fw = face.geometry.parameters.width;
+    const fh = face.geometry.parameters.height;
+    const targets = [];
+    for (const fx of [-0.44, 0, 0.44]) {
+      for (const fy of [-0.44, 0, 0.44]) {
+        targets.push(face.localToWorld(new THREE.Vector3(fx * fw, fy * fh, 0.001)));
+      }
+    }
+    for (const target of targets) {
+      // Close standoffs only. Three metres back from the Nook's picture puts
+      // the eye outside the house, and a ray that crosses the front wall says
+      // nothing about whether the picture is buried in the wall behind it.
+      for (const dist of [0.5, 1.0]) {
+        const from = target.clone().addScaledVector(fwd, dist);
+        ray.set(from, target.clone().sub(from).normalize());
+        const xs = ray.intersectObjects(scene, true);
+        tried++;
+        if (xs.length && xs[0].object === face) seen++;
+      }
+    }
+    out.each[slot] = {
+      readable: seen / tried,
+      centre: [+centre.x.toFixed(2), +centre.y.toFixed(2), +centre.z.toFixed(2)],
+      width: +size.x.toFixed(2),
+      hasFace: !!face,
+      // Textures must actually carry an image, or the board is a blank slab.
+      textured: !!(face && face.material.map && face.material.map.image
+                   && face.material.map.image.width > 100)
+    };
+  }
+
+  // Slot-specific geometry the eye caught and a number can keep catching.
+  const helter = slots.helter;
+  let postFloat = null;
+  if (helter) {
+    helter.updateMatrixWorld(true);
+    postFloat = -Infinity;
+    helter.traverse((o) => {
+      if (!o.isMesh || o.geometry.type !== 'CylinderGeometry') return;
+      const b = new THREE.Box3().setFromObject(o);
+      const mid = b.getCenter(new THREE.Vector3());
+      // Gap between the post's foot and the real ground under that post.
+      postFloat = Math.max(postFloat, b.min.y - w.getHeight(mid.x, mid.z));
+    });
+  }
+
+  // The Nook's picture has to be inside the Nook, not stuck on the outside.
+  let nookInside = null;
+  if (slots.nook) {
+    const c = new THREE.Box3().setFromObject(slots.nook).getCenter(new THREE.Vector3());
+    nookInside = w.isInsideNook(c.x, c.y, c.z);
+  }
+  return { ...out, postFloat, nookInside };
+});
+
+ok('there are exactly three sponsorship slots — the whole allowance',
+   boards.names.length === 3, JSON.stringify(boards.names));
+ok('and they are the three places that were promised',
+   JSON.stringify(boards.names) === JSON.stringify(['helter', 'nook', 'tube']),
+   JSON.stringify(boards.names));
+
+for (const slot of boards.names) {
+  const b = boards.each[slot];
+  ok(`the ${slot} board carries a printed face`, b.hasFace && b.textured, JSON.stringify(b));
+  // A sponsor is paying to be looked at. Every viewpoint in front of the
+  // board must reach it — the tube board in particular hangs on the inside
+  // of a cylinder, where a flat panel stood square would sink in at the top.
+  ok(`the ${slot} board is readable from in front of it`,
+     b.readable === 1, `reached from ${(b.readable * 100).toFixed(0)}% of viewpoints`);
+}
+
+ok("the helter skelter's posts reach the ground",
+   boards.postFloat !== null && boards.postFloat < 0,
+   `highest post foot stands ${boards.postFloat} above the ground under it`);
+ok("the Nook's picture hangs inside the Nook", boards.nookInside === true);
+
+/* == 13. save & restore, end to end ===================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
   localStorage.clear();
@@ -2561,7 +2675,7 @@ const other = await page2.evaluate(() => ({
 ok('the code carries the save to another browser', other.electro === true && other.high === 106.6,
    JSON.stringify(other));
 
-/* == 13. sharing a save as a link ======================================= */
+/* == 14. sharing a save as a link ======================================= */
 console.log('\nSharing by Link');
 
 await page2.click('#menu-save-btn');
