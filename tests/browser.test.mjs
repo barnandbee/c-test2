@@ -1241,15 +1241,23 @@ ok('and Magnus is still Magnus', builds.magnusStillMagnus === true);
 
 console.log('\nLimbs and trimmings that must stay visible');
 
-// Four builders once swung their arms INWARD — `rotation.z = -side * a`
-// sends an arm hanging along local -Y across the body instead of away from
-// it, so every hand ended up tucked behind the torso. The rig still swung
-// them; you simply could not see them. These pin the sign.
+// Several builders swung their arms INWARD — `rotation.z = -side * a` sends
+// an arm hanging along local -Y across the body instead of away from it, so
+// every hand ended up tucked behind the torso. The rig still swung them; you
+// simply could not see them. These pin the sign.
+//
+// The last five were found by raycasting at each hand from all round the
+// hero and counting how many directions reached it: all five scored zero,
+// visible from nowhere, at any point in the walk cycle. Jam was not even on
+// the suspect list — the width heuristic missed him because his body is
+// narrow at hand height — he turned up only because his arm code is a
+// character-for-character copy of Mayonnaise's.
 const limbs = await page.evaluate(() => {
   const g = window.__game;
   for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = true;
   const out = {};
-  for (const key of ['hughes', 'boffington', 'boddington', 'magnus', 'wagnus']) {
+  for (const key of ['hughes', 'boffington', 'boddington', 'magnus', 'wagnus',
+                     'ginsberg', 'mayo', 'error42', 'robofarmer', 'jam']) {
     g.setCharacter(key);
     const root = g.player.root;
     root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);
@@ -1282,7 +1290,11 @@ const limbs = await page.evaluate(() => {
         const p = new (g.player.position.constructor)();
         child.getWorldPosition(p);
         const w = widthAt(p.y);
-        if (w > 0.05) ratios.push(+(Math.abs(p.x) / w).toFixed(2));
+        // No body at that height means nothing can be hiding the hand — that
+        // is a pass, not a hand to skip. Skipping it silently is how Jam's
+        // tucked arms went unnoticed: his hands hang below the jam jar, so
+        // the width came back zero and he produced no ratios at all.
+        ratios.push(w > 0.05 ? +(Math.abs(p.x) / w).toFixed(2) : Infinity);
       }
     }
     out[key] = ratios;

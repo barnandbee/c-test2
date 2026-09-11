@@ -1595,7 +1595,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.22, 0.42, 0);
-      pivot.rotation.z = -side * 0.35;
+      pivot.rotation.z = side * 0.35; // splay out — see the note on Hughes
       const arm = new THREE.Mesh(armGeo, limbMat);
       arm.castShadow = true;
       pivot.add(arm);
@@ -2061,7 +2061,7 @@ export class Player {
     [-1, 1].forEach((side, i) => {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.36, 0.55, 0);
-      pivot.rotation.z = -side * 0.45;
+      pivot.rotation.z = side * 0.45; // splay out — see the note on Hughes
       const arm = new THREE.Mesh(armGeo, armMats[i]);
       arm.castShadow = true;
       pivot.add(arm);
@@ -2936,7 +2936,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.34, 0.55, 0);
-      pivot.rotation.z = -side * 0.45;
+      pivot.rotation.z = side * 0.45; // splay out — see the note on Hughes
       const arm = new THREE.Mesh(armGeo, limbMat);
       arm.castShadow = true;
       pivot.add(arm);
@@ -3089,7 +3089,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.34, 0.55, 0);
-      pivot.rotation.z = -side * 0.45;
+      pivot.rotation.z = side * 0.45; // splay out — see the note on Hughes
       const arm = new THREE.Mesh(armGeo, limbMat);
       arm.castShadow = true;
       pivot.add(arm);
@@ -5231,7 +5231,7 @@ export class Player {
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(side * 0.3, 0.52, 0);
-      pivot.rotation.z = -side * 0.3;
+      pivot.rotation.z = side * 0.4; // splay out — see the note on Hughes
       // Left arm robotic; right arm a green jumper sleeve with a skin hand.
       const sleeveMat = side === -1 ? metalMat : jumperMat;
       const handMat = side === -1 ? metalMat : skinMat;
@@ -9203,8 +9203,16 @@ export class Player {
         const wartGeo = track(new THREE.SphereGeometry(0.026, 6, 5));
         for (let i = 0; i < 5; i++) {
           const wart = new THREE.Mesh(wartGeo, pickleMat);
-          const a = i * 1.7;
-          wart.position.set(Math.sin(a) * 0.085, -0.12 - i * 0.08, Math.cos(a) * 0.085);
+          // Two things the original ring got wrong, and both hid warts.
+          // Radius: the arm's capsule is 0.09, so a wart ringed at 0.085 sat
+          // INSIDE the pickle. 0.1 leaves it standing proud.
+          // Angle: a full turn put two of the five on the arm's inboard face,
+          // where the torso covers them — the same reason you never see the
+          // inside of anybody's arm. This sweep keeps all five on the side
+          // that faces out, still scattered in z and y so it reads as warts
+          // and not as a row of studs.
+          const a = 0.15 + i * 0.65;
+          wart.position.set(Math.sin(a) * 0.1, -0.12 - i * 0.08, Math.cos(a) * 0.1);
           pivot.add(wart);
         }
       } else {
