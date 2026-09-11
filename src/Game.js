@@ -301,6 +301,11 @@ const FRITTER_POINTS = 88.8;      // the charred pickle fritter reward
 const PAN_SCORE_MIN = 0;          // pan is only free with a score in this range
 const PAN_SCORE_MAX = 50;
 const FRIDGE_CLICKS_REQUIRED = 10; // clicks before the pickle appears
+// The Brave Badger Brew: stocked only for a Pickle Stick owner, and only once
+// a run is past this score. It rounds the score up to the next whole ten and
+// charges health for the wind.
+const BREW_MIN_SCORE = 300;
+const BREW_HEALTH_COST = 10;
 const PICKLE_UNLOCK_SCORE = 100;   // score needed when grabbing the pickle
 const SANDWICH_RANGE = 2.6;
 // One of each collectible species, identified by point value:
@@ -610,6 +615,8 @@ export class Game {
     this.muffinAblaze = false;             // Neptune's Muffin met the oven
     this._whirlNegRun = 0;                 // negative whirlpool spins this run
     this.sidingVisits = 0;                 // trips to the unfinished fifth stop
+    this.supportersOpen = false;           // the board freezes the run clock
+    this.brewDrunk = false;                // one Brave Badger Brew per run
     this._skyGrace = 0;                    // seconds left in which a summit counts as flown
     this._crispsClaimed = false;           // Hughes's +40 is once per run
     this.parsleyRejected = false;          // …and so is her marching order
@@ -695,7 +702,7 @@ export class Game {
       onRestore: (text) => this.restoreFromCode(text),
       onDownload: () => this.downloadBackup()
     });
-    this.ui.bindSupporters(() => this.ui.hideSupporters());
+    this.ui.bindSupporters(() => this.closeSupporters());
     this.ui.bindImport(
       () => {
         const code = this._pendingImport;
@@ -1591,6 +1598,54 @@ export class Game {
         this.gameOver('health');
         return;
       }
+    }
+  }
+
+  /**
+   * Is there a Brave Badger Brew in the fridge right now?
+   *
+   * It only stocks itself for somebody who has already unlocked Pickle Stick
+   * — the brew is what the pickles were for — and only once the run is past
+   * 300, so it is a late-run decision rather than something to plan around.
+   * One bottle per run: after a swig the score is already a whole ten, so a
+   * second would cost 10 health and change nothing.
+   */
+  brewAvailable() {
+    return (
+      this.pickleStickUnlocked &&
+      !this.brewDrunk &&
+      !this.isGameOver &&
+      this.points >= BREW_MIN_SCORE
+    );
+  }
+
+  /**
+   * Drink it. The score rounds UP to the next whole ten — which is the real
+   * prize, because it also takes a decimal score and makes it an integer —
+   * and it costs 10 health, because it is a violently gassy beverage.
+   *
+   * It can kill you. That is what makes drinking it brave.
+   */
+  drinkBrew() {
+    this.brewDrunk = true;
+    const before = this.points;
+    this.points = Math.ceil(shownScore(this.points) / 10) * 10;
+    this.ui.setPoints(this.points);
+    this.health -= BREW_HEALTH_COST;
+    this.ui.setHealth(this.health);
+    this.audio.play('collect', 1);
+    this.awardAchievement('bravethebrew');
+    this.particles.spawnBurst(
+      this.player.getColliderCenter(this._playerCenter), 0x9ad86a,
+      { count: 30, speed: 3.4, size: 40, upBias: 1.2, life: 0.8 }
+    );
+    this.ui.showTimeToast(
+      `BRAVE BADGER BREW! ${shownScore(before)} → ${this.points}, AND OOF, THE GAS (−${BREW_HEALTH_COST} HEALTH)`
+    );
+    if (this.health <= 0) {
+      this.health = 0;
+      this.ui.setHealth(0);
+      this.gameOver('health');
     }
   }
 
@@ -2773,6 +2828,13 @@ export class Game {
       }
     } else if (hit === 'fridge') {
       this.fridgeOpenedThisRun = true;   // Foil only needs it opened once
+      // The Brave Badger Brew is on the shelf before anything else, when it
+      // is there at all — it takes precedence over the pickle-counting, since
+      // a player who has earned it has long since finished counting.
+      if (this.brewAvailable()) {
+        this.drinkBrew();
+        return;
+      }
       // Ten pokes at the fridge and the message turns — a Pickle Stick is
       // then summoned to the top of a random tree (see managePickle()).
       if (!this.pickleStickUnlocked) {
@@ -2835,7 +2897,14 @@ export class Game {
     if (Math.abs(p.y - this.world.coffeeLevel) > 4) return false;
     this.audio.play('select');
     this.ui.showSupporters(SUPPORTERS);
+    this.supportersOpen = true;   // freezes the clock — see the update loop
     return true;
+  }
+
+  /** Shut the supporters' board and start the clock again. */
+  closeSupporters() {
+    this.supportersOpen = false;
+    this.ui.hideSupporters();
   }
 
   /**
@@ -3887,6 +3956,8 @@ export class Game {
     this._whirlNegRun = 0;
     this._skyGrace = 0;
     this.sidingVisits = 0;
+    this.supportersOpen = false;   // or a restart mid-read leaves the clock stopped
+    this.brewDrunk = false;
     this._crispsClaimed = false;
     this.parsleyRejected = false;
     this.enteredNook = false;
@@ -4076,6 +4147,17 @@ export class Game {
       }
       this.audio.setMoveIntensity(0);
       this.player.animate(dt, false);
+    } else if (this.supportersOpen) {
+      // Reading the supporters' board: the clock is FROZEN. There is no game
+      // in it — it is a list of names — and nobody should lose seconds off a
+      // three-minute run for reading who is paying for the coffee. Taps are
+      // swallowed so closing the panel doesn't also read as a gesture.
+      this.input.consumeDoubleTap();
+      this.input.consumeTripleTap();
+      if (this.input.keys.has('Escape')) this.closeSupporters();
+      this.audio.setMoveIntensity(0);
+      this.player.animate(dt, false);
+      this.cameraRig.update(dt, this.player, null);
     } else if (!this.isGameOver) {
       // The countdown IS the game: run dry and the twilight takes you.
       this.timeLeft -= dt;

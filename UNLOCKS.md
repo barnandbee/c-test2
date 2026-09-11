@@ -100,7 +100,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (96)
+## Trophies (97)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -230,6 +230,7 @@ Fourteen trophies that only one hero (or one pair) can reach.
 | ⚡ **Live Wire** | As **Electro Badger**: touch the **transmission tower during a storm**, survive to the bell, and finish on **300 or more**. |
 | 📮 **Third Class Post** | As **Postboxer**: finish **above 300** on a score that also **divides by 3**. |
 | 🌘 **Raspberry Blue Rain** | As **Raspberry Reindeer**: complete a run in the **rain**, having stepped inside **Neptune's Nook** during it. |
+| 🫧 **Brave the Brew** | Drink a **Brave Badger Brew**. It appears in the cottage fridge only when **Pickle Stick is already unlocked** and the run is **past 300** — it rounds your score **up to the next whole ten** and costs **10 health**. One a run, and it can kill you. |
 
 ---
 

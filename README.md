@@ -284,7 +284,13 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   open, windows glowing. The roof lifts away dollhouse-style while
   you're inside. Double-tap the appliances: the **alarm clock** rings
   for **+20 seconds** (once per run — after that it's hoarse), the
-  stove and fridge have opinions, and the **Persian rug** slides aside
+  stove and fridge have opinions — and once you own **Pickle Stick**,
+  a run past **300** finds a **Brave Badger Brew** on the fridge shelf:
+  it rounds your score **up to the next whole ten** (so a decimal score
+  stops being one) and takes **10 health**, because it is a violently
+  gassy beverage. One bottle a run, and on low health it will finish
+  you. That is the brave part — and the **Brave the Brew** trophy.
+  The **Persian rug** slides aside
   to reveal a **trap door** (see *Cottage Lane*, below). Touch all
   four fixtures in one run and **Marblella** rolls onto the roster: a
   glass marble with a cat's-eye twist, the only hero who can enter

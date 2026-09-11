@@ -2152,21 +2152,24 @@ export class World {
     const adGY = this.getHeight(cx, cz + AD_Z) - y;
     const helterAd = new THREE.Group();
     helterAd.position.set(0, adGY, AD_Z);
-    helterAd.rotation.y = Math.PI;   // face away from the tower, out at the map
+    // Turned a quarter from square-on, so you read it as you come round the
+    // tower rather than only from the one spot directly out in front of it.
+    helterAd.rotation.y = Math.PI / 2;
     const postMat = track(createToonMaterial({ color: 0x8a6a3a }));
     for (const sx of [-1.25, 1.25]) {
       const post = new THREE.Mesh(
-        track(new THREE.CylinderGeometry(0.09, 0.11, 2.3, 8)), postMat);
+        track(new THREE.CylinderGeometry(0.09, 0.11, 2.9, 8)), postMat);
       // Behind the board, not level with it: the posts are 0.11 thick and the
       // printed face stands at 0.045, so a post on the centre line pokes out
       // in front of the very thing it is holding up.
       //
       // Both are levelled off ONE ground sample, taken at the board's centre,
       // so the board hangs square instead of following the slope. That leaves
-      // the feet to be buried deep enough to cover the cross-fall; the plaza
-      // is picked for flat ground (the siting search wants a gradient under
-      // 0.3), and 0.2m of burial covers what it actually finds.
-      post.position.set(sx, 1.05, -0.16);
+      // the feet to be buried deep enough to cover the cross-fall. Turning the
+      // board a quarter turn swung the posts onto ground that falls away, and
+      // the downhill one hung 0.15 in the air on the old 0.1 of burial; 0.6
+      // covers it, and costs nothing, being underground.
+      post.position.set(sx, 0.75, -0.16);
       post.castShadow = true;
       helterAd.add(post);
     }
@@ -2847,7 +2850,14 @@ export class World {
     const chairMat = track(createToonMaterial({ color: 0x3a6fa8, rim: { color: 0x8fbde8, strength: 0.3, threshold: 0.64 } }));
     const leafMat = track(createToonMaterial({ color: 0x2f7a6a, rim: { color: 0x9fe8d0, strength: 0.35, threshold: 0.6 } }));
     const potMat = track(createToonMaterial({ color: 0x5a86b4 }));
-    const panMat = track(createToonMaterial({ color: 0x2a2c30, rim: { color: 0x8a90a0, strength: 0.4, threshold: 0.55 } }));
+    // Brushed steel. It was 0x2a2c30 — charcoal, all but black, which is not
+    // what anybody pictures when you say "saucepan". The strong, low-threshold
+    // rim is what sells metal in a cel-shaded world: a bright edge all round.
+    const panMat = track(createToonMaterial({
+      color: 0xc3ccd8,
+      rim: { color: 0xffffff, strength: 0.75, threshold: 0.42 }
+    }));
+    panMat.side = THREE.DoubleSide;   // the wall is open-ended: you see inside
     const brassMat = track(createToonMaterial({ color: 0x9fb8d8 }));
 
     const nook = new THREE.Group();
@@ -3065,23 +3075,46 @@ export class World {
     addBox(0.02, 0.2, 0.04, brassMat, 0.03, 0, 0.05, doorR);
 
     // The pan itself — a scene-level mesh so Game can carry it around.
+    //
+    // A SAUCEPAN: deep, straight-sided, and bright steel. The first version
+    // was a 0.08-deep disc in near-black charcoal, which read as a cast-iron
+    // skillet — no sides to speak of, and nothing you would call silver. The
+    // origin stays at the pan's vertical middle so the cupboard placement and
+    // the carry height, both of which are set elsewhere, still hold.
     const pan = new THREE.Group();
-    const panBody = new THREE.Mesh(track(new THREE.CylinderGeometry(0.22, 0.18, 0.08, 18)), panMat);
-    panBody.castShadow = true;
-    pan.add(panBody);
-    const panRim = new THREE.Mesh(track(new THREE.TorusGeometry(0.22, 0.02, 8, 20)), panMat);
+    const wallGeo = track(new THREE.CylinderGeometry(0.20, 0.185, 0.20, 20, 1, true));
+    const panWall = new THREE.Mesh(wallGeo, panMat);
+    panWall.castShadow = true;
+    pan.add(panWall);
+    const panBase = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.185, 0.185, 0.025, 20)), panMat);
+    panBase.position.y = -0.09;
+    panBase.castShadow = true;
+    pan.add(panBase);
+    const panRim = new THREE.Mesh(track(new THREE.TorusGeometry(0.20, 0.015, 8, 22)), panMat);
     panRim.rotation.x = Math.PI / 2;
-    panRim.position.y = 0.04;
+    panRim.position.y = 0.1;
     pan.add(panRim);
-    const handleGeo = track(new THREE.CylinderGeometry(0.028, 0.028, 0.4, 8));
-    handleGeo.rotateZ(Math.PI / 2);
-    const handle = new THREE.Mesh(handleGeo, panMat);
-    handle.position.set(0.4, 0.02, 0);
-    pan.add(handle);
+    // Handle: a steel shaft off the rim, then a dark grip — the two-tone is
+    // most of what makes a pan read as a pan at a glance.
+    const shaftGeo = track(new THREE.CylinderGeometry(0.022, 0.022, 0.22, 8));
+    shaftGeo.rotateZ(Math.PI / 2);
+    const shaft = new THREE.Mesh(shaftGeo, panMat);
+    shaft.position.set(0.29, 0.05, 0);
+    shaft.castShadow = true;
+    pan.add(shaft);
+    const gripGeo = track(new THREE.CylinderGeometry(0.034, 0.03, 0.2, 10));
+    gripGeo.rotateZ(Math.PI / 2);
+    const grip = new THREE.Mesh(gripGeo, track(createToonMaterial({
+      color: 0x1e2024, rim: { color: 0x6a7080, strength: 0.3, threshold: 0.62 }
+    })));
+    grip.position.set(0.49, 0.05, 0);
+    grip.castShadow = true;
+    pan.add(grip);
     // A pickle that appears in the pan once caught (hidden until then).
     const panPickle = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.05, 0.16, 4, 8)), track(createToonMaterial({ color: 0x5a8a3a, rim: { color: 0xbfe89a, strength: 0.4, threshold: 0.6 } })));
     panPickle.rotation.z = Math.PI / 2;
-    panPickle.position.y = 0.06;
+    panPickle.position.y = -0.02;   // lying in the pan, not floating over it
     panPickle.visible = false;
     pan.add(panPickle);
     this._panPickle = panPickle;

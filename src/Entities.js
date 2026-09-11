@@ -1597,9 +1597,14 @@ export class Hovercraft {
       this.world.getHeight(this.position.x, this.position.z),
       this.world.isNearLake(this.position.x, this.position.z) ? this.world.waterLevel : -Infinity
     );
+    // As with the balloon: keep the logical position on the surface it is
+    // drawn resting on, or boarding measures against a stale height. The
+    // hovercraft skims rather than climbs, so it never drifted far enough for
+    // anyone to notice — which is not a reason to leave it wrong.
+    this.position.y = floor + 0.06;
     this.group.position.set(
       this.position.x,
-      floor + 0.06 + Math.sin(time * 1.8) * 0.03,
+      this.position.y + Math.sin(time * 1.8) * 0.03,
       this.position.z
     );
     this.fanBlades.rotation.z += dt * 2;
@@ -1746,6 +1751,12 @@ export class HotAirBalloon {
     const restY = floor + 0.12;
     if (this._parkedY === null) this._parkedY = this.position.y;
     this._parkedY = damp(this._parkedY, restY, 1.6, dt);
+    // Settle the LOGICAL position too, not just the drawn one. Boarding
+    // measures against `position`, so a balloon left at altitude sank to the
+    // ground on screen while still claiming to be twenty-five metres up —
+    // it sat there beside you, plainly on the grass, and refused to be got
+    // back into. The thing's position is where it is.
+    this.position.y = this._parkedY;
     this.group.position.set(
       this.position.x,
       this._parkedY + Math.sin(time * 1.1) * 0.06,

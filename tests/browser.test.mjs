@@ -2592,6 +2592,193 @@ ok("the helter skelter's posts reach the ground",
    `highest post foot stands ${boards.postFloat} above the ground under it`);
 ok("the Nook's picture hangs inside the Nook", boards.nookInside === true);
 
+// The plaza board used to face straight out from the tower, readable only
+// from the one spot dead in front of it. It is turned a quarter now, so you
+// read it coming round the ride.
+const helterFacing = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const w = window.__game.world;
+  const g = w.adBoardSlots.helter;
+  g.updateMatrixWorld(true);
+  const centre = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3());
+  const normal = new THREE.Vector3(0, 0, 1)
+    .applyQuaternion(g.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize();
+  const outward = new THREE.Vector3(centre.x - w.helterX, 0, centre.z - w.helterZ).normalize();
+  // 1 = facing straight away from the tower, 0 = side-on to it.
+  return +normal.dot(outward).toFixed(3);
+});
+ok('the plaza board stands side-on to the tower, not square to it',
+   Math.abs(helterFacing) < 0.25, `normal · outward = ${helterFacing}`);
+
+/* == 12a. the saucepan ================================================== */
+// "It looks nothing like a steely silver saucepan" — it was a 0.08-deep disc
+// in near-black charcoal, which is a skillet.
+const pan = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const w = window.__game.world;
+  const p = w.panMesh;
+  p.updateMatrixWorld(true);
+  let brightest = 0, hasOpenWall = false, depth = 0;
+  p.traverse((o) => {
+    if (!o.isMesh) return;
+    const c = o.material.color;
+    // Ignore the handle's grip and the pickle: the pan itself is the metal.
+    if (o.geometry.type === 'CylinderGeometry' || o.geometry.type === 'TorusGeometry') {
+      brightest = Math.max(brightest, 0.299 * c.r + 0.587 * c.g + 0.114 * c.b);
+    }
+    if (o.geometry.parameters && o.geometry.parameters.openEnded) {
+      hasOpenWall = true;
+      depth = Math.max(depth, o.geometry.parameters.height);
+    }
+  });
+  return { brightest: +brightest.toFixed(3), hasOpenWall, depth };
+});
+// Threshold in LINEAR space, which is what material.color holds — the old
+// charcoal reads about 0.02 there and the new steel about 0.60, so anything
+// above a third is unambiguously metal rather than a skillet.
+ok('the pan is bright metal, not charcoal', pan.brightest > 0.35, JSON.stringify(pan));
+ok('and it is a pan you can see into, with sides', pan.hasOpenWall && pan.depth >= 0.15,
+   JSON.stringify(pan));
+
+/* == 12b. getting back into the balloon ================================= */
+console.log('\nThe Balloon, the Board and the Brew');
+
+// Hop out of a balloon at altitude and it sinks to the ground on screen —
+// but its LOGICAL position stayed up where you left it, and boarding measures
+// against that. So it sat there on the grass beside you and would not be got
+// back into.
+const balloon = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.points = 150;
+  g.maybeSpawnBalloon();
+  const bal = g.balloon;
+  g.player.position.copy(bal.position);
+  // Stub the gestures, and PUT THEM BACK afterwards — a consumeDoubleTap that
+  // always returns true left on the shared input object makes every later
+  // tick read as a double-tap, which quietly re-opened the supporters' board
+  // in the next test and made the clock look stuck.
+  const realDouble = g.input.consumeDoubleTap.bind(g.input);
+  const realTriple = g.input.consumeTripleTap.bind(g.input);
+  g.input.consumeDoubleTap = () => true;
+  g.input.consumeTripleTap = () => false;
+  g.handleDoubleTap();
+  const boarded = g.player.vehicle === bal;
+
+  g.player.position.y += 25;               // up we go
+  bal.syncWithRider(g.player.position, 0, 1, 1 / 60);
+  g.handleDoubleTap();                     // and out
+
+  for (let i = 0; i < 600; i++) bal.update(1 / 60, i / 60);   // let it settle
+  g.player.position.set(bal.position.x,
+    g.world.getHeight(bal.position.x, bal.position.z), bal.position.z);
+  const drawn = bal.group.position.y;
+  const logical = bal.position.y;
+  g.handleDoubleTap();
+  const out = {
+    boarded,
+    reboarded: g.player.vehicle === bal,
+    disagreement: +Math.abs(drawn - logical).toFixed(2)
+  };
+  g.player.vehicle = null;
+  bal.rider = null;
+  g.input.consumeDoubleTap = realDouble;
+  g.input.consumeTripleTap = realTriple;
+  return out;
+});
+ok('you can board a balloon on the ground', balloon.boarded === true);
+ok('where the balloon is drawn and where it says it is agree',
+   balloon.disagreement < 0.2, `off by ${balloon.disagreement}m`);
+ok('and you can get back into it after hopping out at altitude',
+   balloon.reboarded === true, JSON.stringify(balloon));
+
+/* == 12c. the supporters' board stops the clock ========================= */
+const clock = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 60;
+  g.renderer.render = () => {};
+
+  const before = g.timeLeft;
+  for (let i = 0; i < 120; i++) g.tick();        // two seconds, board shut
+  const ticking = before - g.timeLeft;
+
+  const at = g.world.coffeeBoardPos;
+  g.player.position.set(at.x + 0.6, g.world.coffeeLevel, at.z + 0.6);
+  g.handleSupportersBoard();
+  const openAt = g.timeLeft;
+  for (let i = 0; i < 120; i++) g.tick();        // two seconds, board open
+  const whileReading = openAt - g.timeLeft;
+
+  g.closeSupporters();
+  const closedAt = g.timeLeft;
+  for (let i = 0; i < 120; i++) g.tick();        // two seconds, board shut again
+  const afterwards = closedAt - g.timeLeft;
+
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  return {
+    ticking: +ticking.toFixed(2),
+    whileReading: +whileReading.toFixed(2),
+    afterwards: +afterwards.toFixed(2),
+    open: g.supportersOpen
+  };
+});
+ok('the clock runs normally with the board shut', clock.ticking > 1.5, JSON.stringify(clock));
+ok('reading the supporters costs you no time at all',
+   clock.whileReading === 0, `lost ${clock.whileReading}s while reading`);
+ok('and it starts again when you close it', clock.afterwards > 1.5, JSON.stringify(clock));
+ok('a fresh run never starts with the clock frozen',
+   await page.evaluate(() => { window.__freshRun('badger'); return window.__game.supportersOpen; }) === false);
+
+/* == 12d. the Brave Badger Brew ========================================= */
+const brew = (o) => page.evaluate((o) => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.pickleStickUnlocked = o.pickle;
+  g.points = o.points;
+  g.health = o.health === undefined ? 100 : o.health;
+  g.achievements.delete('bravethebrew');
+  const available = g.brewAvailable();
+  if (available) g.drinkBrew();
+  return {
+    available,
+    points: g.points,
+    health: g.health,
+    trophy: g.achievements.has('bravethebrew'),
+    over: g.isGameOver,
+    twice: g.brewAvailable()
+  };
+}, o);
+
+ok('no Brew without Pickle Stick', (await brew({ pickle: false, points: 400 })).available === false);
+ok('no Brew under 300', (await brew({ pickle: true, points: 299.9 })).available === false);
+ok('but at 300 it is on the shelf', (await brew({ pickle: true, points: 300 })).available === true);
+
+const gassy = await brew({ pickle: true, points: 312.4 });
+ok('it rounds the score UP to the next whole ten', gassy.points === 320, JSON.stringify(gassy));
+ok('so a decimal score stops being one', Number.isInteger(gassy.points));
+ok('and it costs 10 health', gassy.health === 90, String(gassy.health));
+ok('drinking it earns Brave the Brew', gassy.trophy === true);
+ok('one bottle per run', gassy.twice === false);
+
+// A score already on a ten gains nothing — it still rounds to itself.
+ok('a score already on a ten stays put', (await brew({ pickle: true, points: 340 })).points === 340);
+// The float residue this game is full of must not push a whole number up a
+// rung: 320.00000000001 is 320 on the scoreboard, and should round to 320.
+const floatTen = await brew({ pickle: true, points: 320.000000000001 });
+ok('and neither does a float that only LOOKS like a ten', floatTen.points === 320,
+   String(floatTen.points));
+
+// It can kill. That is the brave part.
+const fatal = await brew({ pickle: true, points: 305.5, health: 10 });
+ok('on 10 health it finishes you', fatal.health <= 0 && fatal.over === true, JSON.stringify(fatal));
+ok('and the score still rounded before the lights went out', fatal.points === 310,
+   String(fatal.points));
+
 /* == 13. save & restore, end to end ===================================== */
 console.log('\nSave & Restore');
 await page.evaluate(() => {
