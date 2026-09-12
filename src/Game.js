@@ -669,6 +669,7 @@ export class Game {
     this._puttPrompted = false;
     this._puttFocus = { position: new THREE.Vector3(), velocity: new THREE.Vector3(), facingYaw: 0 };
     this.collectibles = [];
+    this._sidingCones = [];   // the siding's golden pine cone(s), hidden with it
     this.frogs = [];
     this.clockTower = null;
     this.cart = null;
@@ -853,12 +854,35 @@ export class Game {
         this.collectibles.push(new GoldenEgg(this.scene, p.clone()));
       }
     }
+
+    // And the siding's single golden pine cone, hidden with the chamber until
+    // somebody rides down to it.
+    if (this.world.siding && this.world.siding.eggSpots) {
+      for (const p of this.world.siding.eggSpots) {
+        const cone = new GoldenEgg(this.scene, p.clone());
+        this._sidingCones.push(cone);
+        this.collectibles.push(cone);
+      }
+      this.setSidingVisible(false);
+    }
+  }
+
+  /**
+   * The siding and everything in it appear only while you are down there.
+   * The golden pine cone is an ordinary collectible living in the shared
+   * list, so it has to be hidden by hand — it is not part of the chamber's
+   * mesh group.
+   */
+  setSidingVisible(on) {
+    this.world.setSidingVisible(on);
+    for (const cone of this._sidingCones) cone.group.visible = on;
   }
 
   clearEntities() {
     for (const c of this.collectibles) c.dispose();
     for (const f of this.frogs) f.dispose();
     this.collectibles.length = 0;
+    this._sidingCones.length = 0;
     this.frogs.length = 0;
     if (this.clockTower) {
       this.clockTower.dispose();
@@ -2925,6 +2949,7 @@ export class Game {
     this.player.position.set(st.ticket.x - 1.6, st.floorY + 0.15, st.ticket.z + 1.2);
     this.player.velocity.set(0, 0, 0);
     this.cameraRig.snapTo(this.player.position);
+    this.setSidingVisible(false);
     this.audio.play('train');
     this.ui.showTimeToast('BACK TO COTTAGE LANE. MIND THE SCAFFOLDING.');
     this.particles.spawnBurst(
@@ -3125,6 +3150,7 @@ export class Game {
       // way out on foot, so it returns early — the surface-height line below
       // would drag the player straight back up through the rock.
       const sd = w.siding;
+      this.setSidingVisible(true);   // the cave exists only while you are in it
       this.player.position.set(sd.entry.x, sd.entry.y + 0.15, sd.entry.z);
       this.player.velocity.set(0, 0, 0);
       this.cameraRig.snapTo(this.player.position);
@@ -4561,7 +4587,10 @@ export class Game {
     }
     this.particles.update();
     this.world.update(dt, this.player.position, this.camera);
-    if (this.weather) this.weather.update(dt, this.player.position);
+    if (this.weather) {
+      const p = this.player.position;
+      this.weather.update(dt, p, Boolean(this.world.undergroundRoomAt(p.x, p.y, p.z)));
+    }
 
     if (this.bloomEnabled && this.bloom) {
       this.bloom.render(this.scene, this.camera);

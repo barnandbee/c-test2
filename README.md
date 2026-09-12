@@ -353,17 +353,23 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   ride home. Fares pay out once per run each; the trains themselves
   are, naturally, invisible.
 - **E) ??? — the siding.** The fifth entry on the machine is listed as
-  *under construction*, and it is telling the truth. It goes to a rough
-  rock chamber **sixty metres below the mountain**, lit by one worklamp
-  somebody left on: rubble, three stalagmites, scaffolding poles and a
-  hazard barrier. The roundel on the wall reads **UNDER CONSTRUCTION**,
-  because the station has no name yet. There is no shaft, no doorway and
-  no sign of it anywhere on the surface — walk the whole map and you will
-  never find it; the ticket is the only way in. It is also a **sealed
-  box**, so touching the roundel is the only way out: it puts you straight
-  back at the Cottage Lane ticket machine. It pays no fare, and it is not
-  one of the stations the sweep trophies count. One day it will be named
-  after somebody.
+  *under construction*, and it is telling the truth. It goes to a **rich,
+  dark cave sixty metres below the mountain** — craggy rock on every wall
+  and hanging from the roof, stalagmites rising to meet stalactites, and
+  one **worklamp** somebody left burning on its flex. Scattered across the
+  floor are **old coins**, somebody's fare money dropped down here long
+  before the Mystic Line got round to naming the place, and a single
+  **golden pine cone (+10)** waits in the dark for whoever finds the stop.
+  The roundel on the wall reads **UNDER CONSTRUCTION**, because the station
+  has no name yet, with a hazard barrier and scaffolding across it.
+  The chamber **does not exist until the train puts you in it**, and goes
+  away again behind you — there is no shaft, no doorway and no sign of it
+  anywhere on the surface. The ticket is the only way in, and since it is a
+  **sealed box**, touching the roundel is the only way out: it puts you
+  straight back at the Cottage Lane ticket machine. Weather does not reach
+  it either; sixty metres of rock keeps the snow off. It pays no fare, and
+  it is not one of the stations the sweep trophies count. One day it will
+  be named after somebody.
 - **Margaret** — a classic wooden marionette with a painted face,
   buttons for eyes, string hair and the four control strings rising to
   an unseen crossbar. A demanding performance unlocks her: in a single

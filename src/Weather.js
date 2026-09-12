@@ -269,18 +269,39 @@ export class Weather {
    * @param {number} dt
    * @param {THREE.Vector3} focus  the player's position
    */
-  update(dt, focus) {
+  /**
+   * @param {boolean} sheltered  true when the focus is under a solid roof —
+   *   the underground station, or the siding sixty metres below the mountain.
+   *   Nothing falls there and nothing settles: snow was drifting through the
+   *   rock and lying on the cave floor, which looked exactly as odd as it
+   *   sounds. The cover TARGET is left untouched, so stepping back outside
+   *   picks up the weather where it left off rather than starting to lie all
+   *   over again.
+   */
+  update(dt, focus, sheltered = false) {
     if (this.points) {
+      this.points.visible = !sheltered;
       this.points.position.copy(focus);
       this.material.uniforms.uOrigin.value.copy(focus);
     }
-    // Ease the settled snow toward its target (roughly four seconds to lie).
-    if (this._cover !== this._coverTarget) {
-      const step = dt * 0.25;
-      this._cover = this._cover < this._coverTarget
-        ? Math.min(this._coverTarget, this._cover + step)
-        : Math.max(this._coverTarget, this._cover - step * 3); // thaws faster
-      setSnowCover(this._cover);
+    if (sheltered) {
+      if (this._sheltered !== true) {
+        this._sheltered = true;
+        setSnowCover(0);
+      }
+    } else {
+      if (this._sheltered === true) {
+        this._sheltered = false;
+        setSnowCover(this._cover);
+      }
+      // Ease the settled snow toward its target (roughly four seconds to lie).
+      if (this._cover !== this._coverTarget) {
+        const step = dt * 0.25;
+        this._cover = this._cover < this._coverTarget
+          ? Math.min(this._coverTarget, this._cover + step)
+          : Math.max(this._coverTarget, this._cover - step * 3); // thaws faster
+        setSnowCover(this._cover);
+      }
     }
     if (this.kind === 'storm') this._updateLightning(dt);
   }

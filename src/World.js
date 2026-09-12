@@ -603,6 +603,48 @@ export class World {
     );
   }
 
+  /**
+   * Which sealed underground room contains (x,y,z), described in the terms
+   * the camera needs: the floor it must not sink through and the walls it
+   * must not leave. Null above ground.
+   *
+   * The camera used to assume that "deep below grade" meant Cottage Lane,
+   * because for a long time Cottage Lane was the only thing down there. When
+   * the siding opened sixty metres under the mountain, the camera dutifully
+   * clamped itself into the station's arch on the far side of the map and
+   * left the player alone in the dark. One question, asked of the world,
+   * rather than one room's name written into the rig.
+   */
+  undergroundRoomAt(x, y, z) {
+    if (this.isInsideSiding(x, y, z)) {
+      const sd = this.siding;
+      return {
+        kind: 'siding',
+        floorY: sd.floorY,
+        minX: sd.innerMinX, maxX: sd.innerMaxX,
+        minZ: sd.innerMinZ, maxZ: sd.innerMaxZ,
+        ceilingY: sd.ceilingY
+      };
+    }
+    const st = this.station;
+    if (st && y < this.getHeight(x, z) - 6) {
+      return {
+        kind: 'station',
+        floorY: st.trackFloorY,
+        minX: st.minX, maxX: st.maxX,
+        minZ: st.minZ, maxZ: st.maxZ,
+        // The station's roof is a barrel arch, so its ceiling varies with z.
+        ceilingAt: (cz) => {
+          const zc = (st.minZ + st.maxZ) / 2;
+          const rr = (st.maxZ - st.minZ) / 2;
+          const dz = cz - zc;
+          return st.floorY + Math.sqrt(Math.max(rr * rr - dz * dz, 0.4)) - 0.35;
+        }
+      };
+    }
+    return null;
+  }
+
   /** The water level covering (x,z) — main lake or whirlpool lake — or
    *  undefined on dry land. The one water query physics should use. */
   waterAt(x, z) {
@@ -3764,18 +3806,38 @@ export class World {
       ceilingY: F + 6 - WALL / 2,
       floorY: F,
       entry: new THREE.Vector3(cx - 4.5, F, cz + 2),
-      roundel: new THREE.Vector3(cx + 3.4, F + 2.4, cz - HD + 0.5)
+      roundel: new THREE.Vector3(cx + 3.4, F + 2.4, cz - HD + 0.5),
+      // A golden pine cone, for anyone who finds the unfinished stop. Seeded
+      // by Game alongside the station's own hoard.
+      eggSpots: [new THREE.Vector3(cx - 5.6, F + 0.5, cz - 3.4)]
     };
 
     const track = (r) => { this._disposables.push(r); return r; };
     const group = new THREE.Group();
     this.scene.add(group);
     this.sidingMeshes = group;
+    // Hidden until the Mystic Line takes you there. The chamber is sealed
+    // rock sixty metres down, so nobody could see it from the surface anyway
+    // — but "invisible unless you arrive by train" is the rule, and a rule
+    // enforced by a flag beats one that merely happens to hold.
+    group.visible = false;
 
+    // Rich and dark: a deep warm brown-black for the rock, a paler dust for
+    // variation, and a strong low-threshold rim so every boulder keeps a lit
+    // edge. Without that edge a dark cave is just a dark rectangle.
     const rockMat = track(createToonMaterial({
-      color: 0x4a4550, rim: { color: 0x9a93a8, strength: 0.25, threshold: 0.68 }
+      color: 0x2b2226, rim: { color: 0x8a6a52, strength: 0.3, threshold: 0.64 }
     }));
-    const dustMat = track(createToonMaterial({ color: 0x6a6274 }));
+    const dustMat = track(createToonMaterial({
+      color: 0x3d3138, rim: { color: 0x9a7c64, strength: 0.28, threshold: 0.66 }
+    }));
+    // Old coins CATCH the light; they do not give it off. The first pass had
+    // them at emissiveIntensity 0.5, which with bloom on top turned a scatter
+    // of pennies into a heap of glowing orbs.
+    const goldMat = track(createToonMaterial({
+      color: 0xc09a3a, emissive: 0x3a2a06, emissiveIntensity: 0.1,
+      rim: { color: 0xffe9a0, strength: 0.7, threshold: 0.5 }
+    }));
 
     const addBox = (w, h, d, mat, x, y, z) => {
       const mesh = new THREE.Mesh(track(new THREE.BoxGeometry(w, h, d)), mat);
@@ -3794,32 +3856,111 @@ export class World {
     addBox(HW * 2, 6.6, WALL, rockMat, cx, F + 3, cz - HD);
     addBox(HW * 2, 6.6, WALL, rockMat, cx, F + 3, cz + HD);
 
-    // Rubble, and a few stalagmites, so it reads as a cave rather than a room.
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2 + 0.4;
+    // --- break up the box -------------------------------------------------
+    // Six flat slabs read as a room, not a cave. Crust the inside of every
+    // wall and the ceiling with boulders so the eye never finds a straight
+    // edge: this is the difference between a cellar and a cavern.
+    // The roundel is the only way out of a sealed chamber, so nothing is
+    // allowed to sit in front of it. A boulder from the first scatter landed
+    // squarely over TOUCH TO RETURN, which is the one line down here that
+    // actually matters.
+    const R = this.siding.roundel;
+    const clearOfRoundel = (x, y, z, s) =>
+      Math.hypot(x - R.x, y - R.y, z - R.z) > 2.6 + s;
+
+    const blob = (s, mat, x, y, z, seed) => {
+      if (!clearOfRoundel(x, y, z, s)) return null;
+      const rock = new THREE.Mesh(track(new THREE.IcosahedronGeometry(s, 0)), mat);
+      rock.position.set(x, y, z);
+      rock.rotation.set(seed, seed * 1.7, seed * 0.6);
+      rock.scale.set(1, 0.7 + ((seed * 13) % 7) / 10, 1);
+      rock.receiveShadow = true;
+      group.add(rock);
+      return rock;
+    };
+    for (let i = 0; i < 26; i++) {
+      const t = i / 26;
+      const s = 0.45 + ((i * 53) % 34) / 48;
+      const side = i % 4;
+      const along = (((i * 37) % 100) / 100 - 0.5) * 2;
+      const up = F + 0.4 + (((i * 61) % 100) / 100) * 5.4;
+      if (side === 0) blob(s, i % 3 ? rockMat : dustMat, cx - HW + s * 0.55, up, cz + along * (HD - 1), i);
+      else if (side === 1) blob(s, i % 3 ? rockMat : dustMat, cx + HW - s * 0.55, up, cz + along * (HD - 1), i);
+      else if (side === 2) blob(s, i % 3 ? rockMat : dustMat, cx + along * (HW - 1), up, cz - HD + s * 0.55, i);
+      else blob(s, i % 3 ? rockMat : dustMat, cx + along * (HW - 1), up, cz + HD - s * 0.55, i);
+      void t;
+    }
+    // Ceiling knuckles, so it is not a flat lid.
+    for (let i = 0; i < 12; i++) {
+      const s = 0.4 + ((i * 29) % 22) / 40;
+      blob(s, rockMat,
+        cx + ((((i * 47) % 100) / 100) - 0.5) * (HW * 1.7),
+        F + 6 - s * 0.4,
+        cz + ((((i * 71) % 100) / 100) - 0.5) * (HD * 1.7), i * 3);
+    }
+
+    // Rubble on the floor, and stalagmites rising to meet stalactites.
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + 0.4;
       const r = 3 + ((i * 37) % 40) / 10;
       const s = 0.4 + ((i * 53) % 30) / 40;
-      const rock = new THREE.Mesh(
-        track(new THREE.IcosahedronGeometry(s, 0)), i % 3 ? rockMat : dustMat);
-      rock.position.set(cx + Math.cos(a) * r, F + s * 0.5, cz + Math.sin(a) * r * 0.7);
-      rock.rotation.set(a, a * 1.7, a * 0.6);
-      group.add(rock);
+      blob(s, i % 3 ? rockMat : dustMat,
+        cx + Math.cos(a) * r, F + s * 0.4, cz + Math.sin(a) * r * 0.7, a);
     }
-    for (const [dx, dz, h] of [[-6, -4, 2.2], [6.4, 3.2, 1.7], [-2, 4.6, 1.3]]) {
+    for (const [dx, dz, h] of [[-6, -4, 2.2], [6.4, 3.2, 1.7], [-2, 4.6, 1.3], [5, -3, 1.1]]) {
       const spike = new THREE.Mesh(track(new THREE.ConeGeometry(0.5, h, 6)), rockMat);
       spike.position.set(cx + dx, F + h / 2, cz + dz);
       group.add(spike);
     }
+    for (const [dx, dz, h] of [[-4.5, 1.5, 1.8], [3, -1.2, 1.3], [7, 4, 2.1], [-7.5, 3, 1.5]]) {
+      const drip = new THREE.Mesh(track(new THREE.ConeGeometry(0.34, h, 6)), rockMat);
+      drip.position.set(cx + dx, F + 6 - WALL / 2 - h / 2, cz + dz);
+      drip.rotation.z = Math.PI;    // point down
+      group.add(drip);
+    }
 
-    // A worklamp, because somebody started this and wandered off.
-    const lamp = new THREE.PointLight(0xffd08a, 1.5, 26, 1.6);
+    // --- old coins --------------------------------------------------------
+    // Somebody's fare money, dropped down here long before the Mystic Line
+    // got round to naming the place. Scattered flat, a couple on their edge
+    // against a rock, all catching the worklamp.
+    const coinGeo = track(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 14));
+    for (let i = 0; i < 13; i++) {
+      const a = i * 2.399;                       // a scatter, not a ring
+      const r = 1.4 + ((i * 41) % 55) / 10;
+      const coin = new THREE.Mesh(coinGeo, goldMat);
+      coin.position.set(cx + Math.cos(a) * r, F + 0.012, cz + Math.sin(a) * r * 0.72);
+      if (i % 5 === 0) {                         // one in five stood on edge
+        coin.rotation.set(Math.PI / 2, 0, a);
+        coin.position.y = F + 0.11;
+      } else {
+        coin.rotation.y = a;
+      }
+      coin.castShadow = true;
+      group.add(coin);
+    }
+
+    // --- light ------------------------------------------------------------
+    // A worklamp somebody left on, and a dim cold fill from nowhere in
+    // particular. The fill is what stops the far corners going to pure black:
+    // "rich dark" is not the same as "unlit", and a cave you cannot read is
+    // just a bug report.
+    const lamp = new THREE.PointLight(0xffc078, 1.9, 26, 1.5);
     lamp.position.set(cx, F + 4.2, cz + 1);
     group.add(lamp);
+    const fill = new THREE.PointLight(0x5a6a94, 0.55, 30, 1.3);
+    fill.position.set(cx + 1, F + 3.2, cz - 2);
+    group.add(fill);
     const shade = new THREE.Mesh(
       track(new THREE.ConeGeometry(0.5, 0.5, 10, 1, true)),
-      track(createToonMaterial({ color: 0xf0c060, emissive: 0xffbf55, emissiveIntensity: 1.2 })));
+      track(createToonMaterial({ color: 0xf0c060, emissive: 0xffbf55, emissiveIntensity: 0.8 })));
     shade.position.set(cx, F + 4.5, cz + 1);
     group.add(shade);
+    // The flex it hangs from, up into the rock.
+    const flex = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6)),
+      track(createToonMaterial({ color: 0x241c18 })));
+    flex.position.set(cx, F + 5.3, cz + 1);
+    group.add(flex);
 
     // Scaffolding and a hazard barrier, the international language of "not
     // finished". The barrier also stops the roundel looking like decoration.
@@ -3854,6 +3995,15 @@ export class World {
       track(createToonMaterial({ map: hintTex, emissive: 0x2a2404, emissiveIntensity: 0.5 })));
     hint.position.set(0, -0.85, 0.24);
     roundel.add(hint);
+  }
+
+  /**
+   * Show or hide the siding. Called when the Mystic Line drops you there and
+   * again when the roundel sends you back — the chamber and the golden pine
+   * cone waiting in it exist only while somebody is actually down there.
+   */
+  setSidingVisible(on) {
+    if (this.sidingMeshes) this.sidingMeshes.visible = on;
   }
 
   _buildStation() {

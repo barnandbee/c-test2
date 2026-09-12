@@ -2386,6 +2386,208 @@ ok('the south wall holds', await wall(0, 1) === false);
 ok('a new run forgets the visits',
    await page.evaluate(() => { window.__freshRun('badger'); return window.__game.sidingVisits; }) === 0);
 
+// EVERYTHING above this point passed while the siding was unusable: you
+// arrived and could neither see your character nor find the way out. The
+// checks all poked handlers directly and never once asked what the player
+// could actually SEE. The camera's underground mode was hard-wired to Cottage
+// Lane, so it clamped itself into the station's arch on the far side of the
+// map and left the badger alone in the dark, forty metres below it.
+const seen = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.openTravel();
+  g.travelTo('siding');
+
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  const realBloom = g.bloomEnabled;
+  g.clock.getDelta = () => 1 / 60;
+  g.bloomEnabled = false;
+  g.renderer.render = () => {};
+  for (let i = 0; i < 120; i++) g.tick();      // let the rig settle
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  g.bloomEnabled = realBloom;
+
+  const sd = g.world.siding;
+  const cam = g.camera.position;
+  const p = g.player.position;
+
+  // Is the player on screen at all? Project into normalised device coords.
+  g.camera.updateMatrixWorld(true);
+  const head = new THREE.Vector3(p.x, p.y + 0.8, p.z).project(g.camera);
+  const onScreen = Math.abs(head.x) < 1 && Math.abs(head.y) < 1
+                   && head.z > -1 && head.z < 1;
+
+  // And is anything between the camera and the player?
+  const meshes = [];
+  g.scene.traverse((o) => { if (o.isMesh && o.geometry && o.visible) meshes.push(o); });
+  const dir = new THREE.Vector3(p.x, p.y + 0.8, p.z).sub(cam);
+  const reach = dir.length();
+  const ray = new THREE.Raycaster(cam.clone(), dir.clone().normalize(), 0.1, reach - 0.5);
+  const blockers = ray.intersectObjects(meshes, true).length;
+
+  return {
+    camY: +cam.y.toFixed(2),
+    playerY: +p.y.toFixed(2),
+    camInsideRoom: cam.x > sd.minX && cam.x < sd.maxX
+                   && cam.z > sd.minZ && cam.z < sd.maxZ
+                   && cam.y > sd.floorY - 1 && cam.y < sd.ceilingY + 1,
+    distance: +cam.distanceTo(p).toFixed(2),
+    onScreen,
+    blockers
+  };
+});
+ok('the camera comes down into the cave with you',
+   seen.camInsideRoom, JSON.stringify(seen));
+ok('and stays within a few metres of the badger',
+   seen.distance < 12, `${seen.distance}m away`);
+ok('the badger is actually on screen', seen.onScreen === true, JSON.stringify(seen));
+ok('with nothing between the camera and him', seen.blockers === 0, JSON.stringify(seen));
+
+// Weather does not get through sixty metres of rock. It was snowing in the
+// cave — flakes drifting down, and the floor and every boulder frosted white.
+const shelter = await page.evaluate(async () => {
+  const Shaders = await import('./src/Shaders.js');
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.weather.set('snow');
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 60;
+  g.renderer.render = () => {};
+
+  for (let i = 0; i < 600; i++) g.tick();       // let it lie outside
+  const outside = Shaders.SharedUniforms.uSnow.value;
+  const fallingOutside = g.weather.points ? g.weather.points.visible : null;
+
+  g.openTravel();
+  g.travelTo('siding');
+  for (let i = 0; i < 120; i++) g.tick();
+  const inside = Shaders.SharedUniforms.uSnow.value;
+  const fallingInside = g.weather.points ? g.weather.points.visible : null;
+
+  // Back up top it should lie again rather than having been forgotten. The
+  // roundel puts you on the Cottage Lane platform, which is itself under a
+  // roof — so walk out into a field before expecting weather.
+  g.handleSidingRoundel();
+  g.player.position.set(0, g.world.getHeight(0, 0), 0);
+  for (let i = 0; i < 120; i++) g.tick();
+  const backOut = Shaders.SharedUniforms.uSnow.value;
+
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  return {
+    outside: +outside.toFixed(3), inside: +inside.toFixed(3),
+    backOut: +backOut.toFixed(3), fallingOutside, fallingInside
+  };
+});
+ok('snow lies on the world outside', shelter.outside > 0.1, JSON.stringify(shelter));
+ok('but none of it settles in the cave', shelter.inside === 0, JSON.stringify(shelter));
+ok('and no flakes fall down there either', shelter.fallingInside === false,
+   JSON.stringify(shelter));
+ok('and stepping back out into a field finds it still lying',
+   shelter.backOut > 0.1, JSON.stringify(shelter));
+
+// Invisible unless you arrive by train.
+const hidden = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  const meshes = g.world.sidingMeshes;
+  const cone = g._sidingCones[0] || null;
+  const atStart = { chamber: meshes.visible, cone: cone ? cone.group.visible : null };
+  g.openTravel();
+  g.travelTo('siding');
+  const onArrival = { chamber: meshes.visible, cone: cone ? cone.group.visible : null };
+  g.player.position.set(g.world.siding.roundel.x, g.world.siding.floorY,
+                        g.world.siding.roundel.z);
+  g.handleSidingRoundel();
+  const afterLeaving = { chamber: meshes.visible, cone: cone ? cone.group.visible : null };
+  return { atStart, onArrival, afterLeaving, hasCone: Boolean(cone) };
+});
+ok('the cave carries a golden pine cone', hidden.hasCone === true);
+ok('nothing of it exists before you ride down',
+   hidden.atStart.chamber === false && hidden.atStart.cone === false,
+   JSON.stringify(hidden));
+ok('it all appears when the train drops you in',
+   hidden.onArrival.chamber === true && hidden.onArrival.cone === true,
+   JSON.stringify(hidden));
+ok('and goes away again behind you',
+   hidden.afterLeaving.chamber === false && hidden.afterLeaving.cone === false,
+   JSON.stringify(hidden));
+
+// The roundel is the only way out, so nothing may sit in front of it — a
+// boulder from the first scatter landed squarely over TOUCH TO RETURN.
+const roundelClear = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.openTravel();
+  g.travelTo('siding');
+  const sd = g.world.siding;
+  const meshes = [];
+  g.world.sidingMeshes.traverse((o) => { if (o.isMesh && o.geometry) meshes.push(o); });
+  // The roundel's own parts, so a hit can be told from an obstruction.
+  const mine = new Set();
+  g.world.sidingMeshes.traverse((o) => {
+    if (o.isGroup && o.position.distanceTo(sd.roundel) < 0.01) o.traverse((c) => mine.add(c));
+  });
+  // A probe aimed at the roundel either reaches it, or passes it and hits the
+  // wall it hangs on — both fine. What is NOT fine is something stopping the
+  // ray in the open space in front of it. So judge on WHERE the first hit is,
+  // not on what it is: anything struck more than a handspan in front of the
+  // roundel's own face is standing in the way.
+  let clear = 0, tried = 0;
+  const blockedBy = [];
+  const ray = new THREE.Raycaster();
+  const FRONT = sd.roundel.z + 0.3;
+  // The grid has to reach the HINT — TOUCH TO RETURN, which hangs 0.85 below
+  // the roundel's centre. A first version stopped at -0.7 and so never looked
+  // at the one line a boulder was actually covering: it passed with the rock
+  // still sitting there.
+  for (const dy of [-0.95, -0.85, -0.6, -0.3, 0, 0.3]) {
+    for (const dx of [-0.7, 0, 0.7]) {
+      const target = new THREE.Vector3(sd.roundel.x + dx, sd.roundel.y + dy, FRONT);
+      const from = target.clone().add(new THREE.Vector3(0, 0, 3));
+      ray.set(from, target.clone().sub(from).normalize());
+      const xs = ray.intersectObjects(meshes, true);
+      tried++;
+      // The tolerance has to be tight. The roundel's own faces sit just BEHIND
+      // the probe plane, so anything struck in front of it is an obstruction —
+      // and the boulder that prompted this only stuck out 0.21, which a
+      // generous 0.25 waved straight through.
+      if (!xs.length || mine.has(xs[0].object) || xs[0].point.z < FRONT + 0.02) clear++;
+      else blockedBy.push(`${xs[0].object.geometry.type}@z${xs[0].point.z.toFixed(2)}`);
+    }
+  }
+  return { clear, tried, blockedBy: [...new Set(blockedBy)] };
+});
+ok('nothing stands in front of the roundel',
+   roundelClear.clear === roundelClear.tried,
+   `${roundelClear.clear}/${roundelClear.tried} sightlines clear`);
+
+// One question asked of the world, rather than one room's name in the rig.
+const rooms = await page.evaluate(() => {
+  const g = window.__game;
+  const w = g.world;
+  const sd = w.siding;
+  const st = w.station;
+  const mid = (a, b) => (a + b) / 2;
+  return {
+    inSiding: (w.undergroundRoomAt(mid(sd.minX, sd.maxX), sd.floorY + 1,
+                                   mid(sd.minZ, sd.maxZ)) || {}).kind || null,
+    inStation: (w.undergroundRoomAt(mid(st.minX, st.maxX), st.floorY + 1,
+                                    mid(st.minZ, st.maxZ)) || {}).kind || null,
+    onTheGrass: w.undergroundRoomAt(0, w.getHeight(0, 0) + 1, 0)
+  };
+});
+ok('the world knows the siding from the station',
+   rooms.inSiding === 'siding' && rooms.inStation === 'station', JSON.stringify(rooms));
+ok('and that a field is neither', rooms.onTheGrass === null);
+
 // The ticket machine's menu is anchored to the bottom of the screen and grows
 // UPWARD, so every destination added pushes its top edge nearer the top. The
 // fifth one sent it off the screen on any phone held in landscape. Check the
