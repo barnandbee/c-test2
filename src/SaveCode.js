@@ -154,7 +154,7 @@ export const VOCAB_CHARACTERS = [
   'error43', 'nucleus', 'tudor', 'electro',
   'foil', 'error44', 'cardboard',
   'tapir', 'postboxer', 'pcork', 'wolk', 'muffin',
-  'error45', 'wagnus', 'reindeer', 'phantom'
+  'error45', 'wagnus', 'reindeer', 'phantom', 'spaghetta'
 ];
 
 /* ------------------------------------------------------------------ */
@@ -181,7 +181,7 @@ export const SCHEMA_BOOLS = [
   'foilUnlocked', 'error44Unlocked', 'cardboardUnlocked',
   'tapirUnlocked', 'postboxerUnlocked', 'pcorkUnlocked', 'wolkUnlocked',
   'muffinUnlocked', 'error45Unlocked', 'wagnusUnlocked', 'reindeerUnlocked',
-  'phantomUnlocked'
+  'phantomUnlocked', 'spaghettaUnlocked'
 ];
 
 /**

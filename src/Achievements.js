@@ -166,7 +166,8 @@ export const CHARACTER_UNLOCKS = [
   { key: 'error45', name: 'Error #45', how: 'Finish a run on a PRIME NUMBER score while playing as Error #42, #43 or #44.' },
   { key: 'wagnus', name: 'Wagnus Warter', how: 'Get run over by the golf cart 6 times in one run, survive to the bell, and finish on more than 50.' },
   { key: 'reindeer', name: 'Raspberry Reindeer', how: 'Complete a run on full health as Pineapple Penguin or Polar Pear, in SNOW.' },
-  { key: 'phantom', name: 'Phantom Badger', how: 'Complete a run in MYSTIC mode as any badger \u2014 Badger, Badgerette, William, Electro, Glass, Vapour or the Spirit of the Forest.' }
+  { key: 'phantom', name: 'Phantom Badger', how: 'Complete a run in MYSTIC mode as any badger \u2014 Badger, Badgerette, William, Electro, Glass, Vapour or the Spirit of the Forest.' },
+  { key: 'spaghetta', name: 'Spaghetta Bolognese', how: 'A full dinner service in one run: pick up a pickle, call at the cave BLT, take Neptune\u2019s Raisin, stop at the coffee cart \u2014 and finish that run on 200 or more.' }
 ];
 
 /**

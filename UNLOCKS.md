@@ -11,7 +11,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Characters (59)
+## Characters (60)
 
 | # | Character | How to unlock |
 |---|-----------|---------------|
@@ -75,6 +75,7 @@ each one is earned. This is the single source of truth for unlock conditions
 | 57 | **Wagnus Warter** | Get run over by the **golf cart 6 times in one run**, survive to the bell, and finish on **more than 50**. Magnus Carter's evil double: same elf, purple tunic, black cap, red eyes, brows, goatee, and a frown where the grin was. Six hits is 120 damage against 100 health, so this needs the **coffee cart's +30** spent at the right moment — four hits, a coffee, then two more leaves you on 10. |
 | 58 | **Raspberry Reindeer** | Complete a run on **full health** as **Pineapple Penguin or Polar Pear**, in **SNOW**. A reindeer whose head is a raspberry — the fruit itself, drupelets and calyx, with antlers growing out of it. |
 | 59 | **Phantom Badger** | Complete a run in **MYSTIC mode** as **any badger** — Badger, Badgerette, William the Conqueror, Electro, Glass, Vapour or the Spirit of the Forest. A badger drained of colour and half here: flat greys, a cold white rim, eyes that pulse, and a haze he walks around in. **And he brings his own weather** — once he is yours, a run as the Phantom turns Mystic **18% of the time** instead of the usual 1.8%, whether he is chosen or drawn at random. He also carries a **static** in his glow — screen-space interference that crawls over him as he moves. |
+| 60 | **Spaghetta Bolognese** | A whole dinner service carried round the forest in **one run**: **pick up a pickle**, **call at the cave BLT**, take **Neptune's Raisin** and stop at the **coffee cart** — with **200 or more** on the board to pay for it. Calling at the sandwich is enough; you do not have to be able to dress it. A bowl of spaghetti bolognese with a knife in one hand and a fork in the other, eyes on the ceramic, walking on two long strands of spaghetti in sneakers. |
 
 > **Hero quirks added since:**
 > **Postboxer** moves at **×3 speed whenever his score is a whole number

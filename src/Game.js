@@ -80,6 +80,10 @@ const TOWER_TIME_BONUS = 10;        // seconds granted per visit
 const UNLOCK_SCORE = 30;            // badgerette unlocks above this
 const BOFFINGTON_TOWER_VISITS = 6;  // +60 banked seconds in one run
 const RED_OCTOBER_POINTS = 63.14159;
+// The one-in-ten pink boat with green polka dots pays this instead. The
+// Docklands fare stays on RED_OCTOBER_POINTS — that is the station matching
+// the submarine's usual worth, and it has nothing to do with today's hull.
+const POLKA_SUB_POINTS = 77.777;
 const BOARDING_RANGE = 2.8;
 const BALLOON_SCORE = 100;          // the balloon drifts in at this score
 const MAGNA_CARTA_VALUE = 25;
@@ -200,6 +204,13 @@ const LIVEWIRE_SCORE = 300;         // Electro Badger, having leaned on the pylo
 const THIRDCLASS_SCORE = 300;       // Postboxer, on a score above this AND divisible by 3
 const BADREQUEST_SCORE = 400;       // Error #45 — the family's own bar
 const STORAGE_PHANTOM = 'mystic-badger.phantomUnlocked';
+const STORAGE_SPAGHETTA = 'mystic-badger.spaghettaUnlocked';
+// Spaghetta Bolognese's dinner service: the four courses, and the bill.
+const SPAGHETTA_SCORE = 200;
+// How close counts as having called at the BLT. Matches the reach Parsley
+// already uses for arriving at it, so "you were at the sandwich" means the
+// same thing to both of them.
+const SANDWICH_VISIT_RANGE = 4;
 // The Phantom brings his own weather. Everyone else rolls MYSTIC_CHANCE.
 const PHANTOM_MYSTIC_CHANCE = 0.18;
 const WOLK_SCORE = 200;              // what the whirlpool wants to see from W. Wolk
@@ -477,6 +488,7 @@ export class Game {
     this.wagnusUnlocked = readStorage(STORAGE_WAGNUS) === '1';
     this.reindeerUnlocked = readStorage(STORAGE_REINDEER) === '1';
     this.phantomUnlocked = readStorage(STORAGE_PHANTOM) === '1';
+    this.spaghettaUnlocked = readStorage(STORAGE_SPAGHETTA) === '1';
     // All-time count of Neptune's Raisins; 20 bakes the muffin.
     this.raisinsAllTime = parseInt(readStorage(STORAGE_RAISINS, '0'), 10) || 0;
     // All-time tally of toxic-frog bruises (across every run).
@@ -592,6 +604,7 @@ export class Game {
     this.itemTypesCollected = new Set();
     this.stationsVisited = new Set(); // Mystic Line stops used this run
     this.sandwichClaimed = false;
+    this.sandwichVisited = false;         // merely CALLED at the BLT this run
     this.reachedSummitLowHP = false; // Polar Pear: summited on 10 HP this run
     this._onSummit = false;          // edge flag for counting summit arrivals
     this._onHelter = false;          // edge flag for counting helter-skelter visits
@@ -1446,6 +1459,7 @@ export class Game {
     if (name === 'wagnus') return this.wagnusUnlocked;
     if (name === 'reindeer') return this.reindeerUnlocked;
     if (name === 'phantom') return this.phantomUnlocked;
+    if (name === 'spaghetta') return this.spaghettaUnlocked;
     return name === 'badger';
   }
 
@@ -1750,7 +1764,8 @@ export class Game {
       error45: this.error45Unlocked,
       wagnus: this.wagnusUnlocked,
       reindeer: this.reindeerUnlocked,
-      phantom: this.phantomUnlocked
+      phantom: this.phantomUnlocked,
+      spaghetta: this.spaghettaUnlocked
     };
   }
 
@@ -3435,14 +3450,20 @@ export class Game {
     if (dx * dx + dz * dz > 5 * 5 || Math.abs(dy) > 5) return;
 
     this.redOctoberClaimed = true;
-    this.points += RED_OCTOBER_POINTS;
+    // One boat in ten is not the Red October. It comes up pink with green
+    // polka dots and pays a different number — read off the boat itself, so
+    // the hull you can see and the score you get can never disagree.
+    const polka = Boolean(this.submarine.isPolka);
+    this.points += polka ? POLKA_SUB_POINTS : RED_OCTOBER_POINTS;
     this.ui.setPoints(this.points);
     this.audio.play('sonar'); // striking the submarine
-    this.ui.showTimeToast('RED OCTOBER! +63.14159');
+    this.ui.showTimeToast(polka
+      ? 'THE PINK ONE! +77.777 🫧'
+      : 'RED OCTOBER! +63.14159');
     this.checkChimpy();
     this.particles.spawnBurst(
       this._playerCenter.set(sub.x, sub.y + 1.5, sub.z),
-      0xff6a5a,
+      polka ? 0xff8ac0 : 0xff6a5a,
       { count: 46, speed: 5.5, size: 50, upBias: 0.75, life: 1.0 }
     );
   }
@@ -3950,6 +3971,7 @@ export class Game {
     this.itemTypesCollected.clear();
     this.stationsVisited.clear();
     this.sandwichClaimed = false;
+    this.sandwichVisited = false;
     this.reachedSummitLowHP = false;
     this._onSummit = false;
     this._onHelter = false;
@@ -4428,6 +4450,39 @@ export class Game {
         }
       }
 
+
+      // Calling at the BLT is its own small event, whoever you are and
+      // whatever you do when you get there. Spaghetta's dinner service wants
+      // the visit, not the sandwich — most heroes cannot dress it anyway.
+      if (!this.sandwichVisited && this.world.sandwichPos) {
+        const sp = this.world.sandwichPos;
+        const vdx = this.player.position.x - sp.x;
+        const vdz = this.player.position.z - sp.z;
+        const vdy = this.player.position.y - sp.y;
+        if (vdx * vdx + vdz * vdz < SANDWICH_VISIT_RANGE * SANDWICH_VISIT_RANGE
+            && Math.abs(vdy) < 3) {
+          this.sandwichVisited = true;
+        }
+      }
+
+      // Spaghetta Bolognese: a whole dinner carried round the forest in one
+      // run — a pickle picked up, the BLT called at, Neptune's Raisin taken
+      // and a cup at the coffee cart — with 200 on the board to pay for it.
+      // Checked here rather than at the bell so she arrives the moment the
+      // last course lands, which may well be the score rather than the food.
+      if (
+        !this.spaghettaUnlocked &&
+        this.picklesCollected > 0 &&
+        this.sandwichVisited &&
+        this.raisinTaken &&
+        this.coffeeDrunk &&
+        this.points >= SPAGHETTA_SCORE
+      ) {
+        this.spaghettaUnlocked = true;
+        writeStorage(STORAGE_SPAGHETTA, '1');
+        this.runUnlockNames.push('Spaghetta Bolognese');
+        this.ui.showTimeToast('★ SPAGHETTA BOLOGNESE UNLOCKED! 🍝');
+      }
 
       // Parsley O'Riley: arrive at the cave's BLT garnish-ready — 300+ on
       // the board, with the balloon your ONLY transport this run (no

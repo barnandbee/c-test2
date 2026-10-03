@@ -216,7 +216,12 @@ Audio unlocks on your first click or key, per browser autoplay rules.
 - **The lake & Red October** — a carved lake on the west side, with a
   shore sign that says exactly what it should. A dark-red submarine
   periodically breaches, bobs, and slips back under. Reaching her while
-  surfaced is worth **+63.14159 points** (once per run). Nobody in this
+  surfaced is worth **+63.14159 points** (once per run). But **one boat in
+  ten is not the Red October at all**: it surfaces **pink, with green polka
+  dots**, and pays **+77.777** instead. The hull you can see and the score
+  you get are read off the same boat, so they can never disagree — and the
+  Docklands fare stays on 63.14159 whatever colour today's submarine is,
+  because that fare matches the submarine's *usual* worth. Nobody in this
   forest can swim — wade too deep and you're bounced back to shore.
 - **The hovercraft** — parked somewhere random on dry land, marked by a
   pulsing blue beacon. Stand next to it and **double-tap / double-click**

@@ -43,9 +43,11 @@ const page = await ctx.newPage();
 const errs = [];
 page.on('pageerror', (e) => errs.push(String(e)));
 page.on('console', (m) => {
-  // No outbound network in CI containers, so the Google Fonts <link> fails.
-  // That is the sandbox, not the game.
-  if (m.type() === 'error' && !/ERR_CONNECTION_RESET|ERR_NAME_NOT_RESOLVED|fonts\.g/.test(m.text())) {
+  // No outbound network in CI containers, so the Google Fonts <link> fails —
+  // refused, unresolvable, or rejected by a proxy's own certificate. All of
+  // that is the sandbox, not the game.
+  if (m.type() === 'error'
+      && !/ERR_CONNECTION_RESET|ERR_NAME_NOT_RESOLVED|ERR_CERT_|ERR_PROXY|fonts\.g/.test(m.text())) {
     errs.push(m.text());
   }
 });
@@ -2221,6 +2223,260 @@ const rollers = await page.evaluate(async () => {
 });
 ok('the roller list matches who actually rolls or slides',
    JSON.stringify(rollers) === JSON.stringify(['foil', 'marblella', 'snappy']), JSON.stringify(rollers));
+
+/* == 9b. Spaghetta Bolognese and the pink submarine ===================== */
+console.log('\nSpaghetta and the Pink Boat');
+await installHelpers();   // section 9 reloaded the page
+
+const spag = await page.evaluate(() => {
+  const g = window.__game;
+  for (const f of Object.keys(g).filter((k) => k.endsWith('Unlocked'))) g[f] = true;
+  g.setCharacter('spaghetta');
+  const root = g.player.root;
+  root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);
+  root.updateMatrixWorld(true);
+  let meshes = 0;
+  const kinds = new Set();
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    meshes++;
+    kinds.add(o.geometry.type);
+  });
+  return {
+    name: root.name,
+    legs: (g.player.legs || []).length,
+    arms: (g.player.arms || []).length,
+    meshes,
+    kinds: [...kinds].sort(),
+    allowed: g.isCharacterAllowed('spaghetta'),
+    // She walks on her own two strands rather than rolling or sliding.
+    rolls: Boolean(g.player.rollsOrSlides),
+    isBadger: Boolean(g.player.isBadger)
+  };
+});
+ok('Spaghetta builds, walks on two legs and carries two arms',
+   spag.name === 'spaghetta' && spag.legs === 2 && spag.arms === 2, JSON.stringify(spag));
+ok('she is neither a badger nor a roller', !spag.isBadger && !spag.rolls);
+ok('and she is a proper bowlful of parts', spag.meshes > 40, String(spag.meshes));
+
+// The three things that make her a bowl of spaghetti bolognese rather than a
+// pot plant: ceramic below, pasta above, sauce on top — and cutlery in hand.
+const dish = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const g = window.__game;
+  g.setCharacter('spaghetta');
+  const root = g.player.root;
+  root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);
+  root.updateMatrixWorld(true);
+
+  // Look the parts up BY NAME. Classifying them by colour was tried and is
+  // no good here: the bowl's cream and the pasta's straw share a hue and
+  // differ mainly in lightness, so the bowl kept being counted as pasta.
+  const named = {};
+  root.traverse((o) => { if (o.isMesh && o.name) named[o.name] = o; });
+  const topOf = (n) => named[n]
+    ? +new THREE.Box3().setFromObject(named[n]).max.y.toFixed(2) : null;
+
+  // How much bolognese is on show: the sauce, its mince and the basil.
+  const hsl = { h: 0, s: 0, l: 0 };
+  let reds = 0, greens = 0;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material.color.getHSL(hsl);
+    if ((hsl.h < 0.05 || hsl.h > 0.95) && hsl.s > 0.5 && hsl.l < 0.45) reds++;
+    if (hsl.h > 0.25 && hsl.h < 0.45 && hsl.s > 0.3) greens++;
+  });
+
+  // The cutlery: a knife on one side, a fork on the other.
+  const armParts = (g.player.arms || []).map((a) => {
+    let boxes = 0, cones = 0;
+    a.pivot.traverse((o) => {
+      if (!o.isMesh) return;
+      if (o.geometry.type === 'BoxGeometry') boxes++;
+      if (o.geometry.type === 'ConeGeometry') cones++;
+    });
+    return { boxes, cones };
+  });
+  return {
+    sauceTop: topOf('sauce'),
+    pastaTop: topOf('pasta-heap'),
+    rimTop: topOf('bowl-rim'),
+    reds, greens, armParts
+  };
+});
+ok('the sauce lies on top of the pasta heap', dish.sauceTop > dish.pastaTop,
+   `sauce ${dish.sauceTop} vs pasta ${dish.pastaTop}`);
+ok('and the pasta heaps above the rim of the bowl', dish.pastaTop > dish.rimTop,
+   `pasta ${dish.pastaTop} vs rim ${dish.rimTop}`);
+ok('there is visible bolognese, not just a hint of it', dish.reds >= 4, String(dish.reds));
+ok('with a scatter of basil', dish.greens >= 3, String(dish.greens));
+// One arm carries a bladed thing (the knife's tip is a cone); the other a
+// fork, which is tines and no cone. Both arms must carry SOMETHING.
+ok('one hand holds a knife and the other a fork',
+   dish.armParts.length === 2
+   && dish.armParts.every((a) => a.boxes >= 2)
+   && dish.armParts.filter((a) => a.cones === 1).length === 1,
+   JSON.stringify(dish.armParts));
+
+// Her eyes go on the CERAMIC, not in the food — eyes set in the sauce read as
+// olives, and the whole point is that she is a bowl rather than a meal.
+const eyesOnBowl = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const g = window.__game;
+  g.setCharacter('spaghetta');
+  const root = g.player.root;
+  root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);
+  root.updateMatrixWorld(true);
+  const head = g.player.headGroup;
+  const eye = new THREE.Box3().setFromObject(head).getCenter(new THREE.Vector3());
+  // Where does the bowl's rim sit? Anything above it is food.
+  let rimY = -Infinity;
+  root.traverse((o) => {
+    if (o.isMesh && o.geometry.type === 'TorusGeometry'
+        && o.geometry.parameters.radius > 0.4) {
+      rimY = Math.max(rimY, new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()).y);
+    }
+  });
+  return { eyeY: +eye.y.toFixed(2), rimY: +rimY.toFixed(2) };
+});
+ok('her eyes are on the bowl, below the food',
+   eyesOnBowl.eyeY < eyesOnBowl.rimY, JSON.stringify(eyesOnBowl));
+
+// The unlock: a whole dinner carried round the forest in one run.
+const service = (o) => page.evaluate((o) => {
+  const g = window.__game;
+  localStorage.removeItem('mystic-badger.spaghettaUnlocked');
+  g.spaghettaUnlocked = false;
+  window.__freshRun('badger');
+  g.picklesCollected = o.pickle ? 1 : 0;
+  g.sandwichVisited = o.sandwich;
+  g.raisinTaken = o.raisin;
+  g.coffeeDrunk = o.coffee;
+  g.points = o.points;
+  g.tickSlowChecks ? g.tickSlowChecks() : null;
+  // The check lives in the per-frame update; turn one frame by hand.
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 60;
+  g.renderer.render = () => {};
+  g.tick();
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  return g.spaghettaUnlocked;
+}, o);
+
+const full = { pickle: true, sandwich: true, raisin: true, coffee: true, points: 200 };
+ok('Spaghetta: the whole service on 200 → unlock', await service(full) === true);
+ok('Spaghetta: no pickle → no', await service({ ...full, pickle: false }) === false);
+ok('Spaghetta: never called at the sandwich → no',
+   await service({ ...full, sandwich: false }) === false);
+ok('Spaghetta: no raisin → no', await service({ ...full, raisin: false }) === false);
+ok('Spaghetta: no coffee → no', await service({ ...full, coffee: false }) === false);
+ok('Spaghetta: 199.9 does not settle the bill',
+   await service({ ...full, points: 199.9 }) === false);
+
+// Calling at the BLT is its own event, and must not need the dressing — most
+// heroes cannot dress it at all.
+const calledIn = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  const sp = g.world.sandwichPos;
+  const before = g.sandwichVisited;
+  g.player.position.set(sp.x + 1, sp.y, sp.z + 1);
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 60;
+  g.renderer.render = () => {};
+  g.tick();
+  const near = g.sandwichVisited;
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  return { before, near, dressed: g.sandwichClaimed };
+});
+ok('walking up to the BLT counts as calling at it',
+   calledIn.before === false && calledIn.near === true, JSON.stringify(calledIn));
+ok('and it does not require dressing the thing', calledIn.dressed === false);
+
+// The pink boat with green polka dots: one in ten, and worth 77.777.
+const boats = await page.evaluate(async () => {
+  const Ent = await import('./src/Entities.js');
+  const g = window.__game;
+  let polka = 0;
+  const N = 600;
+  for (let i = 0; i < N; i++) {
+    const s = new Ent.Submarine(g.scene, g.world);
+    if (s.isPolka) polka++;
+    s.dispose();
+  }
+  return { rate: polka / N, declared: Ent.Submarine.POLKA_CHANCE };
+});
+ok(`the pink boat turns up about one time in ten (${(boats.rate * 100).toFixed(1)}%)`,
+   boats.rate > 0.06 && boats.rate < 0.15, JSON.stringify(boats));
+ok('and the chance is declared where it can be read', boats.declared === 0.1);
+
+const claim = (polka) => page.evaluate((polka) => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.points = 0;
+  g.submarine.isPolka = polka;
+  g.submarine.state = 'surfaced';
+  const s = g.submarine.position;
+  g.player.position.set(s.x, s.y, s.z);
+  g.handleRedOctober();
+  return g.points;
+}, polka);
+ok('the red boat still pays 63.14159', (await claim(false)) === 63.14159);
+ok('the pink one pays 77.777 instead', (await claim(true)) === 77.777);
+
+// The Docklands fare is the station matching the submarine's USUAL worth. It
+// has nothing to do with what colour today's boat happens to be.
+const fare = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.points = 0;
+  if (g.submarine) g.submarine.isPolka = true;
+  g.openTravel();
+  g.travelTo('lake');
+  return g.points;
+});
+ok('a pink boat does not change the Docklands fare', fare === 63.14159, String(fare));
+
+const polkaLook = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const Ent = await import('./src/Entities.js');
+  const g = window.__game;
+  let sub = null;
+  for (let i = 0; i < 400 && !sub; i++) {
+    const s = new Ent.Submarine(g.scene, g.world);
+    if (s.isPolka) sub = s; else s.dispose();
+  }
+  if (!sub) return null;
+  sub.group.updateMatrixWorld(true);
+  const hsl = { h: 0, s: 0, l: 0 };
+  let pink = 0, green = 0, proud = 0;
+  sub.group.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material.color.getHSL(hsl);
+    if (hsl.h > 0.85 && hsl.h < 0.98 && hsl.s > 0.4) pink++;
+    if (hsl.h > 0.25 && hsl.h < 0.45 && hsl.s > 0.3) {
+      green++;
+      // A dot buried inside the hull is no dot at all — it has to break the
+      // surface. Measured in the BOAT's own frame: the hull is a capsule of
+      // radius 0.95 about its local x axis, and the boat is dropped into the
+      // lake at a random heading, so a world-space radius mixes the hull's
+      // length into the answer and the check comes and goes with the heading.
+      if (Math.hypot(o.position.y, o.position.z) > 0.6) proud++;
+    }
+  });
+  sub.dispose();
+  return { pink, green, proud };
+});
+ok('the pink boat has a pink hull', polkaLook && polkaLook.pink >= 1, JSON.stringify(polkaLook));
+ok('and green dots all over it, standing proud of the hull',
+   polkaLook && polkaLook.green >= 20 && polkaLook.proud === polkaLook.green,
+   JSON.stringify(polkaLook));
 
 /* == 10. the unfinished fifth station =================================== */
 console.log('\nThe Siding');

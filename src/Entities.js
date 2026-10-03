@@ -1365,6 +1365,9 @@ export class MagnusCarter {
  * that's Game's business; this class just lurks.
  */
 export class Submarine {
+  /** How often the boat surfaces pink with green polka dots. */
+  static POLKA_CHANCE = 0.1;
+
   constructor(scene, world) {
     this.scene = scene;
     this.world = world;
@@ -1380,10 +1383,23 @@ export class Submarine {
       return r;
     };
 
+    // One boat in ten is not the Red October at all: it surfaces PINK, with
+    // green polka dots, and is worth a different number entirely (Game pays
+    // out on `isPolka`). Rolled once, here, so the whole hull — pressure
+    // casing, sail and fin — agrees with itself for the life of the run.
+    this.isPolka = Math.random() < Submarine.POLKA_CHANCE;
+
     const hullMat = track(createToonMaterial({
-      color: 0x6b2020,
-      rim: { color: 0xd88a8a, strength: 0.4, threshold: 0.6 }
+      color: this.isPolka ? 0xf07ab4 : 0x6b2020,
+      rim: this.isPolka
+        ? { color: 0xffd8ea, strength: 0.4, threshold: 0.6 }
+        : { color: 0xd88a8a, strength: 0.4, threshold: 0.6 }
     }));
+    const dotMat = this.isPolka
+      ? track(createToonMaterial({
+        color: 0x3fae56, rim: { color: 0xa6e8b4, strength: 0.35, threshold: 0.62 }
+      }))
+      : null;
     const darkMat = track(createToonMaterial({ color: 0x30181a }));
     const beaconMat = track(createToonMaterial({
       color: 0xff4040,
@@ -1411,6 +1427,30 @@ export class Submarine {
     const fin = new THREE.Mesh(finGeo, hullMat);
     fin.position.set(-3.2, 0.4, 0);
     group.add(fin);
+
+    // The polka dots, as geometry rather than a texture. The hull is a capsule
+    // and three's capsule UVs give the long middle almost no texture range at
+    // all — a mapped pattern bunched every dot onto the two end caps and left
+    // five metres of bare hull between them. Discs laid on the surface sit
+    // exactly where they are put.
+    if (dotMat) {
+      // Plain spheres, centred ON the hull surface so each shows as a round
+      // cap and the rest is swallowed. A sphere needs no orientation, which
+      // is the whole reason for choosing one — flattened discs had to be
+      // aimed outward, and aiming them is where the fiddling starts.
+      const dotGeo = track(new THREE.SphereGeometry(0.26, 10, 8));
+      const R = 0.95;
+      for (let i = 0; i < 26; i++) {
+        const along = -2.4 + (i % 13) * 0.4;
+        // Two staggered helices, so the dots scatter rather than lining up.
+        const a = i * 1.35 + (i < 13 ? 0 : Math.PI * 0.5);
+        const dot = new THREE.Mesh(dotGeo, dotMat);
+        // Sunk a little way in, so each reads as a flat spot rather than a
+        // barnacle: centred at 0.82 against a hull surface at 0.95.
+        dot.position.set(along, Math.sin(a) * R * 0.86, Math.cos(a) * R * 0.86);
+        group.add(dot);
+      }
+    }
 
     const scopeGeo = track(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 8));
     const scope = new THREE.Mesh(scopeGeo, darkMat);

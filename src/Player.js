@@ -208,6 +208,7 @@ export class Player {
     else if (this.character === 'pcork') this.root = this.buildPCork();
     else if (this.character === 'muffin') this.root = this.buildMuffin();
     else if (this.character === 'reindeer') this.root = this.buildReindeer();
+    else if (this.character === 'spaghetta') this.root = this.buildSpaghetta();
     // W. Wolk is P. Cork with the storm already in him — same bird, built
     // once and then repainted, so the two can never drift apart.
     else if (this.character === 'wolk') {
@@ -8284,6 +8285,277 @@ export class Player {
    * studded with fruit. The face goes on the case, under the overhang, so
    * the crown reads as a hat rather than a head. Trident in the right hand.
    */
+  /**
+   * Spaghetta Bolognese — a bowl of spaghetti bolognese that has got up and
+   * walked off, cutlery still in hand.
+   *
+   * The whole trick is that she must stay READABLE as a bowl of spag bol
+   * while also being a person. So: the face goes on the ceramic rather than
+   * in the food (eyes in the sauce would read as olives), the bowl keeps its
+   * foot and its glazed band so the silhouette is crockery, and the pasta
+   * sits proud of the rim with the sauce on top where you can see both. The
+   * legs are the joke — two long strands of spaghetti straight out of the
+   * bowl, with sneakers on the ends.
+   */
+  buildSpaghetta() {
+    const root = new THREE.Group();
+    root.name = 'spaghetta';
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    const bowlMat = track(createToonMaterial({
+      color: 0xf2ece0, rim: { color: 0xffffff, strength: 0.4, threshold: 0.6 }
+    }));
+    bowlMat.side = THREE.DoubleSide;   // open bowl: you see the inside wall
+    const glazeMat = track(createToonMaterial({
+      color: 0x2f6fb0, rim: { color: 0x9fd0ff, strength: 0.35, threshold: 0.62 }
+    }));
+    const pastaMat = track(createToonMaterial({
+      color: 0xe8c878, rim: { color: 0xfff0c0, strength: 0.3, threshold: 0.64 }
+    }));
+    const sauceMat = track(createToonMaterial({
+      color: 0x9e2a1c, rim: { color: 0xe8705a, strength: 0.32, threshold: 0.62 }
+    }));
+    const minceMat = track(createToonMaterial({ color: 0x6d3a22 }));
+    const herbMat = track(createToonMaterial({ color: 0x4f8f3a }));
+    const steelMat = track(createToonMaterial({
+      color: 0xc6ced8, rim: { color: 0xffffff, strength: 0.7, threshold: 0.46 }
+    }));
+    const eyeMat = track(createToonMaterial({ color: 0x1b1730 }));
+    const whiteMat = track(createToonMaterial({
+      color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4
+    }));
+    const soleMat = track(createToonMaterial({ color: 0xf4f4f0 }));
+    const shoeMat = track(createToonMaterial({
+      color: 0xd1231f, rim: { color: 0xff9a8a, strength: 0.35, threshold: 0.62 }
+    }));
+
+    const body = new THREE.Group();
+    body.name = 'body';
+    body.position.y = 0.92;
+    root.add(body);
+    this.bodyGroup = body;
+
+    // --- the bowl ---------------------------------------------------------
+    const wall = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.52, 0.3, 0.42, 22, 1, true)), bowlMat);
+    wall.name = 'bowl';
+    wall.castShadow = true;
+    body.add(wall);
+    // A floor to the bowl, or you see straight through it from above.
+    const inner = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.305, 0.305, 0.02, 22)), bowlMat);
+    inner.position.y = -0.2;
+    body.add(inner);
+    const rim = new THREE.Mesh(track(new THREE.TorusGeometry(0.52, 0.035, 8, 24)), bowlMat);
+    rim.name = 'bowl-rim';
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 0.21;
+    body.add(rim);
+    // The glazed band, and the foot it stands on: the two details that stop a
+    // tapered cylinder reading as a plant pot.
+    // High, just under the rim. At mid-height it ran straight across her eyes
+    // and read as a sleep mask.
+    const band = new THREE.Mesh(track(new THREE.CylinderGeometry(0.508, 0.492, 0.07, 22)), glazeMat);
+    band.position.y = 0.145;
+    body.add(band);
+    const foot = new THREE.Mesh(track(new THREE.CylinderGeometry(0.2, 0.23, 0.08, 18)), bowlMat);
+    foot.position.y = -0.25;
+    foot.castShadow = true;
+    body.add(foot);
+
+    // --- the spaghetti, heaped above the rim ------------------------------
+    const heap = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.46, 2)), pastaMat);
+    heap.name = 'pasta-heap';
+    heap.scale.set(1, 0.5, 1);
+    heap.position.y = 0.19;
+    heap.castShadow = true;
+    body.add(heap);
+    // Loose strands curling over the heap. Torus arcs, each tipped its own
+    // way, so the top reads as pasta rather than as a dome.
+    const strandGeo = track(new THREE.TorusGeometry(0.17, 0.022, 6, 14, Math.PI * 1.35));
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + 0.6;
+      const strand = new THREE.Mesh(strandGeo, pastaMat);
+      strand.position.set(Math.cos(a) * 0.23, 0.3 + Math.sin(i * 2.1) * 0.03, Math.sin(a) * 0.23);
+      strand.rotation.set(1.2 + Math.sin(i) * 0.5, a, Math.cos(i) * 0.6);
+      body.add(strand);
+    }
+
+    // --- the bolognese ----------------------------------------------------
+    // Sitting ON the heap and spilling toward the front. The first version
+    // was tucked down inside it: from the front she was a bowl of plain
+    // pasta, which is not the dish.
+    const sauce = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.36, 2)), sauceMat);
+    sauce.name = 'sauce';
+    sauce.scale.set(1, 0.33, 0.95);
+    sauce.position.set(0.01, 0.4, 0.03);
+    body.add(sauce);
+    // A lick of it running over the near rim of the heap, so the red is
+    // visible from eye level and not only from above.
+    const drip = new THREE.Mesh(track(new THREE.SphereGeometry(0.14, 12, 10)), sauceMat);
+    drip.scale.set(1.3, 0.75, 0.6);
+    drip.position.set(0.04, 0.33, 0.33);
+    body.add(drip);
+    const minceGeo = track(new THREE.IcosahedronGeometry(0.045, 0));
+    for (let i = 0; i < 9; i++) {
+      const a = i * 2.399;
+      const r = 0.07 + ((i * 37) % 18) / 100;
+      const lump = new THREE.Mesh(minceGeo, minceMat);
+      lump.position.set(0.01 + Math.cos(a) * r, 0.47 + ((i * 23) % 5) / 90, 0.03 + Math.sin(a) * r);
+      lump.rotation.set(a, a * 1.6, a * 0.4);
+      body.add(lump);
+    }
+    // A pinch of basil, because somebody plated this.
+    for (const [bx, bz] of [[-0.1, 0.08], [0.12, -0.06], [0.02, 0.14]]) {
+      const leaf = new THREE.Mesh(track(new THREE.SphereGeometry(0.045, 8, 6)), herbMat);
+      leaf.scale.set(1, 0.3, 0.6);
+      leaf.position.set(bx, 0.5, bz);
+      leaf.rotation.y = bx * 6;
+      body.add(leaf);
+    }
+
+    // --- the face, ON THE BOWL --------------------------------------------
+    // Not in the food. Eyes set in the sauce read as olives, and the whole
+    // point is that she is a bowl rather than a meal with a face.
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, -0.01, 0.44);
+    body.add(headGroup);
+    this.headGroup = headGroup;
+    const scleraGeo = track(new THREE.SphereGeometry(0.085, 12, 10));
+    const pupilGeo = track(new THREE.SphereGeometry(0.046, 10, 8));
+    const glintGeo = track(new THREE.SphereGeometry(0.018, 8, 6));
+    for (const side of [-1, 1]) {
+      const sclera = new THREE.Mesh(scleraGeo, whiteMat);
+      sclera.position.set(side * 0.16, 0.04, 0.02);
+      sclera.scale.set(1, 1.05, 0.5);
+      headGroup.add(sclera);
+      const pupil = new THREE.Mesh(pupilGeo, eyeMat);
+      pupil.position.set(side * 0.165, 0.04, 0.07);
+      pupil.scale.set(1, 1, 0.7);
+      headGroup.add(pupil);
+      const glint = new THREE.Mesh(glintGeo, whiteMat);
+      glint.position.set(side * 0.185, 0.07, 0.1);
+      headGroup.add(glint);
+      // Lashes, a flick at the outer corner of each eye.
+      const lash = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.014, 0.014)), eyeMat);
+      lash.position.set(side * 0.24, 0.1, 0.05);
+      lash.rotation.z = side * 0.5;
+      headGroup.add(lash);
+    }
+    const mouth = new THREE.Mesh(
+      track(new THREE.TorusGeometry(0.08, 0.018, 6, 14, Math.PI)), eyeMat);
+    mouth.position.set(0, -0.12, 0.04);
+    mouth.rotation.z = Math.PI;   // corners up
+    headGroup.add(mouth);
+
+    // --- arms: a knife in one hand, a fork in the other -------------------
+    this.arms = [];
+    const armGeo = track(new THREE.CylinderGeometry(0.036, 0.032, 0.34, 8));
+    const handGeo = track(new THREE.SphereGeometry(0.065, 10, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.5, 0.06, 0.02);
+      pivot.rotation.z = side * 0.4; // splay out — see the note on Hughes
+      const arm = new THREE.Mesh(armGeo, pastaMat);
+      arm.position.y = -0.18;
+      arm.castShadow = true;
+      pivot.add(arm);
+      const hand = new THREE.Mesh(handGeo, pastaMat);
+      hand.position.y = -0.37;
+      pivot.add(hand);
+      pivot.add(side === 1
+        ? this._buildCutlery(track, steelMat, 'knife')
+        : this._buildCutlery(track, steelMat, 'fork'));
+      body.add(pivot);
+      this.arms.push({ pivot, phase: side === -1 ? Math.PI : 0 });
+    }
+
+    // --- legs: two long strands of spaghetti, in sneakers -----------------
+    this.legs = [];
+    const strandLegGeo = track(new THREE.CylinderGeometry(0.035, 0.03, 0.52, 8));
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.17, -0.28, 0);
+      const leg = new THREE.Mesh(strandLegGeo, pastaMat);
+      leg.position.y = -0.26;
+      leg.castShadow = true;
+      pivot.add(leg);
+      // A kink partway down, so it hangs like a cooked strand rather than a
+      // dowel — the one thing that sells these as spaghetti and not stilts.
+      const kink = new THREE.Mesh(
+        track(new THREE.TorusGeometry(0.05, 0.032, 6, 10, Math.PI * 0.9)), pastaMat);
+      kink.position.set(side * 0.045, -0.3, 0);
+      kink.rotation.set(Math.PI / 2, 0, side * 1.1);
+      pivot.add(kink);
+      pivot.add(this._buildSneaker(track, soleMat, shoeMat, whiteMat, side));
+      body.add(pivot);
+      this.legs.push({ pivot, phase: side === -1 ? 0 : Math.PI });
+    }
+
+    return root;
+  }
+
+  /** A knife or a fork, sized for a bowl's fist and held point-up. */
+  _buildCutlery(track, steelMat, kind) {
+    const g = new THREE.Group();
+    g.position.set(0, -0.37, 0.04);   // through the fist, not beside it
+    g.rotation.z = -0.12;
+
+    const handle = new THREE.Mesh(
+      track(new THREE.BoxGeometry(0.038, 0.2, 0.026)), steelMat);
+    handle.position.y = 0.02;
+    g.add(handle);
+
+    if (kind === 'knife') {
+      const blade = new THREE.Mesh(track(new THREE.BoxGeometry(0.07, 0.3, 0.014)), steelMat);
+      blade.position.y = 0.27;
+      blade.castShadow = true;
+      g.add(blade);
+      // The tip, tapered off the end of the blade.
+      const tip = new THREE.Mesh(track(new THREE.ConeGeometry(0.035, 0.08, 4)), steelMat);
+      tip.position.y = 0.46;
+      tip.rotation.y = Math.PI / 4;
+      g.add(tip);
+    } else {
+      const neck = new THREE.Mesh(track(new THREE.BoxGeometry(0.05, 0.16, 0.016)), steelMat);
+      neck.position.y = 0.2;
+      g.add(neck);
+      const tineGeo = track(new THREE.BoxGeometry(0.014, 0.14, 0.014));
+      for (const tx of [-0.027, -0.009, 0.009, 0.027]) {
+        const tine = new THREE.Mesh(tineGeo, steelMat);
+        tine.position.set(tx, 0.35, 0);
+        g.add(tine);
+      }
+    }
+    return g;
+  }
+
+  /** A sneaker for the end of a strand of spaghetti. */
+  _buildSneaker(track, soleMat, shoeMat, laceMat, side) {
+    const shoe = new THREE.Group();
+    shoe.position.set(0, -0.55, 0.04);
+
+    const sole = new THREE.Mesh(track(new THREE.BoxGeometry(0.19, 0.055, 0.3)), soleMat);
+    sole.castShadow = true;
+    shoe.add(sole);
+    const upper = new THREE.Mesh(track(new THREE.BoxGeometry(0.175, 0.1, 0.22)), shoeMat);
+    upper.position.set(0, 0.07, -0.03);
+    upper.castShadow = true;
+    shoe.add(upper);
+    // The toe cap, lower and further forward than the upper.
+    const toe = new THREE.Mesh(track(new THREE.BoxGeometry(0.17, 0.07, 0.09)), soleMat);
+    toe.position.set(0, 0.05, 0.11);
+    shoe.add(toe);
+    // Two laces across the tongue.
+    for (const ly of [0.09, 0.12]) {
+      const lace = new THREE.Mesh(track(new THREE.BoxGeometry(0.15, 0.012, 0.012)), laceMat);
+      lace.position.set(0, ly, 0.02);
+      lace.rotation.z = side * 0.12;
+      shoe.add(lace);
+    }
+    return shoe;
+  }
+
   buildMuffin() {
     const root = new THREE.Group();
     root.name = 'muffin';
