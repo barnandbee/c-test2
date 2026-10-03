@@ -661,6 +661,68 @@ ok(`the achievements page counts the roster (${rosterLine})`,
 ok('and counts against the whole roster', rosterTotal >= 52, String(rosterTotal));
 await page.click('#ach-close');
 
+// The picker's cards are hand-written in index.html while the roster itself
+// lives in Achievements.js, so the two can drift — and did: Spaghetta
+// Bolognese shipped unlockable, buildable and completely unchoosable, because
+// adding a hero to the roster adds no card. Checked against the roster rather
+// than against a list kept here, so this holds for every hero added after it.
+const picker = await page.evaluate(async () => {
+  const mod = await import('./src/Achievements.js');
+  const roster = mod.CHARACTER_UNLOCKS.map((c) => c.key);
+  const lists = [...document.querySelectorAll('#menu-roster, #character-select')]
+    .map((el) => ({
+      where: el.id,
+      cards: [...el.querySelectorAll('.char-card')].map((b) => b.dataset.char)
+    }));
+  return { roster, lists };
+});
+ok('both hero lists were found in the page', picker.lists.length === 2,
+   JSON.stringify(picker.lists.map((l) => l.where)));
+for (const list of picker.lists) {
+  const cards = new Set(list.cards);
+  // 'random' is a card with no roster entry — it is the draw, not a hero.
+  const missing = picker.roster.filter((k) => k !== 'badger' && !cards.has(k));
+  const orphans = list.cards.filter(
+    (k) => k !== 'random' && k !== 'badger' && !picker.roster.includes(k));
+  ok(`every hero on the roster has a card in #${list.where}`,
+     missing.length === 0, `missing: ${missing.join(', ')}`);
+  ok(`and #${list.where} offers no card for a hero that does not exist`,
+     orphans.length === 0, `orphans: ${orphans.join(', ')}`);
+}
+
+// A card needs an icon of its OWN. The base `.char-icon` rule already paints
+// the Badger's face bands, so a hero with no icon rule is not a blank square —
+// it silently wears the Badger's face, which is the harder thing to notice and
+// the reason this compares against the Badger rather than against "blank".
+// Pseudo-elements count: several heroes (Rhombus, Magnus, President Fir,
+// Wagnus) set `background: none` on the icon and draw the whole thing in
+// ::before.
+const icons = await page.evaluate(() => {
+  const look = (el) => ['', '::before', '::after'].map((ps) => {
+    const st = getComputedStyle(el, ps || null);
+    if (ps && (st.content === 'none' || st.content === 'normal')) return '-';
+    return `${st.backgroundImage}|${st.backgroundColor}|${st.clipPath}|${st.boxShadow}`;
+  }).join('@@');
+
+  const cards = [...document.querySelectorAll('#character-select .char-card')];
+  const badger = cards.find((c) => c.dataset.char === 'badger');
+  const base = look(badger.querySelector('.char-icon'));
+  const wearingTheBadgersFace = [];
+  for (const card of cards) {
+    const key = card.dataset.char;
+    if (key === 'badger') continue;
+    const icon = card.querySelector('.char-icon');
+    if (!icon) { wearingTheBadgersFace.push(`${key}: no icon element`); continue; }
+    if (look(icon) === base) wearingTheBadgersFace.push(key);
+  }
+  return wearingTheBadgersFace;
+});
+// Badgerette and the other badgers may legitimately resemble him, but they
+// each still set something of their own; nobody should fall through to the
+// bare default.
+ok('every card has an icon of its own, not the Badger default',
+   icons.length === 0, `falling through to the default: ${icons.join(', ')}`);
+
 /* == 9. P. Cork, the logo, and the unlock tiers ========================= */
 console.log('\nP. Cork and the unlock tiers');
 await page.reload();

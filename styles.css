@@ -4150,6 +4150,34 @@ body {
     linear-gradient(180deg, transparent 0 46%, rgba(226, 232, 240, 0.55) 100%);
 }
 
+/* --- Spaghetta Bolognese: sauce on pasta, in a cream bowl ------------ */
+.spaghetta-icon {
+  /* Read bottom-up: cream ceramic, a blue glazed band near the rim, then
+     the pasta heaped above it with the bolognese on top. The same order the
+     model puts them in, which is what makes the icon recognisably her. */
+  background: linear-gradient(
+    180deg,
+    #9e2a1c 0 30%,
+    #e8c878 30% 46%,
+    #2f6fb0 46% 54%,
+    #f2ece0 54% 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+/* Two eyes on the ceramic, and a few lumps of mince in the sauce. */
+.spaghetta-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 36% 72%, #1b1730 0 11%, transparent 13%),
+    radial-gradient(circle at 64% 72%, #1b1730 0 11%, transparent 13%),
+    radial-gradient(circle at 42% 16%, #6d3a22 0 8%, transparent 10%),
+    radial-gradient(circle at 63% 21%, #6d3a22 0 7%, transparent 9%),
+    radial-gradient(circle at 52% 9%, #4f8f3a 0 6%, transparent 8%);
+}
+
 /* --- Neptune's Muffin: a browned crown over a blue paper case -------- */
 .muffin-icon {
   /* The case below, the crown above — a hard line where the batter sat. */
