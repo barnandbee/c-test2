@@ -2650,6 +2650,88 @@ ok('and at the end away from the door', fittings.oppositeTheDoor, JSON.stringify
 ok('there are lots of disco lights going on',
    fittings.lamps >= 4 && fittings.specks >= 40, JSON.stringify(fittings));
 
+// The lamps walk a palette rather than holding a colour each, so the room
+// changes mood as if the lighting were following the music.
+const cycle = await page.evaluate(() => {
+  const w = window.__game.world;
+  const read = (t) => {
+    w.updateKaraoke(t);
+    return w.karaokeLamps.map((l) => ({
+      hex: l.light.color.getHexString(),
+      hsl: (() => { const o = { h: 0, s: 0, l: 0 }; l.light.color.getHSL(o); return o; })(),
+      intensity: l.light.intensity
+    }));
+  };
+  const frames = [0, 1, 5, 10, 15, 20].map(read);
+  // How far round the colour wheel a lamp has travelled between two frames.
+  const hueGap = (a, b) => {
+    const d = Math.abs(a - b) % 1;
+    return Math.min(d, 1 - d);
+  };
+  // Sampling one pair of times can be fooled: a cycle fast enough to wrap
+  // exactly between the two samples reads as no change at all. A strobe at
+  // six palette steps a second did exactly that and passed the "slowly"
+  // check. So take the WORST of several windows at different offsets — no
+  // single rate can alias against all of them.
+  const widest = (gap, offsets) => Math.max(...offsets.map((t0) => {
+    const a = read(t0), b = read(t0 + gap);
+    return Math.max(...a.map((l, i) => hueGap(l.hsl.h, b[i].hsl.h)));
+  }));
+  return {
+    paletteSize: w.karaokePalette.length,
+    // Four lamps, never all the same colour at once.
+    distinctAtOnce: new Set(frames[0].map((l) => l.hex)).size,
+    // A second barely moves it; five seconds moves it plainly.
+    // Fractional windows on purpose: whole seconds aliased exactly against a
+    // six-steps-a-second strobe and read as no change at all.
+    oneSecond: widest(0.37, [0, 0.7, 2.3, 3.9, 6.1]),
+    fiveSeconds: widest(4.3, [0, 1.3, 2.9, 7.2]),
+    // Every lamp has to be moving, not just the first.
+    allMove: frames[0].every((l, i) => hueGap(l.hsl.h, frames[3][i].hsl.h) > 0.02),
+    // Colours stay saturated — a cycle through greys is not a disco.
+    minSat: Math.min(...frames.flat().map((l) => l.hsl.s)),
+    intensities: {
+      min: Math.min(...frames.flat().map((l) => l.intensity)),
+      max: Math.max(...frames.flat().map((l) => l.intensity))
+    },
+    // Pink has to turn up — it is what the place looks like from the door.
+    everPink: frames.flat().some((l) => {
+      const h = l.hsl.h;
+      return (h > 0.85 || h < 0.03) && l.hsl.s > 0.5;
+    })
+  };
+});
+ok('the lamps cycle through a palette', cycle.paletteSize >= 4, JSON.stringify(cycle));
+ok('showing more than one colour at a time', cycle.distinctAtOnce >= 3, JSON.stringify(cycle));
+ok('every lamp is moving, not just the first', cycle.allMove, JSON.stringify(cycle));
+// Slowly: a second should barely shift it, five seconds should be plain.
+ok('it changes SLOWLY — a second barely moves it',
+   cycle.oneSecond < 0.07, `one second shifted the hue by ${cycle.oneSecond.toFixed(3)}`);
+ok('but five seconds plainly does',
+   cycle.fiveSeconds > 0.07, `five seconds shifted it by ${cycle.fiveSeconds.toFixed(3)}`);
+ok('the colours stay saturated — a cycle through greys is not a disco',
+   cycle.minSat > 0.3, String(cycle.minSat));
+ok('and there is pink in there', cycle.everPink, JSON.stringify(cycle));
+ok('the lamps breathe rather than sitting still',
+   cycle.intensities.max - cycle.intensities.min > 0.5
+   && cycle.intensities.min > 0, JSON.stringify(cycle.intensities));
+
+// Driven every frame by the game, not only when a test asks.
+ok('the booth is lit by the game loop itself', await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  const before = g.world.karaokeLamps[0].light.color.getHexString();
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 12;      // chunky steps: several seconds of time
+  g.renderer.render = () => {};
+  for (let i = 0; i < 90; i++) g.tick();
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  return g.world.karaokeLamps[0].light.color.getHexString() !== before;
+}) === true);
+
 // The door's lock, and the music it leaves behind.
 const knock = (points) => page.evaluate((points) => {
   const g = window.__game;

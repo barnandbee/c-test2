@@ -19,6 +19,20 @@ import { createToonMaterial, createSkyMaterial, createWaterMaterial, SharedUnifo
 import { createAuraPoints } from './Particles.js';
 import { AD_BOARDS } from './Achievements.js';
 
+// The karaoke booth's lamps: how bright, and how slowly they walk their
+// palette. 0.26 of a step per second is about four seconds a colour, so a
+// full turn of the six takes around twenty-four — slow enough to notice only
+// if you stay in, which is the idea.
+//
+// The gain looks absurd next to the 1.5-2.5 the rest of the world's lamps
+// use, and it is not a physical quantity: the booth's walls are near-black on
+// purpose, which swallows almost everything thrown at them. Swept from 0.8 up
+// to 20 and read off the rendered frame, the room only starts to show colour
+// around 7 and is washed out by 20. Twelve is where the walls take a tint and
+// the mirror-ball specks still read as the brightest things in the room.
+const KARAOKE_LAMP_GAIN = 12;
+const KARAOKE_COLOUR_RATE = 0.26;
+
 const TERRAIN_SIZE = 312;       // +20% — a roomier map on all sides
 const TERRAIN_SEGMENTS = 240;   // scaled up to keep the same detail density
 const PLAYABLE_RADIUS = 125;    // +20% — the walkable boundary pushed out
@@ -727,10 +741,24 @@ export class World {
    */
   updateKaraoke(time) {
     if (!this.karaokeLamps) return;
+    const pal = this.karaokePalette;
     for (const l of this.karaokeLamps) {
       const a = l.phase + time * 1.1;
       l.light.position.x = this.karaoke.x + Math.cos(a) * l.radius;
       l.light.position.z = this.karaoke.z + Math.sin(a) * l.radius;
+
+      // Fade from one palette colour to the next — a few seconds on each, so
+      // it reads as the lighting following the music rather than as a strobe.
+      // Lerped rather than switched: a hard cut four times a minute would be
+      // a fault, and a slow bleed is what a booth's lamps actually do.
+      const t = time * KARAOKE_COLOUR_RATE + l.tint;
+      const i0 = Math.floor(t);
+      l.light.color
+        .copy(pal[((i0 % pal.length) + pal.length) % pal.length])
+        .lerp(pal[((i0 + 1) % pal.length + pal.length) % pal.length], t - i0);
+
+      // …and breathe, so the wash is never quite still.
+      l.light.intensity = KARAOKE_LAMP_GAIN * (0.76 + 0.24 * Math.sin(time * 1.9 + l.phase));
     }
     if (this.karaokeBall) this.karaokeBall.rotation.y = time * 1.6;
   }
@@ -3710,23 +3738,28 @@ export class World {
       group.add(speck);
     }
 
+    // The lamps do not hold a colour each: they walk this palette, so the
+    // room changes mood every few seconds the way a booth does when the track
+    // turns over. Pink leads it, because pink is what the place looks like
+    // from the door, and pink is what it should look like from the inside.
+    this.karaokePalette = [0xff3c8a, 0xff5ab0, 0x8a3cff, 0x3c7bff, 0x30d6b0, 0xffc83c]
+      .map((c) => new THREE.Color(c));
     this.karaokeLamps = [];
-    const LAMP_COLOURS = [0xff3c6a, 0x3c7bff, 0xffc83c, 0x8a3cff];
-    for (let i = 0; i < LAMP_COLOURS.length; i++) {
-      const a = (i / LAMP_COLOURS.length) * Math.PI * 2 + 0.6;
-      // Dim and short-reaching, so each pools on the nearest wall instead of
-      // filling the room. Four lamps at 0.75 and a reach of 7 in a 7.4m room
-      // added up to one flat wash.
-      // Faint, and swept close to the middle: the room is meant to be dark,
-      // the way the reference photograph is, with the screen as the only real
-      // light and the mirror-ball specks below doing the decorating. These
-      // four just keep a slow wash of colour moving over the walls.
-      const lamp = new THREE.PointLight(LAMP_COLOURS[i], 0.13, 3.4, 2.2);
+    const LAMPS = 4;
+    for (let i = 0; i < LAMPS; i++) {
+      const a = (i / LAMPS) * Math.PI * 2 + 0.6;
+      // Swept close to the middle of the room: a point light falls off as
+      // 1/d^2, so one that comes within half a metre of a wall is worth four
+      // times what it is a metre out, and the far wall gets nothing.
+      const lamp = new THREE.PointLight(0xff5ab0, KARAOKE_LAMP_GAIN, 9, 1.2);
       lamp.position.set(x + Math.cos(a) * 1.15, y + H - 0.9, z + Math.sin(a) * 1.15);
       group.add(lamp);
-      // Swept around the room by World.update — a disco light that stands
-      // still is just a light.
-      this.karaokeLamps.push({ light: lamp, phase: a, radius: 1.15 });
+      this.karaokeLamps.push({
+        light: lamp, phase: a, radius: 1.15,
+        // Each lamp starts a little further round the palette, so the booth is
+        // never one flat colour — it is two or three at once, all moving.
+        tint: (i / LAMPS) * this.karaokePalette.length
+      });
     }
 
     // --- a bench and a low table, with glasses on it ----------------------

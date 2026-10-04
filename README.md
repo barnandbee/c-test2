@@ -171,7 +171,10 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   the far end playing a sparkling blue video with the lyric struck through, a
   speaker slung above it, a wall fan, a bench, glasses on a low table, a
   mirror ball turning on the ceiling and dozens of coloured specks of light
-  crawling over every surface. **The door only opens on an ODD score** — a
+  crawling over every surface. Four lamps sweep the room and **walk slowly
+  through a palette** — pink, violet, blue, teal, gold — about four seconds on
+  each and a full turn in a little under half a minute, so the whole booth
+  changes colour as though the lighting were following the music. **The door only opens on an ODD score** — a
   whole, odd number, judged on the score as shown — and tells you so if it
   will not budge. Go in once and the backing music for **the rest of the run**
   becomes the booth's **8-bit disco**: four-on-the-floor kick, offbeat hat, a
