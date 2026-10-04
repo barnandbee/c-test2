@@ -101,7 +101,7 @@ each one is earned. This is the single source of truth for unlock conditions
 
 ---
 
-## Trophies (97)
+## Trophies (98)
 
 ### Score milestones
 Credited **retroactively** against your saved high score — a newly added
@@ -232,6 +232,7 @@ Fourteen trophies that only one hero (or one pair) can reach.
 | 📮 **Third Class Post** | As **Postboxer**: finish **above 300** on a score that also **divides by 3**. |
 | 🌘 **Raspberry Blue Rain** | As **Raspberry Reindeer**: complete a run in the **rain**, having stepped inside **Neptune's Nook** during it. |
 | 🫧 **Brave the Brew** | Drink a **Brave Badger Brew**. It appears in the cottage fridge only when **Pickle Stick is already unlocked** and the run is **past 300** — it rounds your score **up to the next whole ten** and costs **10 health**. One a run, and it can kill you. |
+| 🌿 **Perfectly Seasoned Pasta** | Finish on **400 or more** as **Parsley O'Riley** AND as **Spaghetta Bolognese**. Across any runs — you can only be one of them at a time. |
 
 ---
 

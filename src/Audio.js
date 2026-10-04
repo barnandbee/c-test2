@@ -699,6 +699,33 @@ export class SoundFX {
    * arpeggio. Deliberately a PLACEHOLDER: swap in your own track later by
    * replacing this method. Uses a lookahead scheduler on the audio clock.
    */
+  /**
+   * Swap the backing track. 'ambient' is the forest's usual drift; 'disco' is
+   * the 8-bit floor-filler the karaoke booth puts on and leaves on.
+   *
+   * Safe to call before the audio context is running — the choice is kept and
+   * applied when the music starts, which matters because a browser will not
+   * let anything make a sound until the player has touched the page.
+   */
+  setMusicTrack(name) {
+    const track = name === 'disco' ? 'disco' : 'ambient';
+    if (this._musicTrack === track) return;
+    this._musicTrack = track;
+    this._musicBeat = track === 'disco' ? 0.15 : 0.5;
+    this._musicStep = 0;
+    if (this._music) {
+      // Start the new track at the next step rather than mid-phrase.
+      this._musicNext = Math.max(this._musicNext, this.ctx.currentTime + 0.05);
+      // The disco bed is busier, so it needs less gain and none of the
+      // lowpass that keeps the ambient pad soft — a muffled chiptune is just
+      // a mistake.
+      this._music.bus.gain.setTargetAtTime(track === 'disco' ? 0.085 : 0.11,
+        this.ctx.currentTime, 0.2);
+      this._music.warmth.frequency.setTargetAtTime(track === 'disco' ? 7000 : 1500,
+        this.ctx.currentTime, 0.2);
+    }
+  }
+
   startMusic() {
     if (this._music || !this.ctx || this.ctx.state !== 'running') return;
     const bus = this.ctx.createGain();
@@ -710,7 +737,12 @@ export class SoundFX {
     warmth.connect(bus);
     this._music = { bus, warmth };
     this._musicStep = 0;
-    this._musicBeat = 0.5; // seconds per step
+    if (!this._musicTrack) this._musicTrack = 'ambient';
+    if (this._musicTrack === 'disco') {
+      bus.gain.value = 0.085;
+      warmth.frequency.value = 7000;
+    }
+    this._musicBeat = this._musicTrack === 'disco' ? 0.15 : 0.5; // seconds per step
     this._musicNext = this.ctx.currentTime + 0.1;
     // vi–IV–I–V in A minor, each held for 8 steps (4 s). Roots + triads (Hz).
     this._musicChords = [
@@ -736,6 +768,7 @@ export class SoundFX {
   }
 
   _musicNoteAt(t, step) {
+    if (this._musicTrack === 'disco') { this._discoNoteAt(t, step); return; }
     const chord = this._musicChords[Math.floor(step / 8) % this._musicChords.length];
     const dest = this._music.warmth;
     // Pad: retrigger the sustained triad at the top of each chord.
@@ -766,6 +799,78 @@ export class SoundFX {
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
       o.connect(g).connect(dest);
       o.start(t); o.stop(t + 0.65);
+    }
+  }
+
+  /**
+   * The karaoke booth's 8-bit disco: four-on-the-floor kick, offbeat hat, a
+   * square-wave bassline walking the same vi-IV-I-V the forest hums, and a
+   * chiptune lead over the top. Square and pulse waves only, no filtering to
+   * speak of — that squareness IS the 8-bit, and softening it loses the joke.
+   */
+  _discoNoteAt(t, step) {
+    const dest = this._music.warmth;
+    const bar = Math.floor(step / 16) % 4;
+    const roots = [110.0, 87.3, 130.8, 98.0];   // A, F, C, G — an octave down
+    const root = roots[bar];
+
+    // Kick: four on the floor, a pitch drop with a fast decay.
+    if (step % 4 === 0) {
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(130, t);
+      o.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.5, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+      o.connect(g).connect(dest);
+      o.start(t); o.stop(t + 0.2);
+    }
+
+    // Hat: on every offbeat, open a little wider every fourth.
+    if (step % 2 === 1) {
+      const open = step % 8 === 7;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this._noise();
+      const hp = this.ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 7000;
+      const g = this.ctx.createGain();
+      const dur = open ? 0.11 : 0.035;
+      g.gain.setValueAtTime(open ? 0.05 : 0.035, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(hp).connect(g).connect(dest);
+      src.start(t); src.stop(t + dur + 0.02);
+    }
+
+    // Bass: a square-wave octave bounce, the engine room of any disco.
+    if (step % 2 === 0) {
+      const o = this.ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = step % 4 === 0 ? root : root * 2;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.1, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+      o.connect(g).connect(dest);
+      o.start(t); o.stop(t + 0.15);
+    }
+
+    // Lead: a chiptune arpeggio over the chord, resting on the last beat of
+    // the bar so it phrases instead of chattering.
+    if (step % 16 < 13) {
+      const steps = [0, 4, 7, 12, 7, 4];        // a major-ish arpeggio shape
+      const semi = steps[step % steps.length];
+      const o = this.ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = root * 4 * Math.pow(2, semi / 12);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.035, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+      o.connect(g).connect(dest);
+      o.start(t); o.stop(t + 0.12);
     }
   }
 

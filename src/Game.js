@@ -207,6 +207,9 @@ const STORAGE_PHANTOM = 'mystic-badger.phantomUnlocked';
 const STORAGE_SPAGHETTA = 'mystic-badger.spaghettaUnlocked';
 // Spaghetta Bolognese's dinner service: the four courses, and the bill.
 const SPAGHETTA_SCORE = 200;
+const KARAOKE_DOOR_RANGE = 2.6;   // how close you stand to knock
+// Perfectly Seasoned Pasta wants a 400 from each of these, across any runs.
+const PASTA_PAIR = ['parsley', 'spaghetta'];
 // How close counts as having called at the BLT. Matches the reach Parsley
 // already uses for arriving at it, so "you were at the sandwich" means the
 // same thing to both of them.
@@ -630,6 +633,7 @@ export class Game {
     this.sidingVisits = 0;                 // trips to the unfinished fifth stop
     this.supportersOpen = false;           // the board freezes the run clock
     this.brewDrunk = false;                // one Brave Badger Brew per run
+    this.karaokeEntered = false;           // been in the booth this run?
     this._skyGrace = 0;                    // seconds left in which a summit counts as flown
     this._crispsClaimed = false;           // Hughes's +40 is once per run
     this.parsleyRejected = false;          // …and so is her marching order
@@ -2071,6 +2075,13 @@ export class Game {
       this.awardAchievement('unlockroll');
     }
 
+    // Perfectly Seasoned Pasta: both of the forest's Italian courses have
+    // posted a 400 — Parsley O'Riley and Spaghetta Bolognese. Across runs,
+    // necessarily: you can only be one of them at a time.
+    if (PASTA_PAIR.every((c) => this.scored400.has(c))) {
+      this.awardAchievement('seasonedpasta');
+    }
+
     // Postboxer: all three Errors have posted a 400 at some point. Read
     // straight off the scored400 set, which is why that set has to keep
     // recording after its own trophy is won.
@@ -2648,6 +2659,9 @@ export class Game {
     // The supporters' board beside the coffee cart.
     if (this.handleSupportersBoard()) return;
 
+    // The karaoke booth's door, which only opens on an odd score.
+    if (this.handleKaraoke()) return;
+
     // In the siding: the roundel is the only way back.
     if (this.handleSidingRoundel()) return;
 
@@ -2973,6 +2987,75 @@ export class Game {
       { count: 30, speed: 4.5, size: 44, upBias: 0.7, life: 0.7 }
     );
     return true;
+  }
+
+  /**
+   * The karaoke booth door. It opens on an ODD score and refuses every other
+   * number — same spirit as the trap door's square-number lock, and the same
+   * reason: a door with a condition on it is worth more than a door.
+   *
+   * Once you have been in, the backing music is the booth's 8-bit disco for
+   * the rest of the run. That does not switch back when you leave: you have
+   * heard it now.
+   */
+  handleKaraoke() {
+    const k = this.world.karaoke;
+    if (!k) return false;
+    const p = this.player.position;
+    const inside = this.world.enclosedRoomAt(p.x, p.y, p.z);
+    const inBooth = Boolean(inside && inside.kind === 'karaoke');
+
+    if (inBooth) {
+      // On the way out, no questions asked — a locked door you cannot leave
+      // through is a trap, and the siding already taught me that one.
+      this.player.position.set(k.door.x, k.floorY + 0.2, k.door.z);
+      this.player.velocity.set(0, 0, 0);
+      this.cameraRig.snapTo(this.player.position);
+      this.audio.play('select');
+      this.ui.showTimeToast('BACK OUT INTO THE NIGHT AIR.');
+      return true;
+    }
+
+    const dx = p.x - k.door.x;
+    const dz = p.z - k.door.z;
+    if (dx * dx + dz * dz > KARAOKE_DOOR_RANGE * KARAOKE_DOOR_RANGE) return false;
+    if (Math.abs(p.y - k.floorY) > 3) return false;
+
+    if (!this.isOddScore()) {
+      this.audio.play('select');
+      this.ui.showTimeToast(
+        `THE DOOR WON'T BUDGE. ODD NUMBERS ONLY — YOU ARE ON ${shownScore(this.points)}.`);
+      return true;
+    }
+
+    this.player.position.set(k.inside.x, k.floorY + 0.2, k.inside.z);
+    this.player.velocity.set(0, 0, 0);
+    this.cameraRig.snapTo(this.player.position);
+    this.audio.play('select');
+    if (!this.karaokeEntered) {
+      this.karaokeEntered = true;
+      this.audio.setMusicTrack('disco');
+      this.ui.showTimeToast('KARAOKE! THE NIGHT IS 8-BIT NOW. 🎤');
+    } else {
+      this.ui.showTimeToast('BACK ON THE MIC.');
+    }
+    this.particles.spawnBurst(
+      this._playerCenter.set(k.inside.x, k.floorY + 1.2, k.inside.z),
+      0xff5ab0,
+      { count: 34, speed: 4.2, size: 44, upBias: 0.8, life: 0.8 }
+    );
+    return true;
+  }
+
+  /**
+   * An odd score — a whole, odd number. Judged on the score as SHOWN, because
+   * ~0.75% of scores that read as whole are a hair off it in the float, and a
+   * door that refuses a player looking at an odd number on the HUD is a bug
+   * however correct the arithmetic.
+   */
+  isOddScore() {
+    const p = shownScore(this.points);
+    return Number.isInteger(p) && Math.abs(p % 2) === 1;
   }
 
   /** The trap door's lock only respects a perfectly square score. */
@@ -4006,6 +4089,8 @@ export class Game {
     this.sidingVisits = 0;
     this.supportersOpen = false;   // or a restart mid-read leaves the clock stopped
     this.brewDrunk = false;
+    this.karaokeEntered = false;
+    this.audio.setMusicTrack('ambient');   // the booth's disco is per-run
     this._crispsClaimed = false;
     this.parsleyRejected = false;
     this.enteredNook = false;
@@ -4642,9 +4727,10 @@ export class Game {
     }
     this.particles.update();
     this.world.update(dt, this.player.position, this.camera);
+    this.world.updateKaraoke(time);
     if (this.weather) {
       const p = this.player.position;
-      this.weather.update(dt, p, Boolean(this.world.undergroundRoomAt(p.x, p.y, p.z)));
+      this.weather.update(dt, p, Boolean(this.world.enclosedRoomAt(p.x, p.y, p.z)));
     }
 
     if (this.bloomEnabled && this.bloom) {

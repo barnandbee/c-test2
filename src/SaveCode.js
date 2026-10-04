@@ -140,7 +140,7 @@ export const VOCAB_TROPHIES = [
   // vocabulary is positional, so removing it would shift every id after
   // it and misread codes already issued. Nothing sets it any more.
   'juliecones', 'cactusair', 'nightvision', 'tudorround', 'meetmaker',
-  'badrequest', 'livewire', 'thirdclass', 'blueberryrain', 'bravethebrew'
+  'badrequest', 'livewire', 'thirdclass', 'blueberryrain', 'bravethebrew', 'seasonedpasta'
 ];
 
 export const VOCAB_CHARACTERS = [

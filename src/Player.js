@@ -10012,10 +10012,18 @@ export class Player {
     // Nothing exists this deep except the station, so the cutoff is safe.
     const st = this.world.station;
     const underground = st && pos.y < st.floorY + 6.5;
+    // A room you are standing INSIDE must not shove you out of itself. The
+    // karaoke booth is solid from the outside, which is one cylinder collider
+    // covering the whole footprint — and that collider pushes anybody within
+    // its radius outward, including the player who has just walked in. So
+    // once you are in a room, its own collider stops applying to you.
+    const room = this.world.enclosedRoomAt
+      ? this.world.enclosedRoomAt(pos.x, pos.y, pos.z) : null;
     for (let i = 0; i < colliders.length; i++) {
       const c = colliders[i];
       if (pos.y > c.top) continue;
       if (underground && c.top > st.floorY + 7) continue;
+      if (room && c.room === room.kind) continue;
       const dx = pos.x - c.x;
       const dz = pos.z - c.z;
       const minDist = c.radius + R;
@@ -10042,16 +10050,16 @@ export class Player {
     // straight out through the rock, and the safety net above, seeing you at
     // sixty metres down and outside the chamber, decides you have fallen out
     // of the world and posts you back to the surface.
-    const sd = this.world.siding;
-    if (sd && this.world.isInsideSiding(pos.x, pos.y, pos.z)) {
+    if (room) {
       const before = { x: pos.x, z: pos.z };
-      pos.x = clamp(pos.x, sd.innerMinX + R, sd.innerMaxX - R);
-      pos.z = clamp(pos.z, sd.innerMinZ + R, sd.innerMaxZ - R);
+      pos.x = clamp(pos.x, room.minX + R, room.maxX - R);
+      pos.z = clamp(pos.z, room.minZ + R, room.maxZ - R);
       if (pos.x !== before.x) this.velocity.x = 0;
       if (pos.z !== before.z) this.velocity.z = 0;
-      // The ceiling too, or a good jump puts your head through the rock.
-      if (pos.y > sd.ceilingY - 1.2) {
-        pos.y = sd.ceilingY - 1.2;
+      // The ceiling too, or a good jump puts your head through the roof.
+      const headroom = room.ceilingY === undefined ? null : room.ceilingY - 1.2;
+      if (headroom !== null && pos.y > headroom) {
+        pos.y = headroom;
         if (this.velocity.y > 0) this.velocity.y = 0;
       }
     }

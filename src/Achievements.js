@@ -103,6 +103,7 @@ export const TROPHIES = [
   { id: 'livewire', medal: '⚡', title: 'Live Wire', desc: 'As Electro Badger: touch the transmission tower during a storm, survive to the bell, and finish on 300 or more.' },
   { id: 'thirdclass', medal: '📮', title: 'Third Class Post', desc: 'As Postboxer: finish above 300 on a score that also divides by 3.' },
   { id: 'blueberryrain', medal: '🌘', title: 'Raspberry Blue Rain', desc: 'As Raspberry Reindeer: complete a run in the RAIN, having stepped inside Neptune\u2019s Nook during it.' },
+  { id: 'seasonedpasta', medal: '🌿', title: 'Perfectly Seasoned Pasta', desc: 'Finish on 400 or more as Parsley O\u2019Riley AND as Spaghetta Bolognese. Across any runs \u2014 you can only be one of them at a time.' },
   { id: 'bravethebrew', medal: '🫧', title: 'Brave the Brew', desc: 'Drink a Brave Badger Brew. It turns up in the cottage fridge only once Pickle Stick is unlocked and you are past 300 in the run \u2014 it rounds your score up to the next whole ten, and charges 10 health for the privilege.' },
 ];
 

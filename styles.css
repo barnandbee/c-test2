@@ -489,7 +489,14 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   pointer-events: none;
-  z-index: 10;
+  /* Above the touch overlays (15), below the panels (24/25).
+     #hud is a stacking context, so a z-index on the buttons INSIDE it only
+     orders them against each other — the whole subtree still sat at 10, under
+     #touch-look-zone, which covers the right half of the screen top to bottom
+     and swallowed every tap aimed at the sound and glow toggles. The HUD
+     itself is pointer-events:none, so lifting it captures nothing extra: only
+     those two buttons take taps. */
+  z-index: 20;
 }
 
 .hud-card {
@@ -517,6 +524,13 @@ body {
   color: inherit;
   cursor: pointer;
   pointer-events: auto;
+  /* Above the touch overlays (15), below the panels (25). Without this the
+     button has no z-index at all, and #touch-look-zone — which covers the
+     whole right half of the screen top to bottom — swallows every tap aimed
+     at it. On a phone the mute button simply did nothing; a mouse click on
+     a desktop, where the touch controls are display:none, always worked,
+     which is what made it look like an audio bug rather than a stacking one. */
+  z-index: 20;
   transition: opacity 0.2s ease, transform 0.1s ease;
 }
 
@@ -536,6 +550,7 @@ body {
   color: inherit;
   cursor: pointer;
   pointer-events: auto;
+  z-index: 20;   /* as the mute button: clear of the touch zones */
   transition: opacity 0.2s ease, transform 0.1s ease;
 }
 

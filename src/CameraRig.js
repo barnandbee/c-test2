@@ -102,8 +102,8 @@ export class CameraRig {
     // And if the focus is inside a sealed underground room, the surface
     // height field stops being the camera's floor — the room's floor is. Ask
     // the world WHICH room; there is more than one down there now.
-    const room = this.world.undergroundRoomAt
-      ? this.world.undergroundRoomAt(this.focus.x, this.focus.y, this.focus.z)
+    const room = this.world.enclosedRoomAt
+      ? this.world.enclosedRoomAt(this.focus.x, this.focus.y, this.focus.z)
       : null;
     const focusUnderground = Boolean(room);
 
@@ -129,6 +129,8 @@ export class CameraRig {
 
       if (!blocked) {
         for (const c of this.world.cameraColliders) {
+          // A room's own shell must not block the camera that is inside it.
+          if (room && c.room === room.kind) continue;
           const dx = this._samplePoint.x - c.x;
           const dy = this._samplePoint.y - c.y;
           const dz = this._samplePoint.z - c.z;

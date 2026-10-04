@@ -370,6 +370,7 @@ export class World {
     this._buildCoral();
     this._buildMountainPeak();
     this._buildCoffeeCart();
+    this._buildKaraoke();
     this._collectLamps();
   }
 
@@ -604,18 +605,32 @@ export class World {
   }
 
   /**
-   * Which sealed underground room contains (x,y,z), described in the terms
-   * the camera needs: the floor it must not sink through and the walls it
-   * must not leave. Null above ground.
+   * Which enclosed room contains (x,y,z), described in the terms the camera
+   * needs: the floor it must not sink through and the walls it must not
+   * leave. Null out in the open.
    *
    * The camera used to assume that "deep below grade" meant Cottage Lane,
    * because for a long time Cottage Lane was the only thing down there. When
    * the siding opened sixty metres under the mountain, the camera dutifully
    * clamped itself into the station's arch on the far side of the map and
    * left the player alone in the dark. One question, asked of the world,
-   * rather than one room's name written into the rig.
+   * rather than one room's name written into the rig — and the karaoke booth,
+   * which is a room standing on the grass rather than buried under it, joined
+   * the answer without the rig changing at all.
    */
-  undergroundRoomAt(x, y, z) {
+  enclosedRoomAt(x, y, z) {
+    const k = this.karaoke;
+    if (k && x > k.innerMinX && x < k.innerMaxX
+        && z > k.innerMinZ && z < k.innerMaxZ
+        && y > k.floorY - 1 && y < k.ceilingY) {
+      return {
+        kind: 'karaoke',
+        floorY: k.floorY,
+        minX: k.innerMinX, maxX: k.innerMaxX,
+        minZ: k.innerMinZ, maxZ: k.innerMaxZ,
+        ceilingY: k.ceilingY
+      };
+    }
     if (this.isInsideSiding(x, y, z)) {
       const sd = this.siding;
       return {
@@ -673,6 +688,17 @@ export class World {
     ) {
       return z > st.trackMinZ ? st.trackFloorY : st.floorY;
     }
+    // The karaoke booth stands ON the terrain rather than in it, so its floor
+    // is only the ground once you are actually inside the walls.
+    const k = this.karaoke;
+    if (
+      k &&
+      x > k.innerMinX && x < k.innerMaxX &&
+      z > k.innerMinZ && z < k.innerMaxZ &&
+      refY > k.floorY - 1.5 && refY < k.ceilingY
+    ) {
+      return Math.max(h, k.floorY);
+    }
     // …and the same again for the siding, sixty metres down under the
     // mountain. Nothing else reaches that depth, so the bounds test is
     // enough on its own.
@@ -692,6 +718,21 @@ export class World {
       if (refY >= p.top - 0.5) h = p.top;
     }
     return h;
+  }
+
+  /**
+   * Sweep the booth's disco lamps round the room and turn the mirror ball.
+   * Called every frame from Game's update, alongside the rest of the world's
+   * motion.
+   */
+  updateKaraoke(time) {
+    if (!this.karaokeLamps) return;
+    for (const l of this.karaokeLamps) {
+      const a = l.phase + time * 1.1;
+      l.light.position.x = this.karaoke.x + Math.cos(a) * l.radius;
+      l.light.position.z = this.karaoke.z + Math.sin(a) * l.radius;
+    }
+    if (this.karaokeBall) this.karaokeBall.rotation.y = time * 1.6;
   }
 
   /** Central-difference surface normal. */
@@ -3414,21 +3455,21 @@ export class World {
    * map edge and, as asked, the mountain: a coffee cart has no business
    * halfway up a mountain.
    */
-  _buildCoffeeCart() {
-    const track = (r) => { this._disposables.push(r); return r; };
-
-    // Out on the rim, on the bearing pointing directly AWAY from WOODOO'S —
-    // which is to say the far side of the world from it, measured from the
-    // centre rather than from Woodoos itself, so it lands opposite rather
-    // than merely distant.
-    const bearing = Math.atan2(-this.woodoosZ, -this.woodoosX);
+  /**
+   * A spot out on the rim, on `bearing`, clear of everything the world has
+   * already put down. Fans the bearing outward (smallest deviation first) and
+   * only creeps in from the rim if the whole arc at that radius is unusable.
+   *
+   * Shared by the coffee cart and the karaoke booth. Written once because the
+   * list of things to avoid is long and grows, and two copies of it would be
+   * two copies to forget to update — the putting green is on that list only
+   * because the cart parked on it the first time.
+   */
+  _rimSpot(bearing, extraClears = []) {
     const unusable = (px, pz) => {
       if (this.isNearLake(px, pz) && this.getHeight(px, pz) < this.waterLevel + 0.6) return true;
       if (this.isNearWhirlLake(px, pz) && this.getHeight(px, pz) < this.whirlWaterLevel + 0.6) return true;
       if (Math.hypot(px, pz) > PLAYABLE_RADIUS - 4) return true;
-      // Everything the forest refuses to grow on, a cart has no business
-      // parking on either — the putting green above all, which is where it
-      // ended up the first time for want of this line.
       const clears = [
         [this.greenCenterX, this.greenCenterZ, this.greenRadius + 6],
         [this.caveX, this.caveZ, this.caveRadius + 6],
@@ -3440,13 +3481,14 @@ export class World {
         [this.towerX, this.towerZ, (this.towerRadius || 0) + 5],
         [this.helterX, this.helterZ, this.helterRadius + 5],
         [this.woodoosX, this.woodoosZ, this.woodoosRadius + 5],
-        [this.vegPatchX, this.vegPatchZ, this.vegPatchRadius + 4]
+        [this.vegPatchX, this.vegPatchZ, this.vegPatchRadius + 4],
+        ...extraClears
       ];
       for (const [cx, cz, r] of clears) {
         if (cx === undefined) continue;
         if (Math.hypot(px - cx, pz - cz) < r) return true;
       }
-      // Don't park inside a tree. The forest is scattered long before this
+      // Don't put it inside a tree. The forest is scattered long before this
       // runs, so the only way to know is to ask where it actually went.
       for (const t of this.treeSpots || []) {
         if (Math.hypot(px - t.x, pz - t.z) < 4.5) return true;
@@ -3456,16 +3498,14 @@ export class World {
         this.getHeight(px + e, pz) - this.getHeight(px - e, pz),
         this.getHeight(px, pz + e) - this.getHeight(px, pz - e)
       ) / (2 * e);
-      return grad > 0.34;   // a cart needs flatter ground than a pylon does
+      return grad > 0.34;   // these need flatter ground than a pylon does
     };
 
     const rim = PLAYABLE_RADIUS - 8;
     let x = Math.cos(bearing) * rim;
     let z = Math.sin(bearing) * rim;
-    let sited = false;
-    // Fan the bearing outward, smallest deviation first, and only creep in
-    // from the rim if the whole arc at that radius is unusable.
     for (const d of [rim, rim - 5, rim - 10, rim - 16, rim - 24]) {
+      let sited = false;
       for (let step = 0; step <= 26 && !sited; step++) {
         for (const sign of step === 0 ? [1] : [1, -1]) {
           const a = bearing + sign * step * (6 * Math.PI / 180);
@@ -3478,6 +3518,284 @@ export class World {
       }
       if (sited) break;
     }
+    return { x, z };
+  }
+
+  /**
+   * The karaoke booth: a concrete cube out on the rim with a screen at one
+   * end and far too many disco lights. The door only opens on an ODD score —
+   * and once you have been inside, the backing music for the rest of the run
+   * is the 8-bit disco the booth was playing.
+   *
+   * Deliberately NOT rotated. Everything else on the rim turns to face the
+   * middle, but the camera has to treat the inside as a room with walls, and
+   * a room the camera can reason about is an axis-aligned one. The door goes
+   * on whichever of the four sides faces the centre instead.
+   */
+  _buildKaraoke() {
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    // Opposite the coffee cart, so the two rim landmarks are not neighbours.
+    const bearing = Math.atan2(-this.coffeeZ, -this.coffeeX);
+    const { x, z } = this._rimSpot(bearing, [[this.coffeeX, this.coffeeZ, 14]]);
+
+    const HALF = 3.7;      // half the cube, inside the walls. A 5.8m room
+                           // left the camera flat against the wall.
+    const WALL = 0.3;
+    const H = 4.4;         // floor to ceiling
+
+    // The floor goes above the HIGHEST ground under the booth, not the ground
+    // at its centre. Sited on a slope, a centre-height floor let the hill
+    // behind it rise straight up through the room — a green bank across the
+    // middle of the karaoke booth. A plinth fills the gap on the low side.
+    let highest = -Infinity, lowest = Infinity;
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const h = this.getHeight(x + (i / 2) * HALF, z + (j / 2) * HALF);
+        if (h > highest) highest = h;
+        if (h < lowest) lowest = h;
+      }
+    }
+    const y = highest + 0.12;
+
+    // Which wall faces the middle of the map? The door goes there.
+    const toward = Math.abs(x) > Math.abs(z)
+      ? (x > 0 ? '-x' : '+x')
+      : (z > 0 ? '-z' : '+z');
+    const doorSign = toward === '-x' || toward === '-z' ? -1 : 1;
+    const doorOnX = toward === '-x' || toward === '+x';
+
+    this.karaoke = {
+      x, z, floorY: y,
+      innerMinX: x - HALF, innerMaxX: x + HALF,
+      innerMinZ: z - HALF, innerMaxZ: z + HALF,
+      ceilingY: y + H,
+      // Where you stand to knock, and where you land once you are in.
+      door: new THREE.Vector3(
+        x + (doorOnX ? doorSign * (HALF + WALL + 1.1) : 0), y,
+        z + (doorOnX ? 0 : doorSign * (HALF + WALL + 1.1))),
+      inside: new THREE.Vector3(
+        x + (doorOnX ? doorSign * (HALF - 1.1) : 0), y,
+        z + (doorOnX ? 0 : doorSign * (HALF - 1.1)))
+    };
+
+    const group = new THREE.Group();
+    this.scene.add(group);
+    this.karaokeMeshes = group;
+
+    // Dark. The reference is a black room with coloured specks crawling over
+    // it, not a lit room with a colour cast.
+    const wallMat = track(createToonMaterial({
+      color: 0x241f28, rim: { color: 0x6a6076, strength: 0.25, threshold: 0.68 }
+    }));
+    wallMat.side = THREE.DoubleSide;
+    const trimMat = track(createToonMaterial({ color: 0x2a2630 }));
+    const floorMat = track(createToonMaterial({ color: 0x1d1922 }));
+
+    const addBox = (w, h, d, mat, bx, by, bz) => {
+      const m = new THREE.Mesh(track(new THREE.BoxGeometry(w, h, d)), mat);
+      m.position.set(bx, by, bz);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      group.add(m);
+      return m;
+    };
+
+    const S = (HALF + WALL) * 2;
+    const plinth = Math.max(0.3, y - lowest + 0.4);
+    addBox(S, plinth, S, floorMat, x, y - plinth / 2, z);          // floor + plinth
+    addBox(S, 0.3, S, wallMat, x, y + H, z);                       // ceiling
+    for (const sx of [-1, 1]) {
+      addBox(WALL, H, S, wallMat, x + sx * (HALF + WALL / 2), y + H / 2, z);
+      addBox(S, H, WALL, wallMat, x, y + H / 2, z + sx * (HALF + WALL / 2));
+    }
+
+    // The door: a dark slab set into the wall that faces the middle, with a
+    // little neon sign over it so you can find the place at all.
+    const dx = doorOnX ? doorSign * (HALF + WALL / 2) : 0;
+    const dz = doorOnX ? 0 : doorSign * (HALF + WALL / 2);
+    const door = addBox(
+      doorOnX ? WALL * 1.4 : 1.5, 2.3, doorOnX ? 1.5 : WALL * 1.4,
+      trimMat, x + dx, y + 1.15, z + dz);
+    this.karaokeDoor = door;
+    const signTex = track(this._makeSignTexture('KARAOKE', '#1b0f2a', '#ff5ab0', 512, 128));
+    const sign = addBox(
+      doorOnX ? 0.08 : 2.0, 0.5, doorOnX ? 2.0 : 0.08,
+      track(createToonMaterial({
+        map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.55
+      })),
+      x + (doorOnX ? doorSign * (HALF + WALL + 0.05) : 0), y + 2.8,
+      z + (doorOnX ? 0 : doorSign * (HALF + WALL + 0.05)));
+    sign.castShadow = false;
+    // Short reach on purpose: a point light ignores walls, and this one sits
+    // just outside the door, so anything generous spills into the room.
+    const signGlow = new THREE.PointLight(0xff5ab0, 0.9, 4.5, 2);
+    signGlow.position.set(
+      x + (doorOnX ? doorSign * (HALF + WALL + 0.6) : 0), y + 2.8,
+      z + (doorOnX ? 0 : doorSign * (HALF + WALL + 0.6)));
+    group.add(signGlow);
+
+    // --- the screen, at the end opposite the door ------------------------
+    const sx2 = doorOnX ? -doorSign * (HALF - 0.12) : 0;
+    const sz2 = doorOnX ? 0 : -doorSign * (HALF - 0.12);
+    const screenTex = track(this._makeKaraokeScreenTexture());
+    const screen = addBox(
+      doorOnX ? 0.1 : 3.0, 1.7, doorOnX ? 3.0 : 0.1,
+      track(createToonMaterial({
+        map: screenTex, emissiveMap: screenTex,
+        emissive: 0xffffff, emissiveIntensity: 0.85
+      })),
+      x + sx2, y + 2.5, z + sz2);
+    screen.castShadow = false;
+    this.karaokeScreen = screen;
+    // The screen is the room's main light, as it is in the real thing.
+    const screenGlow = new THREE.PointLight(0x4a7fe8, 0.5, 6, 1.9);
+    screenGlow.position.set(x + sx2 * 0.6, y + 2.4, z + sz2 * 0.6);
+    group.add(screenGlow);
+
+    // A speaker slung above the screen, and a wall fan in the far corner.
+    addBox(doorOnX ? 0.45 : 1.3, 0.75, doorOnX ? 1.3 : 0.45, trimMat,
+      x + sx2 * 0.82, y + 3.7, z + sz2 * 0.82);
+    const fanHub = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 10)), trimMat);
+    fanHub.rotation.z = Math.PI / 2;
+    fanHub.position.set(x + HALF - 0.5, y + 2.6, z - HALF + 0.5);
+    group.add(fanHub);
+    const cage = new THREE.Mesh(
+      track(new THREE.TorusGeometry(0.42, 0.035, 6, 16)), trimMat);
+    cage.rotation.y = Math.PI / 2;
+    cage.position.copy(fanHub.position);
+    group.add(cage);
+
+    // --- disco lights ----------------------------------------------------
+    // A mirror ball on the ceiling and four coloured lamps around it. The
+    // reference photo is mostly this: specks of red, blue and gold crawling
+    // over every surface in the room.
+    const ballMat = track(createToonMaterial({
+      color: 0xdfe4ee, emissive: 0x9fb4d8, emissiveIntensity: 0.6,
+      rim: { color: 0xffffff, strength: 0.9, threshold: 0.4 }
+    }));
+    const ball = new THREE.Mesh(track(new THREE.IcosahedronGeometry(0.34, 1)), ballMat);
+    ball.position.set(x, y + H - 0.75, z);
+    group.add(ball);
+    this.karaokeBall = ball;
+    const stem = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.03, 0.03, 0.42, 6)), trimMat);
+    stem.position.set(x, y + H - 0.32, z);
+    group.add(stem);
+
+    // The specks the mirror ball throws: dozens of small coloured dots lying
+    // on the walls and ceiling. This is most of what the reference photo IS —
+    // red, blue and gold confetti of light crawling over every surface — and
+    // no amount of point lights produces it, because a point light has no
+    // pattern. They pulse on the shader's own clock, so they cost nothing.
+    const SPECK = [0xff4466, 0x4499ff, 0xffd24a, 0xff7ad8, 0x6affc0];
+    const speckGeo = track(new THREE.SphereGeometry(0.055, 6, 5));
+    const speckMats = SPECK.map((c, i) => track(createToonMaterial({
+      color: c, emissive: c, emissiveIntensity: 1.5,
+      pulse: { speed: 1.6 + i * 0.37, phase: i * 1.1 }
+    })));
+    for (let i = 0; i < 96; i++) {
+      const face = i % 5;
+      const u = (((i * 37) % 100) / 100 - 0.5) * (HALF * 1.85);
+      const v = (((i * 61) % 100) / 100) * (H - 0.6) + 0.3;
+      const speck = new THREE.Mesh(speckGeo, speckMats[i % speckMats.length]);
+      if (face === 0) speck.position.set(x - HALF + 0.06, y + v, z + u);
+      else if (face === 1) speck.position.set(x + HALF - 0.06, y + v, z + u);
+      else if (face === 2) speck.position.set(x + u, y + v, z - HALF + 0.06);
+      else if (face === 3) speck.position.set(x + u, y + v, z + HALF - 0.06);
+      else speck.position.set(x + u, y + H - 0.2,
+        z + (((i * 83) % 100) / 100 - 0.5) * (HALF * 1.85));
+      speck.scale.set(1, 1, 1);
+      group.add(speck);
+    }
+
+    this.karaokeLamps = [];
+    const LAMP_COLOURS = [0xff3c6a, 0x3c7bff, 0xffc83c, 0x8a3cff];
+    for (let i = 0; i < LAMP_COLOURS.length; i++) {
+      const a = (i / LAMP_COLOURS.length) * Math.PI * 2 + 0.6;
+      // Dim and short-reaching, so each pools on the nearest wall instead of
+      // filling the room. Four lamps at 0.75 and a reach of 7 in a 7.4m room
+      // added up to one flat wash.
+      // Faint, and swept close to the middle: the room is meant to be dark,
+      // the way the reference photograph is, with the screen as the only real
+      // light and the mirror-ball specks below doing the decorating. These
+      // four just keep a slow wash of colour moving over the walls.
+      const lamp = new THREE.PointLight(LAMP_COLOURS[i], 0.13, 3.4, 2.2);
+      lamp.position.set(x + Math.cos(a) * 1.15, y + H - 0.9, z + Math.sin(a) * 1.15);
+      group.add(lamp);
+      // Swept around the room by World.update — a disco light that stands
+      // still is just a light.
+      this.karaokeLamps.push({ light: lamp, phase: a, radius: 1.15 });
+    }
+
+    // --- a bench and a low table, with glasses on it ----------------------
+    addBox(S - 1.6, 0.14, 0.7, trimMat, x, y + 0.5, z + HALF - 0.6);
+    addBox(1.6, 0.1, 1.0, trimMat, x - 0.6, y + 0.75, z + 0.6);
+    const glassMat = track(createToonMaterial({
+      color: 0xcfe4f2, rim: { color: 0xffffff, strength: 0.6, threshold: 0.5 }
+    }));
+    for (const [gx, gz] of [[-1.05, 0.35], [-0.7, 0.8], [-0.2, 0.5]]) {
+      const glass = new THREE.Mesh(
+        track(new THREE.CylinderGeometry(0.09, 0.07, 0.24, 10)), glassMat);
+      glass.position.set(x + gx, y + 0.92, z + gz);
+      group.add(glass);
+    }
+
+    // Solid from outside: you go in through the door or not at all.
+    // Tagged with the room it belongs to: Player skips a room's own collider
+    // while you are inside that room, or the booth shoves its own guests out.
+    this.colliders.push({ x, z, radius: HALF + WALL, top: y + H, room: 'karaoke' });
+    this.cameraColliders.push({ x, y: y + H / 2, z, radius: HALF + WALL, room: 'karaoke' });
+  }
+
+  /** The karaoke screen: a lyric line over a field of blue sparkle. */
+  _makeKaraokeScreenTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 288;
+    const g = canvas.getContext('2d');
+    const sky = g.createLinearGradient(0, 0, 0, 288);
+    sky.addColorStop(0, '#071a4a');
+    sky.addColorStop(1, '#1030a0');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, 512, 288);
+    // Sparkle, thickening toward the bottom like the video in the photo.
+    for (let i = 0; i < 260; i++) {
+      const px = (i * 97) % 512;
+      const py = (i * 131) % 288;
+      const r = 1 + ((i * 13) % 5) / 2;
+      g.fillStyle = `rgba(255,255,255,${0.25 + ((i * 7) % 60) / 100})`;
+      g.beginPath();
+      g.arc(px, py + (py / 288) * 10, r, 0, Math.PI * 2);
+      g.fill();
+    }
+    // The lyric, struck through as a karaoke machine does once it is sung.
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = 'bold 54px "Lilita One", "Trebuchet MS", sans-serif';
+    g.fillStyle = '#ffffff';
+    g.fillText("I'm okay", 256, 214);
+    g.strokeStyle = 'rgba(255,255,255,0.85)';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(150, 212);
+    g.lineTo(362, 206);
+    g.stroke();
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _buildCoffeeCart() {
+    const track = (r) => { this._disposables.push(r); return r; };
+
+    // Out on the rim, on the bearing pointing directly AWAY from WOODOO'S —
+    // which is to say the far side of the world from it, measured from the
+    // centre rather than from Woodoos itself, so it lands opposite rather
+    // than merely distant.
+    const bearing = Math.atan2(-this.woodoosZ, -this.woodoosX);
+    const { x, z } = this._rimSpot(bearing);
 
     const y = this.getHeight(x, z);
     this.coffeeX = x;

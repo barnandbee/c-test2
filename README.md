@@ -166,6 +166,18 @@ Audio unlocks on your first click or key, per browser autoplay rules.
   burns through fog with the rest of them. Propped beside it is a chalked
   **A-board of supporters** — double-tap it to read the names of the people
   keeping the cart in beans.
+- **The karaoke booth** — a small dark cube out on the opposite rim, with a
+  pink **KARAOKE** sign over the door. It is a proper room inside: a screen at
+  the far end playing a sparkling blue video with the lyric struck through, a
+  speaker slung above it, a wall fan, a bench, glasses on a low table, a
+  mirror ball turning on the ceiling and dozens of coloured specks of light
+  crawling over every surface. **The door only opens on an ODD score** — a
+  whole, odd number, judged on the score as shown — and tells you so if it
+  will not budge. Go in once and the backing music for **the rest of the run**
+  becomes the booth's **8-bit disco**: four-on-the-floor kick, offbeat hat, a
+  square-wave bassline and a chiptune lead. It does not change back when you
+  leave. The door always lets you out again, whatever your score has done
+  since.
 - **Three sponsorship boards**, and three is the whole allowance — the forest
   can carry a few signs without turning into a hoarding, and a slot is worth
   more when there are only three. They are the **framed picture** on the loft

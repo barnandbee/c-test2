@@ -2540,6 +2540,209 @@ ok('and green dots all over it, standing proud of the hull',
    polkaLook && polkaLook.green >= 20 && polkaLook.proud === polkaLook.green,
    JSON.stringify(polkaLook));
 
+/* == 9c. the karaoke booth, the mute button, and the pasta pair ========= */
+console.log('\nThe Karaoke Booth');
+await installHelpers();
+
+// The sound and glow toggles live inside #hud, which is its own stacking
+// context. A z-index on the BUTTONS orders them only against each other — the
+// whole subtree sat at 10, under #touch-look-zone (15), which covers the right
+// half of the screen top to bottom. On a phone the mute button simply did
+// nothing. Hit-test where a finger actually lands, not where the element is.
+// Mid-run, not on the game-over card — that card covers the whole screen and
+// would be what the finger hit, which says nothing about the HUD. It fades out
+// over 0.6s via `visibility`, so it stays hit-testable for a moment after the
+// run restarts: wait it out rather than measuring through it.
+await page.evaluate(() => window.__freshRun('badger'));
+await page.waitForFunction(
+  () => getComputedStyle(document.getElementById('game-over')).visibility === 'hidden',
+  null, { timeout: 5000 });
+// At a phone's width. A media query turns the touch controls off above 900px
+// with !important, so on the suite's desktop viewport they can never show and
+// the whole check quietly measures nothing — it passed with the bug in place.
+const hudViewport = page.viewportSize();
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(150);
+const reachable = await page.evaluate(() => {
+  const touch = document.getElementById('touch-controls');
+  const wasVisible = touch.classList.contains('visible');
+  touch.classList.add('visible');          // as it is on any touch device
+  const out = { touchShowing: getComputedStyle(touch).display !== 'none' };
+  for (const id of ['mute-btn', 'bloom-btn']) {
+    const el = document.getElementById(id);
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    out[id] = hit ? (hit.id || hit.className) : null;
+    // And does a tap on whatever is there actually do the job?
+    const g = window.__game;
+    const before = id === 'mute-btn' ? g.audio.muted : g.bloomEnabled;
+    if (hit) hit.click();
+    const after = id === 'mute-btn' ? g.audio.muted : g.bloomEnabled;
+    out[id + '-works'] = after !== before;
+    if (hit) hit.click();                  // put it back
+  }
+  if (!wasVisible) touch.classList.remove('visible');
+  return out;
+});
+await page.setViewportSize(hudViewport);
+await page.waitForTimeout(150);
+ok('the touch controls are actually up for this check',
+   reachable.touchShowing === true, JSON.stringify(reachable));
+ok('a finger aimed at the mute button reaches the mute button',
+   /mute/.test(reachable['mute-btn'] || ''), JSON.stringify(reachable));
+ok('and tapping it mutes', reachable['mute-btn-works'] === true, JSON.stringify(reachable));
+ok('the glow toggle is reachable too',
+   /bloom/.test(reachable['bloom-btn'] || ''), JSON.stringify(reachable));
+ok('and tapping it toggles the glow', reachable['bloom-btn-works'] === true,
+   JSON.stringify(reachable));
+
+// The booth: a room on the rim whose door only opens on an odd score.
+const booth = await page.evaluate(() => {
+  const g = window.__game;
+  const w = g.world;
+  const k = w.karaoke;
+  // The hill it stands on must not come up through the floor — it did.
+  let highest = -Infinity;
+  for (let i = -2; i <= 2; i++) {
+    for (let j = -2; j <= 2; j++) {
+      highest = Math.max(highest, w.getHeight(k.x + i * 1.8, k.z + j * 1.8));
+    }
+  }
+  return {
+    onTheRim: Math.hypot(k.x, k.z) > w.playableRadius * 0.6,
+    floorClearsTheGround: k.floorY >= highest,
+    floorY: +k.floorY.toFixed(2), highest: +highest.toFixed(2),
+    // It is a cube: as wide as it is deep, and roughly as tall.
+    width: +(k.innerMaxX - k.innerMinX).toFixed(2),
+    depth: +(k.innerMaxZ - k.innerMinZ).toFixed(2),
+    height: +(k.ceilingY - k.floorY).toFixed(2),
+    farFromTheCart: Math.hypot(k.x - w.coffeeX, k.z - w.coffeeZ)
+  };
+});
+ok('the booth stands out at the edge of the map', booth.onTheRim, JSON.stringify(booth));
+ok('and clear of the coffee cart', booth.farFromTheCart > 12, String(booth.farFromTheCart));
+ok('its floor sits above the ground under all of it',
+   booth.floorClearsTheGround,
+   `floor ${booth.floorY} vs highest ground ${booth.highest}`);
+ok('it is a cube', Math.abs(booth.width - booth.depth) < 0.01 && booth.height > 3.5,
+   JSON.stringify(booth));
+
+// What is in it: a screen at one end, and a great many disco lights.
+const fittings = await page.evaluate(async () => {
+  const THREE = await import('three');
+  const w = window.__game.world;
+  const k = w.karaoke;
+  w.karaokeMeshes.updateMatrixWorld(true);
+  let specks = 0, lamps = (w.karaokeLamps || []).length, lights = 0;
+  w.karaokeMeshes.traverse((o) => {
+    if (o.isLight) lights++;
+    if (o.isMesh && o.material.emissive && o.material.emissiveIntensity > 0.9
+        && o.geometry.type === 'SphereGeometry') specks++;
+  });
+  const screen = new THREE.Box3().setFromObject(w.karaokeScreen).getCenter(new THREE.Vector3());
+  // The screen is at the END of the room, and the end opposite the door.
+  const toScreen = Math.hypot(screen.x - k.x, screen.z - k.z);
+  const doorSide = (screen.x - k.x) * (k.door.x - k.x) + (screen.z - k.z) * (k.door.z - k.z);
+  return { specks, lamps, lights, toScreen, oppositeTheDoor: doorSide < 0 };
+});
+ok('the screen is at one end of the booth', fittings.toScreen > 3, String(fittings.toScreen));
+ok('and at the end away from the door', fittings.oppositeTheDoor, JSON.stringify(fittings));
+ok('there are lots of disco lights going on',
+   fittings.lamps >= 4 && fittings.specks >= 40, JSON.stringify(fittings));
+
+// The door's lock, and the music it leaves behind.
+const knock = (points) => page.evaluate((points) => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  g.audio.setMusicTrack('ambient');
+  const k = g.world.karaoke;
+  g.points = points;
+  g.player.position.set(k.door.x, k.floorY + 0.2, k.door.z);
+  g.handleKaraoke();
+  const r = g.world.enclosedRoomAt(g.player.position.x, g.player.position.y, g.player.position.z);
+  return {
+    inside: Boolean(r && r.kind === 'karaoke'),
+    track: g.audio._musicTrack,
+    entered: g.karaokeEntered
+  };
+}, points);
+
+ok('an odd score opens the door', (await knock(101)).inside === true);
+ok('an even score does not', (await knock(100)).inside === false);
+ok('and nor does a fractional one', (await knock(101.5)).inside === false);
+// Float residue: a score that READS as 101 must open it, whatever the bits say.
+ok('a score that reads odd opens it, float residue or not',
+   (await knock(101.00000000000003)).inside === true);
+
+const after = await knock(77);
+ok('going in puts the 8-bit disco on', after.track === 'disco', JSON.stringify(after));
+
+const stays = await page.evaluate(() => {
+  const g = window.__game;
+  const k = g.world.karaoke;
+  // Leave again: the door lets you out with no questions asked.
+  g.handleKaraoke();
+  const out = g.world.enclosedRoomAt(
+    g.player.position.x, g.player.position.y, g.player.position.z);
+  return { stillInside: Boolean(out && out.kind === 'karaoke'), track: g.audio._musicTrack };
+});
+ok('and the door always lets you out again', stays.stillInside === false, JSON.stringify(stays));
+ok('the disco plays on for the rest of the run', stays.track === 'disco', JSON.stringify(stays));
+ok('but a new run starts on the forest music again',
+   await page.evaluate(() => {
+     window.__freshRun('badger');
+     return window.__game.audio._musicTrack;
+   }) === 'ambient');
+
+// Standing inside, the booth must not shove you back out: it is solid from
+// the outside, which is one cylinder collider over the whole footprint, and
+// that collider pushes anything within its radius outward — its own guests
+// included.
+const held = await page.evaluate(() => {
+  const g = window.__game;
+  window.__freshRun('badger');
+  const k = g.world.karaoke;
+  g.points = 101;
+  g.player.position.set(k.door.x, k.floorY + 0.2, k.door.z);
+  g.handleKaraoke();
+  g.renderer.setAnimationLoop(null);
+  const realDelta = g.clock.getDelta.bind(g.clock);
+  const realRender = g.renderer.render.bind(g.renderer);
+  g.clock.getDelta = () => 1 / 60;
+  g.renderer.render = () => {};
+  for (let i = 0; i < 180; i++) g.tick();
+  g.clock.getDelta = realDelta;
+  g.renderer.render = realRender;
+  const r = g.world.enclosedRoomAt(
+    g.player.position.x, g.player.position.y, g.player.position.z);
+  const cam = g.camera.position;
+  return {
+    stillInside: Boolean(r && r.kind === 'karaoke'),
+    cameraInside: cam.x > k.innerMinX && cam.x < k.innerMaxX
+                  && cam.z > k.innerMinZ && cam.z < k.innerMaxZ
+                  && cam.y > k.floorY && cam.y < k.ceilingY,
+    camToPlayer: +cam.distanceTo(g.player.position).toFixed(2)
+  };
+});
+ok('three seconds later you are still in the booth', held.stillInside, JSON.stringify(held));
+ok('and the camera is in there with you', held.cameraInside, JSON.stringify(held));
+ok('close enough to see anything', held.camToPlayer < 9, String(held.camToPlayer));
+
+// Perfectly Seasoned Pasta: a 400 from each of the two Italian courses.
+const pasta = (chars) => page.evaluate((cs) => {
+  const g = window.__game;
+  g.achievements.delete('seasonedpasta');
+  g.scored400 = new Set(cs);
+  g.checkAchievements();
+  return g.achievements.has('seasonedpasta');
+}, chars);
+ok('Perfectly Seasoned Pasta: Parsley and Spaghetta both on 400 → earned',
+   await pasta(['parsley', 'spaghetta']) === true);
+ok('Parsley alone is not enough', await pasta(['parsley']) === false);
+ok('nor Spaghetta alone', await pasta(['spaghetta']) === false);
+ok('and other heroes do not season anything',
+   await pasta(['badger', 'mayo', 'jam', 'tapir']) === false);
+
 /* == 10. the unfinished fifth station =================================== */
 console.log('\nThe Siding');
 await installHelpers();   // section 9 reloaded the page
@@ -2895,11 +3098,11 @@ const rooms = await page.evaluate(() => {
   const st = w.station;
   const mid = (a, b) => (a + b) / 2;
   return {
-    inSiding: (w.undergroundRoomAt(mid(sd.minX, sd.maxX), sd.floorY + 1,
+    inSiding: (w.enclosedRoomAt(mid(sd.minX, sd.maxX), sd.floorY + 1,
                                    mid(sd.minZ, sd.maxZ)) || {}).kind || null,
-    inStation: (w.undergroundRoomAt(mid(st.minX, st.maxX), st.floorY + 1,
+    inStation: (w.enclosedRoomAt(mid(st.minX, st.maxX), st.floorY + 1,
                                     mid(st.minZ, st.maxZ)) || {}).kind || null,
-    onTheGrass: w.undergroundRoomAt(0, w.getHeight(0, 0) + 1, 0)
+    onTheGrass: w.enclosedRoomAt(0, w.getHeight(0, 0) + 1, 0)
   };
 });
 ok('the world knows the siding from the station',
